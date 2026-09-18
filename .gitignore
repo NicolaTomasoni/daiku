@@ -1,26 +1,26 @@
-# Questo repository pubblica soltanto il prodotto.
+# Questo è il repository di **sviluppo** di Daiku, e contiene tutto: il prodotto in
+# `plugins/daiku/`, la ricognizione, i punti aperti, la memoria, gli esempi e le istruzioni di
+# progetto. Resta privato e non diventa mai pubblico — la sua storia porta `CLAUDE.md` nel
+# commit iniziale, e non si ripulisce.
 #
-# Chi aggiunge il marketplace riceve un clone dell'**intero** repository, non solo di
-# `plugins/daiku/`: lo schema di Claude Code lo dice alla voce `sparsePaths` — «If omitted,
-# the full repository is cloned» — e su Codex `--sparse` esiste per la stessa ragione.
-# Quindi ciò che resta fuori da git è ciò che non arriva a nessuno, ed è l'unico confine
-# che tiene davvero.
+# La pubblicazione è un **secondo** repository, su GitHub, che non è un branch di questo né un
+# fork: è un albero generato. A ogni rilascio uno script copia lì i soli path ammessi
+# — `plugins/`, `.claude-plugin/`, `.agents/`, `README.md` — e committa. Là dentro non si lavora.
 #
-# Lo sviluppo di Daiku vive solo su questa macchina: ricognizione, decisioni aperte, memoria,
-# esempi, istruzioni di progetto e configurazione dell'editor restano nel working tree e non
-# si committano mai. La memoria sta nel repo per averla sotto mano, non per pubblicarla.
+# Serve perché chi aggiunge il marketplace riceve un clone dell'**intero** repository, non solo
+# di `plugins/daiku/`: lo schema di Claude Code lo dice alla voce `sparsePaths` — «If omitted,
+# the full repository is cloned» — e su Codex `--sparse` esiste per la stessa ragione. Il repo
+# *è* l'artefatto consegnato: non c'è un passo di impacchettamento dove mettere il filtro, come
+# farebbe il campo `files` di un `package.json`.
 #
-# La forma è deliberata: si esclude tutto e si riammette a mano. Un file nuovo nasce escluso,
-# e per pubblicarlo bisogna deciderlo qui — il contrario di una dimenticanza che pubblica.
+# Quindi il confine di ciò che esce non sta più qui. Prima stava in questo file, scritto a lista
+# di ammissione; ora sta nella lista di copia dello script, che va tenuta nella stessa forma
+# — «copia questi path», mai «copia tutto tranne» — perché resti vera la proprietà che conta:
+# un file nuovo nasce fuori dal pacchetto pubblicato, e per farcelo entrare bisogna deciderlo.
+#
+# Qui si esclude soltanto ciò che non deve stare in **nessun** git.
 
-# Tutto escluso.
-/*
-
-# Riammesso: il prodotto e le due vetrine che lo indirizzano.
-!/plugins/
-!/.claude-plugin/
-!/.agents/
-
-# Riammesso: ciò che rende il repository leggibile a chi lo trova.
-!/.gitignore
-!/README.md
+# Claude Code ignora `autoMemoryDirectory` quando la chiave arriva da un file committato: se
+# questo entrasse nel repo, la memoria tornerebbe silenziosamente sotto `~/.claude/projects/`.
+# Su una macchina nuova va riscritto a mano.
+.claude/settings.local.json
