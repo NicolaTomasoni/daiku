@@ -1,0 +1,12 @@
+{
+  "name": "daiku",
+  "interface": { "displayName": "Daiku" },
+  "plugins": [
+    {
+      "name": "daiku",
+      "source": { "source": "local", "path": "./plugins/daiku" },
+      "policy": { "installation": "AVAILABLE", "authentication": "ON_INSTALL" },
+      "category": "Developer Tools"
+    }
+  ]
+}

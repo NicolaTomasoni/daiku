@@ -1,0 +1,21 @@
+{
+  "name": "daiku",
+  "version": "0.1.0",
+  "description": "Metodo di sviluppo autonomo architecture-first: i contratti delle skill, l'orchestrazione a ruoli e i contratti dei parametri di progetto.",
+  "author": { "name": "Nicola Tomasoni" },
+  "keywords": ["metodo", "orchestrazione", "review", "memoria", "contratti"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Daiku",
+    "shortDescription": "Il metodo di sviluppo autonomo, come contratti in prosa",
+    "longDescription": "Diciotto contratti che descrivono cosa va fatto e in che ordine: studio del problema, documento di decisione, brief di esecuzione, esecuzione, ciclo di review a giri, allineamento di memoria e documentazione, commit. Chi esegue ogni passo e con quale modello lo dichiara un contratto unico di orchestrazione; i valori del progetto ospite stanno fuori dalle skill, in due file di parametri.",
+    "developerName": "Nicola Tomasoni",
+    "category": "Developer Tools",
+    "capabilities": ["Interactive", "Write"],
+    "defaultPrompt": [
+      "Studia questo problema e scrivine il documento",
+      "Consegna la feature dalla cartella gia' decisa",
+      "Rivedi il diff e chiudi la review con il commit"
+    ]
+  }
+}

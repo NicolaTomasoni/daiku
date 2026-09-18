@@ -1,0 +1,26 @@
+# Questo repository pubblica soltanto il prodotto.
+#
+# Chi aggiunge il marketplace riceve un clone dell'**intero** repository, non solo di
+# `plugins/daiku/`: lo schema di Claude Code lo dice alla voce `sparsePaths` — «If omitted,
+# the full repository is cloned» — e su Codex `--sparse` esiste per la stessa ragione.
+# Quindi ciò che resta fuori da git è ciò che non arriva a nessuno, ed è l'unico confine
+# che tiene davvero.
+#
+# Lo sviluppo di Daiku vive solo su questa macchina: ricognizione, decisioni aperte, memoria,
+# esempi, istruzioni di progetto e configurazione dell'editor restano nel working tree e non
+# si committano mai. La memoria sta nel repo per averla sotto mano, non per pubblicarla.
+#
+# La forma è deliberata: si esclude tutto e si riammette a mano. Un file nuovo nasce escluso,
+# e per pubblicarlo bisogna deciderlo qui — il contrario di una dimenticanza che pubblica.
+
+# Tutto escluso.
+/*
+
+# Riammesso: il prodotto e le due vetrine che lo indirizzano.
+!/plugins/
+!/.claude-plugin/
+!/.agents/
+
+# Riammesso: ciò che rende il repository leggibile a chi lo trova.
+!/.gitignore
+!/README.md

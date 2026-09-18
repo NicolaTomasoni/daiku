@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "description": "Guardrail di progetto contro la distrazione, non barriera di sicurezza. Qui non ci sono piu' regole di permesso: la policy che un agente non puo' togliersi vive nei managed settings di sistema, sopra ogni altra sorgente e fuori dalla portata di un processo non elevato. La divisione e' questa, e va tenuta: i permessi stanno nei managed settings, i guardrail di dominio stanno qui. Un hook di questo file non puo' sbloccare un deny managed — la documentazione lo dice esplicitamente, le decisioni di un hook non scavalcano le permission rule — quindi che questo file resti scrivibile dagli agenti non toglie niente alla policy. I tre hook hanno due mestieri diversi: PreToolUse ferma un gesto distruttivo prima che accada, PostToolUse e SessionStart non fermano mai niente e si limitano a dire quello che sanno. Tutti degradano aperto: davanti a un ambiente non pronto tacciono ed escono 0. Ognuno ha un banco di prova riproducibile — --self-check, col totale contato — perche' un hook fail-open guasto e' indistinguibile dal silenzio.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PROJECT_DIR}/.claude/hooks/guardia-comandi.mjs\"",
+            "timeout": 15,
+            "statusMessage": "Guardia comandi distruttivi"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PROJECT_DIR}/.claude/hooks/contratti-post-edit.mjs\"",
+            "timeout": 30,
+            "statusMessage": "Controlli deterministici sul corpus"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PROJECT_DIR}/.claude/hooks/ciclo-aperto.mjs\"",
+            "timeout": 10,
+            "statusMessage": "Controllo cicli aperti"
+          }
+        ]
+      }
+    ]
+  }
+}

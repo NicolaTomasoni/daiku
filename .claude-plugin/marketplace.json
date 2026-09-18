@@ -1,0 +1,12 @@
+{
+  "name": "daiku",
+  "owner": { "name": "Nicola Tomasoni" },
+  "description": "Il metodo Daiku: contratti di sviluppo autonomo per Claude Code e Codex.",
+  "plugins": [
+    {
+      "name": "daiku",
+      "source": "./plugins/daiku",
+      "description": "Metodo di sviluppo autonomo architecture-first: i contratti delle skill, l'orchestrazione a ruoli e i contratti dei parametri."
+    }
+  ]
+}
