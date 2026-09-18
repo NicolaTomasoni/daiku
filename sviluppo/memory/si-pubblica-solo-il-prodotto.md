@@ -13,7 +13,8 @@ Lo **sviluppo** è questo: privato, con dentro tutto — `plugins/daiku/`, `svil
 
 La **pubblicazione** è un secondo repository su GitHub, che non è un branch di questo né un fork:
 è un albero **generato**. A ogni rilascio uno script copia lì i soli path ammessi — `plugins/`,
-`.claude-plugin/`, `.agents/`, `README.md` — e committa. Là dentro non si lavora mai.
+`.claude-plugin/`, `.agents/`, `README.md`, `.gitattributes` — e committa. Là dentro non si
+lavora mai.
 
 **Why:** di norma il filtro «cosa esce» non sta nel repo ma nel passo di impacchettamento — il
 campo `files` di un `package.json`, `MANIFEST.in` in Python — e allora un repo solo basta. Qui
@@ -44,3 +45,8 @@ cancellati o rinominati nel prodotto restano nel pacchetto pubblicato. Non è te
 E il confine **non guarda dentro i file**: ciò che sta sotto `plugins/` esce com'è scritto. Il
 gate prima del primo push pubblico è ancora aperto — vedi [[pubblicazione-su-github]] per l'elenco
 di cosa ripulire.
+
+Nota sul `.gitattributes`: sta nella lista di copia apposta. Questo repo ha `core.autocrlf = true`
+nel config **locale**, quindi senza `* text=auto eol=lf` il working tree tornerebbe CRLF a ogni
+checkout, e lo script — che copia dal working tree, non da `git archive` — riverserebbe CRLF nel
+pacchetto pubblicato. L'attributo tiene LF su entrambi i lati e in tutti e due i repository.

@@ -5,7 +5,8 @@
 #
 # La pubblicazione è un **secondo** repository, su GitHub, che non è un branch di questo né un
 # fork: è un albero generato. A ogni rilascio uno script copia lì i soli path ammessi
-# — `plugins/`, `.claude-plugin/`, `.agents/`, `README.md` — e committa. Là dentro non si lavora.
+# — `plugins/`, `.claude-plugin/`, `.agents/`, `README.md`, `.gitattributes` — e committa.
+# Là dentro non si lavora.
 #
 # Serve perché chi aggiunge il marketplace riceve un clone dell'**intero** repository, non solo
 # di `plugins/daiku/`: lo schema di Claude Code lo dice alla voce `sparsePaths` — «If omitted,

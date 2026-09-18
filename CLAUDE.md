@@ -32,7 +32,8 @@ porta `CLAUDE.md` nel commit iniziale.
 
 La **pubblicazione** è un secondo repository su GitHub, che non è un branch di questo né un fork:
 è un albero generato. A ogni rilascio uno script copia lì i soli path ammessi — `plugins/`,
-`.claude-plugin/`, `.agents/`, `README.md` — e committa. Là dentro non si lavora mai. *(Lo script
+`.claude-plugin/`, `.agents/`, `README.md`, `.gitattributes` — e committa. Là dentro non si
+lavora mai. *(Lo script
 non esiste ancora, e nemmeno il repository su GitHub: al 18 settembre 2026 la pubblicazione è
 decisa ma non ancora attrezzata.)*
 
