@@ -7,19 +7,16 @@ argument-hint: '[cartella] [soluzione scelta] [backend, opzionale — solo se la
 Sei il **motore** della consegna di una singola feature: la sequenza — brief → esecuzione →
 review a giri → decisione → aggiornamento memoria/documentazione → commit
 condizionale (feature, poi doc/memoria) → report — la orchestri **tu**, delegando ogni fase a
-un subagent secondo `.claude/orchestration.md`. Non esiste uno script che lo faccia al posto
+un subagent secondo `contracts/orchestration.md`. Non esiste uno script che lo faccia al posto
 tuo.
 
 È la **stessa** unità atomica che `/nightly-orchestrator` esegue per ogni item della coda: se
 cambia la sequenza, si tocca questo file e basta.
 
-## Parametri di progetto
-
-Leggi `.claude/project.json` prima di agire: è la sola fonte dei valori specifici di questo
-progetto. Le chiavi citate in questo contratto fra graffe e apici inversi si risolvono da lì,
-mai a memoria e mai per assunzione. Se una chiave citata non c'è, quella cosa **non esiste in
-questo progetto**: salta la parte che la usa, dichiaralo nell'esito, non inventarla e non
-chiederla. La forma del file è in `.claude/project-contract.md`.
+> **Parametri.** Ogni chiave fra graffe di questo contratto si risolve sui file di parametri del
+> progetto, mai a memoria e mai per assunzione: le regole sono nella §5 di
+> `contracts/project-contract.md`, che dice anche **in quale lingua scrivere** e cosa fare quando
+> una chiave non c'è.
 
 ## Quando usarla
 
@@ -34,7 +31,7 @@ li incatena per i casi in cui vuoi la consegna intera in un colpo solo.
 Argomenti: `$ARGUMENTS` — `<cartella> <soluzione scelta> [backend]`.
 
 - **`<cartella>`** — path della cartella (relativo alla root del repo, o assoluto), ovunque
-  viva: `docs/nuovi-sviluppi/<nome>` è il caso comune ma non l'unico (le cartelle di studio
+  viva: `{paths.studies}/<nome>` è il caso comune ma non l'unico (le cartelle di studio
   prodotte da `/decision-doc`, ovunque vivano, sono altrettanto valide). Verificala sul
   filesystem: deve esistere e contenere `1. decision-doc.md`. Se manca, fermati e dillo.
 - **`<soluzione scelta>`** — obbligatoria, verbatim: la passi al brief. Se ambigua rispetto al
@@ -42,7 +39,7 @@ Argomenti: `$ARGUMENTS` — `<cartella> <soluzione scelta> [backend]`.
   chiedi — non indovinare. Se non ti vengono passati come argomenti le scelte dell'utente, usa quelle consigliate nel doc senza chiedere conferma.
 - **`[backend]`** — opzionale, il nome del backend su cui la sessione gira: dichiaralo **solo**
   se non è quello nativo dell'host. Incide unicamente sulla concorrenza del fan-out di review,
-  ed è `.claude/orchestration.md` §5 a dire se quel backend la sequenzializza. Non sceglie
+  ed è `contracts/orchestration.md` §5 a dire se quel backend la sequenzializza. Non sceglie
   modelli: quelli vengono dai ruoli.
 - Se `$ARGUMENTS` è vuoto o incompleto, **chiedi**. Non procedere a vuoto.
 
@@ -55,19 +52,25 @@ mai un nome fuori convenzione: pieno è pieno.
 
 Due radici, due mestieri, passate a ogni fase già risolte:
 
-- **radice di lavoro** — `<pool>/<nome>/src`: codice, diff, stage, commit, gate e fix girano
-  qui. `{code_root}` e le cwd dei comandi di `{areas}` si risolvono da qui.
+- **radice di lavoro** — dentro il worktree, la stessa posizione relativa che la radice tecnica
+  occupa nell'albero principale: codice, diff, stage, commit, gate e fix girano qui, e da qui si
+  risolvono `{code_root}` e le cwd dei comandi di `{areas}`. Non indovinarla: ricavala dal
+  confronto fra `{repo_root}` e la radice da cui stai girando.
 - **radice artefatti** — l'albero principale: `2. blueprint.md`, `3. memory-report.md`,
-  `4. review-notes.md`, `5. review-report.md`, il ledger in `.dev-runtime/review/` e l'append a
-  `docs/nightly/nightly-review.md` vivono qui, così ripresa e report non dipendono dal worktree.
+  `4. review-notes.md`, `5. review-report.md`, il ledger in `{paths.review_state}/` e l'append a
+  `{paths.nightly}/nightly-review.md` vivono qui, così ripresa e report non dipendono dal worktree.
 
-Sulle operazioni che toccano un worktree valgono i vincoli di `CLAUDE.md`, § *Avvio e ambiente
-locale* (junction da sganciare con `rd` sul solo link, mai `pnpm install` dentro il worktree):
-non si riscrivono qui.
+**Un worktree non è una copia inerte del progetto.** Se il progetto dichiara vincoli sul proprio
+ambiente locale — dipendenze installate in un albero condiviso, link o junction fra le due copie,
+strumenti che riscrivono file fuori dal checkout — quei vincoli valgono qui e li dichiara
+`{instructions_file}`: leggilo prima di eseguire qualunque comando di ambiente dentro il worktree.
+Non si riscrivono qui, e non si indovinano: un comando di installazione lanciato nel posto
+sbagliato è il modo tipico in cui una consegna rompe l'albero principale mentre crede di lavorare
+sul proprio.
 
 ## Prima di iniziare
 
-Leggi `.claude/orchestration.md`: ruoli, host, come si lancia un subagent, concorrenza. Ogni
+Leggi `contracts/orchestration.md`: ruoli, host, come si lancia un subagent, concorrenza. Ogni
 fase qui sotto dichiara il proprio ruolo (**giudice** o **worker**) e tu risolvi il modello con
 la regola della sua §2 — mai da qui.
 
@@ -104,27 +107,32 @@ fase stessa prescrive; `committed: false` per il Commit; e in ogni fase il **blo
 riuscita, e la tabella della fase 4 la classifica `BLOCKED_NO_COMMIT` — fermarsi qui la
 appiattirebbe su `blocked`, che significa «si è rotto il brief», e la notte perderebbe la differenza
 fra un item che non compila e uno che non è mai partito. `updated: false` **non è mai un
-fallimento**: `update-memory.md` lo dichiara «l'esito atteso, non un fallimento» quando il diff non
+fallimento**: `skills/update-memory/SKILL.md` lo dichiara «l'esito atteso, non un fallimento» quando il diff non
 giustifica alcuna scrittura, e la fase 6 prevede già quel caso per iscritto («Se 5b non ha scritto
 nulla, questo commit **non esiste**»).
 
 Le fasi che hanno un contratto proprio dichiarano il blocco **in casa loro**, e qui si cita: ogni
-riscrittura locale si restringe alla prima modifica del nodo (§4.2 di `.claude/orchestration.md`).
+riscrittura locale si restringe alla prima modifica del nodo (§4.2 di `contracts/orchestration.md`).
 
 ### 0. Acquisizione — ruolo **worker**
 
 Un subagent che assegna il worktree. Nel prompt: il pool `{worktree.pool}`, il prefisso
 `{worktree.prefix}`, il tetto `{worktree.max}`, il prefisso di branch `{worktree.branch_prefix}`,
-e il blocco da restituire. Esegue solo questi comandi Git, in ordine, senza chiedere conferma:
+e il blocco da restituire. Esegue solo questi comandi Git, in ordine, senza chiedere conferma.
 
-1. `git worktree list --porcelain` e `git rev-parse main` dall'albero principale: i worktree
+Il **branch di integrazione** è quello su cui l'albero principale è posizionato adesso —
+`git rev-parse --abbrev-ref HEAD` da lì, una volta sola — e nei comandi qui sotto sta scritto
+`<INT>`. Non lo si assume: una consegna si integra dove l'owner sta lavorando, e un nome
+cablato la farebbe finire altrove nel progetto che non usa quel nome.
+
+1. `git worktree list --porcelain` e `git rev-parse <INT>` dall'albero principale: i worktree
    registrati e l'HEAD di riferimento.
 2. Libero = registrato, con `git -C <pool>/<nome> status --porcelain` vuoto e
-   `git -C <pool>/<nome> rev-parse HEAD` uguale all'HEAD di main. Il primo libero in ordine di
+   `git -C <pool>/<nome> rev-parse HEAD` uguale all'HEAD di `<INT>`. Il primo libero in ordine di
    numero è il tuo.
-3. Se c'è: `git -C <pool>/<nome> reset --hard main` (albero pulito: sicuro) e usalo.
+3. Se c'è: `git -C <pool>/<nome> reset --hard <INT>` (albero pulito: sicuro) e usalo.
 4. Se non c'è e i registrati sono meno di `{worktree.max}`:
-   `git worktree add <pool>/{worktree.prefix}<M> -b {worktree.branch_prefix}{worktree.prefix}<M> main`,
+   `git worktree add <pool>/{worktree.prefix}<M> -b {worktree.branch_prefix}{worktree.prefix}<M> <INT>`,
    col minore `M` libero.
 5. Se non c'è e sono già `{worktree.max}`: non creare niente e non riusare uno sporco —
    restituisci `ok: false`.
@@ -142,14 +150,14 @@ radice artefatti.
 
 Subagent che produce il brief. Nel prompt:
 
-- leggi per intero `.claude/commands/deliver-feature/blueprint.md` e segui quel contratto alla
+- leggi per intero `skills/blueprint/SKILL.md` e segui quel contratto alla
   lettera;
 - cartella `<cartella>` (contiene `1. decision-doc.md`), soluzione scelta `<verbatim>`;
-- carica `CLAUDE.md` e, per ogni area che il brief tocca, apri la rule pertinente in
-  `.claude/rules/` leggendo i loro `paths`: decidi la collocazione dei layer **prima** di aprire
+- carica `{instructions_file}` e, per ogni area che il brief tocca, apri la rule pertinente in
+  `.daiku/policies/` leggendo i loro `paths`: decidi la collocazione dei layer **prima** di aprire
   codice, non contare sul caricamento automatico delle rule;
-- `memory/MEMORY.md` e i path delle memorie che il perimetro tocca, da aprire prima di decidere
-  (§4.1 di `.claude/orchestration.md`): le decisioni già prese e i vincoli non deducibili dal
+- `{memory.index}` e i path delle memorie che il perimetro tocca, da aprire prima di decidere
+  (§4.1 di `contracts/orchestration.md`): le decisioni già prese e i vincoli non deducibili dal
   codice stanno lì, e un brief che li ignora li fa riscoprire all'esecutore a sue spese;
 - il brief legge `1. decision-doc.md` e scrive `2. blueprint.md` nella **radice artefatti**
   (l'albero principale): il codice lo ancora leggendolo lì — il worktree è una copia
@@ -158,59 +166,58 @@ Subagent che produce il brief. Nel prompt:
   `ok: true` col path esistente;
 - non chiedere nulla all'utente: cartella, decision-doc e soluzione esistono già.
 
-L'esito atteso è il blocco che `blueprint.md` dichiara nella propria § *Cosa restituisci*, per
+L'esito atteso è il blocco che `skills/blueprint/SKILL.md` dichiara nella propria § *Cosa restituisci*, per
 intero e con quei nomi di campo.
 
 ### 2. Execute — ruolo **worker**
 
 Subagent esecutore. Nel prompt:
 
-- leggi per intero `.claude/commands/deliver-feature/execute.md` e segui quel contratto alla
+- leggi per intero `skills/execute/SKILL.md` e segui quel contratto alla
   lettera (autonomia reale, verifica osservabile, aggiorna il file mentre lavori, verifica di chiusura
   obbligatoria — **senza** lanciare la suite o il gate di pacchetto, che sono della fase 3 —
   deposita `4. review-notes.md` col base-ref reale);
-- applicalo alla cartella `<cartella>`; carica `CLAUDE.md`; le regole di area entrano da sole
+- applicalo alla cartella `<cartella>`; carica `{instructions_file}`; le regole di area entrano da sole
   quando apri i file che coprono, ma se tocchi un'area senza averne letto un file, aprila tu;
 - codice e comandi Git nella **radice di lavoro** del worktree; `4. review-notes.md` nella
   **radice artefatti**, e il base-ref che vi depositi è lo SHA dell'HEAD della radice di lavoro
   a inizio esecuzione (`git -C <worktree_root> rev-parse HEAD`);
-- `memory/MEMORY.md` e i path delle memorie pertinenti al perimetro, da aprire prima di scrivere
-  (§4.1 di `.claude/orchestration.md`);
+- `{memory.index}` e i path delle memorie pertinenti al perimetro, da aprire prima di scrivere
+  (§4.1 di `contracts/orchestration.md`);
 - non chiedere nulla all'utente; fermati solo davanti a un blocco reale (azione distruttiva non
   giustificata o contraddizione insanabile).
 
-L'esito atteso è il blocco che `execute.md` dichiara nella propria § *Cosa restituisci*, per intero
+L'esito atteso è il blocco che `skills/execute/SKILL.md` dichiara nella propria § *Cosa restituisci*, per intero
 e con quei nomi di campo.
 
 ### 3. Review — `/review`, sempre, dentro la consegna
 
 La review **fa parte della consegna**: non è un passo opzionale, non si rimanda all'utente, e
-non si salta — è l'unico punto della catena che esegue il gate di build e test (hard rule
-`[gate-owned-by-review]` di `CLAUDE.md`), quindi senza di lei nessuno ha provato che la
+non si salta — è l'unico punto della catena che esegue il gate di build e test, quindi senza di lei nessuno ha provato che la
 feature compili. Senza di lei non esiste la decisione della fase 4, quindi non esiste il commit.
 
-Esegui integralmente `.claude/commands/review.md` — scope → giri di finder e fix, finché il
+Esegui integralmente `skills/review/SKILL.md` — scope → giri di finder e fix, finché il
 ciclo converge → gate — sul file `<cartella>/4. review-notes.md` nella **radice artefatti**
 (nome fisso per
 contratto di `/execute`: non concatenare il path restituito, il suo formato non è garantito).
 È la stessa disciplina che gira da `/review` standalone: una sola fonte, nessuna copia
 — **non riscriverla qui**. Nel prompt passale anche la radice di lavoro del worktree e la
 radice artefatti: diff, fix, copertura e gate girano nella prima, ledger e `5. review-report.md`
-nella seconda (`.claude/commands/review.md`, § *Quando la review gira su un worktree*).
+nella seconda (`skills/review/SKILL.md`, § *Quando la review gira su un worktree*).
 
 **Delegala a un subagent** che esegue quel contratto: non orchestrarne tu le fasi. La resa del suo
 giro 1 sta nell'indipendenza dei finder, e orchestrarla da qui — dove hai in testa il brief,
 l'esecuzione e ciò che ti aspetti — è la passata già convinta di sé che il fan-out esiste per
-evitare (§4 di `.claude/orchestration.md`, *Profondità e degradazione*). Se stai **riprendendo**
+evitare (§4 di `contracts/orchestration.md`, *Profondità e degradazione*). Se stai **riprendendo**
 un item la cui review era già partita, passale il path del ledger che trovi in
-`.dev-runtime/review/` con il `base` di questo item **e** con `item` uguale a `<cartella>`: riparte
+`{paths.review_state}/` con il `base` di questo item **e** con `item` uguale a `<cartella>`: riparte
 dal giro successivo invece di ripagare l'intero triage. I due campi si guardano insieme perché la
 baseline da sola non identifica una review — dentro una coda notturna i `base` coincidono per
 costruzione — e **se i candidati restano più di uno, o se il ledger non porta `item`, non ne passi
 nessuno**: il triage si ripaga, mentre il ledger di un'altra feature spegne in silenzio
 `su_fix_precedente` e `oscillazione`. **Se hai ricevuto un `[backend]`, passaglielo come `--backend <nome>`**: è l'unico argomento
 della consegna che serve a lei e non a te. Il fan-out dei finder è suo, e la §5 di
-`.claude/orchestration.md` decide sul nome se sequenzializzarlo; senza questa riga il parametro
+`contracts/orchestration.md` decide sul nome se sequenzializzarlo; senza questa riga il parametro
 muore qui — la coda lo dichiara, tu lo ricevi, e l'unico passo che deve rispettarlo non lo vede,
 finché i finder del giro 1 partono in parallelo contro il limite che quel flag esiste per
 rispettare. `--with` non si usa qui: le discipline condizionali le decide lo scope dal diff.
@@ -222,7 +229,7 @@ il codice prima che tu abbia valutato le sue voci aperte, la fase 6 troverebbe l
 pulito, e `update-memory` girerebbe due volte — una da `/commit` dentro la review, una come fase
 5b — su un diff che nel frattempo è già entrato.
 
-L'esito atteso è il blocco che `review.md` dichiara nella propria § *Esito*, **per intero e con
+L'esito atteso è il blocco che `skills/review/SKILL.md` dichiara nella propria § *Esito*, **per intero e con
 quei nomi di campo**: leggilo da lì, non ridichiararlo qui. Ti servono tutti — `uscita`,
 `discipline_mancate` e `indipendenza` decidono quanto `gate` e `da_confermare` (fase 4), e un
 blocco ricopiato più stretto è esattamente il modo in cui smettono di arrivare.
@@ -266,7 +273,7 @@ consegna verde con il fan-out degradato non è la stessa cosa di una consegna ve
 
 Le voci **non** bloccanti sono `post_commit_decisions`: non fermano il commit, restano nel
 report. Sono **bivi veri** — due strade difendibili in cui la scelta cambia il risultato in modo
-materiale — perché tutto il resto la review lo ha già risolto da sé (`.claude/commands/review/applicatore.md`, § *Il blocco che restituisci*).
+materiale — perché tutto il resto la review lo ha già risolto da sé (`skills/applier/SKILL.md`, § *Il blocco che restituisci*).
 Non promuovere a decisione post-commit ciò che non è un bivio: lavoro lasciato a metà, pulizia
 opzionale, dubbi già sciolti o cose fuori dal perimetro del brief non entrano qui, e
 `GREEN_COMMITTED` resta l'esito normale di una consegna sana. I bivi che restano non li risolvi
@@ -277,7 +284,7 @@ tu e non li rigiudichi: li riporti.
 Se la classificazione è `BLOCKED_NO_COMMIT` per la sola prima riga della tabella (`gate` ≠ `verde`) —
 cioè uscita convergiuta (`punto-fisso`), `discipline_mancate` vuoto, nessuna voce `bloccante: true` e
 `da_confermare` vuoto — non fermarti: il ciclo ha già detto tutto ciò che sapeva dire, resta solo
-lavoro meccanico (decisione owner 18/09/2026). Delega **un** subagent worker che, nella radice di
+lavoro meccanico. Delega **un** subagent worker che, nella radice di
 lavoro, corregga solo i rilievi del gate sulle righe del diff con fix a singola soluzione ovvia
 (lint, formato, type meccanici), rilanci il gate dell'area toccata e restituisca
 `gate`/`gate_detail`/`needs_tradeoff`. Vincoli: nessun cambio di comportamento, nessun file fuori
@@ -296,7 +303,7 @@ un `BLOCKED_NO_COMMIT` dentro la stessa consegna: voci bloccanti, bivi e discipl
 sbloccano mai così.
 
 Su `BLOCKED_NO_COMMIT` non si stagea, non si aggiorna la memoria e non si committa — e **il
-worktree resta sporco di proposito**: dal 17/09/2026 (decisione owner) la consegna non crea mai
+worktree resta sporco di proposito**: la consegna non crea mai
 `blocked.patch` né parcheggia in alcuna forma; le modifiche restano in chiaro sul branch del
 worktree, l'albero principale non si tocca. Prima del report elenca lo sporco
 (`git -C <worktree_root> status --porcelain -- {code_root}`) e dichiarane i path
@@ -304,7 +311,7 @@ nel report e nel riepilogo in chat; il campo `blocked_patch` del blocco d'uscita
 `null`.
 
 Il caso peggiore è confinato invece che prevenuto: lo sporco bloccato resta sul branch del
-suo worktree e non entra mai in main, quindi l'item successivo — su un worktree libero e
+suo worktree e non entra mai nel branch di integrazione, quindi l'item successivo — su un worktree libero e
 risincronizzato — parte pulito. Il prezzo è il pool che si restringe: ogni worktree bloccato è
 uno in meno finché l'owner non lo pulisce o lo committa a mano, e a pool esaurito la fase 0
 ferma la consegna.
@@ -330,13 +337,13 @@ Se `staged` è `false`, non c'è nulla da consegnare: salta 5b e 6, vai al repor
 
 **5b. Aggiornamento memoria/documentazione — ruolo giudice.** Nel prompt:
 
-- leggi per intero `.claude/commands/deliver-feature/update-memory.md` e segui quel contratto
+- leggi per intero `skills/update-memory/SKILL.md` e segui quel contratto
   alla lettera;
 - il diff da ispezionare è quello **in index** sotto `{code_root}` nella **radice di lavoro**
   del worktree: `git -C <worktree_root> diff --cached --stat -- {code_root}` e
   `git -C <worktree_root> diff --cached -- {code_root}`; è il diff
   integrale della feature, lo stesso che il commit produrrà. Anche i file che scrivi
-  (`CLAUDE.md`, `.claude/rules/`, `memory/`, `{tech_doc}`) stanno nella radice di lavoro:
+  (`{instructions_file}`, `.daiku/policies/`, `{memory.root}`, `{tech_doc}`) stanno nella radice di lavoro:
   il merge li porterà sull'albero principale insieme al codice;
 - la **cartella dell'item** è `<cartella>` nella **radice artefatti**: depositaci il tuo blocco di ritorno come
   `3. memory-report.md`, secondo il punto 7 della sua § *Procedura*. È la fase più vicina al limite
@@ -344,8 +351,8 @@ Se `staged` è `false`, non c'è nulla da consegnare: salta 5b e 6, vai al repor
   sopravvive all'interruzione: alla ripresa la memoria risulta già allineata, `files` torna vuoto e
   il commit 2 non ha più un ambito;
 - **non sei autorizzato a committare il tuo gruppo**: non eseguire alcun comando Git di scrittura
-  e non toccare l'index di `{code_root}`; ti limiti a modificare `CLAUDE.md`, `.claude/rules/`,
-  `memory/` e `{tech_doc}` — più l'artefatto qui sopra, che è la traccia della fase e non un
+  e non toccare l'index di `{code_root}`; ti limiti a modificare `{instructions_file}`, `.daiku/policies/`,
+  `{memory.root}` e `{tech_doc}` — più l'artefatto qui sopra, che è la traccia della fase e non un
   aggiornamento di memoria — e restituisci `committed: null`. I commit sono la fase 6, che li fa
   nell'ordine dichiarato — prima la feature, poi doc e memoria — e quell'ordine è la ragione per
   cui il permesso qui non si concede.
@@ -355,7 +362,7 @@ invocato da `/commit`, lo riceve. Dirglielo esplicitamente nel prompt non è una
 senza quella riga il suo default è «no», ed è il default giusto, ma è la riga che rende leggibile
 perché qui sia così.
 
-L'esito atteso è il blocco che `update-memory.md` dichiara nella propria § *Procedura*, punto 7,
+L'esito atteso è il blocco che `skills/update-memory/SKILL.md` dichiara nella propria § *Procedura*, punto 7,
 per intero: `updated`, `files`, `confirm_with_owner`, `detail`, `committed`. Quest'ultimo dev'essere
 `null`, come il divieto qui sopra impone; se torna con uno SHA, il subagent ha committato contro il
 prompt — **non rifare quel commit** nella fase 6, verificalo con `git log`, riportalo come anomalia
@@ -368,9 +375,8 @@ Un solo subagent, fino a tre commit distinti e nell'ordine dichiarato, sul branc
 comandi Git con `git -C <worktree_root>`, in ordine, senza chiedere conferma.
 
 **Commit 1 — la feature.** I file sotto `{code_root}` sono **già** in index: non eseguire
-`git add`, committi esattamente ciò che c'è. Messaggio conforme a
-`.claude/commands/review/commit.md` (tipo(scope): descrizione, corpo asciutto,
-italiano). **Mai** trailer di co-autoria né menzioni all'agente che ha generato il lavoro. Poi
+`git add`, committi esattamente ciò che c'è. Messaggio conforme alla § *Convenzione di commit* di `skills/commit/SKILL.md`, che la risolve
+sul progetto. **Mai** trailer di co-autoria né menzioni all'agente che ha generato il lavoro. Poi
 `git log --oneline -1` per leggerne lo SHA.
 
 **Commit 2 — doc e memoria.** Solo se il passo 5b ha davvero scritto qualcosa e solo se il primo
@@ -386,9 +392,9 @@ vuoto su file che nessuno ha più modificato.
 
 **Commit 3 — versione e changelog.** Terzo gruppo: `{changelog}`, `{version.file}` e i file di
 `{version.replicated_in}`. Quando la voce di changelog si scrive, quando il bump minor si fa e
-cosa comporta è dichiarato in `.claude/commands/review/commit.md`, § *Bump di versione e
+cosa comporta è dichiarato in `skills/commit/SKILL.md`, § *Bump di versione e
 changelog*: il subagent la legge **da lì** e la esegue, **non riscriverla qui** — è la stessa
-forma con cui la fase 3 rimanda a `review.md` invece di riscriverne la disciplina. Una sola fonte
+forma con cui la fase 3 rimanda a `skills/review/SKILL.md` invece di riscriverne la disciplina. Una sola fonte
 per il changelog, altrimenti le feature consegnate da qui non arrivano mai nel registro delle
 versioni, mentre le stesse consegnate dal commit di chiusura di `/review` ci arrivano. Messaggio e ordine sono quelli che quella sezione
 dichiara; il commit va **dopo** i primi due e non esiste se il gruppo è vuoto. Poi
@@ -401,7 +407,7 @@ lascia nell'albero il gruppo memoria/doc che 5b ha appena scritto, e — se il b
 anche versione e changelog: due gruppi che **non si parcheggiano**, perché sono artefatti da
 riconciliare a mano, non codice da riapplicare con `git apply`. Elencali in `detail` e nel report
 con i loro path. Il controllo di pulizia dell'item successivo li vede e ferma la notte (§2 di
-`.claude/commands/nightly-orchestrator.md`): è l'esito giusto, e dichiararli è ciò che permette a
+`skills/nightly-orchestrator/SKILL.md`): è l'esito giusto, e dichiararli è ciò che permette a
 chi legge la mattina di sapere di chi sono invece di trovarsi davanti sporco anonimo.
 
 ```json
@@ -415,7 +421,7 @@ l'unico passo che scrive sull'albero principale, quindi è l'unico che può corr
 consegna della notte: la concorrenza sta sul lock di Git, non su un tuo coordinamento.
 
 1. Pulizia dei gruppi di commit sull'albero principale: `git status --porcelain` sui pathspec
-   dei tre gruppi che `.claude/commands/review/commit.md` § *Procedura* 3 enumera — codice,
+   dei tre gruppi che `skills/commit/SKILL.md` § *Procedura* 3 enumera — codice,
    memoria/doc, versione/changelog — dev'essere vuoto. Gli artefatti non committati della
    consegna (`2./3./4./5.`, ledger, append al report) stanno fuori da quei pathspec e non
    contano.
@@ -426,7 +432,7 @@ consegna della notte: la concorrenza sta sul lock di Git, non su un tuo coordina
    risolto qui è codice che nessun finder ha visto — e chiudi con `merged: false` e i path in
    conflitto in `conflicts`.
 
-   Eccezione al punto 4 (decisione owner 18/09/2026): il conflitto sul solo `{changelog}` si
+   Eccezione al punto 4: il conflitto sul solo `{changelog}` si
    risolve da sé per unione, ed è l'unico che si risolve dentro la consegna. Vale solo se è
    puramente additivo — entrambe le parti aggiungono voci distinte nella sezione non rilasciata,
    senza sovrapporsi sulle stesse righe né toccare header di versione: si tengono entrambe le
@@ -441,7 +447,7 @@ consegna della notte: la concorrenza sta sul lock di Git, non su un tuo coordina
 ```
 
 Un merge in conflitto classifica la consegna `BLOCKED_NO_COMMIT` (blocker: i path in conflitto,
-branch conservato sul worktree): committato sul branch, non committato in main. Il worktree resta
+branch conservato sul worktree): committato sul branch, non integrato. Il worktree resta
 com'è — niente pulizia — e il report dice branch e conflitti.
 
 ### 6c. Pulizia — ruolo **worker**, solo se il merge è riuscito
@@ -454,16 +460,16 @@ resta registrato col suo nome e il suo branch: è pronto per la prossima consegn
 
 ### 7. Report — ruolo **worker**
 
-Subagent che appende (creando il file se non esiste) a `docs/nightly/nightly-review.md`, **in
+Subagent che appende (creando il file se non esiste) a `{paths.nightly}/nightly-review.md`, **in
 coda** — mai sovrascrivere o riformattare ciò che c'è già.
 
 È l'unica fase che deve riportare campi prodotti da **altre quattro**, e un subagent in contesto
 fresco non ne ricava nessuno da solo. Nel prompt vanno quindi **già risolti**, uno per uno (§4.1
-di `.claude/orchestration.md`): ricostruirli a memoria fa cadere per prime proprio le righe che
+di `contracts/orchestration.md`): ricostruirli a memoria fa cadere per prime proprio le righe che
 dicono cosa la consegna **non** ha fatto, e `/nightly-orchestrator` considera chiuso ogni item che
 abbia il proprio blocco in quel file — un report povero non si riapre mai. Nel prompt:
 
-- il path su cui appendere, `docs/nightly/nightly-review.md`, e il vincolo dell'append in coda;
+- il path su cui appendere, `{paths.nightly}/nightly-review.md`, e il vincolo dell'append in coda;
 - il `run_id` della coda se chi ti ha invocato te l'ha passato, l'`<id item>` e `<cartella>`;
 - la **soluzione consegnata**, verbatim: è lui a distillarla, non tu;
 - dal blocco della **fase 3**: `gate` e `gate_detail`, `uscita`, `discipline_mancate` e
@@ -473,7 +479,7 @@ abbia il proprio blocco in quel file — un report povero non si riapre mai. Nel
 - dal blocco della **fase 5b**: `updated` e le voci `confirm_with_owner`;
 - dal blocco della **fase 6**: `committed` e i tre SHA — `commit_sha`, `memory_commit_sha`,
   `version_commit_sha` — più i path rimasti sporchi dichiarati dalla fase 4 (nessun parcheggio:
-  il worktree resta sporco per decisione owner);
+  il worktree resta sporco e dichiarato);
 - dalla **fase 6b**: `merged`, `merge_sha` ed eventuali `conflicts`; dalla **fase 0**: il
   `<nome>` del worktree e il suo branch;
 - la forma del blocco da scrivere e il blocco JSON da restituire, che sono quelli qui sotto.
@@ -500,7 +506,7 @@ Sì, è lo stesso file della run notturna: la consegna è una sola unità e il s
 solo posto.
 
 ```json
-{"ok": true, "report_path": "docs/nightly/nightly-review.md", "detail": "<se ok=false, il motivo: file non scrivibile, append fallito>"}
+{"ok": true, "report_path": "{paths.nightly}/nightly-review.md", "detail": "<se ok=false, il motivo: file non scrivibile, append fallito>"}
 ```
 
 È l'ultima fase e nessuno decide più niente sul suo esito, ma il blocco serve lo stesso: un report
@@ -531,10 +537,10 @@ nel report col suo nome.
 ## Esito
 
 1. **In chat, poche righe**: stato finale (`GREEN_COMMITTED` | `GREEN_WITH_POST_DECISIONS` |
-   `BLOCKED_NO_COMMIT` | `blocked`), worktree usato, SHA se committato e SHA del merge in main,
+   `BLOCKED_NO_COMMIT` | `blocked`), worktree usato, SHA se committato e SHA del merge,
    se la memoria è stata aggiornata e il suo
    SHA (assente se non c'era nulla da aggiornare). Il dettaglio — gate, da confermare, decisioni
-   rimaste — è già in `docs/nightly/nightly-review.md`: **non ripeterlo**, rimanda al file.
+   rimaste — è già in `{paths.nightly}/nightly-review.md`: **non ripeterlo**, rimanda al file.
 
 2. **Chiudi sempre con il blocco a contratto**, così chi ti ha invocata — l'utente o
    `/nightly-orchestrator` — lo legge senza interpretare la prosa. Nessun campo si omette: a valore
@@ -546,11 +552,11 @@ nel report col suo nome.
      "status": "GREEN_COMMITTED|GREEN_WITH_POST_DECISIONS|BLOCKED_NO_COMMIT|blocked",
      "worktree": "<nome del worktree, o null se l'acquisizione è fallita>",
      "commit_sha": "<sha o null>",
-     "merge_sha": "<sha del merge in main, o null>",
+     "merge_sha": "<sha del merge nel branch di integrazione, o null>",
      "memory_updated": false,
      "memory_committed": false,
      "memory_commit_sha": "<sha o null>",
-     "report_path": "docs/nightly/nightly-review.md",
+     "report_path": "{paths.nightly}/nightly-review.md",
      "blocked_patch": null,
      "reason": "<solo se blocked: il motivo esatto>"
    }
@@ -563,16 +569,16 @@ nel report col suo nome.
    merge non è partito o è andato in conflitto); `memory_updated` dal
    campo `updated` della fase 5b (`false` se la fase non è stata eseguita); `memory_committed` e
    `memory_commit_sha` dalla fase 6; `reason` dal `detail` della fase che ha bloccato;
-   `blocked_patch` sempre `null` (campo conservato per compatibilità): dal 17/09/2026 la consegna
-   non parcheggia più per decisione owner — su `BLOCKED_NO_COMMIT` e su `blocked` il worktree resta
-   sporco e i path si dichiarano nel report e in `reason`.
+   `blocked_patch` sempre `null` (campo conservato per compatibilità): la consegna non parcheggia
+   — su `BLOCKED_NO_COMMIT` e su `blocked` il worktree resta sporco e i path si dichiarano nel
+   report e in `reason`.
 
 ## Auto-inganni (fermali prima che ti fermino)
 
 | Se ti stai dicendo… | La verità |
 |---|---|
-| «Faccio io il brief/l'esecuzione qui in chat, è più veloce» | Ogni fase è un subagent in contesto fresco (`.claude/orchestration.md` §4). In chat ti porti dietro tutto il contesto delle fasi precedenti e la catena degenera. |
-| «Riscrivo qui la disciplina di review, così è tutto in un posto» | No: la fonte è `review.md`. Copiarla qui la fa divergere alla prima modifica. |
+| «Faccio io il brief/l'esecuzione qui in chat, è più veloce» | Ogni fase è un subagent in contesto fresco (`contracts/orchestration.md` §4). In chat ti porti dietro tutto il contesto delle fasi precedenti e la catena degenera. |
+| «Riscrivo qui la disciplina di review, così è tutto in un posto» | No: la fonte è `skills/review/SKILL.md`. Copiarla qui la fa divergere alla prima modifica. |
 | «Il gate è rosso ma il codice è chiaramente giusto, committo» | Gate rosso = `BLOCKED_NO_COMMIT`. La classificazione è deterministica, non un giudizio. |
 | «Questa la lascio come decisione post-commit, così decide l'utente» | Le decisioni post-commit sono bivi veri, non ciò che nessuno ha voluto risolvere. Se una strada è chiaramente la giusta, si risolve dove il rilievo nasce. |
 | «Committo prima e aggiorno la memoria dopo» | L'ordine è dichiarato: stage → memoria → commit feature → commit doc/memoria → commit versione/changelog. Nessuna feature si congela senza che gli artefatti siano riallineati sullo **stesso** diff. |
@@ -580,7 +586,7 @@ nel report col suo nome.
 | «Lavoro sull'albero principale, è già lì» | Il codice vive nel worktree acquisito alla fase 0. Sull'albero principale scrivono solo il merge (6b) e gli artefatti di item. |
 | «Il pool è pieno, ne creo un sesto / riuso uno sporco» | No: `{worktree.max}` è un tetto, non un suggerimento. Uno sporco è lavoro di un'altra consegna: esci `blocked` e dillo. |
 | «Il merge è in conflitto, lo risolvo a mano» | No: `abort` e `BLOCKED_NO_COMMIT`. Un conflitto risolto qui è codice che nessun finder ha visto. Fa eccezione la sola unione additiva del changelog (6b). |
-| «Uso il modello più grosso, questo passo mi sembra difficile» | Il modello viene dal ruolo dichiarato dalla fase, risolto con la regola della §2 di `.claude/orchestration.md`. Non si sceglie a sensazione. |
+| «Uso il modello più grosso, questo passo mi sembra difficile» | Il modello viene dal ruolo dichiarato dalla fase, risolto con la regola della §2 di `contracts/orchestration.md`. Non si sceglie a sensazione. |
 | «Riassumo io in chat gate e da-confermare» | Sono già nel report. Il tuo riepilogo è stato + commit, non un doppione. |
 
 ## Regola di taglio
@@ -590,5 +596,5 @@ Non possiede il *contenuto* delle fasi: brief, esecuzione, review, memoria e con
 commit vivono nei loro file, letti dai subagent a ogni esecuzione. Se ti sorprendi a riscrivere
 qui *come* si fa un brief o *come* si trova un bug, ti sei allontanato dallo scopo.
 Possiede anche il **ciclo di vita del worktree** — acquisizione dal pool, lavoro sul suo branch,
-merge in main, pulizia con riuso: nessun'altra skill crea, sceglie o pulisce un worktree di
+merge nel branch di integrazione, pulizia con riuso: nessun'altra skill crea, sceglie o pulisce un worktree di
 consegna.

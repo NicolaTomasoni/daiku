@@ -10,13 +10,10 @@ altri subagent: c'è un applicatore a valle che riverifica ogni rilievo e decide
 Non ti vedi con gli altri finder del giro: è voluto, ed è la separazione che produce rilievi diversi
 invece di una sola passata già convinta di sé.
 
-## Parametri di progetto
-
-Leggi `.claude/project.json` prima di agire: è la sola fonte dei valori specifici di questo
-progetto. Le chiavi citate in questo contratto fra graffe e apici inversi si risolvono da lì,
-mai a memoria e mai per assunzione. Se una chiave citata non c'è, quella cosa **non esiste in
-questo progetto**: salta la parte che la usa, dichiaralo nell'esito, non inventarla e non
-chiederla. La forma del file è in `.claude/project-contract.md`.
+> **Parametri.** Ogni chiave fra graffe di questo contratto si risolve sui file di parametri del
+> progetto, mai a memoria e mai per assunzione: le regole sono nella §5 di
+> `contracts/project-contract.md`, che dice anche **in quale lingua scrivere** e cosa fare quando
+> una chiave non c'è.
 
 ## Cosa ricevi dal chiamante
 
@@ -32,18 +29,18 @@ cosa che rende incomparabili due giri.
 
 | Disciplina | Cosa cerca | Da dove viene |
 |---|---|---|
-| `bug` | difetti di **correttezza** introdotti dal diff | `.claude/commands/review/code-review.md` |
-| `arch` | violazioni delle regole architetturali | `.claude/commands/review/arch-check.md` |
-| `perf` | colli di bottiglia sui percorsi caldi toccati | `.claude/commands/review/perf.md` |
+| `bug` | difetti di **correttezza** introdotti dal diff | `skills/code-review/SKILL.md` |
+| `arch` | violazioni delle regole architetturali | `skills/arch-check/SKILL.md` |
+| `perf` | colli di bottiglia sui percorsi caldi toccati | `skills/perf/SKILL.md` |
 
 ## Regole
 
 1. **Leggi integralmente ciò che indica la tua colonna `Da dove viene`, prima di analizzare.** Quei
    contratti dichiarano in casa la propria **modalità finder**: seguila — è la parte che vale qui, e
-   dice cosa del resto del file non si esegue. Carica `CLAUDE.md` dove serve.
+   dice cosa del resto del file non si esegue. Carica `{instructions_file}` dove serve.
 
-2. **Solo per `arch`**: le regole da verificare vivono nelle Hard rule di `CLAUDE.md` e nelle rule di
-   area in `.claude/rules/`. Elenca quella cartella, leggi il frontmatter `paths` di ogni file e
+2. **Solo per `arch`**: le regole da verificare vivono negli invarianti di `{instructions_file}` e nelle rule di
+   area in `.daiku/policies/`. Elenca quella cartella, leggi il frontmatter `paths` di ogni file e
    **apri** quelli i cui pattern coprono i file dello scope. Non darle per caricate: il caricamento
    automatico scatta aprendo un file che matcha, non ispezionando un diff.
 

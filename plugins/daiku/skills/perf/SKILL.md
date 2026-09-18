@@ -15,7 +15,7 @@ Investiga lo scope indicato e individua cosa rende l'applicativo pesante, lento 
 
 ## Il dominio di questo progetto
 
-Leggi `.claude/context/perf.md`: porta quali tecnologie occupano i tre livelli che questa skill ispeziona e dove ciascuna paga davvero, quali tool esterni entrano nel costo di un flusso, quali costi si manifestano a riposo, come si risolve il nome breve di un'unità nella sua cartella e come si osserva il runtime. Se non esiste, ricostruisci lo stack leggendo il repository, accetta come scope solo path espliciti, limitati alla valutazione statica, e dichiaralo nell'esito.
+Leggi `.daiku/domain/perf.md`: porta quali tecnologie occupano i tre livelli che questa skill ispeziona e dove ciascuna paga davvero, quali tool esterni entrano nel costo di un flusso, quali costi si manifestano a riposo, come si risolve il nome breve di un'unità nella sua cartella e come si osserva il runtime. Se non esiste, ricostruisci lo stack leggendo il repository, accetta come scope solo path espliciti, limitati alla valutazione statica, e dichiaralo nell'esito.
 
 Il focus è ridurre:
 
@@ -85,7 +85,7 @@ Tre livelli. Quali tecnologie li occupino in questo progetto, e i punti caldi ch
 
 Attiva quando `/review` ti invoca. Non è un'indagine da riportare in chat: è un canale di analisi sul diff, come arch/bug — ma **solo analisi**: nessuna modifica a file, nessun fix, nessun commit.
 
-- **Scope = il diff**, non una cartella. Cerca colli di bottiglia **solo nel codice toccato dalla feature**; non allargare a codice adiacente non modificato (sezione *Comportamento* di `CLAUDE.md`: modifiche chirurgiche, niente refactoring fuori scope).
+- **Scope = il diff**, non una cartella. Cerca colli di bottiglia **solo nel codice toccato dalla feature**; non allargare a codice adiacente non modificato: modifiche chirurgiche, niente refactoring fuori scope.
 - **Confidenza alta:** win evidente all'ispezione e behavior-preserving — N+1 query, ricalcolo/riserializzazione ridondante, memoizzazione mancante, polling senza bail-out, invalidazione troppo ampia, lettura ripetuta degli stessi dati. `cambiamento` riporta il fix concreto.
 - **Confidenza media:** probabile, ma con una condizione da verificare sul codice — nominala nella `descrizione`. `cambiamento` riporta comunque il fix concreto.
 - **Confidenza bassa:** impatto che per giustificarsi richiederebbe una misura o un benchmark (è impatto ipotetico) — nessun `cambiamento`; la `descrizione` porta la misura consigliata.

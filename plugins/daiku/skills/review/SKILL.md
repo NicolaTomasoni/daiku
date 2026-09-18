@@ -7,7 +7,7 @@ argument-hint: '[base-ref | path a "4. review-notes.md"] [--giri N] [--effort lo
 Sei il **motore di un ciclo di review** su un diff. Un giro è scope → finder → applicazione dei
 fix; il ciclo decide da sé quanti giri fare, guardando cosa il giro ha appena prodotto. Poi il
 gate, una volta sola. Il commit solo se te l'hanno chiesto. Orchestri tu, delegando ogni fase a
-un subagent secondo `.claude/orchestration.md`.
+un subagent secondo `contracts/orchestration.md`.
 
 Questo file è la **fonte unica** della disciplina di review del progetto: `/deliver-feature` lo
 esegue nella sua fase Review. Se cambia la review, si tocca qui e basta.
@@ -18,22 +18,10 @@ non revisionato, e il gate verifica che compili, non che sia corretto. È la cla
 nessuna singola passata può trovare — una correzione che ne rompe un'altra — e l'unico modo di
 vederla è rivedere i fix.
 
-## Parametri di progetto
-
-Leggi `.claude/project.json` prima di agire: è la sola fonte dei valori specifici di questo
-progetto. Le chiavi citate in questo contratto fra graffe e apici inversi si risolvono da lì,
-mai a memoria e mai per assunzione. Se una chiave citata non c'è, quella cosa **non esiste in
-questo progetto**: salta la parte che la usa, dichiaralo nell'esito, non inventarla e non
-chiederla. La forma del file è in `.claude/project-contract.md`.
-
-## Parametri di ambiente
-
-Leggi `.claude/environment.json` prima di agire: è la sola fonte dei valori di ambiente di questo
-host e di questa macchina. Le chiavi citate in questo contratto fra graffe e apici inversi si
-risolvono da lì, mai a memoria e mai per assunzione. Se una chiave citata non c'è, quella cosa
-**non esiste in questo ambiente**: salta la parte che la usa, dichiaralo nell'esito, non
-inventarla e non chiederla. La forma del file è in `.claude/project-contract.md`; le sue chiavi
-sono nella §7 di `.claude/orchestration.md`.
+> **Parametri.** Ogni chiave fra graffe di questo contratto si risolve sui file di parametri del
+> progetto, mai a memoria e mai per assunzione: le regole sono nella §5 di
+> `contracts/project-contract.md`, che dice anche **in quale lingua scrivere** e cosa fare quando
+> una chiave non c'è.
 
 ## Quando usarla
 
@@ -72,26 +60,26 @@ Argomenti: `$ARGUMENTS`. Il primo può essere un **base-ref**, il **path al file
   ha già deciso, e le condizioni di § *Chiusura* sono lì proprio per fermare tutto il resto.
 - **`--backend <nome>`** (opzionale): il nome del backend su cui la sessione gira, da dichiarare
   solo se non è quello nativo dell'host; incide unicamente sulla concorrenza del fan-out, ed è
-  `.claude/orchestration.md` §5 a dire se quel backend la sequenzializza.
+  `contracts/orchestration.md` §5 a dire se quel backend la sequenzializza.
 - Se il primo argomento non risolve a un base-ref o a un path valido, chiedi — non indovinare.
 
 **Vincolo hard di scope:** la review copre sempre e soltanto file sotto `{code_root}`. Nessun
 file esterno entra nei finder o nei fix, anche se modificato, non tracciato o citato nelle
 review-notes. Tutto ciò che non sta sotto `{code_root}` — documentazione, memoria, contratti
 delle skill — è competenza di `update-memory`, che il contratto di commit delega da sé. Il
-changelog no: lo rivendica `commit.md` nella propria § *Bump di versione e changelog* e lo
+changelog no: lo rivendica `skills/commit/SKILL.md` nella propria § *Bump di versione e changelog* e lo
 scrive direttamente, senza passare da `update-memory`.
 
 ## Prima di iniziare
 
-Leggi `.claude/orchestration.md`: ruoli, host, delega, concorrenza. Ogni fase dichiara il proprio
+Leggi `contracts/orchestration.md`: ruoli, host, delega, concorrenza. Ogni fase dichiara il proprio
 ruolo e tu risolvi il modello con la regola della sua §2 — mai da qui.
 
 ### Quando la review gira su un worktree
 
 Quando chi ti invoca ti passa una radice di lavoro (il worktree) oltre all'albero principale:
 ogni comando Git, il diff, i fix, la copertura e il gate girano nella radice di lavoro; il ledger
-(`.dev-runtime/review/`) e `5. review-report.md` si scrivono nell'albero principale. Il base-ref è
+(`{paths.review_state}/`) e `5. review-report.md` si scrivono nell'albero principale. Il base-ref è
 lo SHA che `4. review-notes.md` dichiara: congelalo con `git rev-parse` nella radice di lavoro e
 non ricalcolarlo. Il commit resta regolato da `--no-commit` come sempre.
 
@@ -103,7 +91,7 @@ Subagent che calcola lo scope con Git reale. Non ha un contratto proprio da legg
 che deve fare sta nel prompt, e nel prompt ci metti il **base-ref** di questa esecuzione, il
 pathspec obbligatorio `{code_root}`, i tre comandi qui sotto, il criterio delle due discipline
 condizionali e il blocco da restituire — più il vincolo di **sola lettura**, che nessuno strato
-dell'harness impone a chi ha `Bash` (§4 di `.claude/orchestration.md`).
+dell'harness impone a chi ha `Bash` (§4 di `contracts/orchestration.md`).
 
 I comandi: `git status --porcelain -- {code_root}`, `git diff --stat <base> -- {code_root}`,
 `git ls-files --others --exclude-standard -- {code_root}`. Mai includere file esterni a
@@ -112,7 +100,7 @@ I comandi: `git status --porcelain -- {code_root}`, `git diff --stat <base> -- {
 Decide anche le due discipline condizionali:
 
 - **arch-check** attiva se il diff tocca un file coperto dalle regole architetturali: elenca
-  `.claude/rules/`, leggi il frontmatter `paths` di ogni file e verifica se almeno un pattern
+  `.daiku/policies/`, leggi il frontmatter `paths` di ogni file e verifica se almeno un pattern
   copre un file dello scope. L'elenco delle regole è la sola fonte: non tenere una lista di layer
   qui;
 - **perf** attiva se il diff tocca un percorso caldo (rendering, polling, loop, query,
@@ -131,14 +119,15 @@ rivedere, dillo e chiudi.
 1. **Congela la baseline**: `git rev-parse <base-ref>` → `BASE`. Tutti i giri usano questo SHA,
    mai un `HEAD` ricalcolato. I fix che applichi entrano nel diff: se ricalcolassi la base a ogni
    giro, lo scope si sposterebbe sotto i piedi al ciclo.
-2. **Apri il ledger**: `.dev-runtime/review/review-ledger-<BASE breve>-<HHMMSS di avvio>.json`
+2. **Apri il ledger**: `{paths.review_state}/review-ledger-<BASE breve>-<HHMMSS di avvio>.json`
    (le prime sette cifre dello SHA, l'orario di avvio della review). È il file che rende
    economici i giri successivi. Il nome porta baseline e orario perché più review possono girare
    nella stessa sessione — `/deliver-feature` ne esegue una per ogni item della coda notturna —
    e perché un ledger di una review precedente sulla stessa baseline (succede nella notte, quando
    un item esce bloccato senza commit e il successivo riparte dallo stesso commit) porterebbe ai
-   finder gli scartati di un altro diff. Sede: `.dev-runtime/review/` sotto la radice tecnica —
-   fuori dal repository versionato (`.gitignore` copre `.dev-runtime/`) ma **stabile**, non a
+   finder gli scartati di un altro diff. Sede: `{paths.review_state}/` sotto la radice tecnica —
+   fuori dal repository versionato — se il `.gitignore` non la copre, dillo in chiusura invece di
+   scriverci dentro comunque — ma **stabile**, non a
    scadenza di sessione.
 
    **Il ledger dichiara di chi è.** Alla riga `base` si affianca `item`: l'identità del lavoro che
@@ -192,8 +181,8 @@ tornata e una disciplina mai attivata producono la stessa identica riga.
 - **Alla ripresa non si rifà ciò che il ledger dichiara già fatto.** Se l'ultimo giro registrato
   porta `verdetto: "fermati"`, il ciclo era già uscito: non aprire un altro giro — salta al primo
   passo che nel ledger è ancora `null`, nell'ordine copertura → gate → chiusura. Un gate già verde
-  ripagato è l'intera suite, cioè proprio la risorsa che `[gate-owned-by-review]` esiste per non
-  spendere due volte.
+  ripagato è l'intera suite, cioè proprio la risorsa che il gate, girando una volta sola, esiste
+  per non spendere due volte.
 
 ### Come si identifica un fix, fra un giro e l'altro
 
@@ -270,14 +259,14 @@ bisogno di spegnere niente.
 ### Finder — ruolo **worker**, in parallelo
 
 Un subagent per disciplina attiva del giro. Ciascuno riceve come contratto da leggere
-`.claude/commands/review/finder-prompt.md`, che dichiara cosa legge, su quale scope, con quale
+`skills/finder-prompt/SKILL.md`, che dichiara cosa legge, su quale scope, con quale
 perimetro di lettura e in che forma restituisce i rilievi: **non ricopiarlo nel prompt** — un
 contratto ricopiato si erode di giro in giro, e le righe che si perdono per prime sono quelle che
 tengono insieme il ciclo.
 
 Nel prompt di ciascun finder metti **solo ciò che cambia**, già risolto:
 
-- il path del contratto (`.claude/commands/review/finder-prompt.md`);
+- il path del contratto (`skills/finder-prompt/SKILL.md`);
 - la **disciplina** assegnata;
 - `BASE`, e dai giri ≥2 l'elenco dei file toccati dall'applicatore nel giro precedente;
 - il livello di **effort** del ciclo;
@@ -285,7 +274,7 @@ Nel prompt di ciascun finder metti **solo ciò che cambia**, già risolto:
 
 I finder non si vedono tra loro: è voluto, ed è la separazione che produce rilievi diversi invece di
 una sola passata già convinta di sé. Lanciali nello **stesso** blocco di tool call per farli girare
-davvero in parallelo — in sequenza solo sui backend che `.claude/orchestration.md` §5 sequenzializza.
+davvero in parallelo — in sequenza solo sui backend che `contracts/orchestration.md` §5 sequenzializza.
 
 **Sharding dei diff grandi.** Al giro 1, sopra una soglia indicativa — più di duemila righe
 aggiunte o più di trenta file — il finder `bug` si spezza in più subagent per gruppi di file
@@ -295,7 +284,7 @@ spezzano: giudicano la forma intera. È il motivo per cui la review di chiusura 
 autonomo, che arriva con il diff di una corsa intera, può ancora rispettare «leggi ogni riga
 aggiunta per intero».
 
-Ogni disciplina ha un proprio contratto, che `finder-prompt.md` indica e che dichiara **in casa** la
+Ogni disciplina ha un proprio contratto, che `skills/finder-prompt/SKILL.md` indica e che dichiara **in casa** la
 propria modalità finder — scope, sola lettura, scala di confidenza, e quali parti del file non si
 eseguono qui. Quello di `bug` è il testo del plugin Claude, adattato ai ruoli del progetto e alla
 modalità finder: nessuna skill nativa dell'host è necessaria perché il ciclo esista.
@@ -317,7 +306,7 @@ diff non ha girato nessuno. La regola è deterministica, e non la decidi giro pe
    ciclo non può chiudersi in silenzio: `discipline_mancate` non vuoto blocca il commit come
    `giri-esauriti` (§ *Chiusura*), e la consegna che la ospita fa lo stesso.
 
-È la stessa disciplina che `memory-review.md` § 3 applica ai propri auditor, dove «ogni auditor
+È la stessa disciplina che `skills/memory-review/SKILL.md` § 3 applica ai propri auditor, dove «ogni auditor
 assente, fallito o che non certifica la propria completezza» diventa un gap e lo stato `incomplete`.
 Qui il posto dove si deposita è il blocco finale.
 
@@ -327,19 +316,19 @@ Se nessun finder ha prodotto rilievi il giro è a vuoto: al giro 1 significa che
 corretto al primo colpo, ai giri successivi che hai raggiunto il punto fisso. In entrambi i casi
 dillo in una riga e non lanciarlo.
 
-Altrimenti **un solo** subagent, con `.claude/commands/review/applicatore.md` come contratto da
+Altrimenti **un solo** subagent, con `skills/applier/SKILL.md` come contratto da
 leggere: dichiara come decide ogni rilievo, come classifica ciò che applica e cosa restituisce.
 **Non ricopiarlo nel prompt.**
 
 Nel prompt metti **solo ciò che cambia**, già risolto:
 
-- il path del contratto (`.claude/commands/review/applicatore.md`);
+- il path del contratto (`skills/applier/SKILL.md`);
 - i **rilievi di tutti i finder** del giro, raggruppati per disciplina;
 - gli **applicati dei giri precedenti** dal ledger (`file`, `simbolo`, `ancora`, `cosa`): servono per
   `su_fix_precedente` e per l'oscillazione;
 - lo scope del giro e la `BASE`;
-- `memory/MEMORY.md` e i path delle memorie che lo scope tocca, da aprire prima di decidere
-  (§4.1 di `.claude/orchestration.md`).
+- `{memory.index}` e i path delle memorie che lo scope tocca, da aprire prima di decidere
+  (§4.1 di `contracts/orchestration.md`).
 
 È l'**unico** passo del ciclo che scrive, ed è ciò che rende leggibile un giro: lo scope dei giri
 ≥2 sono i file che ha toccato lui, e l'identità di un fix è l'`ancora` che registra lui. Scrivi
@@ -426,9 +415,9 @@ finale, e non chiamare «pulita» quell'uscita. Il commit, quando richiesto, non
 ### Copertura — ruolo **worker**
 
 Gira **sempre**, all'uscita del ciclo, mai dentro un giro: è il worker stesso a decidere se c'è
-qualcosa da scrivere. Riceve il diff finale `<BASE>..adesso` sotto `{code_root}`, `memory/MEMORY.md`
-e i path delle memorie che quel diff tocca (§4.1 di `.claude/orchestration.md`), ed esegue
-`.claude/commands/review/test-coverage.md` in modalità `--auto`. I test devono coprire il codice
+qualcosa da scrivere. Riceve il diff finale `<BASE>..adesso` sotto `{code_root}`, `{memory.index}`
+e i path delle memorie che quel diff tocca (§4.1 di `contracts/orchestration.md`), ed esegue
+`skills/test-coverage/SKILL.md` in modalità `--auto`. I test devono coprire il codice
 **finale**, non quello intermedio: scriverli al giro 1 significherebbe coprire righe che i giri
 successivi riscrivono, e rifarli a ogni giro è lavoro buttato.
 
@@ -453,7 +442,7 @@ lo scope ristretto ai file di test e cosa fare del difetto di produzione che un 
 **dichiaragli la modalità e non riscrivergli i vincoli nel prompt** — una lista di deroghe scritta
 qui si erode alla prima modifica di quel contratto, e la prima riga a cadere è quella che
 trasforma un difetto reale in una voce bloccante invece che in un rilievo scartato (§3 di
-`.claude/orchestration.md`). Questo giro non conta in `giri` né nei
+`contracts/orchestration.md`). Questo giro non conta in `giri` né nei
 contatori `applicati`/`gravi`/`scartati` del blocco finale: si riporta in prosa.
 
 ### Gate — ruolo **worker**, sempre
@@ -469,8 +458,7 @@ di `{areas}` con i rispettivi `{areas.<area>.paths}`, `{areas.<area>.lint_fix}` 
 restituire. Deve anche girare **in foreground e fino in fondo**: diglielo, è la riga che questa
 catena ha già pagato.
 
-**È l'unico punto della catena di consegna che lancia la suite** (hard rule
-`[gate-owned-by-review]` di `CLAUDE.md`): `/execute` e le sessioni di chat non la eseguono perché
+**È l'unico punto della catena di consegna che lancia la suite**: `/execute` e le sessioni di chat non la eseguono perché
 la esegui tu. Su **questo** diff, se qui non gira, non ha girato nessuno. Quindi non saltarlo mai e
 non delegarlo a chi ti ha invocato.
 
@@ -541,7 +529,7 @@ chiusura, perché il blocco esce altrimenti identico a quello di un giro 1 con t
 indipendenti.
 
 Quando parte, delegalo a un subagent **giudice** che legge integralmente
-`.claude/commands/review/commit.md` ed esegue quel contratto sul perimetro `{code_root}`.
+`skills/commit/SKILL.md` ed esegue quel contratto sul perimetro `{code_root}`.
 Committare da qui a mano salterebbe l'allineamento di memoria e documentazione, il bump di versione
 e il changelog, che vivono lì — insieme al permesso che quel nodo passa a sua volta al proprio
 figlio, e che non è tuo da dare. Nessun `git push`, mai.
@@ -553,7 +541,7 @@ chiudere il buco: `git log` dice cosa è già entrato, mai cosa manca, e un comm
 salterebbe l'allineamento di memoria e documentazione e il bump che vivono in quel contratto.
 
 **Lo SHA torna con lui.** Il subagent riporta lo SHA di ogni commit prodotto (§ *Procedura* 8 di
-`commit.md`): quello del **codice** finisce verbatim in `commit_sha`. Non ricavarlo da
+`skills/commit/SKILL.md`): quello del **codice** finisce verbatim in `commit_sha`. Non ricavarlo da
 `git log -1` — dopo `/commit` la working tree porta due o tre commit distinti e l'ultimo non è
 quello del codice. Se la sequenza si ferma fra un gruppo e il successivo, `commit` è `parziale`,
 `commit_sha` porta ciò che esiste davvero, e lo dici in chiusura.
@@ -602,12 +590,12 @@ quello del codice. Se la sequenza si ferma fra un gruppo e il successivo, `commi
    `indipendenza` è `persa` **solo** se il fan-out del giro 1 non è girato su subagent
    indipendenti: la delega non era disponibile e hai valutato le discipline in linea, nello stesso
    contesto. Un fan-out sequenziale su un backend che lo impone resta `intatta` — i contesti sono
-   comunque freschi e ciechi fra loro (§4 di `.claude/orchestration.md`, *Profondità e
+   comunque freschi e ciechi fra loro (§4 di `contracts/orchestration.md`, *Profondità e
    degradazione*). Non è un campo di modestia: è ciò che distingue, a valle, una review da una
    passata sola.
 
 3. **Memoria e documentazione non sono un tuo compito né un compito dell'utente.** Il vincolo
-   «solo `{code_root}`» resta: `CLAUDE.md`, `.claude/rules/`, `memory/` e `{tech_doc}` sono
+   «solo `{code_root}`» resta: `{instructions_file}`, `.daiku/policies/`, `{memory.root}` e `{tech_doc}` sono
    competenza di `update-memory`, che `/commit` delega **sempre**, come passo obbligatorio e non
    come giudizio sul diff. Quindi **non chiudere mai con un promemoria all'utente** del tipo
    «ricordati di riallineare il documento tecnico»: ciò che esce di qui col gate verde è deciso, e
@@ -669,14 +657,14 @@ quello del codice. Se la sequenza si ferma fra un gruppo e il successivo, `commi
 **Il criterio, valido per ogni skill orchestrante:** un contratto orchestrante tiene solo ciò che
 serve a **decidere la sequenza** — quando si delega, a chi, con quale scope, e quando ci si ferma.
 Tutto ciò che un passo delegato deve leggere per fare il proprio lavoro sta in un file suo, e il
-dominio — liste, tassonomie, semantiche — sta in `memory/` o in `.claude/context/`. Un testo che
+dominio — liste, tassonomie, semantiche — sta in `{memory.root}` o in `.daiku/domain/`. Un testo che
 finisce nel prompt di un figlio non appartiene a questo file: appartiene al contratto che quel
 figlio legge.
 
 Applicato qui: questa skill possiede **la disciplina di review e il criterio di iterazione** —
 scope, fan-out, quali discipline a quale giro, quando fare un altro giro, uscite, copertura, gate,
-chiusura. Non possiede il merito delle discipline, che hanno un contratto proprio (`code-review.md`,
-`arch-check.md`, `perf.md`, `test-coverage.md`); non possiede il prompt dei propri figli
-(`review/finder-prompt.md`, `review/applicatore.md`), che loro leggono da sé; non possiede la
-disciplina di commit (`commit.md`), che delega. Se cambia la review, si tocca qui e in nessun altro
+chiusura. Non possiede il merito delle discipline, che hanno un contratto proprio (`skills/code-review/SKILL.md`,
+`skills/arch-check/SKILL.md`, `skills/perf/SKILL.md`, `skills/test-coverage/SKILL.md`); non possiede il prompt dei propri figli
+(`skills/finder-prompt/SKILL.md`, `skills/applier/SKILL.md`), che loro leggono da sé; non possiede la
+disciplina di commit (`skills/commit/SKILL.md`), che delega. Se cambia la review, si tocca qui e in nessun altro
 posto.

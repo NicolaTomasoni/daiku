@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/lib/guardia-comandi.mjs\"",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/lib/command-guard.mjs\"",
             "timeout": 15,
             "statusMessage": "Guardia comandi distruttivi"
           }
@@ -19,7 +19,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/lib/contratti-post-edit.mjs\"",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/lib/contracts-post-edit.mjs\"",
             "timeout": 30,
             "statusMessage": "Controlli deterministici sul corpus"
           }
@@ -31,9 +31,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/lib/ciclo-aperto.mjs\"",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/lib/session-advice.mjs\"",
             "timeout": 10,
-            "statusMessage": "Controllo cicli aperti"
+            "statusMessage": "Stato di Daiku sul progetto"
           }
         ]
       }

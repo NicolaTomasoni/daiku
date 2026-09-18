@@ -1,10 +1,15 @@
 ---
 name: arch-check
-description: Scansiona uno scope per violazioni delle regole architetturali del progetto (Hard rule del CLAUDE.md + rule di area in .claude/rules/); di default scansiona una cartella e applica le correzioni a soluzione unica, come finder di /review restituisce rilievi in sola lettura sul diff
+description: Scansiona uno scope per violazioni delle regole architetturali del progetto (gli invarianti del file di istruzioni + le rule di area in .daiku/policies/); di default scansiona una cartella e applica le correzioni a soluzione unica, come finder di /review restituisce rilievi in sola lettura sul diff
 argument-hint: [cartella]
 ---
 
-Scansiona il repository per violazioni architetturali rispetto alle regole del progetto: le **Hard rule** del `CLAUDE.md` e le regole di area in `.claude/rules/`. Le regole **non** sono replicate qui: vengono lette da quei file a ogni esecuzione, così questa skill resta allineata quando l'architettura cambia.
+Scansiona il repository per violazioni architetturali rispetto alle regole del progetto: gli **invarianti universali** che `{instructions_file}` dichiara e le regole di area in `.daiku/policies/`. Le regole **non** sono replicate qui: vengono lette da quei file a ogni esecuzione, così questa skill resta allineata quando l'architettura cambia.
+
+> **Parametri.** Ogni chiave fra graffe di questo contratto si risolve sui file di parametri del
+> progetto, mai a memoria e mai per assunzione: le regole sono nella §5 di
+> `contracts/project-contract.md`, che dice anche **in quale lingua scrivere** e cosa fare quando
+> una chiave non c'è.
 
 ## Due modalità
 
@@ -26,8 +31,8 @@ L'argomento è **una sola cartella** del repository da analizzare, come path rel
 
 Le regole vivono in due posti e **vanno lette entrambe a ogni esecuzione**:
 
-1. `CLAUDE.md`, sezione **`## Hard rules`**: gli invarianti universali, validi ovunque.
-2. `.claude/rules/`: le regole di area. Elenca la cartella, leggi il frontmatter `paths` di ogni file e **apri quelli i cui pattern coprono la cartella sotto scansione**. Non contare sul caricamento automatico: scatta solo quando apri un file che matcha, e la scansione lavora anche per grep.
+1. `{instructions_file}`: gli invarianti universali che dichiara, validi ovunque. La sezione che li raccoglie ha il nome che quel file le dà — leggilo, non cercare un titolo a memoria.
+2. `.daiku/policies/`: le regole di area. Elenca la cartella, leggi il frontmatter `paths` di ogni file e **apri quelli i cui pattern coprono la cartella sotto scansione**. Non contare sul caricamento automatico: scatta solo quando apri un file che matcha, e la scansione lavora anche per grep.
 
 Da ciascun file, le regole da verificare sono gli elenchi espliciti di vincoli e gli invarianti annotati nei diagrammi a strati (es. «il layer X non importa mai Y»).
 
@@ -37,7 +42,7 @@ Tratta ogni regola come un invariante verificabile. Se il testo cambia, cambia a
 
 0. **Risolvi la cartella** da `$ARGUMENTS` (vedi *Input*). Verifica che esista. Da qui in poi tutto è confinato a quella cartella.
 
-1. **Leggi** le Hard rule del `CLAUDE.md` e le rule di `.claude/rules/` che coprono la cartella scelta (vedi *Fonte delle regole*), ed estrai la lista corrente di regole, **tenendo solo** quelle pertinenti.
+1. **Leggi** gli invarianti di `{instructions_file}` e le rule di `.daiku/policies/` che coprono la cartella scelta (vedi *Fonte delle regole*), ed estrai la lista corrente di regole, **tenendo solo** quelle pertinenti.
 
 2. Per ogni regola pertinente, **traducila in un controllo** su file + pattern, sempre dentro lo scope:
    - Identifica i file bersaglio dal diagramma a strati o dal testo della regola (estensione, suffisso, cartella del layer).
@@ -48,7 +53,7 @@ Tratta ogni regola come un invariante verificabile. Se il testo cambia, cambia a
 4. **Grep in parallelo** per tutte le regole attive.
 
 5. **Raccogli le violazioni.** Per ciascuna mostra:
-   - **Regola:** il testo esatto della regola, col file da cui viene (`CLAUDE.md` o la rule di area)
+   - **Regola:** il testo esatto della regola, col file da cui viene (`{instructions_file}` o la rule di area)
    - **File:** percorso relativo dalla root del repo
    - **Riga:** numero e contenuto della riga incriminata
    - **Perché è una violazione:** una frase
@@ -59,7 +64,7 @@ Tratta ogni regola come un invariante verificabile. Se il testo cambia, cambia a
 7. **Applica le correzioni a soluzione unica.** *(Solo in modalità default: in modalità finder questo passo non si esegue — vedi in fondo.)* Se una violazione ha **una sola** correzione ragionevole senza trade-off significativi, applicala direttamente — **anche se non banale**. Lascia non applicata, elencandola sotto **Da confermare** con le opzioni, **solo** una correzione per cui esistono **due o più** implementazioni possibili tra cui scegliere.
    - Applica una correzione alla volta.
    - Se serve un nuovo file (es. un wrapper richiesto da una regola), crea il minimo necessario senza logica speculativa.
-   - Dopo ogni modifica, verifica che il file sia sintatticamente valido e **salvato in UTF-8 con i caratteri italiani accentati intatti** (à è é ì ò ù).
+   - Dopo ogni modifica, verifica che il file sia sintatticamente valido e **salvato nella codifica del progetto**, senza degradare i caratteri non ASCII.
 
 ## Modalità finder (invocata da `/review`)
 
@@ -72,7 +77,7 @@ nessun fix, nessun file nuovo, nessun commit.
   un chiamante è contesto lecito; una violazione preesistente fuori dal diff non è un rilievo di
   questo giro.
 - **Le regole si leggono lo stesso, e allo stesso modo.** La sezione *Fonte delle regole* vale
-  identica: Hard rule di `CLAUDE.md` più i file di `.claude/rules/` i cui `paths` coprono i file
+  identica: gli invarianti di `{instructions_file}` più i file di `.daiku/policies/` i cui `paths` coprono i file
   dello scope. Elencali e **aprili**: il caricamento automatico scatta aprendo un file che matcha,
   non ispezionando un diff.
 - **Confidenza alta:** la regola nomina il vincolo e il diff lo esibisce — un import che il layer non

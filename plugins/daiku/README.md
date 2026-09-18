@@ -4,14 +4,12 @@ Questa cartella contiene i **contratti canonici** delle skill del progetto. Si i
 `/<nome>` (es. `/blueprint`); un host che per invocarle richiede un pointer lo trova sotto
 `{hosts.<host>.skill_pointers}`, e quel pointer rimanda qui. Una skill, un contratto, ogni host.
 
-## Parametri di ambiente
+## Parametri
 
-Leggi `.claude/environment.json` prima di agire: è la sola fonte dei valori di ambiente di questo
-host e di questa macchina. Le chiavi citate in questo contratto fra graffe e apici inversi si
-risolvono da lì, mai a memoria e mai per assunzione. Se una chiave citata non c'è, quella cosa
-**non esiste in questo ambiente**: salta la parte che la usa, dichiaralo nell'esito, non
-inventarla e non chiederla. La forma del file è in `.claude/project-contract.md`; le sue chiavi
-sono nella §7 di `.claude/orchestration.md`.
+Ogni chiave fra graffe che compare in una skill si risolve sui file di parametri del progetto —
+`.daiku/project.json` e `.daiku/environment.json` — mai a memoria e mai per assunzione. Le regole
+stanno nella §5 di `contracts/project-contract.md`, che dice anche in quale lingua una skill
+scrive e cosa fare quando una chiave non c'è.
 
 ## Il modello mentale
 
@@ -23,8 +21,9 @@ esegui, rivedi, committa). Le skill orchestranti (`/deliver-feature`, `/review`,
 a un **subagent in contesto fresco**. L'orchestrazione è dell'agente: non c'è uno script che la
 esegue al posto suo.
 
-**2. Lo stato vive nei file, non nella chat.** Una feature nasce da una **cartella** sotto
-`docs/nuovi-sviluppi/<nome>/`. Le skill leggono e scrivono file numerati dentro quella cartella,
+**2. Lo stato vive nei file, non nella chat.** Una feature nasce da una **cartella** di lavoro,
+una per problema, sotto la cartella che `.daiku/project.json` dichiara alla chiave
+`paths.studies`. Le skill leggono e scrivono file numerati dentro quella cartella,
 così il lavoro sopravvive a interruzioni, compattazioni del contesto e passaggi di consegne:
 
 | File | Cosa contiene |
@@ -40,7 +39,7 @@ così il lavoro sopravvive a interruzioni, compattazioni del contesto e passaggi
 Chi riprende un lavoro **rilegge la cartella**, non la conversazione.
 
 **3. I modelli non si nominano nelle skill.** Ogni passo dichiara un **ruolo** — `giudice` o
-`worker` — e `.claude/orchestration.md` è il punto unico che lo risolve nel modello dell'host
+`worker` — e `contracts/orchestration.md` è il punto unico che lo risolve nel modello dell'host
 corrente. Cambiare quali modelli girano è una modifica a un solo file, e la tabella vive solo lì.
 
 ## Cosa lanci tu
@@ -59,14 +58,16 @@ Gli altri comandi esistono per i casi in cui esci dal binario:
 
 | Quando | Cosa lanci |
 |---|---|
+| il progetto non ha ancora `.daiku/` | `/init` (una volta sola, prima di tutto il resto) |
+| sei su Codex, o il pacchetto ha portato hook nuovi | `/sync-hooks` (su Claude Code non serve: lo dice e si ferma) |
 | hai un diff scritto a mano e vuoi solo la review | `/review [base-ref]` poi `/commit` |
 | a fine giornata, modifiche puntuali stratificate in chat da confermare | `/review` (chiude lei, commit compreso) |
 | vuoi fermarti tra uno stadio e l'altro | `/review`, `/commit` a mano |
 | più feature in fila, non presidiato | `/nightly-plan "..."` poi `/nightly-orchestrator` |
-| studio o manutenzione occasionale | `/studia-problema`, `/studia-libreria`, `/memory-review`, `/censisci-tecnologie` |
+| studio o manutenzione occasionale | `/study-problem`, `/study-library`, `/memory-review` |
 
 **Su un host che dichiara `{hosts.<host>.skill_pointers}`** sono invocabili le skill che hanno lì
-il proprio pointer, e quali siano lo dichiara la tabella di `.claude/orchestration.md` §3; un host
+il proprio pointer, e quali siano lo dichiara la tabella di `contracts/orchestration.md` §3; un host
 che non dichiara quella chiave carica i contratti direttamente da questa cartella. Gli altri
 contratti restano file che i subagent leggono, identici su ogni host. Se un giorno serve
 lanciarne uno in più a mano, si aggiunge il pointer: dodici righe.
@@ -135,15 +136,14 @@ atomica** che la run notturna invoca per ogni item della coda.
 Lavora **più feature in fila, non presidiato**. Due skill:
 
 ```text
-/nightly-plan "resource-leaks -> Soluzione 1; db -> Opzione B; ..." → docs/nightly/nightly-run.json
+/nightly-plan "<cartella> -> Soluzione 1; <cartella> -> Opzione B; ..." → nightly-run.json
 
 /nightly-orchestrator → legge la coda, pre-flight sull'ambiente,
                         poi per ogni item in sequenza il contratto /deliver-feature
 ```
 
-`docs/nightly/nightly-run.json` è **solo l'input statico** della coda: cartelle, soluzioni e
-ambiente dichiarato, senza stato di avanzamento. `docs/nightly/nightly-review.md` è il
-deliverable: si costruisce **per append**, un blocco per item, man mano che la coda avanza — mai
+`nightly-run.json` è **solo l'input statico** della coda: cartelle, soluzioni e ambiente
+dichiarato, senza stato di avanzamento. `nightly-review.md` è il deliverable: si costruisce **per append**, un blocco per item, man mano che la coda avanza — mai
 un report generato in un colpo solo a fine notte.
 
 - **`/nightly-plan`** è l'**unico momento in cui sei presente**: qui si chiede e si verifica
@@ -157,20 +157,20 @@ un report generato in un colpo solo a fine notte.
 l'**ambiente**, non i modelli: quelli vengono dai ruoli. Serve a due cose sole — il **pre-flight**
 (l'ambiente attivo deve coincidere con quello dichiarato, altrimenti la run aborta: così non
 spendi la notte sul backend sbagliato) e la **concorrenza** del fan-out di review, che diventa
-sequenziale sui backend che lo dichiarano (`.claude/orchestration.md` §5).
+sequenziale sui backend che lo dichiarano (`contracts/orchestration.md` §5).
 
 ### D. Revisione della memoria — `/memory-review`
 
-Sull'intero corpus `memory/`: inventario → tre audit indipendenti → verifica di copertura →
+Sull'intero corpus di memoria: inventario → tre audit indipendenti → verifica di copertura →
 riconciliazione. Rigorosamente **read-only**: restituisce finding con evidenza, confidenza,
-destinazione, proposta e una scelta consigliata secondo la tassonomia canonica di `CLAUDE.md`. I
+destinazione, proposta e una scelta consigliata secondo la tassonomia canonica della skill. I
 fatti non deducibili dubbi o in conflitto diventano `confirm_with_owner`, non correzioni o
 cancellazioni automatiche. Non applica nulla.
 
 ## Come si orchestra (la parte che era in uno script)
 
 Le skill orchestranti delegano ogni fase a un subagent, con cinque regole fisse
-(`.claude/orchestration.md`):
+(`contracts/orchestration.md`):
 
 | | Come funziona |
 |---|---|
@@ -178,7 +178,7 @@ Le skill orchestranti delegano ogni fase a un subagent, con cinque regole fisse
 | **Output di un passo** | un **blocco JSON a contratto**, dichiarato nella skill: si legge quello, non la prosa. Se manca o è incompleto, il passo è fallito: si rilancia **una volta sola**, e cosa ne segue lo dichiara la skill che lo ospita |
 | **Concorrenza** | fan-out parallelo di default (subagent lanciati nello stesso blocco di tool call); sequenziale sui backend a rate limit stretto, e sempre sequenziale per ciò che tocca la stessa working tree |
 | **Ripresa** | dallo stato osservabile su file: artefatti numerati nella cartella, report append-only, `git log` |
-| **Modello per passo** | dal ruolo dichiarato (`giudice`/`worker`), risolto in `.claude/orchestration.md` §2 |
+| **Modello per passo** | dal ruolo dichiarato (`giudice`/`worker`), risolto in `contracts/orchestration.md` §2 |
 
 Fino a luglio 2026 le quattro catene giravano dentro il tool `Workflow` di Claude Code: legavano
 il progetto a un solo host, mentre le skill devono poter girare identiche su ogni host. Quegli
@@ -186,14 +186,30 @@ script sono stati rimossi.
 
 ## Riferimento skill (una per una)
 
+### Apertura del progetto
+- **`/init [radice tecnica]`** — apre `.daiku/` su un progetto che non ce l'ha: `project.json`
+  compilato con quello che il repository dichiara davvero, le due cartelle `domain/` e
+  `policies/` con la loro convenzione e gli scheletri di dominio che il pacchetto porta già
+  scritti, e `environment.json` se manca. **Chiede due cose e due sole**: in quale lingua vuoi
+  la chat e in quale i commit — le uniche che il repository non può dirgli con certezza, e le
+  propone guardando cosa ci trova. Non sovrascrive mai un file che esiste, quindi si rilancia
+  senza danno quando il pacchetto porta uno scheletro nuovo, e quello che hai riscritto resta
+  tuo. Chiude dichiarando cosa ha lasciato da compilare a mano: è la parte da leggere.
+- **`/sync-hooks [radice tecnica]`** — porta i tre guardrail dentro `.codex/`, dove un pacchetto
+  non può trasportarli: `plugin_hooks` è una feature rimossa su Codex. Copia i `.mjs`, lancia il
+  banco di prova di ciascuno e aggancia **solo** quelli sani, poi scrive `.codex/hooks.json` con
+  i path assoluti — un hook di Codex non riceve nessuna variabile che punti al progetto. Su
+  Claude Code non c'è niente da fare e lo dichiara: lì li porta il pacchetto. Si rilancia a ogni
+  aggiornamento; dopo, gli hook cambiati vanno riapprovati con `/hooks` dentro Codex.
+
 ### Studio e decisione
 - **`/decision-doc [cartella] [analizza solo: <sottoinsieme>]`** — accorpa i file di riferimento
   in `0. problem.md`, poi valuta lo stadio del problema e produce `1.5. studio-strategico.md` o
   `1. decision-doc.md`. Riesegui sulla stessa cartella per far avanzare lo stadio.
-- **`/studia-libreria [libreria/tecnologia]`** — studia una libreria dalle fonti reali e produce
-  appunti operativi in `docs/appunti-lib`.
-- **`/studia-problema <descrizione problema>`** — studia un problema tecnico/architetturale
-  leggendo il codice e produce `0. problem.md` in `docs/nuovi-sviluppi/<nome>/`. Chiude
+- **`/study-library [libreria/tecnologia]`** — studia una libreria dalle fonti reali e produce
+  appunti operativi nella cartella che `paths.lib_notes` dichiara.
+- **`/study-problem <descrizione problema>`** — studia un problema tecnico/architetturale
+  leggendo il codice e produce `0. problem.md` nella cartella di lavoro del problema. Chiude
   delegando `/decision-doc` a un subagent sulla cartella appena aperta: quello che torna in chat
   è già la lista di decisioni, a cui rispondi rilanciando `/decision-doc` sulla stessa cartella.
 
@@ -215,25 +231,20 @@ script sono stati rimossi.
   ledger dei rilievi già scartati. Gate sempre, una volta all'uscita, poi **committa**,
   delegandolo a `/commit`: lo sopprime `--no-commit`, che passa chi committa da sé.
 - **`/code-review [numero PR] [--comment]`** — review di una pull request già pubblicata invece
-  che del working tree: controlli preliminari, fan-out su bug e conformità a `CLAUDE.md`,
+  che del working tree: controlli preliminari, fan-out su bug e conformità agli invarianti,
   validazione dei rilievi e, solo su `--comment`, commenti inline sulla PR.
 - **`/arch-check [cartella]`** — scansiona una cartella per violazioni delle regole
-  architetturali: Hard rule di `CLAUDE.md` e rule di area in `.claude/rules/`.
+  architetturali: gli invarianti del file di istruzioni e le rule di area in `.daiku/policies/`.
 - **`/perf [path, modulo o flusso]`** — investiga uno scope per colli di bottiglia; default
   propone quick win senza toccare codice, come finder di `/review` restituisce rilievi in sola
   lettura sul diff.
 - **`/test-coverage [categoria] [--auto]`** — default misura la copertura per macrocategorie;
   `--auto` decide da sé se il diff ha logica scoperta e scrive i test senza chiedere.
-- **`/censisci-tecnologie [progetto, ...]`** — misura le coordinate che l'inventario tecnologico
-  di un progetto non sa interpretare, ne risolve i metadati dalle fonti pubbliche e le censisce in
-  `technology_catalog.py` con nome, area e portanza curati; test di invariante inclusi, il gate è di `/review`. È
-  la decisione 3 di `copertura-catalogo-tecnologico`: la curatela è di sviluppo, non dell'utente.
-  Non committa.
-- **`/update-memory [commit o range]`** — allinea `CLAUDE.md`, `.claude/rules/`, `memory/` e il
-  documento tecnico del progetto al diff della consegna. È anche la fase `Memory` di
+- **`/update-memory [commit o range]`** — allinea il file di istruzioni, `.daiku/policies/`, il
+  corpus di memoria e il documento tecnico del progetto al diff della consegna. È anche la fase `Memory` di
   `/deliver-feature`.
-- **`/memory-review`** — audit completo e read-only di `memory/`: inventario, tre prospettive e
-  riconciliazione; ogni rilievo include la scelta consigliata secondo `CLAUDE.md`, senza
+- **`/memory-review`** — audit completo e read-only del corpus di memoria: inventario, tre prospettive e
+  riconciliazione; ogni rilievo include la scelta consigliata secondo il contratto della memoria, senza
   applicarla.
 
 ### Git
@@ -244,7 +255,7 @@ script sono stati rimossi.
 
 ### Run notturna (non presidiata)
 - **`/nightly-plan ["cartella -> soluzione; ..."]`** — genera la coda statica
-  `docs/nightly/nightly-run.json`. Non esegue nulla.
+  `nightly-run.json` nella cartella che `paths.nightly` dichiara. Non esegue nulla.
 - **`/nightly-orchestrator`** (senza argomenti; path esplicito solo come override) — pre-flight
   sull'ambiente, poi ogni item della coda consegnato in sequenza col contratto
   `/deliver-feature`. Non scrive codice applicativo.

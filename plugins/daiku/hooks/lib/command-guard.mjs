@@ -42,15 +42,16 @@
  * filesystem irraggiungibile, eccezione — si permette e si esce 0. Una guardia che rompe
  * il turno costa più di quanto protegga, e il rischio che copre è raro.
  *
- * Banco di prova: `node .claude/hooks/guardia-comandi.mjs --self-check`. Gira su un
+ * Banco di prova: `node command-guard.mjs --self-check`, dalla cartella in cui sta. Gira su un
  * filesystem simulato e non tocca niente; il totale è **contato**, non cablato. Un hook
  * fail-open guasto è indistinguibile da uno che non ha niente da dire.
  */
 
 import { existsSync, lstatSync, statSync } from 'node:fs';
 import { dirname, isAbsolute, join, resolve } from 'node:path';
+import { radiceProgetto } from './project-root.mjs';
 
-const RADICE = process.env.CLAUDE_PROJECT_DIR || process.cwd();
+const RADICE = radiceProgetto();
 
 function permetti() {
   process.exit(0);
@@ -199,7 +200,7 @@ function testa(token) {
 
 /** È un'opzione, non un bersaglio?
  *
- * `/s` e `/q` di cmd sono opzioni; `/c/dev/rfgwt/src` è il path che **Git Bash**
+ * `/s` e `/q` di cmd sono opzioni; `/c/dev/progetto-wt/src` è il path che **Git Bash**
  * produce, ed è la forma in cui gli agenti scrivono i path assoluti su questa
  * macchina. Scambiarlo per un'opzione è come non vederlo: solo una lettera o due
  * dopo la barra fanno un'opzione.
@@ -216,7 +217,7 @@ function payloadWrapper(token, indice) {
     if (eFlag(token[j])) continue;
     // **Tutto** il resto del segmento, non il solo primo pezzo. Le virgolette intorno al
     // payload sono una convenzione di chi scrive, non un obbligo della shell: `cmd /c del
-    // c:\dev\rfgwt\src\node_modules` passa gli argomenti sciolti, e fermarsi al primo
+    // c:\dev\progetto-wt\src\node_modules` passa gli argomenti sciolti, e fermarsi al primo
     // token significherebbe giudicare `del` senza il suo bersaglio — cioè permettere ogni
     // gesto scritto senza virgolette. La forma quotata è già un token solo e si comporta
     // esattamente come prima.
@@ -579,29 +580,27 @@ function decisioneSicura(riga, cwd, amb) {
 
 // --- banco di prova -----------------------------------------------------------
 
-/** Un filesystem simulato che riproduce il layout reale: `src/` è il repo, `rfgwt/src`
+/** Un filesystem simulato che riproduce il layout reale: `src/` è il repo, `progetto-wt/src`
  * un worktree, e `node_modules` del worktree è la junction verificata sul disco. */
 function ambienteFinto() {
   const chiave = (p) => String(p).replace(/\\/g, '/').replace(/\/+$/, '').toLowerCase();
   const albero = new Map(
     Object.entries({
-      'c:/dev/reforgia/.git': { tipo: 'dir' },
-      'c:/dev/reforgia/src': { tipo: 'dir' },
-      'c:/dev/reforgia/src/node_modules': { tipo: 'dir' },
-      'c:/dev/reforgia/src/apps': { tipo: 'dir' },
-      'c:/dev/reforgia/src/apps/backend': { tipo: 'dir' },
-      'c:/dev/reforgia/src/apps/backend/venv': { tipo: 'dir' },
-      'c:/dev/reforgia/src/docs': { tipo: 'dir' },
-      // Il worktree ha la radice in `rfgwt/`, con `.git` **file**, e `src/` dentro:
+      'c:/dev/progetto/.git': { tipo: 'dir' },
+      'c:/dev/progetto/src': { tipo: 'dir' },
+      'c:/dev/progetto/src/node_modules': { tipo: 'dir' },
+      'c:/dev/progetto/src/backend': { tipo: 'dir' },
+      'c:/dev/progetto/src/backend/.venv': { tipo: 'dir' },
+      'c:/dev/progetto/src/docs': { tipo: 'dir' },
+      // Il worktree ha la radice in `progetto-wt/`, con `.git` **file**, e `src/` dentro:
       // è il layout reale verificato sul disco, e conta, perché `dentroWorktree`
       // risale finché non trova quel file.
-      'c:/dev/rfgwt': { tipo: 'dir' },
-      'c:/dev/rfgwt/.git': { tipo: 'file' },
-      'c:/dev/rfgwt/src': { tipo: 'dir' },
-      'c:/dev/rfgwt/src/node_modules': { tipo: 'link' },
-      'c:/dev/rfgwt/src/apps': { tipo: 'dir' },
-      'c:/dev/rfgwt/src/apps/backend': { tipo: 'dir' },
-      'c:/dev/rfgwt/src/apps/backend/venv': { tipo: 'link' },
+      'c:/dev/progetto-wt': { tipo: 'dir' },
+      'c:/dev/progetto-wt/.git': { tipo: 'file' },
+      'c:/dev/progetto-wt/src': { tipo: 'dir' },
+      'c:/dev/progetto-wt/src/node_modules': { tipo: 'link' },
+      'c:/dev/progetto-wt/src/backend': { tipo: 'dir' },
+      'c:/dev/progetto-wt/src/backend/.venv': { tipo: 'link' },
     })
   );
   // Gli antenati di una voce esistono come directory ordinarie: `attraversaLink`
@@ -624,8 +623,8 @@ function ambienteFinto() {
   };
 }
 
-const CWD_SRC = 'C:/dev/ReforgIA/src';
-const CWD_WT = 'C:/dev/rfgwt/src';
+const CWD_SRC = 'C:/dev/progetto/src';
+const CWD_WT = 'C:/dev/progetto-wt/src';
 
 /** Righe di comando con la decisione attesa. `contiene` è un pezzo del motivo.
  *
@@ -635,28 +634,28 @@ const CWD_WT = 'C:/dev/rfgwt/src';
  */
 const CASI = [
   // --- il cd che sposta la base, che è la forma che sfuggiva ------------------
-  ['cd nella stessa riga, poi rm su una junction', 'cd /c/dev/rfgwt/src && rm -rf node_modules', CWD_SRC, 'nega', 'attraversa un link'],
-  ['cd nella stessa riga, poi pnpm install nel worktree', 'cd /c/dev/rfgwt/src && pnpm install', CWD_SRC, 'nega', 'virtualStoreDir'],
-  ['cd con Set-Location, poi Remove-Item sulla junction', 'Set-Location C:/dev/rfgwt/src; Remove-Item -Recurse -Force node_modules', CWD_SRC, 'nega', 'attraversa un link'],
-  ['cd relativo che scende nel worktree', 'cd ../../rfgwt/src && rm -rf apps/backend/venv', CWD_SRC, 'nega', 'attraversa un link'],
-  ['wrapper bash -c con cd dentro le virgolette', 'bash -c "cd /c/dev/rfgwt/src && rm -rf node_modules"', CWD_SRC, 'nega', 'attraversa un link'],
+  ['cd nella stessa riga, poi rm su una junction', 'cd /c/dev/progetto-wt/src && rm -rf node_modules', CWD_SRC, 'nega', 'attraversa un link'],
+  ['cd nella stessa riga, poi pnpm install nel worktree', 'cd /c/dev/progetto-wt/src && pnpm install', CWD_SRC, 'nega', 'virtualStoreDir'],
+  ['cd con Set-Location, poi Remove-Item sulla junction', 'Set-Location C:/dev/progetto-wt/src; Remove-Item -Recurse -Force node_modules', CWD_SRC, 'nega', 'attraversa un link'],
+  ['cd relativo che scende nel worktree', 'cd ../../progetto-wt/src && rm -rf backend/.venv', CWD_SRC, 'nega', 'attraversa un link'],
+  ['wrapper bash -c con cd dentro le virgolette', 'bash -c "cd /c/dev/progetto-wt/src && rm -rf node_modules"', CWD_SRC, 'nega', 'attraversa un link'],
   ['cd verso una variabile: base ignota, nessun verdetto inventato', 'cd $ALTRO && rm -rf node_modules', CWD_SRC, 'permetti', ''],
-  ['il cd che torna indietro riporta la base in src', 'cd /c/dev/rfgwt/src; cd /c/dev/ReforgIA/src; rm -rf node_modules', CWD_SRC, 'permetti', ''],
-  ['find -exec rm sulla junction', 'find /c/dev/rfgwt/src -name x -exec rm -rf /c/dev/rfgwt/src/node_modules ;', CWD_SRC, 'nega', 'attraversa un link'],
-  ['pnpm i è pnpm install', 'cd /c/dev/rfgwt/src && pnpm i', CWD_SRC, 'nega', 'virtualStoreDir'],
+  ['il cd che torna indietro riporta la base in src', 'cd /c/dev/progetto-wt/src; cd /c/dev/progetto/src; rm -rf node_modules', CWD_SRC, 'permetti', ''],
+  ['find -exec rm sulla junction', 'find /c/dev/progetto-wt/src -name x -exec rm -rf /c/dev/progetto-wt/src/node_modules ;', CWD_SRC, 'nega', 'attraversa un link'],
+  ['pnpm i è pnpm install', 'cd /c/dev/progetto-wt/src && pnpm i', CWD_SRC, 'nega', 'virtualStoreDir'],
 
   // --- le junction e i worktree, forma per forma -----------------------------
-  ['rm -rf sulla junction, path assoluto', 'rm -rf /c/dev/rfgwt/src/node_modules', CWD_SRC, 'nega', 'attraversa un link'],
-  ['rm -rf sulla junction, path Windows', 'rm -rf "C:\\dev\\rfgwt\\src\\node_modules"', CWD_SRC, 'nega', 'attraversa un link'],
-  ['rm -rf dentro la junction', 'rm -rf c:/dev/rfgwt/src/node_modules/.pnpm', CWD_SRC, 'nega', 'attraversa un link'],
-  ['Remove-Item con alias ri', 'ri -Recurse -Force c:/dev/rfgwt/src/node_modules', CWD_SRC, 'nega', 'attraversa un link'],
-  ['Remove-Item con alias del', 'del c:/dev/rfgwt/src/apps/backend/venv', CWD_SRC, 'nega', 'attraversa un link'],
-  ['git worktree remove sul worktree', 'git worktree remove c:/dev/rfgwt/src', CWD_SRC, 'nega', 'dentro il worktree'],
-  ['rm dentro il worktree ma fuori dalle junction', 'rm -rf c:/dev/rfgwt/src/docs', CWD_SRC, 'nega', 'dentro il worktree'],
-  ['rd /s sul link è lo sgancio che la guardia stessa prescrive', 'rd /s /q c:\\dev\\rfgwt\\src\\node_modules', CWD_SRC, 'permetti', ''],
-  ['rd /s dentro la junction non è uno sgancio', 'rd /s /q c:\\dev\\rfgwt\\src\\node_modules\\.pnpm', CWD_SRC, 'nega', 'attraversa un link'],
-  ['rm in src, che è il repo vero', 'rm -rf c:/dev/ReforgIA/src/node_modules', CWD_SRC, 'permetti', ''],
-  ['rm di un path che non esiste', 'rm -rf c:/dev/ReforgIA/src/build-che-non-ce', CWD_SRC, 'permetti', ''],
+  ['rm -rf sulla junction, path assoluto', 'rm -rf /c/dev/progetto-wt/src/node_modules', CWD_SRC, 'nega', 'attraversa un link'],
+  ['rm -rf sulla junction, path Windows', 'rm -rf "C:\\dev\\progetto-wt\\src\\node_modules"', CWD_SRC, 'nega', 'attraversa un link'],
+  ['rm -rf dentro la junction', 'rm -rf c:/dev/progetto-wt/src/node_modules/.pnpm', CWD_SRC, 'nega', 'attraversa un link'],
+  ['Remove-Item con alias ri', 'ri -Recurse -Force c:/dev/progetto-wt/src/node_modules', CWD_SRC, 'nega', 'attraversa un link'],
+  ['Remove-Item con alias del', 'del c:/dev/progetto-wt/src/backend/.venv', CWD_SRC, 'nega', 'attraversa un link'],
+  ['git worktree remove sul worktree', 'git worktree remove c:/dev/progetto-wt/src', CWD_SRC, 'nega', 'dentro il worktree'],
+  ['rm dentro il worktree ma fuori dalle junction', 'rm -rf c:/dev/progetto-wt/src/docs', CWD_SRC, 'nega', 'dentro il worktree'],
+  ['rd /s sul link è lo sgancio che la guardia stessa prescrive', 'rd /s /q c:\\dev\\progetto-wt\\src\\node_modules', CWD_SRC, 'permetti', ''],
+  ['rd /s dentro la junction non è uno sgancio', 'rd /s /q c:\\dev\\progetto-wt\\src\\node_modules\\.pnpm', CWD_SRC, 'nega', 'attraversa un link'],
+  ['rm in src, che è il repo vero', 'rm -rf c:/dev/progetto/src/node_modules', CWD_SRC, 'permetti', ''],
+  ['rm di un path che non esiste', 'rm -rf c:/dev/progetto/src/build-che-non-ce', CWD_SRC, 'permetti', ''],
   ['pnpm install in src', 'pnpm install', CWD_SRC, 'permetti', ''],
   ['pnpm install nel worktree, cwd della sessione', 'pnpm install', CWD_WT, 'nega', 'virtualStoreDir'],
   ['npm rm <pacchetto> non è una rimozione di path', 'npm rm left-pad', CWD_WT, 'permetti', ''],
@@ -671,7 +670,7 @@ const CASI = [
 
   // --- il push: negato, e le forme che restano permesse ----------------------
   ['git push nudo', 'git push', CWD_SRC, 'nega', 'gesto manuale'],
-  ['git -C con un altro albero', 'git -C c:/dev/rfgwt/src push origin main', CWD_SRC, 'nega', 'gesto manuale'],
+  ['git -C con un altro albero', 'git -C c:/dev/progetto-wt/src push origin main', CWD_SRC, 'nega', 'gesto manuale'],
   ['powershell -Command "git push"', 'powershell -NoProfile -Command "git push"', CWD_SRC, 'nega', 'gesto manuale'],
   ['bash -lc "git push"', 'bash -lc "git push --force"', CWD_SRC, 'nega', 'gesto manuale'],
   ['cmd /c "git push"', 'cmd /c "git push"', CWD_SRC, 'nega', 'gesto manuale'],
@@ -688,13 +687,13 @@ const CASI = [
   // superficie di enforcement e i gesti Git verso HEAD sono passati ai managed
   // settings, non che sono stati dimenticati.
   ['il perimetro non è più suo: lo tiene blockReadsOutsideWorkingDirectories', 'cat C:\\Windows\\System32\\drivers\\etc\\hosts', CWD_SRC, 'permetti', ''],
-  ['la superficie non è più sua: la tengono le ACL di sistema', 'echo x > .claude/hooks/guardia-comandi.mjs', CWD_SRC, 'permetti', ''],
+  ['la superficie non è più sua: la tengono le ACL di sistema', 'echo x > .claude/hooks/command-guard.mjs', CWD_SRC, 'permetti', ''],
   ['git clean non è più suo', 'git clean -fd', CWD_SRC, 'permetti', ''],
   ['git reset --hard non è più suo', 'git reset --hard HEAD', CWD_SRC, 'permetti', ''],
 
   // --- righe malformate: non devono sollevare, mai ---------------------------
   ['riga vuota', '   ', CWD_SRC, 'permetti', ''],
-  ['virgoletta non chiusa: il bersaglio si legge lo stesso', 'rm -rf "c:/dev/rfgwt/src', CWD_SRC, 'nega', 'dentro il worktree'],
+  ['virgoletta non chiusa: il bersaglio si legge lo stesso', 'rm -rf "c:/dev/progetto-wt/src', CWD_SRC, 'nega', 'dentro il worktree'],
   ['solo separatori', '&& || ; | &', CWD_SRC, 'permetti', ''],
   ['parentesi e graffe nude', '( { rm } )', CWD_SRC, 'permetti', ''],
   ['wrapper senza payload', 'bash -c', CWD_SRC, 'permetti', ''],
@@ -747,7 +746,7 @@ function selfCheck() {
   // filesystem irraggiungibile. I gesti sui path hanno bisogno del disco per decidere,
   // e senza disco permettono.
   const ambienteRotto = [
-    ['rm -rf c:/dev/rfgwt/src/node_modules', 'permetti'],
+    ['rm -rf c:/dev/progetto-wt/src/node_modules', 'permetti'],
     ['pnpm install', 'permetti'],
     ['git push', 'nega'],
     ['git commit -n -m x', 'nega'],

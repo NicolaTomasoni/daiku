@@ -1,0 +1,43 @@
+{
+  "description": "Guardrail di Daiku su questo progetto, per Codex. Non e' una barriera di sicurezza: la policy che un agente non puo' togliersi vive nei managed settings, sopra ogni altra sorgente. Qui stanno i guardrail contro la distrazione — i gesti che costano lavoro perso e che nessuna regola per prefisso sa riconoscere — piu' due avvisi che non fermano niente. Tutti degradano aperto: davanti a un ambiente non pronto tacciono ed escono 0. Ognuno ha un banco di prova riproducibile, `--self-check` col totale contato, perche' un hook fail-open guasto e' indistinguibile dal silenzio. Questo file lo scrive `/sync-hooks`, che lo riallinea quando il pacchetto porta hook nuovi: i path sono assoluti perche' un hook di Codex non riceve nessuna variabile che punti al progetto, e va riscritto se il repository si sposta.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell|shell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"{RADICE}/.codex/hooks/command-guard.mjs\"",
+            "timeout": 15,
+            "statusMessage": "Guardia comandi distruttivi"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit|apply_patch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"{RADICE}/.codex/hooks/contracts-post-edit.mjs\"",
+            "timeout": 30,
+            "statusMessage": "Controlli deterministici sul corpus"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"{RADICE}/.codex/hooks/session-advice.mjs\"",
+            "timeout": 10,
+            "statusMessage": "Stato di Daiku sul progetto"
+          }
+        ]
+      }
+    ]
+  }
+}

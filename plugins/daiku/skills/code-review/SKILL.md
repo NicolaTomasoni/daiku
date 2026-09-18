@@ -6,6 +6,11 @@ description: Code review a pull request
 
 Provide a code review for the given pull request (GitHub) or merge request (GitLab).
 
+> **Parametri.** Ogni chiave fra graffe di questo contratto si risolve sui file di parametri del
+> progetto, mai a memoria e mai per assunzione: le regole sono nella §5 di
+> `contracts/project-contract.md`, che dice anche **in quale lingua scrivere** e cosa fare quando
+> una chiave non c'è.
+
 ## Due modalità
 
 - **Default (pull request).** Il diff è già pubblicato su una forge e l'esito sono commenti sulla PR: è il comportamento descritto in tutto il resto di questo file, dalla *Forge selection* in giù.
@@ -23,7 +28,7 @@ Attiva quando `/review` ti invoca come disciplina `bug`. Sei **già** il subagen
 - «Potential issues that depend on specific inputs or state» fra i *Do NOT flag* — qui i difetti input-dipendenti su scenari **raggiungibili** sono esattamente quelli che il ciclo classifica gravi. Restano fuori solo gli scenari non raggiungibili dal flusso.
 - «If you are not certain an issue is real, do not flag it» — la certezza si esprime nel campo `confidenza`, perché l'applicatore riverifica ogni rilievo prima di applicarlo. Un rilievo verificato a confidenza bassa è informazione; un rilievo taciuto no.
 
-**Resta valido, e vale il doppio:** i criteri **HIGH SIGNAL** del passo 4 (codice che non compila o non parsa, simboli non risolti, logica sbagliata a prescindere dagli input, violazioni di `CLAUDE.md` di cui puoi citare la regola esatta) e la lista dei **falsi positivi** in fondo al file (difetti preesistenti, nitpick, cose che un linter prende, qualità generica non richiesta da `CLAUDE.md`). Un rilievo su codice non toccato dal diff non è di questo giro.
+**Resta valido, e vale il doppio:** i criteri **HIGH SIGNAL** del passo 4 (codice che non compila o non parsa, simboli non risolti, logica sbagliata a prescindere dagli input, violazioni di `{instructions_file}` di cui puoi citare la regola esatta) e la lista dei **falsi positivi** in fondo al file (difetti preesistenti, nitpick, cose che un linter prende, qualità generica non richiesta da `{instructions_file}`). Un rilievo su codice non toccato dal diff non è di questo giro.
 
 **La scala di `confidenza`** è tarata sui criteri che questo file già porta, ed è quella su cui il
 ciclo decide a ogni giro: dal giro 2 in poi `bug` è l'unica disciplina attiva, quindi da lì la
@@ -32,7 +37,7 @@ confidenza del ciclo è tutta tua.
 - **Confidenza alta:** il difetto sta nel diff e non dipende da nulla fuori da esso. Sono i criteri
   **HIGH SIGNAL** del passo 4: codice che non compila o non parsa (errore di sintassi o di tipo,
   import mancante, riferimento non risolto), logica che produce il risultato sbagliato **a
-  prescindere dagli input**, violazione di `CLAUDE.md` di cui citi la regola esatta. `cambiamento`
+  prescindere dagli input**, violazione di `{instructions_file}` di cui citi la regola esatta. `cambiamento`
   riporta il fix concreto.
 - **Confidenza media:** difetto reale che si manifesta solo su **input o stato specifici** — la
   seconda deroga qui sopra li riammette quando lo scenario è raggiungibile dal flusso: nomina nella
@@ -67,7 +72,7 @@ If the required CLI for the detected forge is not installed, stop and report tha
 **Agent assumptions (applies to all agents and subagents):**
 - All tools are functional and will work without error. Do not test tools or make exploratory calls. Make sure this is clear to every subagent that is launched.
 - Only call a tool if it is required to complete the task. Every tool call should have a clear purpose.
-- Every agent below is named by its **role** — `giudice` or `worker` — never by a model. `.claude/orchestration.md` is the single place that resolves a role to the model of the current host, and the single place that says how a subagent is launched there: read it before launching any of them.
+- Every agent below is named by its **role** — `giudice` or `worker` — never by a model. `contracts/orchestration.md` is the single place that resolves a role to the model of the current host, and the single place that says how a subagent is launched there: read it before launching any of them.
 
 To do this, follow these steps precisely:
 
@@ -81,16 +86,16 @@ To do this, follow these steps precisely:
 
 Note: Still review Claude generated PR's.
 
-2. Launch a worker agent to return a list of file paths (not their contents) for all relevant CLAUDE.md files including:
-   - The root CLAUDE.md file, if it exists
-   - Any CLAUDE.md files in directories containing files modified by the pull request
+2. Launch a worker agent to return a list of file paths (not their contents) for all relevant `{instructions_file}` files including:
+   - The root `{instructions_file}` file, if it exists
+   - Any `{instructions_file}` files in directories containing files modified by the pull request
 
 3. Launch a worker agent to view the pull request and return a summary of the changes
 
-4. Launch 4 agents in parallel to independently review the changes. Each agent should return the list of issues, where each issue includes a description and the reason it was flagged (e.g. "CLAUDE.md adherence", "bug"). The agents should do the following:
+4. Launch 4 agents in parallel to independently review the changes. Each agent should return the list of issues, where each issue includes a description and the reason it was flagged (e.g. "`{instructions_file}` adherence", "bug"). The agents should do the following:
 
-   Agents 1 + 2: CLAUDE.md compliance worker agents
-   Audit changes for CLAUDE.md compliance in parallel. Note: When evaluating CLAUDE.md compliance for a file, you should only consider CLAUDE.md files that share a file path with the file or parents.
+   Agents 1 + 2: `{instructions_file}` compliance worker agents
+   Audit changes for `{instructions_file}` compliance in parallel. Note: When evaluating `{instructions_file}` compliance for a file, you should only consider `{instructions_file}` files that share a file path with the file or parents.
 
    Agent 3: giudice bug agent (parallel subagent with agent 4)
    Scan for obvious bugs. Focus only on the diff itself without reading extra context. Flag only significant bugs; ignore nitpicks and likely false positives. Do not flag issues that you cannot validate without looking at context outside of the git diff.
@@ -101,7 +106,7 @@ Note: Still review Claude generated PR's.
    **CRITICAL: We only want HIGH SIGNAL issues.** Flag issues where:
    - The code will fail to compile or parse (syntax errors, type errors, missing imports, unresolved references)
    - The code will definitely produce wrong results regardless of inputs (clear logic errors)
-   - Clear, unambiguous CLAUDE.md violations where you can quote the exact rule being broken
+   - Clear, unambiguous `{instructions_file}` violations where you can quote the exact rule being broken
 
    Do NOT flag:
    - Code style or quality concerns
@@ -112,13 +117,13 @@ Note: Still review Claude generated PR's.
 
    In addition to the above, each subagent should be told the PR title and description. This will help provide context regarding the author's intent.
 
-5. For each issue found in the previous step by agents 3 and 4, launch parallel subagents to validate the issue. These subagents should get the PR title and description along with a description of the issue. The agent's job is to review the issue to validate that the stated issue is truly an issue with high confidence. For example, if an issue such as "variable is not defined" was flagged, the subagent's job would be to validate that is actually true in the code. Another example would be CLAUDE.md issues. The agent should validate that the CLAUDE.md rule that was violated is scoped for this file and is actually violated. Use giudice subagents for bugs and logic issues, and worker subagents for CLAUDE.md violations.
+5. For each issue found in the previous step by agents 3 and 4, launch parallel subagents to validate the issue. These subagents should get the PR title and description along with a description of the issue. The agent's job is to review the issue to validate that the stated issue is truly an issue with high confidence. For example, if an issue such as "variable is not defined" was flagged, the subagent's job would be to validate that is actually true in the code. Another example would be `{instructions_file}` issues. The agent should validate that the `{instructions_file}` rule that was violated is scoped for this file and is actually violated. Use giudice subagents for bugs and logic issues, and worker subagents for `{instructions_file}` violations.
 
 6. Filter out any issues that were not validated in step 5. This step will give us our list of high signal issues for our review.
 
 7. Output a summary of the review findings to the terminal:
    - If issues were found, list each issue with a brief description.
-   - If no issues were found, state: "No issues found. Checked for bugs and CLAUDE.md compliance."
+   - If no issues were found, state: "No issues found. Checked for bugs and `{instructions_file}` compliance."
 
    If `--comment` argument was NOT provided, stop here. Do not post any comments to the forge.
 
@@ -148,21 +153,21 @@ Use this list when evaluating issues in Steps 4 and 5 (these are false positives
 - Something that appears to be a bug but is actually correct
 - Pedantic nitpicks that a senior engineer would not flag
 - Issues that a linter will catch (do not run the linter to verify)
-- General code quality concerns (e.g., lack of test coverage, general security issues) unless explicitly required in CLAUDE.md
-- Issues mentioned in CLAUDE.md but explicitly silenced in the code (e.g., via a lint ignore comment)
+- General code quality concerns (e.g., lack of test coverage, general security issues) unless explicitly required in `{instructions_file}`
+- Issues mentioned in `{instructions_file}` but explicitly silenced in the code (e.g., via a lint ignore comment)
 
 Notes:
 
 - Use the `gh` CLI on GitHub and the `glab` CLI on GitLab to interact with the forge (e.g., fetch pull/merge requests, create comments). Do not use web fetch.
 - Create a todo list before starting.
-- You must cite and link each issue in inline comments (e.g., if referring to a CLAUDE.md, include a link to it).
+- You must cite and link each issue in inline comments (e.g., if referring to a `{instructions_file}`, include a link to it).
 - If no issues are found and `--comment` argument is provided, post a comment with the following format:
 
 ---
 
 ## Code review
 
-No issues found. Checked for bugs and CLAUDE.md compliance.
+No issues found. Checked for bugs and `{instructions_file}` compliance.
 
 ---
 

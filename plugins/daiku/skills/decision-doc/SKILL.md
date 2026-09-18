@@ -13,6 +13,11 @@ Ricevi una cartella che contiene il materiale di un problema (note, documenti, c
 
 Il senso della skill: tu ragioni come un senior engineer scettico ed esaustivo; l'utente legge in cima decisioni astratte con pro e contro (a qualunque stadio) e decide senza dover entrare nei dettagli.
 
+> **Parametri.** Ogni chiave fra graffe di questo contratto si risolve sui file di parametri del
+> progetto, mai a memoria e mai per assunzione: le regole sono nella §5 di
+> `contracts/project-contract.md`, che dice anche **in quale lingua scrivere** e cosa fare quando
+> una chiave non c'è.
+
 ## Modalità di invocazione
 
 Lo stesso contratto si raggiunge in due modi, e i due non hanno lo stesso canale verso l'owner.
@@ -26,7 +31,7 @@ quando un documento già editato a mano rischia di essere sovrascritto, scrivi n
 problema, e la **Fase 4** la esegui tu quando l'owner risponde alla lista di decisioni. Riepiloghi
 in chat.
 
-### Da `studia-problema`
+### Da `study-problem`
 
 Sei un subagent in contesto fresco, lanciato quando `0. problem.md` è appena stato scritto sul
 codice. Valgono tre differenze, e nient'altro cambia:
@@ -73,7 +78,7 @@ Il primo argomento è **una sola cartella**, come path relativo dalla root del r
 - **Unisci prima, leggi dopo.** I file di riferimento nella cartella vanno prima concatenati in un unico file di descrizione del problema (vedi procedura, punto 2), poi letti da lì. Sono il materiale del problema, non un contesto opzionale: non saltare nulla in silenzio.
 - **Lettura integrale, mai a campione**: ogni file va letto per intero prima di scrivere un solo rilievo o una sola decisione.
 - Se un documento dichiara i propri fatti «verificati contro» una fonte presente nel repo (appunti, adapter, codice), **verifica a campione i claim portanti** contro quella fonte — un claim portante senza riscontro è un rilievo, non una nota.
-- Apri `memory/MEMORY.md` e le memorie che l'area del problema tocca prima di analizzare: è il canale di §4.1 di `.claude/orchestration.md`. Se il chiamante non te li passa, apri l'indice e scegli tu — sei il nodo che apre la catena, quindi quei path non te li passa nessuno, e una decisione già chiusa che non hai letto la riapri senza accorgertene.
+- Apri `{memory.index}` e le memorie che l'area del problema tocca prima di analizzare: è il canale di §4.1 di `contracts/orchestration.md`. Se il chiamante non te li passa, apri l'indice e scegli tu — sei il nodo che apre la catena, quindi quei path non te li passa nessuno, e una decisione già chiusa che non hai letto la riapri senza accorgertene.
 - Rispetta i punti che documenti o memoria dichiarano **già decisi/accertati/da assumere veri**: non risollevarli; segnalali **solo** se trovi un passaggio che li contraddice.
 
 ## I due stadi
@@ -151,7 +156,7 @@ Quando l'utente risponde:
 - recepisci **ogni** decisione in `0. problem.md` con modifiche chirurgiche, propagando la coerenza (se una decisione ribalta un'affermazione ripetuta altrove, correggi **tutte** le occorrenze);
 - **chiudi ogni decisione in `0.5. studio-strategico.md`**, dove è scritta: l'opzione scelta, la data, e dove è stata recepita. Le opzioni scartate restano — servono a chi un domani chiede perché non si è fatto altrimenti. Se il documento non esiste perché la lista è nata prima di questo contratto, scrivilo ora con le decisioni e le risposte insieme;
 - se una risposta è una direttiva libera, prevale sulle opzioni: applicala;
-- se l'utente dichiara un'assunzione «vera, fidati» → non toccare il documento; portala in memoria **solo attraverso il flusso che `CLAUDE.md` § *Contratto della memory* autorizza**, che è anche ciò che le dà la forma giusta e la riga in `memory/MEMORY.md`; nel riepilogo dichiara l'assunzione come punto da non risollevare;
+- se l'utente dichiara un'assunzione «vera, fidati» → non toccare il documento; portala in memoria **solo attraverso il flusso che il contratto della memoria autorizza** — `.daiku/domain/memory-contract.md`, o `{instructions_file}` se quel file non esiste — che è anche ciò che le dà la forma giusta e la riga in `{memory.index}`; nel riepilogo dichiara l'assunzione come punto da non risollevare;
 - chiudi con un riepilogo per numero: decisione → cosa hai scritto e dove, più l'elenco di ciò che eventualmente resta aperto.
 
 Se dopo il recepimento il problema è ormai ben definito (nessuna decisione strategica resta aperta), passa direttamente alla **Modalità studio approfondito** nella stessa run.
@@ -184,7 +189,7 @@ Se dopo il recepimento il problema è ormai ben definito (nessuna decisione stra
 
 4. **Scrivi il documento** (vedi struttura sotto). Scrivi **prima il corpo tecnico** (è lì che ragioni), **poi distilla la sezione in cima** a partire dal corpo. La cima è un riassunto decisionale del corpo, non un testo scollegato.
 
-5. **Salva** il documento come `1. decision-doc.md` nella cartella di input. Se esiste già, aggiornalo in place (non sovrascrivere in silenzio ciò che l'utente ha già editato manualmente: se noti modifiche manuali incompatibili con quanto stai per scrivere, segnalale). Salva in **UTF-8** con gli accenti italiani intatti (à è é ì ò ù).
+5. **Salva** il documento come `1. decision-doc.md` nella cartella di input. Se esiste già, aggiornalo in place (non sovrascrivere in silenzio ciò che l'utente ha già editato manualmente: se noti modifiche manuali incompatibili con quanto stai per scrivere, segnalale). Salva nella codifica del progetto, senza degradare i caratteri non ASCII.
 
 ## Struttura dei documenti prodotti
 
@@ -243,4 +248,4 @@ Una decisione decaduta non si cancella: resta con la riga **Decaduta: \<perché\
 
 Regola di taglio: la sezione **Decisioni da prendere** deve essere leggibile e sufficiente per decidere **senza** scorrere l'approfondimento. L'approfondimento esiste per chi vuole verificare il *perché*.
 
-Salva sempre in **UTF-8** con gli accenti italiani intatti (à è é ì ò ù). Ogni riga modificata deve ricondursi a un rilievo o a una decisione: niente riscritture di stile fuori scope.
+Salva sempre nella codifica del progetto, senza degradare i caratteri non ASCII. Ogni riga modificata deve ricondursi a un rilievo o a una decisione: niente riscritture di stile fuori scope.

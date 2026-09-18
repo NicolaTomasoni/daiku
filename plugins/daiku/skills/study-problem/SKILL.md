@@ -1,33 +1,38 @@
 ---
-name: studia-problema
-description: Studia un problema tecnico/architetturale leggendo il codice, produce 0. problem.md in docs/nuovi-sviluppi/<nome>/ e chiude delegando /decision-doc su quella cartella
+name: study-problem
+description: Studia un problema tecnico/architetturale leggendo il codice, produce 0. problem.md nella cartella di lavoro del problema e chiude delegando /decision-doc su quella cartella
 argument-hint: <descrizione problema>
 ---
 
-Studia un problema tecnico o architetturale leggendo il codice e producendo un documento di analisi strutturato in `docs/nuovi-sviluppi/<nome>/0. problem.md`.
+Studia un problema tecnico o architetturale leggendo il codice e producendo un documento di analisi strutturato in `{paths.studies}/<nome>/0. problem.md`.
 
 **La skill precede decision-doc, e lo chiama:** serve a capire e documentare un problema prima di passare alle decisioni strategiche e tecniche, e quando il documento è scritto passa il testimone a `/decision-doc` su subagent, sulla cartella appena aperta.
+
+> **Parametri.** Ogni chiave fra graffe di questo contratto si risolve sui file di parametri del
+> progetto, mai a memoria e mai per assunzione: le regole sono nella §5 di
+> `contracts/project-contract.md`, che dice anche **in quale lingua scrivere** e cosa fare quando
+> una chiave non c'è.
 
 ## Input: descrizione del problema
 
 Argomenti: `$ARGUMENTS`
 
 L'argomento è una **descrizione del problema** in linguaggio naturale. Può essere:
-- una domanda concreta (es. "come abilitiamo una chiave API nvidia nim che punta a GM 5.2?")
+- una domanda concreta su come si fa una cosa che il sistema non fa ancora
 - un gap identificato (es. "manca il cablaggio tra X e Y")
 - una tensione architetturale (es. "due componenti fanno la stessa cosa")
 
 - Se `$ARGUMENTS` è vuoto, **chiedi** all'utente quale problema studiare.
-- Apri `memory/MEMORY.md` e le memorie che l'area del problema tocca prima di indagare: è il canale di §4.1 di `.claude/orchestration.md`. Se il chiamante te ne passa già i path, sono quelli; altrimenti li scegli tu sull'indice. Un gap che una memoria ha già chiuso non è un gap, e un trade-off che l'owner ha già deciso non si riapre qui.
+- Apri `{memory.index}` e le memorie che l'area del problema tocca prima di indagare: è il canale di §4.1 di `contracts/orchestration.md`. Se il chiamante te ne passa già i path, sono quelli; altrimenti li scegli tu sull'indice. Un gap che una memoria ha già chiuso non è un gap, e un trade-off che l'owner ha già deciso non si riapre qui.
 - Indaga sul codice per capire:
-  - qual è l'area coinvolta (backend/frontend/integrazione/architettura)
+  - quale fra le aree dichiarate in `{areas}` è coinvolta, e se il problema sta invece nel raccordo fra due di esse
   - come funziona oggi il sistema in quell'area
   - quali sono i gap/problemi
   - quali sono le trade-off e i dubbi aperti
 
 ## Obiettivo del documento
 
-Produrre un **unico file markdown** `docs/nuovi-sviluppi/<slug>/0. problem.md` che:
+Produrre un **unico file markdown** `{paths.studies}/<slug>/0. problem.md` che:
 
 1. **Descrive il problema** in modo chiaro e circostanziato
 2. **Documenta come funziona oggi** il sistema nell'area coinvolta
@@ -41,23 +46,18 @@ Il documento **non propone soluzioni** — quelle arriveranno in `1. decision-do
 
 ### 1. Risolvi il problema e crea la cartella
 
-1. **Analizza la descrizione** del problema e identificare:
-   - l'area tecnica coinvolta (backend, frontend, adapter, service, UI)
-   - i componenti/file da indagare ( usa Grep/Glob/Read)
-   - un nome slug kebab-case per la cartella (es. `nvidia-nim-api-switch`, `subagent-fanout-codex`)
+1. **Analizza la descrizione** del problema e identifica:
+   - quale area di `{areas}` è coinvolta, o quale confine fra due
+   - i componenti e i file da indagare (usa Grep/Glob/Read)
+   - un nome slug kebab-case per la cartella, che dica il problema e non la soluzione
 
-2. **Crea la cartella** `docs/nuovi-sviluppi/<slug>/` se non esiste.
+2. **Crea la cartella** `{paths.studies}/<slug>/` se non esiste.
    - Verifica che non esista già una cartella con lo stesso slug
    - Se esiste, chiedi conferma all'utente prima di sovrascrivere
 
 ### 2. Indaga sul codice (fan-out mirato)
 
-Analizza il codice per capire come funziona oggi il sistema nell'area del problema. Lancia **subagent worker in parallelo** (ruolo e modello da `.claude/orchestration.md`), **uno per area**, con:
-
-- **Backend:** services, adapters, models, API routes
-- **Frontend:** features, components, API client, domain models
-- **Config/runtime:** settings, environment, startup
-- **Architettura:** flussi, hard rules, layer coinvolti
+Analizza il codice per capire come funziona oggi il sistema nell'area del problema. Lancia **subagent worker in parallelo** (ruolo e modello da `contracts/orchestration.md`), **uno per fronte d'indagine**. I fronti li ricavi dal problema, non da una lista: tipicamente uno per ciascuna area di `{areas}` che il problema tocca, più due trasversali che quasi sempre servono — **configurazione e avvio** (impostazioni, ambiente, ciò che il sistema legge quando parte) e **architettura** (flussi, invarianti, confini fra layer).
 
 Per ogni agente, specifica:
 - i file da leggere (path concreti)
@@ -68,7 +68,7 @@ Lancia gli agenti in un solo messaggio (girano concorrenti) e **appendi** i loro
 
 ### 3. Scrivi il documento
 
-Crea `docs/nuovi-sviluppi/<slug>/0. problem.md` con questa struttura:
+Crea `{paths.studies}/<slug>/0. problem.md` con questa struttura:
 
 ```markdown
 # <Titolo del problema> — il problema
@@ -141,19 +141,19 @@ generato e la delega è partita. L'esito si riporta quando il subagent torna, se
 skill chiude comunque sul documento scritto.
 
 **Come delegare.** Un **subagent** in contesto fresco, ruolo **giudice** secondo
-`.claude/orchestration.md` — leggilo e risolvi da lì il modello e il modo di lanciarlo, mai da
+`contracts/orchestration.md` — leggilo e risolvi da lì il modello e il modo di lanciarlo, mai da
 qui. Mai eseguire il passo inline. Il prompt dev'essere autosufficiente, perché il subagent parte
 da zero:
 
-- il **contratto da leggere**: `.claude/commands/deliver-feature/decision-doc.md`, per intero, prima di agire, nella modalità *Da `studia-problema`* che quel file dichiara;
-- l'**input risolto**: la cartella `docs/nuovi-sviluppi/<slug>/` e, dentro, il `0. problem.md` che hai appena scritto — è già il documento base del problema, non c'è nulla da concatenare;
-- la **memoria pertinente**: `memory/MEMORY.md` e i **path** delle memorie che hai aperto al punto 1, con l'istruzione di aprirle prima di lavorare. Sono le stesse che hanno delimitato la tua indagine: senza, o le riapre da capo o riapre una decisione che l'owner ha già chiuso;
+- il **contratto da leggere**: `skills/decision-doc/SKILL.md`, per intero, prima di agire, nella modalità *Da `study-problem`* che quel file dichiara;
+- l'**input risolto**: la cartella `{paths.studies}/<slug>/` e, dentro, il `0. problem.md` che hai appena scritto — è già il documento base del problema, non c'è nulla da concatenare;
+- la **memoria pertinente**: `{memory.index}` e i **path** delle memorie che hai aperto al punto 1, con l'istruzione di aprirle prima di lavorare. Sono le stesse che hanno delimitato la tua indagine: senza, o le riapre da capo o riapre una decisione che l'owner ha già chiuso;
 - il **vincolo di perimetro**: scrive solo dentro quella cartella, e non committa né fa push;
 - il **formato di ritorno**: il blocco che quel contratto dichiara nella propria § *Modalità di invocazione*, per intero.
 
 **Se il blocco non torna** — prosa al posto del JSON, blocco incompleto, subagent che non risponde
 — il passo è fallito: lo rilanci **una volta sola**, con lo stesso identico prompt (§4.2 di
-`.claude/orchestration.md`). Se non torna neanche allora, `0. problem.md` resta comunque
+`contracts/orchestration.md`). Se non torna neanche allora, `0. problem.md` resta comunque
 consegnato: dichiari nell'esito che lo stadio decisionale non è stato aperto e lasci all'owner il
 comando da lanciare a mano sulla cartella. Non rifare tu il suo lavoro: le decisioni le pone quel
 nodo, e porle qui significherebbe scriverle fuori dal file che le ospita.
@@ -165,11 +165,11 @@ sulla cartella con le scelte in forma compatta (`1A, 2B, ...`) — è lì che vi
 
 ## Vincoli operativi
 
-- Rispetta le regole runtime del `CLAUDE.md`: **niente ricerche sull'intero filesystem**
+- Rispetta i vincoli di runtime che `{instructions_file}` dichiara, e in ogni caso: **niente ricerche sull'intero filesystem**
 - **Non committare** e non fare push
 - Lavora in autonomia end-to-end senza chiedere conferme, tranne nei due casi che questo file dichiara: `$ARGUMENTS` vuoto, e una cartella con lo stesso slug già esistente
 - Usa **sempre path relativi alla root del repo** per i link ai file
-- Salva in **UTF-8** con gli accenti italiani intatti
+- Salva nella codifica del progetto, senza degradare i caratteri non ASCII
 
 ## Output finale
 

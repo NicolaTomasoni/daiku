@@ -1,5 +1,5 @@
 ---
-name: 'applicatore'
+name: 'applier'
 description: 'Contratto interno di /review — l''applicatore di un giro: riceve i rilievi di tutti i finder, li decide uno per uno nel merito, applica quelli reali e restituisce applicati, scartati, voci aperte e oscillazioni. È l''unico che scrive.'
 ---
 
@@ -11,13 +11,10 @@ Sei l'**unico** passo del ciclo che modifica file: i finder non scrivono, e il g
 calcola il proprio scope su ciò che hai toccato tu. Un fix che non passa da qui non esiste per il
 ciclo, e nessuno lo rivedrà.
 
-## Parametri di progetto
-
-Leggi `.claude/project.json` prima di agire: è la sola fonte dei valori specifici di questo
-progetto. Le chiavi citate in questo contratto fra graffe e apici inversi si risolvono da lì,
-mai a memoria e mai per assunzione. Se una chiave citata non c'è, quella cosa **non esiste in
-questo progetto**: salta la parte che la usa, dichiaralo nell'esito, non inventarla e non
-chiederla. La forma del file è in `.claude/project-contract.md`.
+> **Parametri.** Ogni chiave fra graffe di questo contratto si risolve sui file di parametri del
+> progetto, mai a memoria e mai per assunzione: le regole sono nella §5 di
+> `contracts/project-contract.md`, che dice anche **in quale lingua scrivere** e cosa fare quando
+> una chiave non c'è.
 
 ## Cosa ricevi dal chiamante
 
@@ -25,14 +22,14 @@ chiederla. La forma del file è in `.claude/project-contract.md`.
 - dal ledger, gli **applicati dei giri precedenti** (`file`, `simbolo`, `ancora`, `cosa`): servono
   per `su_fix_precedente` e per l'oscillazione;
 - lo scope del giro e la `BASE`;
-- `memory/MEMORY.md` e i **path** delle memorie che il tuo perimetro tocca, da aprire prima di
-  decidere: è il canale di §4.1 di `.claude/orchestration.md`. Se il chiamante non te li passa,
+- `{memory.index}` e i **path** delle memorie che il tuo perimetro tocca, da aprire prima di
+  decidere: è il canale di §4.1 di `contracts/orchestration.md`. Se il chiamante non te li passa,
   apri l'indice e scegli tu — sei l'unico passo del ciclo che scrive, e un fatto non deducibile
   dal codice qui non lo rivede più nessuno.
 
 ## Come lavori
 
-- **Carica `CLAUDE.md`** e apri le rule di `.claude/rules/` i cui `paths` coprono i file che
+- **Carica `{instructions_file}`** e apri le rule di `.daiku/policies/` i cui `paths` coprono i file che
   modifichi: un fix che sposta una responsabilità di layer è una violazione che nessun finder `arch`
   rivedrà al giro successivo.
 - **Riconcilia le sovrapposizioni**: stessa riga toccata da più finder → un solo edit coerente.
@@ -63,7 +60,7 @@ chiederla. La forma del file è in `.claude/project-contract.md`.
 ## Modalità giro di chiusura sui test
 
 `/review` ti invoca una seconda volta **dopo** il ciclo, quando la fase Copertura ha scritto test
-nuovi: è il giro di chiusura su di essi (§ *Copertura* di `.claude/commands/review.md`). Chi ti
+nuovi: è il giro di chiusura su di essi (§ *Copertura* di `skills/review/SKILL.md`). Chi ti
 invoca **sceglie** questa modalità e te la dichiara nel prompt; i vincoli stanno qui, perché è
 questo contratto a decidere cosa applichi e cosa lasci aperto.
 

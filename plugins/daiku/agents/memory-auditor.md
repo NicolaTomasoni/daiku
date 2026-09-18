@@ -1,5 +1,5 @@
 ---
-name: auditor-memoria
+name: memory-auditor
 description: Inventarista, auditor e reconciler di /memory-review — sola lettura assoluta sul corpus memory/, non scrive nulla e non delega.
 tools: Read, Grep, Glob
 ---

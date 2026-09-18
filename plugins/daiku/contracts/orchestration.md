@@ -1,20 +1,18 @@
 # Orchestrazione delle skill — contratto unico
 
 Questo file è il **punto unico di modifica** per come le skill del progetto delegano lavoro e
-quale ruolo gira su ogni passo. Le skill in `.claude/commands/` descrivono *cosa* va fatto e
+quale ruolo gira su ogni passo. Le skill in `skills/` descrivono *cosa* va fatto e
 *in che ordine*; qui sta *chi* lo fa e *come* lo si lancia sull'host corrente.
 
-## Parametri di ambiente
+## Parametri
 
-Leggi `.claude/environment.json` prima di agire: è la sola fonte dei valori di ambiente di questo
-host e di questa macchina. Le chiavi citate in questo contratto fra graffe e apici inversi si
-risolvono da lì, mai a memoria e mai per assunzione. Se una chiave citata non c'è, quella cosa
-**non esiste in questo ambiente**: salta la parte che la usa, dichiaralo nell'esito, non
-inventarla e non chiederla. La forma del file, e il confine con `.claude/project.json`, sono in
-`.claude/project-contract.md`; le sue chiavi sono nella §7 qui sotto.
+Ogni chiave fra graffe di questo contratto si risolve sui file di parametri del progetto, mai a
+memoria e mai per assunzione: le regole sono nella §5 di `contracts/project-contract.md`, che dice
+anche in quale lingua scrivere e cosa fare quando una chiave non c'è. Le chiavi che questo file
+consuma sono quelle della §7 qui sotto, e vivono in `.daiku/environment.json`.
 
 Vale per ogni host dichiarato in `{hosts}`. Il contratto canonico di una skill sta sempre in
-`.claude/commands/`; un host che per invocarla richiede un pointer lo trova sotto
+`skills/<nome>/SKILL.md`; un host che per invocarla richiede un pointer lo trova sotto
 `{hosts.<host>.skill_pointers}`. Nessuna skill duplica questo contratto e nessuna skill nomina
 un modello.
 
@@ -51,7 +49,7 @@ cambiano.
 
 ## 3. Skill invocabili e contratti interni
 
-Ogni contratto sotto `.claude/commands/` è, prima di tutto, un **path che un subagent riceve e
+Ogni contratto sotto `skills/` è, prima di tutto, un **path che un subagent riceve e
 legge**: è la forma che li fa funzionare identici su ogni host, senza un pointer per ciascuno.
 Alcuni, in più, **si lanciano a mano**. Le due cose non si escludono, perché non descrivono il
 file ma l'invocazione: lo stesso contratto è un **entry point** quando lo lanci tu ed è un
@@ -64,28 +62,29 @@ Questi si invocano a mano:
 
 | Entry point | Perché |
 |---|---|
+| `init` | è il primo di tutti: apre `.daiku/` su un progetto che non ce l'ha, e finché non gira nessun altro contratto ha i valori con cui lavorare |
+| `sync-hooks` | porta i guardrail nello strato dell'host che non sa riceverli dal pacchetto, e si rilancia a ogni aggiornamento |
 | `decision-doc` | si parte da lì: una cartella di materiale grezzo diventa strategia ancora da chiudere o documento di decisione |
 | `deliver-feature` | la catena intera fino al commit, senza fermarsi a ogni stadio |
 | `review` | la review vive anche da sola, su un diff scritto a mano |
 | `commit` | chiude una review lanciata con `--no-commit`, o un diff scritto fuori da una review |
 | `code-review` | è l'unico che guarda una pull request invece del working tree: il diff è già pubblicato e l'esito sono commenti sulla PR |
-| `studia-libreria` | gli appunti su una tecnologia servono prima che esista una consegna, e valgono anche senza |
-| `studia-problema` | apre la cartella di un problema partendo dal codice, quando non c'è ancora niente da decidere |
+| `study-library` | gli appunti su una tecnologia servono prima che esista una consegna, e valgono anche senza |
+| `study-problem` | apre la cartella di un problema partendo dal codice, quando non c'è ancora niente da decidere |
 | `update-memory` | memoria e documentazione si riallineano anche su un diff che non è passato da una consegna |
 | `memory-review` | il corpus di memoria si revisiona quando è cresciuto, non quando si consegna |
 | `nightly-plan` | la coda della notte si prepara a mano, prima che la notte cominci |
 | `nightly-orchestrator` | scandisce la notte: lo lanci quando la coda è pronta |
-| `censisci-tecnologie` | il catalogo si allarga quando un inventario trova coordinate che non sa leggere |
 
-Tutto il resto — brief, esecuzione, arch-check, perf, test-coverage —
-resta **contratto interno**: un subagent lo riceve come *path da leggere*, non come skill da
-invocare. Che un host esponga per nome anche un contratto non dichiarato qui è una comodità di
-quell'host, non un'invocabilità dichiarata: dichiarata è la tabella qui sopra.
+Tutto il resto — `blueprint`, `execute`, `finder-prompt`, `applier`, `arch-check`, `perf`,
+`test-coverage` — resta **contratto interno**: un subagent lo riceve come *path da leggere*, non
+come skill da invocare. Che un host esponga per nome anche un contratto non dichiarato qui è
+una comodità di quell'host, non un'invocabilità dichiarata: dichiarata è la tabella qui sopra.
 
 Su un host che dichiara `{hosts.<host>.skill_pointers}` una skill di questa tabella si lancia
 solo se lì ha il proprio pointer, e non tutte ce l'hanno: quelle che non ce l'hanno restano
 raggiungibili dagli host che quella chiave non la dichiarano, e che caricano i contratti
-direttamente da `.claude/commands/`. Aggiungere il pointer che manca, o quello di un contratto
+direttamente da `skills/`. Aggiungere il pointer che manca, o quello di un contratto
 interno che serve lanciare a mano, è dodici righe — non un'altra copia del contratto.
 
 ### Un contratto raggiungibile in più di un modo dichiara le proprie modalità in casa
@@ -113,9 +112,11 @@ ricostruire il grafo dalla prosa di chi chiama.
 
 | Nodo | Chi lo invoca | Riceve già risolto | Restituisce | Ri-delega |
 |---|---|---|---|---|
-| `decision-doc` | owner, `studia-problema` § *Passa il testimone* | cartella del problema, eventuale sottoinsieme da analizzare; da `studia-problema` anche il documento già scritto e le memorie pertinenti | `1.5. studio-strategico.md` o `1. decision-doc.md` sul disco, con `0. problem.md` rifinito, e come figlio il blocco di § *Modalità di invocazione* del suo file | no |
-| `studia-problema` | owner | descrizione del problema | `0. problem.md` in `docs/nuovi-sviluppi/<nome>/` | sì — ricerca per area, foglie, e `decision-doc` alla chiusura |
-| `studia-libreria` | owner | nome della tecnologia | appunti in `docs/appunti-lib/` | sì — ricerca per blocco tematico, foglie |
+| `init` | owner | radice tecnica, o niente e vale la directory corrente | il referto di § *Referto* del suo file: scritto, lasciato com'era, da compilare | no |
+| `sync-hooks` | owner | radice tecnica, o niente e vale la directory corrente | il referto di § *Referto* del suo file: copiato, agganciato, non agganciato, e i gesti che restano all'utente | no |
+| `decision-doc` | owner, `study-problem` § *Passa il testimone* | cartella del problema, eventuale sottoinsieme da analizzare; da `study-problem` anche il documento già scritto e le memorie pertinenti | `0.5. studio-strategico.md` o `1. decision-doc.md` sul disco, con `0. problem.md` rifinito, e come figlio il blocco di § *Modalità di invocazione* del suo file | no |
+| `study-problem` | owner | descrizione del problema | `0. problem.md` in `{paths.studies}/<nome>/` | sì — ricerca per area, foglie, e `decision-doc` alla chiusura |
+| `study-library` | owner | nome della tecnologia | appunti in `{paths.lib_notes}/` | sì — ricerca per blocco tematico, foglie |
 | `blueprint` | `deliver-feature` fase 1 | cartella con `1. decision-doc.md`, soluzione scelta verbatim, memorie pertinenti | § *Cosa restituisci* del suo file | no |
 | `execute` | `deliver-feature` fase 2 | cartella con `2. blueprint.md`, memorie pertinenti | § *Cosa restituisci* del suo file | no |
 | `deliver-feature` | owner, `nightly-orchestrator` §2 | cartella, soluzione scelta, id dell'item, `run_id` e backend della coda | § *Esito* del suo file | sì — le sue fasi, e `review` come figlio orchestrante |
@@ -125,13 +126,12 @@ ricostruire il grafo dalla prosa di chi chiama.
 | `arch-check` | `review` come finder `arch` | cartella **oppure** scope del giro | § *Modalità finder* del suo file | no |
 | `perf` | `review` come finder `perf` | scope **oppure** scope del giro | § *Modalità finder* del suo file | no |
 | `test-coverage` | `review` § *Copertura* con `--auto` | macrocategoria **oppure** diff finale del ciclo e memorie pertinenti | § *Modalità automatica* del suo file | no |
-| `applicatore` | `review` § *Applicatore* | rilievi di tutti i finder del giro, applicati dei giri precedenti, scope e `BASE`, memorie pertinenti, e la **modalità** quando è il giro di chiusura sui test | § *Il blocco che restituisci* del suo file | no |
+| `applier` | `review` § *Applicatore* | rilievi di tutti i finder del giro, applicati dei giri precedenti, scope e `BASE`, memorie pertinenti, e la **modalità** quando è il giro di chiusura sui test | § *Il blocco che restituisci* del suo file | no |
 | `commit` | owner, `review` § *Chiusura* (sempre, salvo `--no-commit`) | perimetro del gruppo codice; memoria/doc e versione/changelog li partiziona da sé (§ *Procedura* 3 del suo file) | § *Procedura* 8 del suo file, in chat | sì — `update-memory` |
 | `update-memory` | owner, `deliver-feature` fase 5b, `commit` § *Allineamento* | diff in index, cartella dell'item dove depositare il proprio artefatto (da `deliver-feature`), **permesso di commit del proprio gruppo** | § *Procedura* 7 del suo file | no |
 | `memory-review` | owner | niente: inventario e auditor enumerano da sé | § 4 *Riconciliazione* del suo file | sì — inventario, tre auditor, reconciler, foglie |
-| `nightly-plan` | owner | le voci della coda, in chat | `docs/nightly/nightly-run.json` | no |
+| `nightly-plan` | owner | le voci della coda, in chat | `{paths.nightly}/nightly-run.json` | no |
 | `nightly-orchestrator` | owner | la coda `nightly-run.json` | riepilogo in chat, un item per riga | sì — pre-flight, e `deliver-feature` per item |
-| `censisci-tecnologie` | owner | progetti da censire | report in chat (*Passo 8* del suo file) | no |
 
 **Un arco nuovo si dichiara qui.** Collegare un nodo a un chiamante che non lo aveva significa
 aggiornare la sua riga — i chiamanti, l'input che ora riceve risolto, il permesso che
@@ -140,13 +140,15 @@ arco che esiste nel codice dei prompt e non esiste da nessuna parte che si possa
 forma in cui il permesso di un nodo finisce per dipendere da chi lo chiama senza che nessuno
 l'abbia deciso.
 
-**E questa tabella e' verificata a macchina, non solo riletta.** `docs/scripts/check-contratti.py`
-controlla che i nodi siano tutti e soli quelli su disco, che ogni contratto consegnato a un
-subagent **come contratto da leggere** compaia fra i chiamanti della propria riga, e che ogni
-rimando a sezione di una cella — «§ *X* del suo file» — trovi davvero quell'heading. Non copre le
-forme di consegna che nessuno ha ancora scritto: le riconosciute sono elencate in
-`FORME_DI_DELEGA`, e una forma nuova si aggiunge li' nella stessa modifica, altrimenti quell'arco
-resta verificato da nessuno.
+**E questa tabella oggi la verifica soltanto chi la rilegge.** Tre delle sue proprieta' sono
+verificabili a macchina — che i nodi siano tutti e soli quelli su disco, che ogni contratto
+consegnato a un subagent **come contratto da leggere** compaia fra i chiamanti della propria riga,
+e che ogni rimando a sezione di una cella — «§ *X* del suo file» — trovi davvero quell'heading — ma
+nessuno strumento del pacchetto le controlla. Un verificatore è esistito e **è stato rimosso il 18
+settembre 2026**: risolveva la propria radice per posizione sul disco, e alla prima riorganizzazione
+dell'albero ha smesso di trovare il corpus senza che l'uscita lo dicesse. Finché non ne esiste uno
+che sappia dove si trova, questa riga dichiara ciò che è vero: la tabella si tiene a mano, e una
+cella non aggiornata non la prende nessuno.
 
 ## 4. Delega
 
@@ -158,18 +160,18 @@ Come si lancia, per host:
 
 - **`claude`** — tool `Agent`, con `model` risolto secondo la §2 e `subagent_type` scelto così:
   `finder` per i passi di sola analisi che riportano rilievi (i finder di una review),
-  `auditor-memoria` per gli audit del corpus di memoria, `Explore` per la sola ricerca,
+  `memory-auditor` per gli audit del corpus di memoria, `Explore` per la sola ricerca,
   `general-purpose` per tutto il resto — cioè per i passi che devono scrivere. Più subagent
   indipendenti si lanciano nello **stesso** blocco di tool call per farli girare davvero in
   parallelo.
 
-  I primi due sono definiti in `.claude/agents/` e hanno un **toolset ristretto**: non possono
-  scrivere file né delegare ad altri agent. È la differenza fra un vincolo dichiarato nel prompt e
-  uno vero: un finder che «corregge già che c'è» non compare fra gli applicati, non ha un'`ancora`
-  nel ledger, e nessun giro successivo lo rivede. Su un host che non sa scegliere il tipo di
-  subagent il vincolo resta scritto nel prompt, e lo dichiari nell'esito.
+  I primi due sono definiti in `agents/`, nella radice del pacchetto, e hanno un **toolset
+  ristretto**: non possono scrivere file né delegare ad altri agent. È la differenza fra un vincolo
+  dichiarato nel prompt e uno vero: un finder che «corregge già che c'è» non compare fra gli
+  applicati, non ha un'`ancora` nel ledger, e nessun giro successivo lo rivede. Su un host che non
+  sa scegliere il tipo di subagent il vincolo resta scritto nel prompt, e lo dichiari nell'esito.
 
-  **Il confine vero è quale tool c'è, non cosa ci scrivi dentro.** `auditor-memoria` non ha `Bash`,
+  **Il confine vero è quale tool c'è, non cosa ci scrivi dentro.** `memory-auditor` non ha `Bash`,
   e lì la sola lettura è vera per costruzione. `finder` ce l'ha, con gli specificatori
   `Bash(git diff:*)`, `Bash(git log:*)`, `Bash(git grep:*)` — che **non restringono** nulla: un
   finder esegue `ls`, `cat`, `grep -rn` e qualunque altra riga senza un diniego, e lo si è visto
@@ -205,7 +207,7 @@ Regole valide su ogni host:
    ritorno. Non contare su nulla che sia solo nella tua conversazione.
 
    **Memoria pertinente.** A un passo che scrive codice, o che decide cosa scriverne, passi anche
-   `memory/MEMORY.md` e i **path** delle memorie che il suo perimetro tocca — quelle che hai già
+   `{memory.index}` e i **path** delle memorie che il suo perimetro tocca — quelle che hai già
    in mano, scelte sull'indice — con l'istruzione di aprirle prima di lavorare. Non riassumerle
    nel prompt: un fatto riassunto è un fatto che diverge dal suo file al primo aggiornamento. Se
    nessuna memoria è pertinente, passi solo l'indice. È il canale per cui i fatti non deducibili
@@ -275,17 +277,21 @@ I passi che toccano la stessa working tree (build, test, commit, calcolo di un b
 - Nessuna skill nomina un modello: nomina un ruolo, e il modello lo risolve questo file
   sull'ambiente. Il ruolo è l'unica cosa che una skill ha il diritto di scrivere.
 - Nessuna skill duplica questo contratto, né i valori che esso legge da
-  `.claude/environment.json`, nemmeno "per comodità".
+  `.daiku/environment.json`, nemmeno "per comodità".
 - Nessuna skill introduce un terzo ruolo o un profilo di modello proprio.
 - Il tool `Workflow` non è il motore di nessuna skill: l'orchestrazione è dell'agente, che delega
   a subagent secondo questo file. Non invocarlo.
 
-## 7. Le chiavi di `.claude/environment.json`
+## 7. Le chiavi di `.daiku/environment.json`
 
 | Chiave | Mestiere |
 |---|---|
-| `contract` | numero intero della forma del file, con le regole della §7 di `.claude/project-contract.md` |
+| `contract` | numero intero della forma del file, con le regole della §7 di `contracts/project-contract.md` |
 | `default_host` | host da assumere quando nulla lo dichiara |
+| `hosts` | l'insieme degli host dichiarati; si cita così quando una skill li **enumera** invece di nominarne uno |
+| `backends` | l'insieme dei backend dichiarati; si cita così quando una skill ne valida uno contro l'elenco |
+| `hosts.<host>.models` | i modelli dichiarati per quell'host; si cita così quando conta l'insieme e non il singolo ruolo |
+| `hosts.<host>.models.<ruolo>` | il modello del ruolo che la skill ha dichiarato per quel passo (§2) |
 | `hosts.<host>.models.giudice` | modello con cui gira il ruolo giudice su quell'host |
 | `hosts.<host>.models.worker` | modello con cui gira il ruolo worker su quell'host |
 | `hosts.<host>.skill_pointers` | cartella in cui l'host cerca i pointer delle skill invocabili; assente se l'host non ne richiede |
@@ -300,4 +306,4 @@ I passi che toccano la stessa working tree (build, test, commit, calcolo di un b
 | `temp_dir` | directory temporanea della macchina, per gli artefatti che non devono finire nel repository |
 
 Nessuna chiave è obbligatoria oltre a `contract`: per tutto il resto vale la degradazione della
-§6 di `.claude/project-contract.md`.
+§6 di `contracts/project-contract.md`.

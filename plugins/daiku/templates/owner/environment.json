@@ -14,8 +14,8 @@
     },
     "codex": {
       "models": {
-        "giudice": "gpt-5.6-terra",
-        "worker": "gpt-5.6-luna"
+        "giudice": "<alias del modello con cui gira il ruolo giudice>",
+        "worker": "<alias del modello con cui gira il ruolo worker>"
       },
       "enforcement": "prosa",
       "skill_pointers": ".agents/skills/",
@@ -24,28 +24,7 @@
   },
   "backends": {
     "claude": {},
-    "nim": {
-      "base_url": "http://127.0.0.1:3456",
-      "sequential_fanout": true,
-      "caveats": [
-        "niente extended thinking né prompt caching",
-        "~40 RPM (per questo i finder di review girano in sequenza)",
-        "free tier **non ZDR**"
-      ]
-    },
-    "zai": {
-      "base_url": "https://api.z.ai/api/anthropic",
-      "sequential_fanout": true,
-      "caveats": [
-        "gira su GLM Coding Plan con fallback reciproco tra i due modelli in caso di overload"
-      ]
-    },
-    "mimo": {
-      "base_url": "https://token-plan-ams.xiaomimimo.com/anthropic"
-    },
-    "codex": {
-      "base_url": "http://127.0.0.1:18765"
-    }
+    "codex": {}
   },
-  "temp_dir": "C:/Users/ntomason/AppData/Local/Temp"
+  "temp_dir": "<directory temporanea di questa macchina>"
 }

@@ -1,0 +1,59 @@
+{
+  "contract": 2,
+  "name": "<nome del progetto, come compare nei testi rivolti all'utente>",
+  "repo_root": "<path assoluto della root del repository, con slash in avanti>",
+  "code_root": "<radice del codice applicativo, con slash finale>",
+  "instructions_file": "<file di istruzioni che l'host carica a ogni sessione>",
+  "language": {
+    "chat": "<lingua di chat, riepiloghi e documenti del metodo>",
+    "commit": "<lingua dei messaggi di commit e delle voci di changelog>"
+  },
+  "tech_doc": "<path del documento tecnico, oppure togli la chiave>",
+  "changelog": "<path del registro delle versioni rilasciate, oppure togli la chiave>",
+  "version": {
+    "file": "<file che porta la versione canonica>",
+    "field": "<punto esatto del file in cui quella versione vive>",
+    "replicated_in": []
+  },
+  "paths": {
+    "studies": "<cartella delle cartelle di lavoro, una per problema>",
+    "lib_notes": "<cartella degli appunti su una tecnologia>",
+    "nightly": "<cartella della coda notturna e del suo registro>",
+    "review_state": "<cartella del ledger di review, fuori dal versionato>"
+  },
+  "memory": {
+    "root": "<radice del corpus di memoria persistente>",
+    "index": "<file indice del corpus>",
+    "catalogs": []
+  },
+  "commit": {
+    "memory_prefix": "<prefisso del commit di memoria e documentazione>"
+  },
+  "worktree": {
+    "pool": "<directory del pool di worktree>",
+    "prefix": "<prefisso dei nomi del pool>",
+    "max": 0,
+    "branch_prefix": "<prefisso del branch di ciascun worktree>"
+  },
+  "areas": {
+    "<nome dell'area>": {
+      "paths": ["<path che appartengono all'area, usabili come pathspec Git>"],
+      "gate": {
+        "cwd": "<directory da cui eseguire>",
+        "run": ["<riga esatta da eseguire, non una descrizione>"]
+      },
+      "lint_fix": {
+        "cwd": "<directory da cui eseguire>",
+        "run": ["<riga che applica le sole correzioni sicure a <FILES>>"]
+      },
+      "test_targeted": {
+        "cwd": "<directory da cui eseguire>",
+        "run": ["<riga che esegue i soli test <FILES>>"]
+      },
+      "coverage": {
+        "cwd": "<directory da cui eseguire>",
+        "run": ["<righe che producono la misura di copertura>"]
+      }
+    }
+  }
+}

@@ -8,13 +8,10 @@ argument-hint: [cartella]
 
 Il brief è già la tua consegna completa: la sezione **Mandato** ti dice come comportarti, **La soluzione scelta** cosa fare, la **Memoria** il piano a task da seguire. Questa skill non ti dà nuove istruzioni di merito — ti innesca sul file giusto e blinda le due discipline che un esecutore tradisce più spesso: **aggiornare il file mentre lavori** e **fidarti della verifica osservabile invece di autodichiararti a posto**.
 
-## Parametri di progetto
-
-Leggi `.claude/project.json` prima di agire: è la sola fonte dei valori specifici di questo
-progetto. Le chiavi citate in questo contratto fra graffe e apici inversi si risolvono da lì,
-mai a memoria e mai per assunzione. Se una chiave citata non c'è, quella cosa **non esiste in
-questo progetto**: salta la parte che la usa, dichiaralo nell'esito, non inventarla e non
-chiederla. La forma del file è in `.claude/project-contract.md`.
+> **Parametri.** Ogni chiave fra graffe di questo contratto si risolve sui file di parametri del
+> progetto, mai a memoria e mai per assunzione: le regole sono nella §5 di
+> `contracts/project-contract.md`, che dice anche **in quale lingua scrivere** e cosa fare quando
+> una chiave non c'è.
 
 ## Input: la cartella del brief
 
@@ -26,16 +23,16 @@ L'argomento è **una sola cartella**, come path relativo dalla root del repo o a
 - Se la cartella non esiste, segnalalo e fermati.
 - Cerca il brief nella cartella: `2. blueprint.md`. Se non c'è con quel nome, cerca un file di blueprint equivalente (es. `BLUEPRINT.md`); se ne trovi più d'uno o nessuno, **chiedi** quale usare prima di procedere. Questo — insieme alla cartella mancante — è l'**unico** momento in cui è lecito chiedere: da qui in poi l'esecuzione è autonoma.
 
-Con la cartella ricevi anche `memory/MEMORY.md` e i **path** delle memorie che il perimetro tocca, da aprire prima di scrivere: è il canale di §4.1 di `.claude/orchestration.md`. Se il chiamante non te li passa, apri l'indice e scegli tu — i vincoli e le decisioni non deducibili dal codice stanno lì, e riscoprirli a proprie spese costa un giro di review.
+Con la cartella ricevi anche `{memory.index}` e i **path** delle memorie che il perimetro tocca, da aprire prima di scrivere: è il canale di §4.1 di `contracts/orchestration.md`. Se il chiamante non te li passa, apri l'indice e scegli tu — i vincoli e le decisioni non deducibili dal codice stanno lì, e riscoprirli a proprie spese costa un giro di review.
 
 ## Principi
 
 1. **Il brief è la fonte di verità, e comanda lui.** Leggi `2. blueprint.md` **per intero** prima di toccare qualsiasi cosa: Mandato, Vincoli, La soluzione scelta, tutti i task, il Diario. Il Mandato scritto nel file prevale su qualsiasi tua inclinazione. Se riprendi dopo un'interruzione o una compattazione del contesto, **rileggi il file da capo**: lo stato del lavoro vive lì (task spuntati + Diario), non nella memoria di sessione.
 2. **Autonomia reale.** Esegui tutti i task **nell'ordine** dato, senza chiedere nulla all'utente: ogni specifica è già nel brief e la scelta è già stata fatta. Se un dettaglio sembra mancare, deducilo dal brief e dai file di riferimento che cita — non interrompere. Fermati e chiedi **solo** davanti a un vero blocco: un'azione distruttiva o irreversibile non giustificata dal brief, o una contraddizione interna insanabile.
-3. **Rispetta il perimetro.** Applica i Vincoli e i non-goals del brief alla lettera, e le regole architetturali del progetto (`CLAUDE.md`): caricalo e tienilo presente. Modifiche chirurgiche, niente refactoring fuori scope, nessuna operazione Git distruttiva o remota salvo richiesta esplicita nel brief.
-4. **La verifica è del controllo, non tua.** Ogni task porta un criterio di verifica **eseguibile** e *mirato al task*: i soli test che coprono ciò che hai appena cambiato, l'import del modulo toccato, un `grep`, un comando. Mai la suite intera, mai il gate di pacchetto — sono di `/review` (hard rule `[gate-owned-by-review]` di `CLAUDE.md`), che li esegue sempre sul tuo diff. **Eseguila davvero** e considera il task concluso solo se il controllo passa. Mai "fatto quando sembra fatto": se la verifica fallisce, il task non è finito — correggi e riprova. Riporta l'output reale, non un riassunto ottimistico.
+3. **Rispetta il perimetro.** Applica i Vincoli e i non-goals del brief alla lettera, e le regole architetturali del progetto (`{instructions_file}`): caricalo e tienilo presente. Modifiche chirurgiche, niente refactoring fuori scope, nessuna operazione Git distruttiva o remota salvo richiesta esplicita nel brief.
+4. **La verifica è del controllo, non tua.** Ogni task porta un criterio di verifica **eseguibile** e *mirato al task*: i soli test che coprono ciò che hai appena cambiato, l'import del modulo toccato, un `grep`, un comando. Mai la suite intera, mai il gate di pacchetto — sono di `/review`, che li esegue sempre sul tuo diff. **Eseguila davvero** e considera il task concluso solo se il controllo passa. Mai "fatto quando sembra fatto": se la verifica fallisce, il task non è finito — correggi e riprova. Riporta l'output reale, non un riassunto ottimistico.
 5. **Aggiorna il file mentre lavori, non alla fine.** Man mano che procedi, dentro `2. blueprint.md`: spunta i task (`[ ]` → `[~]` → `[x]`) e **appendi al Diario** cosa hai fatto, le decisioni prese, gli intoppi. Se l'esecuzione fa emergere fatti nuovi che rendono necessario adattare il piano (aggiungere, riordinare o sostituire task), fallo — ma **scrivi nel Diario perché**. Non saltare l'ordine per comodità. Il file deve poter far riprendere il lavoro a un altro esecutore in qualsiasi momento.
-6. **La verifica di chiusura è obbligatoria, il gate non è tuo.** L'ultimo task è sempre l'auto-review del risultato contro i criteri di completamento del brief, più la prova osservabile che ciò che hai scritto si accende: importa i moduli toccati per intercettare errori a load-time, esegui i test del perimetro che hai cambiato. **Non lanciare la suite completa né il gate di pacchetto**: li esegue `/review` subito dopo di te (hard rule `[gate-owned-by-review]`), e ripeterli qui costa minuti e non aggiunge nulla. Non dichiarare completato il lavoro finché ogni criterio non è soddisfatto.
+6. **La verifica di chiusura è obbligatoria, il gate non è tuo.** L'ultimo task è sempre l'auto-review del risultato contro i criteri di completamento del brief, più la prova osservabile che ciò che hai scritto si accende: importa i moduli toccati per intercettare errori a load-time, esegui i test del perimetro che hai cambiato. **Non lanciare la suite completa né il gate di pacchetto**: li esegue `/review` subito dopo di te, e ripeterli qui costa minuti e non aggiunge nulla. Non dichiarare completato il lavoro finché ogni criterio non è soddisfatto.
 
 7. **Consegna la passata di review.** A lavoro finito, prima di chiudere, deposita nella cartella del brief il file `4. review-notes.md`: è il ponte verso `/review`, che l'utente lancerà a mano puntandolo a quel file. Non è un riassunto per l'utente — è un input operativo per chi eseguirà la review: gli dai il base-ref e ciò che hai notato, **non** l'elenco delle skill da lanciare (quello lo decide `/review` dal diff). Vedi *Il file di consegna* sotto. Non esegui tu `/review`: prepari solo la sua consegna.
 
@@ -51,7 +48,7 @@ Sei un esecutore autonomo: nessuno ti controlla mentre lavori, quindi l'unico mo
 | «Già che ci sono sistemo questo codice adiacente» | Fuori perimetro. Ogni riga che tocchi deve ricondursi a un task del brief (Vincoli, principio 3). |
 | «Salto questo task, lo faccio dopo, è più comodo» | Segui l'ordine dato. Adattarlo è lecito solo se emergono fatti nuovi, e va motivato nel Diario (principio 5). |
 | «La verifica la salto, ho già visto che funziona» | «Ho visto» non è evidenza osservabile: la verifica di chiusura è obbligatoria (principio 6). |
-| «Lancio la suite completa, così sono sicuro» | Non è tua: `/review` la esegue sempre sul tuo diff, subito dopo (hard rule `[gate-owned-by-review]`). Qui verifichi il perimetro che hai toccato, non il repository. |
+| «Lancio la suite completa, così sono sicuro» | Non è tua: `/review` la esegue sempre sul tuo diff, subito dopo. Qui verifichi il perimetro che hai toccato, non il repository. |
 | «Aggiorno il Diario alla fine, ora corro» | Se ti interrompi ora, il lavoro riparte da zero. Aggiorna il file **mentre** lavori. |
 
 ## Segnali di allarme (red flags)
@@ -69,7 +66,7 @@ Se noti uno di questi mentre esegui, ti sei già incamminato nella direzione sba
 
 1. **Risolvi la cartella** da `$ARGUMENTS` e trova il brief (`2. blueprint.md`, vedi *Input*).
 
-2. **Leggi il brief per intero** e carica `CLAUDE.md`. Ricostruisci: qual è la soluzione da realizzare, i vincoli e i non-goals, i criteri di completamento, e lo **stato corrente dei task** (se alcuni sono già `[x]`, riparti dal primo non fatto — non rifare lavoro già verificato).
+2. **Leggi il brief per intero** e carica `{instructions_file}`. Ricostruisci: qual è la soluzione da realizzare, i vincoli e i non-goals, i criteri di completamento, e lo **stato corrente dei task** (se alcuni sono già `[x]`, riparti dal primo non fatto — non rifare lavoro già verificato).
 
 3. **Esegui i task in ordine.** Per ciascuno: fai il passo, poi **esegui il controllo di verifica**. Verde → segna `[x]` e annota nel Diario. Rosso → resta sul task, correggi, riesegui; se emerge un fatto che impone di adattare il piano, aggiorna i task e motiva nel Diario. Non passare al task successivo con la verifica del precedente ancora rossa.
 
@@ -120,12 +117,11 @@ proseguire:
 ```
 
 `verifica_detail` porta l'esito **reale** delle prove che hai eseguito sul perimetro che hai
-toccato, non la loro intenzione: la suite completa e il gate di pacchetto non sono tuoi (hard rule
-`[gate-owned-by-review]`), quindi questo campo è l'unica prova che qualcosa sia stato osservato
+toccato, non la loro intenzione: la suite completa e il gate di pacchetto non sono tuoi, li possiede `/review`, quindi questo campo è l'unica prova che qualcosa sia stato osservato
 prima della review.
 
 Lo schema sta qui, nel file del nodo che lo produce, e chi ti invoca lo cita invece di ricopiarlo
-(§4.2 di `.claude/orchestration.md`).
+(§4.2 di `contracts/orchestration.md`).
 
 ## Regola di taglio
 
