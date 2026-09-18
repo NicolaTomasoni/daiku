@@ -1,0 +1,1 @@
+In questo progetto sviluppiamo Daiku, un estensione per Claude Code e Codex che implementa un agent loop.
