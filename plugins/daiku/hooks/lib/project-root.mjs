@@ -22,6 +22,31 @@
  */
 
 import { spawnSync } from 'node:child_process';
+import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+/**
+ * Questo modulo è stato lanciato come programma, o importato da qualcun altro?
+ *
+ * Serve perché i tre hook **esportano** le funzioni che il loro banco di prova verifica,
+ * e un modulo che legge stdin ed esce `0` al solo caricamento non si lascia importare:
+ * chi prova a chiamarne una funzione da fuori vede il processo morire in silenzio, che è
+ * il modo peggiore di fallire in un file il cui contratto è «taci se non hai niente da
+ * dire».
+ *
+ * Il confronto è fra path risolti e senza distinzione di maiuscole, perché su Windows lo
+ * stesso file si scrive in più modi. Se qualcosa va storto la risposta è **sì**: nel
+ * dubbio un hook fa il suo mestiere, invece di tacere per un confronto di stringhe.
+ */
+export function invocatoDirettamente(metaUrl) {
+  try {
+    const lanciato = process.argv[1];
+    if (!lanciato) return true;
+    return resolve(fileURLToPath(metaUrl)).toLowerCase() === resolve(lanciato).toLowerCase();
+  } catch {
+    return true;
+  }
+}
 
 /** La git root a partire da `da`, o `null` se git non risponde o non siamo in un repo. */
 export function gitRoot(da, lancia = spawnSync) {

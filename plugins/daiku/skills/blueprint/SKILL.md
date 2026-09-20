@@ -1,14 +1,13 @@
 ---
 name: 'blueprint'
-description: 'Dal documento di decisione e dalla soluzione scelta produce un brief di esecuzione autonoma (2. blueprint.md) e si ferma lì, senza eseguire; per eseguirlo usa /execute'
-argument-hint: '[cartella] [soluzione scelta]'
+description: 'Contratto interno di develop-feature — dal documento di decisione e dalla soluzione scelta produce un brief di esecuzione autonoma (2. blueprint.md) e si ferma lì, senza eseguire.'
 ---
 
-È il passo a valle di `/decision-doc`. Ricevi la cartella che contiene il documento di decisione (`1. decision-doc.md`) e l'indicazione della **soluzione scelta** dall'utente. Produci **un solo file**, `2. blueprint.md`, che è un **brief di esecuzione autonoma**: contiene **solo** le informazioni necessarie alla soluzione scelta, e una **sezione Memoria** con un **piano di implementazione pre-fatto, diviso in task ordinati**. Ti **fermi al brief**: non esegui il piano e non lanci nessun esecutore. L'esecuzione è un passo separato e atomico (`/execute`).
+È il passo a valle di `decision-doc`. Ricevi la cartella che contiene il documento di decisione (`1. decision-doc.md`) e l'indicazione della **soluzione scelta** dall'utente. Produci **un solo file**, `2. blueprint.md`, che è un **brief di esecuzione autonoma**: contiene **solo** le informazioni necessarie alla soluzione scelta, e una **sezione Memoria** con un **piano di implementazione pre-fatto, diviso in task ordinati**. Ti **fermi al brief**: non esegui il piano e non lanci nessun esecutore. L'esecuzione è un passo separato e atomico (`execute`).
 
 Il file generato serve a un *futuro* esecutore, che non sa nulla di come è nato: deve istruirlo a portare a termine il lavoro **dall'inizio alla fine in autonomia, senza chiedere altro all'utente** — perché ogni specifica è già definita nel documento e la preferenza dell'utente è già stata espressa — e a **compilare la Memoria man mano** che esegue i task, prendendo nota e rispettando l'ordine prestabilito.
 
-Tu, qui, **non esegui** il piano: lo **prepari** soltanto. Il file resta la fonte di verità — proprio perché è autosufficiente è la consegna perfetta per un esecutore (`/execute`) che parte da zero e non sa nulla di come è nato.
+Tu, qui, **non esegui** il piano: lo **prepari** soltanto. Il file resta la fonte di verità — proprio perché è autosufficiente è la consegna perfetta per un esecutore (`execute`) che parte da zero e non sa nulla di come è nato.
 
 > **Parametri.** Ogni chiave fra graffe di questo contratto si risolve sui file di parametri del
 > progetto, mai a memoria e mai per assunzione: le regole sono nella §5 di
@@ -21,12 +20,12 @@ Argomenti: `$ARGUMENTS`
 
 L'argomento indica la **cartella** (dove vive `1. decision-doc.md`) e **quale soluzione** è stata scelta.
 
-- Se manca la cartella, **chiedila**. Se non esiste, segnalalo e fermati.
-- Cerca `1. decision-doc.md` nella cartella. Se non c'è, chiedi quale documento usare (potrebbe avere un altro nome) prima di procedere.
-- **Identifica la soluzione scelta** confrontando l'indicazione dell'utente con le decisioni del documento. Se l'indicazione è ambigua o assente, **chiedi all'utente quale opzione ha scelto**, elencando le decisioni e le opzioni trovate nel documento. Questo — insieme alla cartella mancante, al documento di decisione non trovato e alle scelte reciprocamente incompatibili: i quattro casi elencati in questa sezione, e nessun altro — è l'**unico** momento in cui è lecito chiedere: qui l'utente è presente. Il brief che produci, invece, deve rendere l'esecuzione successiva autonoma.
+- Se la cartella non ti è stata passata, o non esiste, **fermati e dillo nel blocco**: non c'è nessuno a cui chiederla.
+- Cerca `1. decision-doc.md` nella cartella. Se non c'è ma c'è `0.5. studio-strategico.md`, **fermati**: le decisioni non sono chiuse, e un brief costruito sullo studio strategico congelerebbe un piano su opzioni che nessuno ha scelto. Se non c'è né l'uno né l'altro, fermati lo stesso e dichiara cosa hai trovato nella cartella.
+- **Identifica la soluzione scelta** confrontando l'indicazione che hai ricevuto con le decisioni del documento. Se è ambigua o assente, **non chiedere e non indovinare**: fermati, e nel blocco elenca le decisioni e le opzioni che il documento dichiara davvero, così che chi ti ha invocato possa portarle a chi decide. È la stessa regola dei tre casi qui sopra e di quello qui sotto, e non ha eccezioni — non hai un canale verso l'owner (§ *Domandare all'owner* di `contracts/orchestration.md`). Il brief che produci, a sua volta, deve rendere l'esecuzione successiva autonoma.
 - Se le decisioni nel documento sono più d'una, raccogli **tutte** le scelte dell'utente (una per decisione) prima di generare il brief.
 - Con la cartella ricevi anche `{memory.index}` e i **path** delle memorie che il perimetro tocca, da aprire prima di decidere: è il canale di §4.1 di `contracts/orchestration.md`. Se il chiamante non te li passa, apri l'indice e scegli tu — un brief che ignora una decisione già presa la fa riscoprire all'esecutore a sue spese.
-- Con più scelte, **verifica che siano reciprocamente coerenti** (l'opzione scelta per una decisione non deve contraddire quella di un'altra). Se sono incompatibili, segnalalo e chiedi all'utente come risolvere prima di generare il brief.
+- Con più scelte, **verifica che siano reciprocamente coerenti** (l'opzione scelta per una decisione non deve contraddire quella di un'altra). Se sono incompatibili, fermati e riporta nel blocco quali si contraddicono e perché, senza generare il brief.
 
 ## Principi
 
@@ -54,7 +53,7 @@ L'argomento indica la **cartella** (dove vive `1. decision-doc.md`) e **quale so
 
 7. **Riepiloga in chat** in poche righe: la soluzione scelta e i task del piano in ordine. Il dettaglio sta nel file.
 
-8. **Fermati qui.** `/blueprint` è atomico: non eseguire il piano e non lanciare nessun esecutore. Chiudi indicando il passo successivo — `/execute <cartella>` per eseguire il brief.
+8. **Fermati qui.** Non eseguire il piano e non lanciare nessun esecutore: chi ti ha invocato apre `execute` sulla stessa cartella, ed è la fase successiva della sua sequenza, non un comando che qualcuno deve ricordarsi di digitare.
 
 ## Struttura del file prodotto (`2. blueprint.md`)
 
@@ -70,7 +69,7 @@ Il file è scritto **rivolgendosi all'esecutore** (seconda persona, imperativo o
 - **Non chiedere informazioni all'utente**: ogni specifica è già qui e la
   scelta è già stata fatta. Se un dettaglio sembra mancare, deducilo da questo
   brief e dai file di riferimento citati, non interrompere.
-- Fermati e chiedi **solo** davanti a un vero blocco (azione distruttiva o
+- Fermati e restituisci il blocco **solo** davanti a un vero ostacolo (azione distruttiva o
   irreversibile non giustificata dal brief, o contraddizione interna insanabile).
 - **Questo file è la fonte di verità.** Se riprendi dopo un'interruzione o una
   compattazione del contesto, **rileggilo per intero** (stato dei task + Diario)
@@ -128,12 +127,12 @@ Regola di taglio: chi legge `2. blueprint.md` deve poter eseguire l'intera soluz
 
 ## Dopo il brief
 
-`/blueprint` finisce qui: il tuo unico output è `2. blueprint.md` e il riepilogo in chat. Non eseguire il piano nel tuo contesto e non lanciare esecutori. L'esecuzione è la skill separata `/execute` (che può girare in questo contesto o dentro un subagent) — atomica e sequenziale, invocata a mano dall'utente dopo il brief.
+Finisci qui: il tuo unico output è `2. blueprint.md` e il blocco di ritorno. Non eseguire il piano nel tuo contesto e non lanciare esecutori. L'esecuzione è `execute`, un passo separato che chi ti ha invocato apre in un **contesto fresco** — mai nel tuo, perché un brief scritto e poi eseguito dallo stesso contesto non è mai stato messo alla prova di essere autosufficiente, che è l'unica proprietà che gli si chiede.
 
 ## Cosa restituisci
 
 Invocato a mano, basta il riepilogo in chat. **Invocato dentro una catena** — la fase Brief di
-`/deliver-feature` — chiudi con questo blocco, che è il solo formato su cui il chiamante decide se
+`develop-feature` — chiudi con questo blocco, che è il solo formato su cui il chiamante decide se
 proseguire:
 
 ```json

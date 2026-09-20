@@ -11,14 +11,15 @@ spostato di livello. Se ti trovi a personalizzare una skill, il posto giusto è 
 
 `contracts/orchestration.md` resta il contratto di *chi* esegue un passo e come lo si delega: è
 ortogonale a questo file e non lo tocca. I valori che consuma non stanno qui ma in
-`.daiku/environment.json`, il secondo livello di parametri: il confine fra i due è nella §8.
+`environment.json`, il secondo livello di parametri: dove vive quel file, e dove passa il confine
+fra i due, è nella §8.
 
 ## 1. I quattro livelli
 
 | Livello | Sede | Contiene | Si esporta con la skill |
 |---|---|---|---|
 | **Metodo** | `skills/**` | cosa va fatto, in che ordine, con quali vincoli | sì, byte-identico |
-| **Ambiente** | `.daiku/environment.json` | host, modello per ruolo, backend, path di macchina | sì, si copia identico (§8) |
+| **Ambiente** | `~/.daiku/environment.json` | host, modello per ruolo, backend, path di macchina | sì: uno per owner, non si copia nei progetti (§8) |
 | **Parametri** | `.daiku/project.json` | path, comandi letterali, nomi di file, aree esistenti | no, uno per progetto |
 | **Dominio** | `.daiku/domain/*.md` | liste, tassonomie, criteri di giudizio locali | sì, come **scheletro che si sovrascrive** (§5.4) |
 
@@ -73,14 +74,15 @@ di un file, la presenza o assenza di un'area. Tre divieti, in ordine di gravità
 | `paths.lib_notes` | cartella degli appunti su una tecnologia studiata |
 | `paths.nightly` | cartella degli artefatti della catena notturna: la coda e il registro delle consegne |
 | `paths.review_state` | cartella in cui vive il ledger di una review; sta **fuori** dal repository versionato ma è stabile, non a scadenza di sessione |
-| `memory.root` | radice del corpus di memoria persistente |
+| `memory.root` | radice del corpus di memoria persistente, dentro il repository; su Claude Code è anche la cartella in cui l'host scrive la propria memoria (§4.2) |
 | `memory.index` | file indice del corpus, quello che si legge per primo |
-| `memory.catalogs` | nomi dei cataloghi descrittivi del corpus, senza estensione |
 | `commit.memory_prefix` | prefisso del messaggio del commit di memoria e documentazione |
 | `worktree.pool` | directory del pool di worktree di consegna, relativa alla radice tecnica |
 | `worktree.prefix` | prefisso dei nomi dei worktree del pool, seguito dal numero (`1`..`worktree.max`) |
 | `worktree.max` | numero massimo di worktree del pool: mai uno in più, mai un nome fuori convenzione |
 | `worktree.branch_prefix` | prefisso del branch di ciascun worktree, seguito dal suo nome |
+| `guardrails.deny_push` | `true` se su questo progetto `git push` resta un gesto dell'owner e un agente non lo lancia (§4.1) |
+| `guardrails.deny_no_verify` | `true` se su questo progetto gli hook di commit devono sempre girare, quindi `git commit -n`/`--no-verify` non è ammesso (§4.1) |
 | `areas` | l'insieme delle aree dichiarate; si cita così quando una skill le **enumera** invece di nominarne una (§5.3) |
 | `areas.<area>.paths` | i path che appartengono all'area, ciascuno usabile come pathspec Git |
 | `areas.<area>.gate` | comando di gate dell'area: lint, formato, type-check, test e build di pacchetto |
@@ -89,6 +91,59 @@ di un file, la presenza o assenza di un'area. Tre divieti, in ordine di gravità
 | `areas.<area>.coverage` | comandi che producono la misura di copertura dell'area |
 
 Nessuna chiave è obbligatoria oltre a `contract`: tutto il resto è soggetto alla §6.
+
+### 4.1 Le due chiavi che un hook legge
+
+`guardrails.*` è l'unica parte di questo file che **non** viene sostituita dentro una frase: la
+legge un programma, `hooks/lib/command-guard.mjs`, per decidere se negare un comando prima che
+parta. Resta qui lo stesso, e per la ragione di sempre — un valore che cambia da progetto a
+progetto non può stare dentro ciò che si distribuisce byte-identico — ma porta con sé tre regole
+sue, che valgono solo per lei.
+
+- **Si dichiara solo ciò che si vuole acceso.** Una chiave assente, o diversa da `true`, è un
+  ramo spento. Non è la §6 applicata a malincuore: è il caso normale, perché un pacchetto
+  installato una volta è attivo su ogni repository che l'host apre, e negare un comando a chi
+  non ha chiesto niente sarebbe un guasto con l'aspetto di una tutela.
+- **Vale solo dove `.daiku/project.json` esiste.** Senza quel file la guardia non legge nemmeno
+  la riga di comando.
+- **Non è una sede per gli invarianti.** Qui sta l'interruttore, non la regola: *perché* su
+  questo progetto il push è dell'owner lo dice il file di istruzioni (`{instructions_file}`),
+  che è la sede di ciò che va capito. Il JSON dichiara solo che il guardrail è acceso — è la
+  stessa linea della §2, e questa chiave la sfiora più di ogni altra.
+
+Un terzo ramo della stessa guardia non ha interruttore proprio e si accende da `worktree.pool`:
+se il progetto dichiara un pool, le rimozioni dentro i suoi worktree e i `pnpm install` lanciati
+da lì vengono negati. Non serviva una chiave in più — un pool dichiarato *è* la dichiarazione
+che quelle directory sono di Daiku. `hooks/README.md` porta la tabella completa dei rami.
+
+### 4.2 La chiave che legge l'host
+
+`memory.root` ha un secondo lettore che non è una skill e non è un hook: è **l'host**, su Claude
+Code, dove la memoria che l'agente si scrive da sé è una cartella di file e la sua sede si dichiara
+con `autoMemoryDirectory`. `init` la fa puntare lì, e da quel momento quel corpus ha due scrittori
+— l'host di sua iniziativa, `update-memory` sul diff di ogni commit — e una sede sola, versionata
+insieme al codice. È la ragione per cui questa cartella sta dentro il repository e non accanto: una
+memoria che non entra in un diff non la rilegge nessuno, non la corregge nessuno e sparisce col
+portatile su cui è nata.
+
+Due conseguenze, e nessuna delle due è un dettaglio di installazione.
+
+**Il puntamento non si committa.** Claude Code ignora `autoMemoryDirectory` quando arriva da un
+`.claude/settings.json` versionato — un repository clonato non deve poter dirottare dove l'agente
+scrive — quindi quella chiave vive in `.claude/settings.local.json`, che è di quella macchina e
+resta fuori dal repository. I file della memoria si committano; la riga che dice all'host di
+scriverli lì, no. Su un clone la memoria torna al default **in silenzio**, e nessuna skill se ne
+accorge: `{memory.root}` lo aprono per path e lo trovano dov'era. Il rimedio è rilanciare `/init`
+su quella macchina.
+
+**Su Codex non c'è niente da dichiarare.** Lì la memoria dell'agente non è fatta di file ma di un
+database nella home (`~/.codex/memories_1.sqlite`), consolidato dalle sessioni passate, e non
+esiste una chiave che ne sposti la sede. `memory.root` resta il corpus del metodo, scritto dalle
+skill e leggibile da chiunque: perde il secondo scrittore, non il mestiere.
+
+È anche il motivo per cui `memory.root` e `memory.index` sono le uniche chiavi che `init` scrive
+**sempre**, anche su un progetto che non aveva nessun corpus. La §6 vale per tutto il resto: qui
+la cartella non si rileva, si assegna.
 
 ## 5. Come una skill lo consuma
 
@@ -113,7 +168,7 @@ duplicarlo. Chi legge la skill apre un file in più; chi modifica la regola ne a
 
 - un percorso che compare nella tabella §4 → `.daiku/project.json`;
 - un percorso che compare nella §7 di `contracts/orchestration.md` — `hosts`, `backends`,
-  `default_host`, `temp_dir` → `.daiku/environment.json`.
+  `default_host`, `temp_dir` → `environment.json`, che la §8 dice dove si cerca.
 
 Nessuna chiave sta in tutti e due (§8), quindi il percorso citato basta a dire dove guardare.
 
@@ -170,7 +225,7 @@ punto di forza si testa ciascun layer», non l'elenco delle macrocategorie.
 #### Un ruolo può viaggiare con uno scheletro già scritto
 
 Il pacchetto **può** portare un file di dominio di default, sotto
-`templates/project/domain/<lingua>/<ruolo>.md`. `init` lo deposita in `.daiku/domain/<ruolo>.md`
+`templates/project/domain/<ruolo>.md`. `init` lo deposita in `.daiku/domain/<ruolo>.md`
 la prima volta e **non lo tocca mai più**: da quel momento è dell'utente, che lo riscrive come gli
 pare senza che nessun aggiornamento glielo porti via.
 
@@ -187,6 +242,13 @@ Ciò che viaggia è una risposta *plausibile*, non una risposta *vincolante*.
 dall'architettura — le macrocategorie di test, i punti caldi di performance — non ne ha e non deve
 averne uno: lì un default è un'invenzione travestita da regola. Un ruolo la cui risposta è una
 convenzione, che va bene finché non ti dà fastidio, sì.
+
+E c'è un secondo caso, più stretto: un ruolo la cui risposta **deve esistere dal primo giorno
+perché più di uno scrive già sulla stessa cosa**. È quello di `memory-contract.md`: su Claude Code
+il corpus di `{memory.root}` ha due scrittori appena `init` finisce — l'host di sua iniziativa e
+`update-memory` a ogni commit (§4.2) — e una forma non dichiarata non resta indeterminata, diventa
+due forme nella stessa cartella. Lì il default non anticipa una scelta dell'utente: gli evita di
+doverla fare prima di aver scritto la prima memoria.
 
 ### 5.5 La lingua — si legge qui una volta, non si ripete in ogni skill
 
@@ -210,6 +272,19 @@ Se una delle due chiavi non c'è, la §6 dice che quella cosa non esiste — e q
 precisa: **rispecchia la lingua di ciò che hai davanti**. Per la chat, la lingua in cui l'utente ti
 ha scritto; per un commit, quella dei messaggi già nello storico. Non è un ripiego elegante, ma è
 l'unico che non impone una scelta che nessuno ha fatto.
+
+### 5.6 Ciò che `init` deposita è in inglese, e le due chiavi non lo riguardano
+
+Le due chiavi della §5.5 dicono come le skill parlano a una persona e cosa lasciano nella storia
+del repository. **Non dicono in che lingua è fatto Daiku.** Gli scheletri che il pacchetto porta —
+`project.json`, il file di istruzioni, i README di `domain/` e di `policies/`, i default di
+dominio — arrivano in inglese, e `init` li compila in inglese qualunque cosa l'utente abbia
+risposto.
+
+Il corpus sta in una lingua sola perché lo rileggono le skill a ogni esecuzione, perché un
+progetto cambia mani, e perché un file di istruzioni mezzo tradotto è la peggiore delle due forme.
+Da quel momento quei file sono dell'utente, che li riscrive nella lingua che preferisce: la regola
+vincola ciò che Daiku scrive, non ciò che ci viene scritto dopo.
 
 ## 6. Degradazione — ciò che il JSON non dichiara non esiste
 
@@ -240,6 +315,12 @@ una skill che sbaglia. È la direzione voluta.
 - **Le skill non si ramificano su `contract`**: la §6 copre già ogni chiave mancante. Il numero
   serve a rendere riconoscibile un JSON rimasto indietro, quindi una skill che degrada per una
   chiave assente riporta anche il `contract` che ha letto.
+- **Non si incrementa per una chiave rimossa che nessuna skill leggeva.** È l'unica eccezione
+  alla prima regola, e si tiene in piedi da sé: il numero serve a rendere riconoscibile un JSON
+  che una skill **leggerebbe male**, e una chiave che nessuno apriva non può essere letta male da
+  nessuno. Un `project.json` che se la porta ancora dietro ha una riga in più che nessuno guarda,
+  non un difetto. La condizione è stretta e va verificata, non assunta: *nessuna* skill del
+  pacchetto la cita.
 - **Incrementarlo è un lavoro coordinato**: si aggiorna questo file, poi il `project.json` di
   ogni progetto, poi le skill che leggono la forma nuova. Finché quel giro non è chiuso,
   l'aggiornamento delle skill non è più atomico — che è la ragione per cui il numero esiste.
@@ -249,13 +330,18 @@ accanto a `memory.root` e `memory.index` che prima non esistevano: una skill scr
 `1` cercherebbe la chiave vecchia e non la troverebbe, che è esattamente il caso che il numero
 serve a rendere riconoscibile.
 
+**Ed è rimasta `2` il 19 settembre 2026**, quando `memory.catalogs` è stata rimossa: la leggeva
+solo `memory-review`, che quel giorno è stata eliminata dal pacchetto, e dopo di lei nessuna
+skill la citava più. È il caso della quarta regola qui sopra, ed è scritto qui perché chi
+applica la prima meccanicamente si aspetterebbe un `3`.
+
 ## 8. Progetto o ambiente — in quale dei due file
 
 I file di parametri sono due, e la domanda che li separa è una sola: **quel valore cambia da
 progetto a progetto, o resta lo stesso su tutti i progetti dello stesso owner?**
 
 - **Varia per progetto** → `.daiku/project.json`, con le chiavi della §4.
-- **È costante per l'owner, e varia semmai per macchina o per host** → `.daiku/environment.json`,
+- **È costante per l'owner, e varia semmai per macchina o per host** → `~/.daiku/environment.json`,
   con le chiavi dichiarate in `contracts/orchestration.md` §7, che di quei valori è il consumatore
   principale.
 
@@ -264,6 +350,28 @@ descrizioni (§2), stessa convenzione di citazione fra graffe dentro un code spa
 riga di apertura (§5.1, che li copre entrambi) e stessa degradazione (§6). Quelle regole si
 leggono qui una volta e valgono per entrambi: non si riscrivono altrove. Cambia solo la radice
 del percorso citato e il file che la skill apre.
+
+### Dove vive ciascuno dei due
+
+`project.json` sta **nel progetto**, sotto `.daiku/`: è del progetto, si versiona con lui, e chi
+ne fa un clone se lo ritrova già scritto.
+
+`environment.json` no: sta in `~/.daiku/environment.json`, **uno per owner e per macchina**. Se
+stesse dentro ogni progetto sarebbe esattamente la duplicazione che questa sezione condanna —
+cambiare l'alias di un modello vorrebbe dire ripetere la stessa identica modifica in N progetti —
+e per giunta porterebbe nella storia condivisa di un repository dei valori che sono della macchina
+di chi ci lavora.
+
+**Un progetto può però sovrascriverlo.** Chi lo legge cerca in quest'ordine:
+
+1. `.daiku/environment.json` nella radice tecnica, se esiste;
+2. `~/.daiku/environment.json`.
+
+**Vince il primo che trova, e lo prende intero**: i due non si fondono. Un override di progetto è
+un file completo, non un elenco di differenze — così ciò che si legge resta un file solo, e nessuno
+deve ricostruire a mente da quale delle due sedi arrivi ciascuna chiave. Serve dove una home
+dell'owner non c'è (una CI, un container) o dove un progetto preciso gira su un backend che gli
+altri non usano.
 
 **Quando un valore sembra stare in tutti e due**, decide chi lo aggiornerebbe al prossimo
 cambiamento: se metterlo in `project.json` costringesse a ripetere la stessa identica modifica in

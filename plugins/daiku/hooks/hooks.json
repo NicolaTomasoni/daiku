@@ -8,7 +8,7 @@
             "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/lib/command-guard.mjs\"",
             "timeout": 15,
-            "statusMessage": "Guardia comandi distruttivi"
+            "statusMessage": "Destructive command guard"
           }
         ]
       }
@@ -21,7 +21,7 @@
             "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/lib/contracts-post-edit.mjs\"",
             "timeout": 30,
-            "statusMessage": "Controlli deterministici sul corpus"
+            "statusMessage": "Deterministic corpus checks"
           }
         ]
       }
@@ -33,7 +33,7 @@
             "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/lib/session-advice.mjs\"",
             "timeout": 10,
-            "statusMessage": "Stato di Daiku sul progetto"
+            "statusMessage": "Daiku status for this project"
           }
         ]
       }

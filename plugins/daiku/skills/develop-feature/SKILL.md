@@ -1,7 +1,6 @@
 ---
-name: 'deliver-feature'
-description: 'Consegna una feature dal decision-doc già risolto fino al commit in un''unica invocazione — brief -> esecuzione -> review (ciclo a giri) -> decisione -> aggiornamento memoria/documentazione sul diff staged -> commit condizionale (feature, poi doc/memoria) -> report. Orchestrata da te, delegando ogni fase a un subagent. Stessa unità atomica che /nightly-orchestrator usa per ogni item della coda.'
-argument-hint: '[cartella] [soluzione scelta] [backend, opzionale — solo se la sessione gira su un backend switchato]'
+name: 'develop-feature'
+description: 'Contratto interno di /new-feature e /nightly-orchestrator — consegna una feature dal decision-doc già risolto fino al commit in un''unica invocazione: worktree, brief, esecuzione, review a giri, decisione, allineamento di memoria e documentazione, i tre commit, merge e report. Orchestra le proprie fasi delegando ciascuna a un subagent. Non si lancia a mano e non chiede niente all''owner.'
 ---
 
 Sei il **motore** della consegna di una singola feature: la sequenza — brief → esecuzione →
@@ -21,27 +20,36 @@ cambia la sequenza, si tocca questo file e basta.
 ## Quando usarla
 
 Quando hai **una** feature con `1. decision-doc.md` già risolto e vuoi la consegna completa
-(fino al commit condizionale) senza invocare a mano `/blueprint` → `/execute` →
+(fino al commit condizionale) senza che nessuno debba incatenare `blueprint` → `execute` →
 `/review` → `/commit` in sequenza. Se vuoi restare sui passi atomici singoli (per
 fermarti tra uno stadio e l'altro), usa quelli direttamente: questa skill non li sostituisce,
 li incatena per i casi in cui vuoi la consegna intera in un colpo solo.
 
 ## Input
 
-Argomenti: `$ARGUMENTS` — `<cartella> <soluzione scelta> [backend]`.
+**Sei sempre un subagent: questo contratto non si lancia a mano.** Lo aprono `new-feature`
+§ *La consegna* e `nightly-orchestrator` §2, e tutto arriva risolto nel prompt — non c'è nessuno
+a cui chiedere, e una domanda posta qui dentro resta appesa (§ *Domandare all'owner* di
+`contracts/orchestration.md`).
 
 - **`<cartella>`** — path della cartella (relativo alla root del repo, o assoluto), ovunque
-  viva: `{paths.studies}/<nome>` è il caso comune ma non l'unico (le cartelle di studio
-  prodotte da `/decision-doc`, ovunque vivano, sono altrettanto valide). Verificala sul
-  filesystem: deve esistere e contenere `1. decision-doc.md`. Se manca, fermati e dillo.
-- **`<soluzione scelta>`** — obbligatoria, verbatim: la passi al brief. Se ambigua rispetto al
-  decision-doc (decisione o opzione inesistente), apri il documento, mostra le opzioni e
-  chiedi — non indovinare. Se non ti vengono passati come argomenti le scelte dell'utente, usa quelle consigliate nel doc senza chiedere conferma.
-- **`[backend]`** — opzionale, il nome del backend su cui la sessione gira: dichiaralo **solo**
-  se non è quello nativo dell'host. Incide unicamente sulla concorrenza del fan-out di review,
-  ed è `contracts/orchestration.md` §5 a dire se quel backend la sequenzializza. Non sceglie
-  modelli: quelli vengono dai ruoli.
-- Se `$ARGUMENTS` è vuoto o incompleto, **chiedi**. Non procedere a vuoto.
+  viva: `{paths.studies}/<nome>` è il caso comune ma non l'unico. Verificala sul filesystem:
+  deve esistere e contenere `1. decision-doc.md`. Se manca, fermati e restituisci il blocco con
+  il motivo.
+- **`<soluzione scelta>`** — obbligatoria, verbatim: la passi al brief. Se è ambigua rispetto al
+  decision-doc — nomina una decisione o un'opzione che lì non esistono — **non indovinare e non
+  chiedere**: fermati, e nel blocco riporta le opzioni che il documento dichiara davvero, così
+  che chi ti ha chiamato possa portarle all'owner. Se invece la soluzione non ti è stata passata
+  affatto, usa per ogni decisione l'opzione **raccomandata** nel documento e dichiaralo
+  nell'esito: è una scelta difendibile scritta da chi il problema l'ha studiato, non un'invenzione
+  tua.
+- **`[backend]`** — opzionale, il nome del backend su cui la sessione gira: ti viene passato
+  **solo** se non è quello nativo dell'host. Incide unicamente sulla concorrenza del fan-out di
+  review, ed è `contracts/orchestration.md` §5 a dire se quel backend la sequenzializza. Non
+  sceglie modelli: quelli vengono dai ruoli.
+- **`<id item>` e `<run_id>`** — opzionali, li passa solo `nightly-orchestrator`: aprono il
+  titolo del report e distinguono questa consegna dell'item da una sua consegna di un'altra
+  notte. Senza, il report si intitola sulla cartella.
 
 ## Pool dei worktree
 
@@ -71,7 +79,7 @@ sul proprio.
 ## Prima di iniziare
 
 Leggi `contracts/orchestration.md`: ruoli, host, come si lancia un subagent, concorrenza. Ogni
-fase qui sotto dichiara il proprio ruolo (**giudice** o **worker**) e tu risolvi il modello con
+fase qui sotto dichiara il proprio ruolo (**judge** o **worker**) e tu risolvi il modello con
 la regola della sua §2 — mai da qui.
 
 ## Avanzamento e rilievi
@@ -146,7 +154,7 @@ commit. Uno sporco non è un tuo residuo da ripulire: è lavoro di un'altra cons
 registrato. Da qui in poi ogni fase riceve già risolti il `<nome>`, la radice di lavoro e la
 radice artefatti.
 
-### 1. Brief — ruolo **giudice**
+### 1. Brief — ruolo **judge**
 
 Subagent che produce il brief. Nel prompt:
 
@@ -199,7 +207,7 @@ feature compili. Senza di lei non esiste la decisione della fase 4, quindi non e
 Esegui integralmente `skills/review/SKILL.md` — scope → giri di finder e fix, finché il
 ciclo converge → gate — sul file `<cartella>/4. review-notes.md` nella **radice artefatti**
 (nome fisso per
-contratto di `/execute`: non concatenare il path restituito, il suo formato non è garantito).
+contratto di `execute`: non concatenare il path restituito, il suo formato non è garantito).
 È la stessa disciplina che gira da `/review` standalone: una sola fonte, nessuna copia
 — **non riscriverla qui**. Nel prompt passale anche la radice di lavoro del worktree e la
 radice artefatti: diff, fix, copertura e gate girano nella prima, ledger e `5. review-report.md`
@@ -239,7 +247,7 @@ consegna da valutare.
 
 ### 4. Decision — la decidi **tu**, in chat, senza subagent
 
-È una classificazione deterministica su dati già strutturati: non serve un secondo giudice che
+È una classificazione deterministica su dati già strutturati: non serve un secondo judge che
 ri-giudichi. L'applicatore della review ha già marcato ogni voce di `da_confermare` con
 `bloccante`, perché aveva il rilievo in mano.
 
@@ -263,7 +271,7 @@ per convergenza — il ciclo stava ancora correggendo difetti quando gli è fini
 `oscillazione` significa due giri che si rimpallano la stessa riga; una disciplina mancata non ha
 girato su questo diff e **non girerà mai più**, perché `arch` e `perf` si fanno una
 volta sola sul diff completo. Senza queste righe lo stesso identico esito di review bloccherebbe il
-commit lanciata a mano e lo lascerebbe passare dentro la consegna — mentre questa skill dichiara
+commit se lanciata a mano e lo lascerebbe passare dentro la consegna — mentre questa skill dichiara
 di eseguire «la stessa disciplina».
 
 `indipendenza: persa` **non** blocca: dice che il giro 1 è stato valutato in un contesto solo
@@ -292,7 +300,7 @@ dai segnalati, mai stage/commit, e se anche un solo fix ammette due strade difen
 lo lascia stare e lo dichiara in `needs_tradeoff` invece di indovinare.
 
 - Se torna `gate: verde` e `needs_tradeoff` vuoto: riclassifica con la tabella (l'esito tipico è
-  `GREEN_COMMITTED`) e prosegui dalle fasi 5 in poi; il report racconta lo sblocco in un paragrafo.
+  `GREEN_COMMITTED`) e prosegui dalla fase 5 in poi; il report racconta lo sblocco in un paragrafo.
 - Altrimenti (`gate` ancora rosso, o `needs_tradeoff` non vuoto): resta `BLOCKED_NO_COMMIT` con quei
   blocker, e da qui in poi vale il paragrafo qui sotto (niente stage/memoria/commit, worktree sporco
   e dichiarato).
@@ -335,7 +343,7 @@ confermare l'index. Mai `git commit`, mai `git push` in questo passo.
 
 Se `staged` è `false`, non c'è nulla da consegnare: salta 5b e 6, vai al report.
 
-**5b. Aggiornamento memoria/documentazione — ruolo giudice.** Nel prompt:
+**5b. Aggiornamento memoria/documentazione — ruolo judge.** Nel prompt:
 
 - leggi per intero `skills/update-memory/SKILL.md` e segui quel contratto
   alla lettera;
@@ -371,8 +379,13 @@ in chat e prosegui col resto.
 ### 6. Commit — ruolo **worker**
 
 Un solo subagent, fino a tre commit distinti e nell'ordine dichiarato, sul branch del worktree
-(`{worktree.branch_prefix}<nome>`). Nel prompt: la radice di lavoro, ed esegui solo
-comandi Git con `git -C <worktree_root>`, in ordine, senza chiedere conferma.
+(`{worktree.branch_prefix}<nome>`). Nel prompt: la radice di lavoro, ed esegui comandi Git con
+`git -C <worktree_root>`, in ordine, senza chiedere conferma.
+
+**Scrive su tre soli path, e sono quelli del commit 3.** Il bump tocca `{changelog}`,
+`{version.file}` e i file di `{version.replicated_in}`: il subagent li modifica, e fuori da quei
+tre pathspec non scrive niente — non tocca codice, non tocca memoria, non tocca documentazione.
+Tutto il resto di questa fase sono comandi Git.
 
 **Commit 1 — la feature.** I file sotto `{code_root}` sono **già** in index: non eseguire
 `git add`, committi esattamente ciò che c'è. Messaggio conforme alla § *Convenzione di commit* di `skills/commit/SKILL.md`, che la risolve
@@ -391,7 +404,11 @@ riporta quello SHA in `memory_commit_sha` con `memory_committed: true`, e non te
 vuoto su file che nessuno ha più modificato.
 
 **Commit 3 — versione e changelog.** Terzo gruppo: `{changelog}`, `{version.file}` e i file di
-`{version.replicated_in}`. Quando la voce di changelog si scrive, quando il bump minor si fa e
+`{version.replicated_in}`. **Se uno di questi cade sotto `{code_root}`** — un `package.json`, un
+`pyproject.toml` — il passo 5a l'ha già messo in index e il commit 1 se l'è portato via com'era,
+senza il numero nuovo: quel file si modifica adesso e rientra **qui**, nel terzo gruppo, che non è
+vuoto solo perché un suo path era già stato committato una volta. Dichiaralo in `detail`, perché è
+l'unico caso in cui un path compare in due dei tre commit. Quando la voce di changelog si scrive, quando il bump si fa e
 cosa comporta è dichiarato in `skills/commit/SKILL.md`, § *Bump di versione e
 changelog*: il subagent la legge **da lì** e la esegue, **non riscriverla qui** — è la stessa
 forma con cui la fase 3 rimanda a `skills/review/SKILL.md` invece di riscriverne la disciplina. Una sola fonte
@@ -402,13 +419,24 @@ dichiara; il commit va **dopo** i primi due e non esiste se il gruppo è vuoto. 
 
 **Mai `git push`**, in nessuno dei tre.
 
+**Perché questa fase non è un'invocazione di `skills/commit/SKILL.md`**, visto che i tre gruppi e
+il loro ordine sono i suoi: perché quel contratto delega **sempre** l'allineamento a
+`update-memory` come proprio passo obbligatorio, e qui l'allineamento è già girato alla fase 5b,
+sul diff in index e con il permesso di commit negato. Invocarlo lo farebbe girare due volte, e la
+seconda con un permesso che l'ordine dei commit di questa skill non ammette. Quello che resta di
+suo — la convenzione del messaggio e la disciplina di versione e changelog — lo si legge da lì,
+come fanno il commit 1 e il commit 3.
+
 **Se la sequenza si ferma fra un gruppo e il successivo, dillo con i path.** Un commit 1 fallito
 lascia nell'albero il gruppo memoria/doc che 5b ha appena scritto, e — se il bump l'aveva toccato —
 anche versione e changelog: due gruppi che **non si parcheggiano**, perché sono artefatti da
 riconciliare a mano, non codice da riapplicare con `git apply`. Elencali in `detail` e nel report
-con i loro path. Il controllo di pulizia dell'item successivo li vede e ferma la notte (§2 di
-`skills/nightly-orchestrator/SKILL.md`): è l'esito giusto, e dichiararli è ciò che permette a
-chi legge la mattina di sapere di chi sono invece di trovarsi davanti sporco anonimo.
+con i loro path. Restano nel **worktree**, quindi non li vede il controllo sull'albero principale
+di `skills/nightly-orchestrator/SKILL.md`: li vede la **fase 0**, che considera libero solo un
+worktree con `git status --porcelain` vuoto, e quel worktree esce dal pool finché l'owner non lo
+tratta. La notte prosegue sugli altri, ed è l'esito giusto: dichiararli è ciò che permette a chi
+legge la mattina di sapere di chi sono, invece di trovarsi davanti un worktree occupato da sporco
+anonimo.
 
 ```json
 {"committed": true, "commit_sha": "<sha>", "memory_committed": false, "memory_commit_sha": "<sha se esiste>", "version_commit_sha": "<sha se esiste>", "detail": "<...>"}
@@ -463,7 +491,7 @@ resta registrato col suo nome e il suo branch: è pronto per la prossima consegn
 Subagent che appende (creando il file se non esiste) a `{paths.nightly}/nightly-review.md`, **in
 coda** — mai sovrascrivere o riformattare ciò che c'è già.
 
-È l'unica fase che deve riportare campi prodotti da **altre quattro**, e un subagent in contesto
+È l'unica fase che deve riportare campi prodotti da **altre sei**, e un subagent in contesto
 fresco non ne ricava nessuno da solo. Nel prompt vanno quindi **già risolti**, uno per uno (§4.1
 di `contracts/orchestration.md`): ricostruirli a memoria fa cadere per prime proprio le righe che
 dicono cosa la consegna **non** ha fatto, e `/nightly-orchestrator` considera chiuso ogni item che
@@ -556,7 +584,8 @@ nel report col suo nome.
      "memory_updated": false,
      "memory_committed": false,
      "memory_commit_sha": "<sha o null>",
-     "report_path": "{paths.nightly}/nightly-review.md",
+     "version_commit_sha": "<sha o null>",
+     "report_path": "<path del report, sotto {paths.nightly}>",
      "blocked_patch": null,
      "reason": "<solo se blocked: il motivo esatto>"
    }
@@ -568,7 +597,8 @@ nel report col suo nome.
    `commit_sha` da `committed`/`commit_sha` della fase 6; `merge_sha` dalla fase 6b (`null` se il
    merge non è partito o è andato in conflitto); `memory_updated` dal
    campo `updated` della fase 5b (`false` se la fase non è stata eseguita); `memory_committed` e
-   `memory_commit_sha` dalla fase 6; `reason` dal `detail` della fase che ha bloccato;
+   `memory_commit_sha` e `version_commit_sha` dalla fase 6; `reason` dal `detail` della fase che
+   ha bloccato;
    `blocked_patch` sempre `null` (campo conservato per compatibilità): la consegna non parcheggia
    — su `BLOCKED_NO_COMMIT` e su `blocked` il worktree resta sporco e i path si dichiarano nel
    report e in `reason`.

@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 48eaa498-ed6e-4a36-847d-3f8fa95f7f21
-  modified: 2026-09-18T14:39:45.488Z
+  modified: 2026-09-19T18:30:29.830Z
 ---
 
 Il repo è **insieme marketplace e pacchetto**: una sola alberatura serve Claude Code e Codex,
@@ -20,10 +20,10 @@ perché i due host cercano file con nomi diversi e ignorano quelli dell'altro. R
 
 | Dentro il pacchetto | Cosa c'è | Chi lo legge |
 |---|---|---|
-| `skills/` | i **18 contratti** del metodo, uno per cartella | **entrambi** gli host, stessi identici file |
-| `contratti/` | `orchestration.md`, `project-contract.md` | le skill li aprono per path; non sono skill loro stessi |
-| `agents/` | `finder`, `auditor-memoria` — subagent a toolset ristretto | solo Claude Code: Codex li rifiuta |
-| `hooks/` | il wiring `hooks.json` + i tre `.mjs` in `lib/` | solo Claude Code: su Codex `plugin_hooks` è rimossa |
+| `skills/` | i **19 contratti** del metodo, uno per cartella | **entrambi** gli host, stessi identici file |
+| `contracts/` | `orchestration.md`, `project-contract.md` | le skill li aprono per path; non sono skill loro stessi |
+| `agents/` | `finder` — l'unico subagent a toolset ristretto | solo Claude Code: Codex lo rifiuta |
+| `hooks/` | il wiring `hooks.json`, i **tre hook** in `lib/` e i **due moduli** che importano (`project-root.mjs`, `daiku-config.mjs`); accanto, fuori da `lib/`, `self-check.mjs` e `README.md`, che sono di chi sviluppa il pacchetto e non si trasportano | solo Claude Code: su Codex `plugin_hooks` è rimossa |
 | `templates/` | gli scheletri che `init` copierà nel progetto ospite | nessuno: non vengono mai letti in place |
 | `.claude-plugin/`, `.codex-plugin/` | i due manifest, uno per host | gli host, all'installazione |
 
@@ -43,9 +43,9 @@ Non si possono spostare: gli host li cercano lì e basta.
 - **`.claude/`** — come si lavora *su* Daiku, non come Daiku funziona. Dentro c'è:
   - `orchestration.md` + `skills/` (10 contratti) + `agents/finder.md` — il **corpus di sviluppo**,
     una derivazione dei contratti del prodotto adattata a questo repo: valori scritti per esteso
-    invece che parametrizzati, niente worktree, niente commit per memoria e documentazione (che qui
-    è fuori da git). Non si sincronizza da solo col pacchetto: una modifica che vale per entrambi si
-    riporta a mano. Vedi [[corpus-di-sviluppo]].
+    invece che parametrizzati, e niente worktree. Non si sincronizza da solo col pacchetto, e dal
+    19 settembre 2026 **non si modifica affatto**: si scrive solo nel prodotto, e riportare la
+    modifica qui è una decisione che si chiede all'owner. Vedi [[corpus-di-sviluppo]].
   - `commands/confronta-repo.md` — una skill dell'owner, precedente al corpus.
   - `settings.local.json` — punta `autoMemoryDirectory` (vedi [[memoria-nel-repo]]).
 - **`.vscode/`** — `tasks.json` con gli switch fra backend LLM: tooling personale dell'owner, con
@@ -58,7 +58,8 @@ Non si possono spostare: gli host li cercano lì e basta.
 - `RICOGNIZIONE.md` — il documento di riferimento: cosa offrono i due host, cosa manca, perché
   ogni file sta dove sta, con le prove eseguite sui validatori reali
 - `PUNTI-APERTI.md` — le decisioni ancora da prendere
-- `memory/` — questa memoria; sta nel repo per averla sotto mano, non per pubblicarla
+- `memory/` — questa memoria; è versionata come tutto il resto, ma non viene pubblicata
+- `backup/skill-estratte.md` — il registro ad append di ciò che è stato tolto dalle skill
 - `esempi/reforgia/` — dominio e politiche di ReforgIA, come esempio di un livello Dominio
   compilato davvero
 
@@ -83,16 +84,18 @@ Verificate sui validatori di entrambi gli host.
 
 - Una cosa che i due host devono vedere uguale va in `skills/<nome>/SKILL.md`: è l'unico
   primitivo con lo stesso identico layout su entrambi.
-- Una cosa che le skill leggono ma che skill non è va in `contratti/`, **mai** sotto `skills/`:
-  Claude Code scandisce anche le sottocartelle che iniziano col punto, quindi `skills/.contratti/`
+- Una cosa che le skill leggono ma che skill non è va in `contracts/`, **mai** sotto `skills/`:
+  Claude Code scandisce anche le sottocartelle che iniziano col punto, quindi `skills/.contracts/`
   diventerebbe una skill rotta.
 - Una cosa che vive nel progetto ospite va in `templates/`, perché **nessuno dei due host lascia
   che un pacchetto scriva nel progetto**: la deve scrivere un comando che l'utente lancia.
 
 `agents/` e `hooks/` restano nel pacchetto ma valgono **solo su Claude Code**: il manifest Codex
 rifiuta `agents`, `commands` e `hooks`, e `plugin_hooks` è una feature rimossa. Su Codex quei due
-livelli li dovrà scrivere `init` dentro il progetto.
+livelli li scrive `sync-host` dentro il progetto, in `.codex/hooks/` e `.codex/agents/` — non
+`init`, che si ferma a `.daiku/`.
 
-Cosa esce e cosa resta lo decide il `.gitignore`: vedi [[si-pubblica-solo-il-prodotto]] e
-[[pubblicazione-su-github]]. Per il difetto che la migrazione a `skills/` ha fatto emergere, vedi
-[[frontmatter-skill-va-quotato]].
+Cosa esce e cosa resta **non** lo decide più il `.gitignore`, che qui esclude solo
+`.claude/settings.local.json`: lo decide la lista di copia dello script di pubblicazione. Vedi
+[[si-pubblica-solo-il-prodotto]] e [[pubblicazione-su-github]]. Per il difetto che la migrazione a
+`skills/` ha fatto emergere, vedi [[frontmatter-skill-va-quotato]].

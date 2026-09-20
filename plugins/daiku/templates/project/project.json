@@ -1,58 +1,61 @@
 {
   "contract": 2,
-  "name": "<nome del progetto, come compare nei testi rivolti all'utente>",
-  "repo_root": "<path assoluto della root del repository, con slash in avanti>",
-  "code_root": "<radice del codice applicativo, con slash finale>",
-  "instructions_file": "<file di istruzioni che l'host carica a ogni sessione>",
+  "name": "<project name, as it appears in text addressed to the user>",
+  "repo_root": "<absolute path of the repository root, with forward slashes>",
+  "code_root": "<root of the application code, with a trailing slash>",
+  "instructions_file": "<instructions file the host loads at every session>",
   "language": {
-    "chat": "<lingua di chat, riepiloghi e documenti del metodo>",
-    "commit": "<lingua dei messaggi di commit e delle voci di changelog>"
+    "chat": "<language of chat, summaries and the documents the method produces>",
+    "commit": "<language of commit messages and changelog entries>"
   },
-  "tech_doc": "<path del documento tecnico, oppure togli la chiave>",
-  "changelog": "<path del registro delle versioni rilasciate, oppure togli la chiave>",
+  "tech_doc": "<path of the technical document, or drop this key>",
+  "changelog": "<path of the log of released versions, or drop this key>",
   "version": {
-    "file": "<file che porta la versione canonica>",
-    "field": "<punto esatto del file in cui quella versione vive>",
+    "file": "<file that carries the canonical version>",
+    "field": "<the exact spot in that file where the version lives>",
     "replicated_in": []
   },
   "paths": {
-    "studies": "<cartella delle cartelle di lavoro, una per problema>",
-    "lib_notes": "<cartella degli appunti su una tecnologia>",
-    "nightly": "<cartella della coda notturna e del suo registro>",
-    "review_state": "<cartella del ledger di review, fuori dal versionato>"
+    "studies": "<folder holding the working folders, one per problem>",
+    "lib_notes": "<folder of the notes on a technology>",
+    "nightly": "<folder of the nightly queue and its log>",
+    "review_state": "<folder of the review ledger, outside version control>"
   },
   "memory": {
-    "root": "<radice del corpus di memoria persistente>",
-    "index": "<file indice del corpus>",
-    "catalogs": []
+    "root": "<root of the persistent memory corpus>",
+    "index": "<index file of the corpus>"
   },
   "commit": {
-    "memory_prefix": "<prefisso del commit di memoria e documentazione>"
+    "memory_prefix": "<prefix of the memory and documentation commit message>"
   },
   "worktree": {
-    "pool": "<directory del pool di worktree>",
-    "prefix": "<prefisso dei nomi del pool>",
+    "pool": "<directory of the worktree pool>",
+    "prefix": "<prefix of the pool's worktree names>",
     "max": 0,
-    "branch_prefix": "<prefisso del branch di ciascun worktree>"
+    "branch_prefix": "<prefix of each worktree's branch>"
+  },
+  "guardrails": {
+    "deny_push": false,
+    "deny_no_verify": false
   },
   "areas": {
-    "<nome dell'area>": {
-      "paths": ["<path che appartengono all'area, usabili come pathspec Git>"],
+    "<area name>": {
+      "paths": ["<a path belonging to the area, usable as a Git pathspec>"],
       "gate": {
-        "cwd": "<directory da cui eseguire>",
-        "run": ["<riga esatta da eseguire, non una descrizione>"]
+        "cwd": "<directory to run from>",
+        "run": ["<the exact line to run, not a description of it>"]
       },
       "lint_fix": {
-        "cwd": "<directory da cui eseguire>",
-        "run": ["<riga che applica le sole correzioni sicure a <FILES>>"]
+        "cwd": "<directory to run from>",
+        "run": ["<the line that applies only the safe lint fixes to <FILES>>"]
       },
       "test_targeted": {
-        "cwd": "<directory da cui eseguire>",
-        "run": ["<riga che esegue i soli test <FILES>>"]
+        "cwd": "<directory to run from>",
+        "run": ["<the line that runs only the tests <FILES>>"]
       },
       "coverage": {
-        "cwd": "<directory da cui eseguire>",
-        "run": ["<righe che producono la misura di copertura>"]
+        "cwd": "<directory to run from>",
+        "run": ["<the lines that produce the area's coverage measurement>"]
       }
     }
   }

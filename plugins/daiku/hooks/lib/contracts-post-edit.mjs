@@ -21,11 +21,23 @@
  *  3. **Le rule di area in `.daiku/policies/`.** Si selezionano per il `paths` del loro
  *     frontmatter: senza quella chiave la rule c'e' ma non viene mai scelta.
  *  4. **Le guardie stesse.** Una guardia riscritta si verifica col proprio banco di prova,
- *     non a occhio.
+ *     non a occhio — e questo hook lo **ricorda**, non lo fa.
  *
  * **Segnala, non ferma.** L'uscita e' sempre `0` e non c'e' nessun ramo che blocchi: fermare
  * a meta' la scrittura di un contratto costa piu' del difetto che si chiude. Il referto
  * arriva come contesto, e chi ha appena scritto decide.
+ *
+ * **E non esegue niente.** E' la differenza col giro precedente, in cui il punto 4 lanciava
+ * `node <file> --self-check` sul `.mjs` appena scritto. Sembrava comodo e non lo era: far
+ * partire un file *perche' e' comparso* significa eseguire codice che nessuno ha ancora
+ * guardato, scavalcando sia la conferma che l'host chiede prima di lanciare un comando, sia
+ * l'approvazione per hash che Codex pretende proprio per gli hook. Un hook che dice «lancia
+ * il banco» e un hook che lo lancia da solo hanno lo stesso valore diagnostico e un
+ * perimetro di rischio molto diverso.
+ *
+ * Nessun gate su `.daiku/`, e qui e' voluto: questo hook non nega niente a nessuno, e un
+ * frontmatter YAML che si svuota in silenzio e' un guasto anche per chi Daiku non ce l'ha.
+ * La guardia che **nega** ha il gate, e sta in `command-guard.mjs`.
  *
  * **Fail-open e silenzioso.** Stdin illeggibile, path fuori perimetro, file sparito, `node`
  * che non parte, uscita non parsabile, timeout → non stampa niente ed esce 0. E' la stessa
@@ -36,10 +48,9 @@
  * cablato.
  */
 
-import { existsSync, readFileSync } from 'node:fs';
-import { spawnSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { isAbsolute, join, relative } from 'node:path';
-import { radiceProgetto } from './project-root.mjs';
+import { invocatoDirettamente, radiceProgetto } from './project-root.mjs';
 
 const RADICE = radiceProgetto();
 
@@ -61,8 +72,15 @@ export function piano(rel) {
 
   // Una guardia riscritta si verifica col proprio banco: gli altri controlli leggono
   // markdown e su un `.mjs` non hanno niente da dire.
-  if (/^\.(claude|codex)\/hooks\/[A-Za-z0-9_.-]+\.mjs$/.test(rel)) {
-    return [{ etichetta: `banco di prova di ${rel.split('/').pop()}`, tipo: 'banco', bersaglio: rel }];
+  //
+  // Il perimetro e' **qualunque** cartella `hooks/` dentro la radice, con o senza `lib/`,
+  // perche' le sedi reali sono tre e la forma precedente ne copriva una sola: `.codex/hooks/`
+  // nel progetto ospite di Codex, `hooks/lib/` in un pacchetto che si sta sviluppando,
+  // `.claude/hooks/` in un progetto che aggancia le guardie per conto suo. Su Claude Code,
+  // con Daiku installato come pacchetto, le guardie non stanno nel progetto affatto: girano
+  // dalla cache, e li' nessuno le riscrive: e' il caso in cui questo ramo giustamente tace.
+  if (/(^|\/)hooks\/(lib\/)?[A-Za-z0-9_.-]+\.mjs$/.test(rel)) {
+    return [{ etichetta: `banco di prova di ${rel.split('/').pop()}`, tipo: 'promemoria', bersaglio: rel }];
   }
 
   // Il frontmatter di un contratto, ovunque stia: il pacchetto installato, `.claude/`,
@@ -168,22 +186,21 @@ export function rilieviJson(testo) {
   }
 }
 
-/** Lancia un passo del piano e restituisce le righe da riportare. `[]` se tace o degrada. */
+/** Svolge un passo del piano e restituisce le righe da riportare. `[]` se tace o degrada. */
 function esegui(passo, radice, amb) {
   const assoluto = join(radice, passo.bersaglio);
 
-  if (passo.tipo === 'banco') {
-    const esito = amb.lancia('node', [assoluto, '--self-check']);
-    if (!esito || esito.stdout == null) return [];
-    let referto;
-    try {
-      referto = JSON.parse(esito.stdout);
-    } catch {
-      return []; // uscita non parsabile: non si inventa un verdetto
-    }
-    const falliti = referto.falliti || [];
-    if (!falliti.length) return [];
-    return [`**${passo.etichetta}** — ${falliti.length} casi rossi:`, ...falliti.map((f) => `- ${f}`)];
+  if (passo.tipo === 'promemoria') {
+    return [
+      `**${passo.etichetta}** — hai riscritto una guardia. Un hook e' fail-open: davanti a un`,
+      `guasto tace ed esce 0, quindi rotto e silenzioso si assomigliano. Provalo prima di`,
+      `fidartene, e leggi il totale:`,
+      '',
+      `    node ${passo.bersaglio} --self-check`,
+      '',
+      `Su Codex quel file torna a chiedere l'approvazione: la fiducia e' registrata sull'hash,`,
+      `e finche' non la dai l'hook viene saltato.`,
+    ];
   }
 
   let testo;
@@ -216,33 +233,17 @@ export function referto(rel, radice, amb) {
 
 const AMBIENTE_REALE = {
   leggi: (percorso) => readFileSync(percorso, 'utf-8'),
-  lancia: (comando, argomenti) => {
-    const esito = spawnSync(comando, argomenti, {
-      cwd: RADICE,
-      encoding: 'utf-8',
-      timeout: 20000,
-    });
-    if (esito.error) return null;
-    return esito;
-  },
 };
 
 // --- banco di prova -----------------------------------------------------------
 
-function ambienteFinto(file, risposte = {}) {
+function ambienteFinto(file) {
   const chiave = (p) => String(p).replace(/\\/g, '/').toLowerCase();
   const mappa = new Map(Object.entries(file).map(([k, v]) => [chiave(k), v]));
   return {
     leggi: (p) => {
       if (!mappa.has(chiave(p))) throw new Error(`ENOENT ${p}`);
       return mappa.get(chiave(p));
-    },
-    lancia: (comando, argomenti) => {
-      const bersaglio = chiave(argomenti[0]);
-      for (const [frammento, risposta] of Object.entries(risposte)) {
-        if (bersaglio.includes(frammento)) return risposta;
-      }
-      return null;
     },
   };
 }
@@ -265,8 +266,10 @@ function selfCheck() {
   verifica('project.json accende il controllo JSON', tipoDi('.daiku/project.json') === 'json');
   verifica('environment.json accende il controllo JSON', tipoDi('.daiku/environment.json') === 'json');
   verifica('una rule di area accende il suo frontmatter', tipoDi('.daiku/policies/backend.md') === 'policy');
-  verifica('una guardia Claude accende il proprio banco', tipoDi('.claude/hooks/command-guard.mjs') === 'banco');
-  verifica('una guardia Codex accende il proprio banco', tipoDi('.codex/hooks/command-guard.mjs') === 'banco');
+  verifica('una guardia Codex ricorda il proprio banco', tipoDi('.codex/hooks/command-guard.mjs') === 'promemoria');
+  verifica('una guardia Claude ricorda il proprio banco', tipoDi('.claude/hooks/command-guard.mjs') === 'promemoria');
+  verifica('una guardia del pacchetto in sviluppo pure', tipoDi('plugins/daiku/hooks/lib/command-guard.mjs') === 'promemoria');
+  verifica('e anche il modulo che le guardie importano', tipoDi('plugins/daiku/hooks/lib/daiku-config.mjs') === 'promemoria');
   verifica('una guardia non accende anche gli altri controlli', piano('.claude/hooks/command-guard.mjs').length === 1);
 
   // Fuori perimetro: silenzio, nessuna lettura e nessun processo.
@@ -332,28 +335,25 @@ function selfCheck() {
   verifica('il referto dichiara che non blocca', !!testo && testo.includes('Non bloccano niente'));
   verifica('il referto nomina il file scritto', !!testo && testo.includes('review/SKILL.md'));
 
-  const bancoRosso = ambienteFinto({}, {
-    'command-guard': { stdout: JSON.stringify({ controlli: 57, passati: 56, falliti: ['un caso'] }) },
-  });
-  const testoBanco = referto('.claude/hooks/command-guard.mjs', R, bancoRosso);
-  verifica('un banco rosso arriva nel referto', !!testoBanco && testoBanco.includes('un caso'));
-
-  const bancoVerde = ambienteFinto({}, {
-    'command-guard': { stdout: JSON.stringify({ controlli: 57, passati: 57, falliti: [] }) },
-  });
-  verifica('un banco verde tace', referto('.claude/hooks/command-guard.mjs', R, bancoVerde) === null);
+  // --- il promemoria sulle guardie: ricorda, e non esegue --------------------
+  const senzaDisco = {
+    leggi: () => {
+      throw new Error('nessuno deve leggere un .mjs per ricordare di provarlo');
+    },
+  };
+  const promemoria = referto('.codex/hooks/command-guard.mjs', R, senzaDisco);
+  verifica('riscrivere una guardia produce il promemoria', !!promemoria && promemoria.includes('--self-check'));
+  verifica('il promemoria nomina il file da provare', !!promemoria && promemoria.includes('command-guard.mjs'));
+  verifica('il promemoria dice perche\': un hook rotto tace', !!promemoria && promemoria.includes('fail-open'));
+  verifica('il promemoria ricorda l\'approvazione di Codex', !!promemoria && promemoria.includes('hash'));
+  verifica(
+    'nessun ambiente puo\' eseguire niente: non esiste piu\' un lanciatore',
+    typeof AMBIENTE_REALE.lancia === 'undefined'
+  );
 
   // --- le degradazioni: ciascuna tace, nessuna solleva ------------------------
   verifica('file sparito: nessun referto', referto('.claude/skills/review/SKILL.md', R, ambienteFinto({})) === null);
-  verifica('processo che non parte: nessun referto', referto('.claude/hooks/command-guard.mjs', R, ambienteFinto({}, {})) === null);
-  verifica(
-    'uscita non parsabile: nessun referto',
-    referto('.claude/hooks/command-guard.mjs', R, ambienteFinto({}, { 'command-guard': { stdout: 'BOOM' } })) === null
-  );
-  verifica(
-    'uscita vuota: nessun referto',
-    referto('.claude/hooks/command-guard.mjs', R, ambienteFinto({}, { 'command-guard': { stdout: null } })) === null
-  );
+  verifica('fuori perimetro: nessun referto', referto('src/index.ts', R, ambienteFinto({})) === null);
 
   process.stdout.write(
     JSON.stringify({ controlli: eseguiti, passati: eseguiti - falliti.length, falliti }, null, 2) + '\n'
@@ -373,13 +373,14 @@ function main() {
   );
 }
 
-if (process.argv.includes('--self-check')) {
-  process.exit(selfCheck());
+if (invocatoDirettamente(import.meta.url)) {
+  if (process.argv.includes('--self-check')) {
+    process.exit(selfCheck());
+  }
+  try {
+    main();
+  } catch {
+    /* fail-open: non si ferma mai una scrittura gia' avvenuta */
+  }
+  process.exit(0);
 }
-
-try {
-  main();
-} catch {
-  /* fail-open: non si ferma mai una scrittura gia' avvenuta */
-}
-process.exit(0);

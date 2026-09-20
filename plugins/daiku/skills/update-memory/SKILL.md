@@ -1,30 +1,32 @@
 ---
 name: update-memory
-description: Passo obbligatorio di /deliver-feature prima del commit, aggiorna il file di istruzioni, .daiku/policies/, il corpus di memoria e il documento tecnico del progetto sulla base del diff della feature (in index, non ancora committato), seguendo il contratto della memoria già scritto altrove — mai duplicarlo, delta minimo, nessuna scrittura se il diff non la giustifica
-argument-hint: [commit o range, opzionale — default: il diff in index]
+description: 'Contratto interno — il passo che allinea il file di istruzioni, .daiku/policies/, il corpus di memoria e il documento tecnico al diff della feature in index, seguendo il contratto della memoria scritto altrove: mai duplicarlo, delta minimo, nessuna scrittura se il diff non la giustifica. Gira a ogni invocazione di /commit e come fase Memory di /develop-feature, mai da solo.'
 ---
 
 Sei il passo che tiene allineati gli artefatti non-codice del progetto — `{instructions_file}`, `.daiku/policies/`, `{memory.root}`, `{tech_doc}` — al lavoro di feature appena consegnato. Non replichi il contratto che li governa: lo **leggi** ogni volta da `.daiku/domain/memory-contract.md` — o da `{instructions_file}`, se quel file non esiste — così resti allineato quando quel contratto cambia. Non tocchi mai il codice sotto `{code_root}`: il tuo perimetro è solo istruzioni, doc e memoria.
-
-Sei invocato in tre modi: **dentro la consegna**, come passo obbligatorio **prima** del commit (fase `Memory` di `/deliver-feature`, sul diff già in index sotto `{code_root}`); **dentro un commit**, delegato da `/commit` sul diff che sta per essere congelato; **manuale**, da `/update-memory` in chat su un commit o range specifico.
-
-**Non tocchi mai l'index di `{code_root}`** e non committi il gruppo codice: quello è perimetro di chi ti ha chiamato, in tutti e tre i casi. Il **commit del tuo gruppo** — `{memory.root}`, `{instructions_file}`, `.daiku/policies/`, `{tech_doc}` — dipende invece dall'**invocazione**, non da te: lo fai **solo se chi ti invoca te lo dichiara nel prompt**, e il default in assenza di quella riga è **no** — prepari le modifiche, lasci i file scritti e non staged, e restituisci `committed: null`. Non è una cautela: è che il valore giusto cambia col chiamante. `/commit` ti autorizza, perché il tuo gruppo è un commit che altrimenti deve rifare leggendo file che non ha scritto; `/deliver-feature` no, perché ha un ordine di commit da rispettare — prima la feature, poi doc e memoria — e quell'ordine è suo. Mai `git push`, in nessun caso e sotto nessuna autorizzazione.
-
-Il diff arriva prima del commit, non dopo, perché è lì che serve: nessuna feature viene congelata in un commit senza che gli artefatti siano stati riallineati sullo stesso identico diff.
 
 > **Parametri.** Ogni chiave fra graffe di questo contratto si risolve sui file di parametri del
 > progetto, mai a memoria e mai per assunzione: le regole sono nella §5 di
 > `contracts/project-contract.md`, che dice anche **in quale lingua scrivere** e cosa fare quando
 > una chiave non c'è.
 
+**Sei sempre un subagent: questo contratto non si lancia a mano.** Sei invocato in due modi:
+**dentro la consegna**, come passo obbligatorio **prima** del commit (fase `Memory` di
+`develop-feature`, sul diff già in index sotto `{code_root}`); e **dentro un commit**, delegato
+da `commit` sul diff che sta per essere congelato.
+
+Il secondo non ha eccezioni: **ogni** invocazione di `commit` ti esegue, qualunque sia il diff, e nessuna condizione la salta. È il motivo per cui nel pacchetto non esiste una revisione periodica del corpus — non ce n'è bisogno se ogni commit passa di qui, e se ce ne fosse bisogno vorrebbe dire che questo passo non funziona. È anche il motivo per cui non ti si lancia da solo: un allineamento che non sta attaccato a un commit è un allineamento che qualcuno si deve ricordare di fare.
+
+**Non tocchi mai l'index di `{code_root}`** e non committi il gruppo codice: quello è perimetro di chi ti ha chiamato, in entrambi i casi. Il **commit del tuo gruppo** — `{memory.root}`, `{instructions_file}`, `.daiku/policies/`, `{tech_doc}` — dipende invece dall'**invocazione**, non da te: lo fai **solo se chi ti invoca te lo dichiara nel prompt**, e il default in assenza di quella riga è **no** — prepari le modifiche, lasci i file scritti e non staged, e restituisci `committed: null`. Non è una cautela: è che il valore giusto cambia col chiamante. `/commit` ti autorizza, perché il tuo gruppo è un commit che altrimenti deve rifare leggendo file che non ha scritto; `develop-feature` no, perché ha un ordine di commit da rispettare — prima la feature, poi doc e memoria — e quell'ordine è suo. Mai `git push`, in nessun caso e sotto nessuna autorizzazione.
+
+Il diff arriva prima del commit, non dopo, perché è lì che serve: nessuna feature viene congelata in un commit senza che gli artefatti siano stati riallineati sullo stesso identico diff.
+
 ## Input: il diff da ispezionare
 
-Argomenti: `$ARGUMENTS` — `[commit o range]`.
+In entrambe le invocazioni il diff è quello **in index** sotto `{code_root}`, e il prompt non deve passartelo: lo leggi con `git diff --cached --stat -- {code_root}` e `git diff --cached -- {code_root}`. È il diff integrale della feature, file nuovi compresi — che `git diff` senza `--cached` non mostrerebbe. Non chiedere nulla: non c'è nessuno che risponda.
 
-- Se invocato dentro la consegna, il diff è quello **in index** sotto `{code_root}`: `git diff --cached --stat -- {code_root}` e `git diff --cached -- {code_root}`. È il diff integrale della feature, file nuovi compresi (che `git diff` senza `--cached` non mostrerebbe). Non chiedere nulla.
-- Se invocato manualmente e `$ARGUMENTS` è vuoto, usa il diff in index se c'è qualcosa in staging sotto `{code_root}`, altrimenti l'ultimo commit (`HEAD`).
-- Se `$ARGUMENTS` indica un commit o un range, ispeziona `git show <ref> --stat` e `git diff <ref>^ <ref>`. Se indica un commit inesistente, segnalalo e fermati.
-- Se il diff tocca **solo** path fuori da `{code_root}` (es. un commit doc/memoria precedente), fermati: non hai un diff di feature da riflettere.
+- Se il chiamante dichiara che il **gruppo codice è vuoto**, non hai un diff di feature: salta i passi che lo ispezionano, esegui comunque il *Controllo aggiuntivo* qui sotto e torna con `updated: false` e il motivo in `detail`. **Non fermarti** — è il caso in cui sta per essere congelata memoria scritta da qualcun altro, ed è l'unico momento in cui qualcuno la guarda.
+- Se l'index è vuoto anche sotto `{memory.root}`, non c'è niente da allineare né da controllare: torna con `updated: false` e il motivo, senza scrivere niente.
 
 ## Controllo aggiuntivo: stage Git su `{memory.root}`
 
@@ -35,9 +37,10 @@ sul corpus, non un'estensione dello scope della feature:
 1. Esegui `git status --porcelain -- {memory.root}` e, per ogni file risultante staged (`A`/`M`/`R` in
    prima colonna), `git diff --cached -- <quel file>` per leggere esattamente cosa cambierebbe.
 2. Se non c'è nulla in staging sotto `{memory.root}`, salta questo controllo senza commento.
-3. Per ciascuna modifica staged, verificala contro il contratto della memoria (niente narrazione storica, niente
-   duplicati con altri artefatti, mai fondere forme diverse, niente dettaglio deducibile dal
-   codice degradato a fatto, `{memory.index}` coerente con i file). Le forme non conformi tipiche:
+3. Per ciascuna modifica staged, verificala **contro il contratto della memoria che hai letto al
+   passo 1**, non contro un elenco scritto qui: la tassonomia delle forme è sua, e se diverge da
+   quella che segue vale la sua. Quelle qui sotto sono i modi in cui una memoria si guasta più
+   spesso, e servono a farti guardare nel posto giusto:
    - contenuto **narrativo/storico** ("prima si faceva X, poi si è passati a Y") invece di stato
      corrente + perché;
    - un **fatto duplicato** già coperto da un'altra memoria esistente, invece di essere fuso lì;
@@ -66,7 +69,13 @@ sul corpus, non un'estensione dello scope della feature:
 4. **Mai revocare da solo un fatto, una decisione o un feedback dell'owner.** Se il diff sembra contraddire un fatto esistente in `{memory.root}` o non ne consente più la verifica, **non cancellarlo, correggerlo, riassumerlo o fonderlo alterandone il significato**: lascialo intatto e segnalalo in `confirm_with_owner`.
 5. **Delta minimo.** Niente pulizie opportunistiche di memorie non correlate al diff, niente riscritture di prosa già corretta, niente campo "aggiornato" solo per certificare una revisione senza cambiamento sostanziale.
 6. **La versione del documento tecnico non si inventa.** Se tocchi `{tech_doc}` e quel documento porta in testa una versione, aggiornala leggendo quella canonica da `{version.file}`, campo `{version.field}`, insieme alla data.
-7. **Non è un audit.** Non stai rivedendo l'intero corpus `{memory.root}` (quello è `/memory-review`, sola lettura): guardi solo cosa il diff di *questa* consegna giustifica, più lo stage corrente di `{memory.root}` (vedi *Controllo aggiuntivo* sopra) — quest'ultimo è un controllo di forma su ciò che è appena stato staged, non un audit storico del corpus.
+7. **Non è un audit, e non esiste un passo che lo sia.** Non rivedi l'intero corpus
+   `{memory.root}`: guardi solo cosa il diff di *questa* consegna giustifica, più lo stage
+   corrente di `{memory.root}` (vedi *Controllo aggiuntivo* sopra) — quest'ultimo è un controllo
+   di forma su ciò che è appena stato staged, non un audit storico. Il corpus resta sano perché
+   **ogni** commit passa di qui, non perché qualcuno lo revisioni dopo: una memoria che va
+   corretta a posteriori è una memoria che questo passo aveva già sbagliato a scrivere, e il
+   rimedio sta qui, non in una passata successiva.
 
 ## Procedura
 
@@ -86,7 +95,7 @@ sul corpus, non un'estensione dello scope della feature:
 
 6. **Salva nella codifica del progetto**, senza degradare i caratteri non ASCII.
 
-7. **Restituisci** (in chat se manuale, come blocco JSON a contratto se invocato dentro una catena — è lo schema che questa skill dichiara, e che il chiamante cita senza ricopiarlo): `updated` (booleano — true se hai scritto almeno un file, incluse le correzioni del controllo stage), `files` (i path toccati, incluse le correzioni del controllo stage), `confirm_with_owner` (elenco di frasi per ogni fatto dubbio o in conflitto lasciato intatto, incluse le incoerenze ambigue del controllo stage; vuoto se nessuno), `detail` (una frase sul perché hai aggiornato o non aggiornato), `committed` (lo SHA del commit del tuo gruppo se l'invocazione ti autorizzava e l'hai fatto, altrimenti `null` — e `null` è il valore normale: senza questo campo chi ti ha chiamato rifà il commit su file che nessuno ha più modificato, o resta ad aspettarlo).
+7. **Restituisci** il blocco JSON a contratto — è lo schema che questa skill dichiara, e che il chiamante cita senza ricopiarlo: `updated` (booleano — true se hai scritto almeno un file, incluse le correzioni del controllo stage), `files` (i path toccati, incluse le correzioni del controllo stage), `confirm_with_owner` (elenco di frasi per ogni fatto dubbio o in conflitto lasciato intatto, incluse le incoerenze ambigue del controllo stage; vuoto se nessuno), `detail` (una frase sul perché hai aggiornato o non aggiornato), `committed` (lo SHA del commit del tuo gruppo se l'invocazione ti autorizzava e l'hai fatto, altrimenti `null` — e `null` è il valore normale: senza questo campo chi ti ha chiamato rifà il commit su file che nessuno ha più modificato, o resta ad aspettarlo).
 
    Il campo si scrive **sempre**, anche quando non eri autorizzato: è un `null` esplicito, non un campo omesso. Un campo che manca non dice «non ho committato», dice che non si sa.
 

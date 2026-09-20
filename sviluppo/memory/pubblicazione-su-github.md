@@ -15,15 +15,17 @@ pronto.
 su Codex. Un GitLab richiederebbe l'URL git completo su tutti e due, e allungherebbe le
 istruzioni di installazione senza dare nulla in cambio.
 
-**How to apply:** finché il repo pubblico non esiste, che i file del prodotto portino con sé
-valori di ReforgIA e path di questa macchina non è un problema — l'owner l'ha deciso
-esplicitamente. Diventa un gate **prima** del primo push pubblico, perché da quel momento
-`plugins/` esce com'è scritto. Da ripulire, censito il 18 settembre 2026:
+**How to apply:** il gate resta **prima** del primo push pubblico, perché da quel momento
+`plugins/` esce com'è scritto. Il censimento del 18 settembre 2026 elencava tre residui — lo
+username `ntomason` in `templates/owner/environment.json`, la configurazione ReforgIA intera in
+`templates/project/project.json`, e 35 occorrenze di `C:/dev/ReforgIA/src` nei banchi `--self-check`
+degli hook. **Sono stati ripuliti tutti e tre**, verificato il 19 settembre 2026: i due template
+portano segnaposto, e i banchi girano su un `c:/dev/progetto` inventato.
 
-- `templates/owner/environment.json` — `temp_dir` con lo username `ntomason`
-- `templates/project/project.json` — la configurazione ReforgIA intera: nome, `repo_root`,
-  documento tecnico, `pnpm --filter @reforgia/backend`
-- `hooks/lib/*.mjs` — 35 occorrenze di `C:/dev/ReforgIA/src` nei banchi di prova `--self-check`
+Il gate quindi non è più una lista di cose da fare ma un **controllo da rifare**, perché un residuo
+nuovo entra con qualunque consegna: `grep -rin "reforgia\|<username>\|c:/dev/" plugins/daiku/`
+prima di pubblicare, e ogni occorrenza va guardata — un path di questa macchina finito in un
+template o in un banco di prova è esattamente ciò che il gate esiste per fermare.
 
 Nota pratica finché il pacchetto vive solo qui: installare da un repository privato richiede
 credenziali git sulla macchina di chi installa. Per provare il pacchetto in locale conviene un marketplace da

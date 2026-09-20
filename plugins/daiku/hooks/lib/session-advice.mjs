@@ -14,11 +14,16 @@
  *     non le note di review e' un lavoro in volo: chi apre una sessione nuova e ricomincia da
  *     capo perde il brief gia' scritto, e quasi sempre non sa che esisteva.
  *
- * **Le sedi delle cartelle di lavoro sono una convenzione, non un parametro.** `project.json`
- * non dichiara dove stanno, quindi qui si guardano le due sedi che i contratti nominano —
- * `docs/nuovi-sviluppi/` e `sviluppo/nuovi-sviluppi/` — e nient'altro. Chi le tiene altrove
- * non riceve l'avviso: e' una mancanza dichiarata, non un guasto. Meglio tacere che dire a
- * ogni avvio che non si e' trovato niente.
+ * **Dove stiano le cartelle di lavoro lo dice il progetto**, con `{paths.studies}` in
+ * `.daiku/project.json`: e' un parametro, non una convenzione da indovinare, ed e' la stessa
+ * chiave che le skill del metodo leggono per sapere dove depositare i file numerati. Se non
+ * e' dichiarata, questo avviso non c'e' — §6 di `contracts/project-contract.md`, *cio' che il
+ * JSON non dichiara non esiste*. Meglio tacere che frugare in due cartelle scelte a memoria e
+ * dire a ogni avvio che non si e' trovato niente.
+ *
+ * I **nomi** dei file numerati restano cablati qui, e non e' una svista: quelli sono il
+ * metodo, identici in ogni progetto, e un progetto che li rinominasse avrebbe gia' rotto le
+ * skill che li scrivono.
  *
  * Contratto: **fail-open e silenzioso**. Niente da dire, file illeggibile, cartella assente,
  * qualunque errore → non stampa ed esce 0. Non blocca mai una sessione, e non parla mai per
@@ -32,7 +37,8 @@
 
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { radiceProgetto } from './project-root.mjs';
+import { invocatoDirettamente, radiceProgetto } from './project-root.mjs';
+import { AMBIENTE_REALE as LETTURE, contesto, contestoFinto } from './daiku-config.mjs';
 
 const RADICE = radiceProgetto();
 
@@ -49,9 +55,6 @@ const AMBIENTE_REALE = {
     }
   },
 };
-
-/** Le sedi in cui i contratti tengono le cartelle di lavoro. Convenzione, non parametro. */
-const SEDI = ['docs/nuovi-sviluppi', 'sviluppo/nuovi-sviluppi'];
 
 /** Il file che dice «il brief c'e'» e quello che dice «la review e' atterrata». */
 const BLUEPRINT = '2. blueprint.md';
@@ -85,10 +88,11 @@ export function avvisoInstallazione(radice, amb) {
 }
 
 /** I lavori lasciati a meta': blueprint scritto, review mai atterrata. */
-export function avvisoLavoriAperti(radice, amb) {
+export function avvisoLavoriAperti(radice, amb, ctx) {
   const aperti = [];
+  const sedi = (ctx && ctx.presente && ctx.studi) || [];
 
-  for (const sede of SEDI) {
+  for (const sede of sedi) {
     const base = join(radice, sede);
     if (!amb.esiste(base)) continue;
     for (const slug of amb.elenca(base)) {
@@ -111,8 +115,8 @@ export function avvisoLavoriAperti(radice, amb) {
   );
 }
 
-export function avvisi(radice, amb) {
-  return [avvisoInstallazione(radice, amb), avvisoLavoriAperti(radice, amb)].filter(Boolean);
+export function avvisi(radice, amb, ctx) {
+  return [avvisoInstallazione(radice, amb), avvisoLavoriAperti(radice, amb, ctx)].filter(Boolean);
 }
 
 // --- banco di prova -----------------------------------------------------------
@@ -172,42 +176,67 @@ function selfCheck() {
   verifica('l\'avviso porta il messaggio del parser', !!testoRotto && testoRotto.length > 80);
 
   // --- i lavori a meta' -------------------------------------------------------
-  verifica('nessuna sede: nessun avviso', avvisoLavoriAperti(R, ambienteFinto({})) === null);
+  //
+  // La sede la porta il contesto, non il codice: i tre contesti qui sotto sono i tre stati
+  // in cui un progetto puo' trovarsi, e il primo caso di ciascun gruppo prova che senza
+  // dichiarazione non si va a cercare da nessuna parte.
+  const CTX = contestoFinto({ studi: ['docs/nuovi-sviluppi'] });
+  const CTX_DUE = contestoFinto({ studi: ['docs/nuovi-sviluppi', 'sviluppo/nuovi-sviluppi'] });
+  const CTX_SENZA_SEDE = contestoFinto({});
+  const CTX_SENZA_DAIKU = contestoFinto({ presente: false });
+
+  const aperto = { [`${R}/docs/nuovi-sviluppi/gamma/2. blueprint.md`]: 'x' };
+  verifica('nessuna sede dichiarata: non si cerca', avvisoLavoriAperti(R, ambienteFinto(aperto), CTX_SENZA_SEDE) === null);
+  verifica('progetto senza Daiku: non si cerca', avvisoLavoriAperti(R, ambienteFinto(aperto), CTX_SENZA_DAIKU) === null);
+  verifica('contesto assente del tutto: non si cerca', avvisoLavoriAperti(R, ambienteFinto(aperto), undefined) === null);
+  verifica('sede dichiarata ma vuota: nessun avviso', avvisoLavoriAperti(R, ambienteFinto({}), CTX) === null);
 
   const chiuso = {
     [`${R}/docs/nuovi-sviluppi/alfa/2. blueprint.md`]: 'x',
     [`${R}/docs/nuovi-sviluppi/alfa/4. review-notes.md`]: 'x',
   };
-  verifica('lavoro chiuso: nessun avviso', avvisoLavoriAperti(R, ambienteFinto(chiuso)) === null);
+  verifica('lavoro chiuso: nessun avviso', avvisoLavoriAperti(R, ambienteFinto(chiuso), CTX) === null);
 
   const soloProblema = { [`${R}/docs/nuovi-sviluppi/beta/0. problem.md`]: 'x' };
-  verifica('studio senza blueprint: non e\' un lavoro in volo', avvisoLavoriAperti(R, ambienteFinto(soloProblema)) === null);
+  verifica('studio senza blueprint: non e\' un lavoro in volo', avvisoLavoriAperti(R, ambienteFinto(soloProblema), CTX) === null);
 
-  const aperto = { [`${R}/docs/nuovi-sviluppi/gamma/2. blueprint.md`]: 'x' };
-  const testoAperto = avvisoLavoriAperti(R, ambienteFinto(aperto));
+  const testoAperto = avvisoLavoriAperti(R, ambienteFinto(aperto), CTX);
   verifica('blueprint senza review: avviso', !!testoAperto && testoAperto.includes('gamma'));
   verifica('l\'avviso dice di riprendere, non di ricominciare', !!testoAperto && testoAperto.includes('non da capo'));
   verifica('l\'avviso dice come farlo smettere', !!testoAperto && testoAperto.includes('togli la cartella'));
   verifica('un solo lavoro si accorda al singolare', !!testoAperto && testoAperto.includes('e\' rimasto'));
 
   const altraSede = { [`${R}/sviluppo/nuovi-sviluppi/delta/2. blueprint.md`]: 'x' };
-  verifica('l\'altra sede convenzionale e\' guardata', (avvisoLavoriAperti(R, ambienteFinto(altraSede)) || '').includes('delta'));
+  verifica('la seconda sede dichiarata e\' guardata', (avvisoLavoriAperti(R, ambienteFinto(altraSede), CTX_DUE) || '').includes('delta'));
+  verifica('una sede non dichiarata non e\' guardata', avvisoLavoriAperti(R, ambienteFinto(altraSede), CTX) === null);
 
   const due = {
     [`${R}/docs/nuovi-sviluppi/gamma/2. blueprint.md`]: 'x',
     [`${R}/sviluppo/nuovi-sviluppi/delta/2. blueprint.md`]: 'x',
   };
-  const testoDue = avvisoLavoriAperti(R, ambienteFinto(due));
+  const testoDue = avvisoLavoriAperti(R, ambienteFinto(due), CTX_DUE);
   verifica('due lavori: entrambi elencati', !!testoDue && testoDue.includes('gamma') && testoDue.includes('delta'));
   verifica('due lavori si accordano al plurale', !!testoDue && testoDue.includes('2 lavori sono rimasti'));
 
   const fuoriSede = { [`${R}/altrove/epsilon/2. blueprint.md`]: 'x' };
-  verifica('fuori dalle sedi convenzionali: silenzio, come dichiarato', avvisoLavoriAperti(R, ambienteFinto(fuoriSede)) === null);
+  verifica('fuori dalle sedi dichiarate: silenzio', avvisoLavoriAperti(R, ambienteFinto(fuoriSede), CTX) === null);
+
+  // --- la sede letta da un project.json vero ----------------------------------
+  const conSede = {
+    esiste: (p) => String(p).replace(/\\/g, '/').endsWith('.daiku/project.json'),
+    leggi: () => '{"contract": 2, "paths": {"studies": "documentazione/lavori"}}',
+  };
+  verifica('paths.studies arriva dal JSON', contesto(R, conSede).studi[0] === 'documentazione/lavori');
+  const senzaSede = {
+    esiste: (p) => String(p).replace(/\\/g, '/').endsWith('.daiku/project.json'),
+    leggi: () => '{"contract": 2}',
+  };
+  verifica('paths.studies assente: nessuna sede', contesto(R, senzaSede).studi.length === 0);
 
   // --- l'insieme --------------------------------------------------------------
-  verifica('progetto pulito: nessun avviso', avvisi(R, ambienteFinto(sano)).length === 0);
-  verifica('due problemi distinti: due avvisi', avvisi(R, ambienteFinto({ ...rotto, ...aperto })).length === 2);
-  verifica('progetto vergine: nessun avviso', avvisi(R, ambienteFinto({})).length === 0);
+  verifica('progetto pulito: nessun avviso', avvisi(R, ambienteFinto(sano), CTX).length === 0);
+  verifica('due problemi distinti: due avvisi', avvisi(R, ambienteFinto({ ...rotto, ...aperto }), CTX).length === 2);
+  verifica('progetto vergine: nessun avviso', avvisi(R, ambienteFinto({}), CTX_SENZA_DAIKU).length === 0);
 
   process.stdout.write(
     JSON.stringify({ controlli: eseguiti, passati: eseguiti - falliti.length, falliti }, null, 2) + '\n'
@@ -216,7 +245,7 @@ function selfCheck() {
 }
 
 function main() {
-  const testi = avvisi(RADICE, AMBIENTE_REALE);
+  const testi = avvisi(RADICE, AMBIENTE_REALE, contesto(RADICE, LETTURE));
   if (!testi.length) return;
   process.stdout.write(
     JSON.stringify({
@@ -225,13 +254,14 @@ function main() {
   );
 }
 
-if (process.argv.includes('--self-check')) {
-  process.exit(selfCheck());
+if (invocatoDirettamente(import.meta.url)) {
+  if (process.argv.includes('--self-check')) {
+    process.exit(selfCheck());
+  }
+  try {
+    main();
+  } catch {
+    /* fail-open: non si blocca mai una sessione */
+  }
+  process.exit(0);
 }
-
-try {
-  main();
-} catch {
-  /* fail-open: non si blocca mai una sessione */
-}
-process.exit(0);

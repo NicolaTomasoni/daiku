@@ -1,10 +1,9 @@
 ---
 name: arch-check
 description: Scansiona uno scope per violazioni delle regole architetturali del progetto (gli invarianti del file di istruzioni + le rule di area in .daiku/policies/); di default scansiona una cartella e applica le correzioni a soluzione unica, come finder di /review restituisce rilievi in sola lettura sul diff
-argument-hint: [cartella]
 ---
 
-Scansiona il repository per violazioni architetturali rispetto alle regole del progetto: gli **invarianti universali** che `{instructions_file}` dichiara e le regole di area in `.daiku/policies/`. Le regole **non** sono replicate qui: vengono lette da quei file a ogni esecuzione, così questa skill resta allineata quando l'architettura cambia.
+Scansiona lo scope indicato per violazioni architetturali rispetto alle regole del progetto: gli **invarianti universali** che `{instructions_file}` dichiara e le regole di area in `.daiku/policies/`. Le regole **non** sono replicate qui: vengono lette da quei file a ogni esecuzione, così questa skill resta allineata quando l'architettura cambia.
 
 > **Parametri.** Ogni chiave fra graffe di questo contratto si risolve sui file di parametri del
 > progetto, mai a memoria e mai per assunzione: le regole sono nella §5 di
@@ -22,7 +21,7 @@ Argomenti: `$ARGUMENTS`
 
 L'argomento è **una sola cartella** del repository da analizzare, come path relativo dalla root. Accetta anche il nome breve di un'unità del repo (app, package, modulo) e risolvilo nel path corrispondente.
 
-- Se `$ARGUMENTS` è vuoto, **chiedi** all'utente quale cartella analizzare, elencando le opzioni disponibili ricavate dalle cartelle principali del repo. Non scansionare l'intero repo.
+- Lo scope te lo passa **chi ti invoca**, e questo contratto non si lancia a mano: se non ti è arrivato, **fermati e dillo nel blocco** invece di sceglierlo tu. Non scansionare mai l'intero repo di tua iniziativa.
 - Se `$ARGUMENTS` non corrisponde a una cartella esistente, segnalalo e fermati.
 - Tutta la scansione è confinata allo scope risolto: i file bersaglio, i grep e le violazioni riguardano solo quella cartella. Ignora il resto del repo.
 - Considera **solo** le regole pertinenti a quella cartella. Salta in silenzio le regole che riguardano altre aree.
@@ -94,8 +93,8 @@ nessun fix, nessun file nuovo, nessun commit.
   valida.
 - **Non applichi nulla.** La decisione di applicare o scartare ogni rilievo è dell'applicatore di
   `/review`, che lo riverifica.
-- **Nessun report in chat**: restituisci il blocco JSON atteso dal chiamante.
-
-```json
-{"findings": [{"file": "<path>", "riga": 0, "simbolo": "<Classe.metodo | funzione | modulo>", "confidenza": "alta|media|bassa", "cambiamento": "<la correzione concreta, per alta e media>", "descrizione": "<la regola violata col file da cui viene, l'evidenza sulla riga, e per bassa cosa resta da verificare>"}]}
-```
+- **Nessun report in chat**: restituisci il blocco dichiarato da `skills/finder-prompt/SKILL.md`
+  § *Il blocco che restituisci*, per intero e con quei nomi di campo: leggilo da lì, qui non è
+  ricopiato. Per questa disciplina `simbolo` è la classe, la funzione o il modulo che porta la
+  violazione, `cambiamento` è la correzione concreta, e `descrizione` porta la regola violata col
+  file da cui viene, l'evidenza sulla riga, e per la confidenza bassa cosa resta da verificare.

@@ -9,7 +9,8 @@ quale ruolo gira su ogni passo. Le skill in `skills/` descrivono *cosa* va fatto
 Ogni chiave fra graffe di questo contratto si risolve sui file di parametri del progetto, mai a
 memoria e mai per assunzione: le regole sono nella §5 di `contracts/project-contract.md`, che dice
 anche in quale lingua scrivere e cosa fare quando una chiave non c'è. Le chiavi che questo file
-consuma sono quelle della §7 qui sotto, e vivono in `.daiku/environment.json`.
+consuma sono quelle della §7 qui sotto, e vivono in `environment.json` — in `~/.daiku/`, salvo
+l'override di progetto che la §8 di quel contratto dichiara.
 
 Vale per ogni host dichiarato in `{hosts}`. Il contratto canonico di una skill sta sempre in
 `skills/<nome>/SKILL.md`; un host che per invocarla richiede un pointer lo trova sotto
@@ -22,7 +23,7 @@ Due soli ruoli, anonimi per costruzione. Una skill dichiara il ruolo di un passo
 
 | Ruolo | Quando si usa | Esempi di passo |
 |---|---|---|
-| **giudice** | il passo *decide* o *sintetizza*: produce lavoro nuovo a partire da input eterogenei, oppure riconcilia rilievi di più fonti dove sbagliare costa caro | brief di esecuzione, aggiornamento memoria/documentazione, riconciliazione di una review del corpus |
+| **judge** | il passo *decide* o *sintetizza*: produce lavoro nuovo a partire da input eterogenei, oppure riconcilia rilievi di più fonti dove sbagliare costa caro | brief di esecuzione, aggiornamento memoria/documentazione, riconciliazione di una review del corpus |
 | **worker** | il passo *esegue* o *ispeziona* un perimetro già delimitato: applica un piano, cerca rilievi in un diff, esegue comandi noti e ne riporta l'esito | esecuzione del brief, finder di review, scope, gate, inventario, comandi Git, log e report |
 
 Un passo puramente meccanico (una riga di log, un `git add` di file già elencati, l'append di un
@@ -34,8 +35,10 @@ Il modello di un passo è `{hosts.<host>.models.<ruolo>}`, dove `<host>` è l'ho
 `<ruolo>` è quello che la skill ha dichiarato per quel passo. È l'unica risoluzione ammessa, e
 avviene qui: la skill dichiara il ruolo e si ferma lì.
 
-**Risoluzione dell'host.** Lo dichiara il pointer di skill che ti ha invocato — il file sotto
-`{hosts.<host>.skill_pointers}` nomina il proprio host; in sua assenza l'host è `{default_host}`.
+**Risoluzione dell'host.** L'host è quello su cui stai girando, e lo sai da dove stai girando: non
+chiederlo. Su un host che richiede un pointer, è il pointer che ti ha invocato — il file sotto
+`{hosts.<host>.skill_pointers}` — a nominarlo. Se non lo sai in nessuno dei due modi, vale
+`{default_host}`, e nessuno degli host dichiarati oggi nello scheletro richiede un pointer.
 
 **Backend alternativi.** Se la sessione gira su un backend switchato — uno di `{backends}` che non
 è quello nativo dell'host — i nomi di modello di `{hosts.<host>.models}` restano gli alias di tier
@@ -54,34 +57,52 @@ legge**: è la forma che li fa funzionare identici su ogni host, senza un pointe
 Alcuni, in più, **si lanciano a mano**. Le due cose non si escludono, perché non descrivono il
 file ma l'invocazione: lo stesso contratto è un **entry point** quando lo lanci tu ed è un
 **contratto interno** quando è una catena a delegarlo. `code-review` è il finder che `/review`
-delega e insieme la skill che lanci su una pull request; `update-memory` è la fase Memory di
-`/deliver-feature` e insieme la skill con cui riallinei memoria e documentazione su un diff già
-scritto.
+delega e insieme la skill che lanci su una pull request; `study` sono gli appunti che
+`new-feature` si procura quando le servono e insieme il comando con cui li chiedi tu.
 
-Questi si invocano a mano:
+**Gli entry point sono nove, e non è un numero che cresce da solo.** Un contratto si lancia a
+mano solo se è il **punto d'ingresso di una catena**, mai perché è comodo averlo sotto mano:
+ciò che sta in mezzo a una catena lo raggiunge chi l'ha aperta, e aggiungerlo qui significa
+aprire un secondo modo di arrivarci, con scope e permessi diversi da mantenere allineati per
+sempre. I nove stanno in tre gruppi, che non si usano negli stessi momenti.
+
+**Il metodo — sono questi quattro, e sono tutto il lavoro di ogni giorno:**
+
+| Entry point | Perché |
+|---|---|
+| `new-feature` | si parte da un'idea e non c'è ancora niente sul disco: dalla descrizione fino al commit, in un'unica esecuzione. Dentro ci sono lo studio, le decisioni e la consegna, che per questo non si lanciano da sé |
+| `study` | gli appunti su una tecnologia valgono anche da soli, prima che esista una consegna che li consumi. Lanciato così **deposita il file e si ferma**: non apre niente a valle |
+| `review` | la review vive anche da sola, su un diff scritto a mano |
+| `commit` | chiude una review lanciata con `--no-commit`, o un diff scritto fuori da una review |
+
+**L'installazione — due comandi che si lanciano una volta per progetto**, e che nessuna catena
+può raggiungere perché girano *prima* che ci sia una catena:
 
 | Entry point | Perché |
 |---|---|
 | `init` | è il primo di tutti: apre `.daiku/` su un progetto che non ce l'ha, e finché non gira nessun altro contratto ha i valori con cui lavorare |
-| `sync-hooks` | porta i guardrail nello strato dell'host che non sa riceverli dal pacchetto, e si rilancia a ogni aggiornamento |
-| `decision-doc` | si parte da lì: una cartella di materiale grezzo diventa strategia ancora da chiudere o documento di decisione |
-| `deliver-feature` | la catena intera fino al commit, senza fermarsi a ogni stadio |
-| `review` | la review vive anche da sola, su un diff scritto a mano |
-| `commit` | chiude una review lanciata con `--no-commit`, o un diff scritto fuori da una review |
-| `code-review` | è l'unico che guarda una pull request invece del working tree: il diff è già pubblicato e l'esito sono commenti sulla PR |
-| `study-library` | gli appunti su una tecnologia servono prima che esista una consegna, e valgono anche senza |
-| `study-problem` | apre la cartella di un problema partendo dal codice, quando non c'è ancora niente da decidere |
-| `update-memory` | memoria e documentazione si riallineano anche su un diff che non è passato da una consegna |
-| `memory-review` | il corpus di memoria si revisiona quando è cresciuto, non quando si consegna |
+| `sync-host` | porta guardrail e ruoli di subagent nello strato dell'host che non sa riceverli dal pacchetto, e si rilancia a ogni aggiornamento |
+
+**I tre modi d'uso che il ciclo interattivo non copre:**
+
+| Entry point | Perché |
+|---|---|
 | `nightly-plan` | la coda della notte si prepara a mano, prima che la notte cominci |
-| `nightly-orchestrator` | scandisce la notte: lo lanci quando la coda è pronta |
+| `nightly-orchestrator` | scandisce la notte: lo lanci quando la coda è pronta. Non presidiato, quindi fuori dal ciclo interattivo per costruzione |
+| `code-review` | è l'unico che guarda una **pull request** invece del working tree: il diff è già pubblicato e l'esito sono commenti sulla forge, non file sul disco |
 
-Tutto il resto — `blueprint`, `execute`, `finder-prompt`, `applier`, `arch-check`, `perf`,
-`test-coverage` — resta **contratto interno**: un subagent lo riceve come *path da leggere*, non
-come skill da invocare. Che un host esponga per nome anche un contratto non dichiarato qui è
-una comodità di quell'host, non un'invocabilità dichiarata: dichiarata è la tabella qui sopra.
+Tutto il resto — `decision-doc`, `develop-feature`, `update-memory`, `blueprint`, `execute`,
+`finder-prompt`, `applier`, `arch-check`, `perf`, `test-coverage` — è **contratto interno**: un
+subagent lo riceve come *path da leggere*, non come skill da invocare. I primi tre lo sono
+diventati il 19 settembre 2026, e ciascuno ha già chi lo apre: `decision-doc` e `develop-feature`
+li apre `new-feature`, `update-memory` lo apre `commit`, a ogni invocazione. Un contratto interno
+**non chiede niente all'owner** e non ha `argument-hint`: una scelta vera la restituisce nel
+proprio blocco, e chi l'ha chiamato la porta in chat (§ *Domandare all'owner*).
 
-Su un host che dichiara `{hosts.<host>.skill_pointers}` una skill di questa tabella si lancia
+Che un host esponga per nome anche un contratto non dichiarato qui è una comodità di quell'host,
+non un'invocabilità dichiarata: dichiarata è questa sezione.
+
+Su un host che dichiara `{hosts.<host>.skill_pointers}` una skill di queste tre tabelle si lancia
 solo se lì ha il proprio pointer, e non tutte ce l'hanno: quelle che non ce l'hanno restano
 raggiungibili dagli host che quella chiave non la dichiarano, e che caricano i contratti
 direttamente da `skills/`. Aggiungere il pointer che manca, o quello di un contratto
@@ -113,25 +134,24 @@ ricostruire il grafo dalla prosa di chi chiama.
 | Nodo | Chi lo invoca | Riceve già risolto | Restituisce | Ri-delega |
 |---|---|---|---|---|
 | `init` | owner | radice tecnica, o niente e vale la directory corrente | il referto di § *Referto* del suo file: scritto, lasciato com'era, da compilare | no |
-| `sync-hooks` | owner | radice tecnica, o niente e vale la directory corrente | il referto di § *Referto* del suo file: copiato, agganciato, non agganciato, e i gesti che restano all'utente | no |
-| `decision-doc` | owner, `study-problem` § *Passa il testimone* | cartella del problema, eventuale sottoinsieme da analizzare; da `study-problem` anche il documento già scritto e le memorie pertinenti | `0.5. studio-strategico.md` o `1. decision-doc.md` sul disco, con `0. problem.md` rifinito, e come figlio il blocco di § *Modalità di invocazione* del suo file | no |
-| `study-problem` | owner | descrizione del problema | `0. problem.md` in `{paths.studies}/<nome>/` | sì — ricerca per area, foglie, e `decision-doc` alla chiusura |
-| `study-library` | owner | nome della tecnologia | appunti in `{paths.lib_notes}/` | sì — ricerca per blocco tematico, foglie |
-| `blueprint` | `deliver-feature` fase 1 | cartella con `1. decision-doc.md`, soluzione scelta verbatim, memorie pertinenti | § *Cosa restituisci* del suo file | no |
-| `execute` | `deliver-feature` fase 2 | cartella con `2. blueprint.md`, memorie pertinenti | § *Cosa restituisci* del suo file | no |
-| `deliver-feature` | owner, `nightly-orchestrator` §2 | cartella, soluzione scelta, id dell'item, `run_id` e backend della coda | § *Esito* del suo file | sì — le sue fasi, e `review` come figlio orchestrante |
-| `review` | owner, `deliver-feature` fase 3 | base-ref o path di `4. review-notes.md`, ledger da riaprire (scelto su `base` **e** `item`), `--no-commit` da chi committa da sé, effort, backend della coda, radici di lavoro e artefatti quando gira su un worktree | § *Esito* del suo file | sì — finder, applicatore, copertura, gate, `commit` |
+| `sync-host` | owner | radice tecnica, o niente e vale la directory corrente | il referto di § *Referto* del suo file: copiato, agganciato, non agganciato, ruoli scritti, e i gesti che restano all'utente | no |
+| `new-feature` | owner | descrizione della feature o del problema, in linguaggio naturale | § *Esito* del suo file: la cartella aperta, i documenti che la catena ha prodotto e l'esito della consegna | sì — indagine per area, `study`, `decision-doc` due volte, e `develop-feature` come figlio orchestrante |
+| `decision-doc` | `new-feature` § *Lo studio delle decisioni* e § *Il recepimento* | cartella del problema, eventuale sottoinsieme da analizzare, il documento già scritto, i path degli appunti di `study` e delle memorie pertinenti, e al recepimento le risposte dell'owner per numero | `0.5. studio-strategico.md` o `1. decision-doc.md` sul disco, con `0. problem.md` rifinito, e il blocco di § *Il blocco che restituisci* del suo file | no |
+| `study` | owner, `new-feature` § *La conoscenza che ti manca* | nome della tecnologia; da `new-feature` anche la versione in uso nel progetto e le domande a cui gli appunti devono rispondere | appunti in `{paths.lib_notes}/` — da owner si ferma lì; come figlio anche il blocco di § *Modalità di invocazione* del suo file | sì — ricerca per blocco tematico, foglie |
+| `blueprint` | `develop-feature` fase 1 | cartella con `1. decision-doc.md`, soluzione scelta verbatim, memorie pertinenti | § *Cosa restituisci* del suo file | no |
+| `execute` | `develop-feature` fase 2 | cartella con `2. blueprint.md`, memorie pertinenti | § *Cosa restituisci* del suo file | no |
+| `develop-feature` | `new-feature` § *La consegna*, `nightly-orchestrator` §2 | cartella, soluzione scelta, id dell'item, `run_id` e backend della coda | § *Esito* del suo file | sì — le sue fasi, e `review` come figlio orchestrante |
+| `review` | owner, `develop-feature` fase 3 | base-ref o path di `4. review-notes.md`, ledger da riaprire (scelto su `base` **e** `item`), `--no-commit` da chi committa da sé, effort, backend della coda, radici di lavoro e artefatti quando gira su un worktree | § *Esito* del suo file | sì — finder, applicatore, copertura, gate, `commit` |
 | il finder di un giro (`finder-prompt`) | `review` § *Finder* | disciplina e contratto, `BASE` e file del giro, effort, applicati e scartati dal ledger | § *Il blocco che restituisci* del suo file | no |
-| `code-review` | owner (su PR), `review` come finder `bug` | PR **oppure** scope del giro | § *Modalità finder* del suo file | sì su PR, **no** come finder |
-| `arch-check` | `review` come finder `arch` | cartella **oppure** scope del giro | § *Modalità finder* del suo file | no |
-| `perf` | `review` come finder `perf` | scope **oppure** scope del giro | § *Modalità finder* del suo file | no |
+| `code-review` | owner (su PR), `review` come finder `bug` | PR **oppure** scope del giro | § *Modalità pull request* oppure § *Modalità finder* del suo file, che dichiarano scope, permessi ed esito di ciascuna | sì su PR, **no** come finder |
+| `arch-check` | `review` come finder `arch` | cartella **oppure** scope del giro | il blocco di `finder-prompt` § *Il blocco che restituisci*; scope e permessi li dichiara la sua § *Modalità finder* | no |
+| `perf` | `review` come finder `perf` | scope **oppure** scope del giro | il blocco di `finder-prompt` § *Il blocco che restituisci*; scope e permessi li dichiara la sua § *Modalità finder* | no |
 | `test-coverage` | `review` § *Copertura* con `--auto` | macrocategoria **oppure** diff finale del ciclo e memorie pertinenti | § *Modalità automatica* del suo file | no |
 | `applier` | `review` § *Applicatore* | rilievi di tutti i finder del giro, applicati dei giri precedenti, scope e `BASE`, memorie pertinenti, e la **modalità** quando è il giro di chiusura sui test | § *Il blocco che restituisci* del suo file | no |
-| `commit` | owner, `review` § *Chiusura* (sempre, salvo `--no-commit`) | perimetro del gruppo codice; memoria/doc e versione/changelog li partiziona da sé (§ *Procedura* 3 del suo file) | § *Procedura* 8 del suo file, in chat | sì — `update-memory` |
-| `update-memory` | owner, `deliver-feature` fase 5b, `commit` § *Allineamento* | diff in index, cartella dell'item dove depositare il proprio artefatto (da `deliver-feature`), **permesso di commit del proprio gruppo** | § *Procedura* 7 del suo file | no |
-| `memory-review` | owner | niente: inventario e auditor enumerano da sé | § 4 *Riconciliazione* del suo file | sì — inventario, tre auditor, reconciler, foglie |
+| `commit` | owner, `review` § *Chiusura* (sempre, salvo `--no-commit`) | perimetro del gruppo codice; memoria/doc e versione/changelog li partiziona da sé (§ *Procedura* 3 del suo file) | § *Procedura* 8 del suo file, in chat | sì — `update-memory`, **sempre e senza eccezioni** |
+| `update-memory` | `develop-feature` fase 5b, `commit` § *Allineamento* (**sempre**, a ogni invocazione di `commit`) | diff in index, cartella dell'item dove depositare il proprio artefatto (da `develop-feature`), **permesso di commit del proprio gruppo** | § *Procedura* 7 del suo file | no |
 | `nightly-plan` | owner | le voci della coda, in chat | `{paths.nightly}/nightly-run.json` | no |
-| `nightly-orchestrator` | owner | la coda `nightly-run.json` | riepilogo in chat, un item per riga | sì — pre-flight, e `deliver-feature` per item |
+| `nightly-orchestrator` | owner | la coda `nightly-run.json` | riepilogo in chat, un item per riga | sì — pre-flight, e `develop-feature` per item |
 
 **Un arco nuovo si dichiara qui.** Collegare un nodo a un chiamante che non lo aveva significa
 aggiornare la sua riga — i chiamanti, l'input che ora riceve risolto, il permesso che
@@ -159,31 +179,42 @@ rende un passo ripetibile.
 Come si lancia, per host:
 
 - **`claude`** — tool `Agent`, con `model` risolto secondo la §2 e `subagent_type` scelto così:
-  `finder` per i passi di sola analisi che riportano rilievi (i finder di una review),
-  `memory-auditor` per gli audit del corpus di memoria, `Explore` per la sola ricerca,
-  `general-purpose` per tutto il resto — cioè per i passi che devono scrivere. Più subagent
-  indipendenti si lanciano nello **stesso** blocco di tool call per farli girare davvero in
-  parallelo.
+  `finder` per i passi di sola analisi che riportano rilievi (i finder di una review), `Explore`
+  per la sola ricerca, `general-purpose` per tutto il resto — cioè per i passi che devono
+  scrivere. Più subagent indipendenti si lanciano nello **stesso** blocco di tool call per farli
+  girare davvero in parallelo.
 
-  I primi due sono definiti in `agents/`, nella radice del pacchetto, e hanno un **toolset
-  ristretto**: non possono scrivere file né delegare ad altri agent. È la differenza fra un vincolo
-  dichiarato nel prompt e uno vero: un finder che «corregge già che c'è» non compare fra gli
-  applicati, non ha un'`ancora` nel ledger, e nessun giro successivo lo rivede. Su un host che non
-  sa scegliere il tipo di subagent il vincolo resta scritto nel prompt, e lo dichiari nell'esito.
+  `finder` è l'unico **ruolo del pacchetto**, definito in `agents/` nella sua radice, e lì ha un
+  **toolset ristretto**: niente `Edit`, niente `Write`, nessuna delega ad altri agent. È la
+  differenza fra un vincolo dichiarato nel prompt e uno vero: un finder che «corregge già che
+  c'è» non compare fra gli applicati, non ha un'`ancora` nel ledger, e nessun giro successivo lo
+  rivede.
 
-  **Il confine vero è quale tool c'è, non cosa ci scrivi dentro.** `memory-auditor` non ha `Bash`,
-  e lì la sola lettura è vera per costruzione. `finder` ce l'ha, con gli specificatori
-  `Bash(git diff:*)`, `Bash(git log:*)`, `Bash(git grep:*)` — che **non restringono** nulla: un
+  **Il confine vero è quale tool c'è, non cosa ci scrivi dentro** — e su questo ruolo passa a
+  metà. L'assenza di `Edit` e `Write` è imposta davvero. `Bash` invece c'è, con gli specificatori
+  `Bash(git diff:*)`, `Bash(git log:*)`, `Bash(git grep:*)`, che **non restringono** nulla: un
   finder esegue `ls`, `cat`, `grep -rn` e qualunque altra riga senza un diniego, e lo si è visto
-  accadere. Per lui la sola lettura è prosa come su un host `prosa`, quindi **ripetigli nel prompt
-  il vincolo di sola lettura** — su ogni host, non solo su quelli senza harness.
-- **`codex`** — subagent nativo dell'host, con il modello risolto secondo la §2. Il runtime lo
-  vuole in due gesti diversi, ed è una proprietà dell'host, non della skill che lo incontra: un
-  passo risolto a `{hosts.<host>.models.worker}` si lancia **senza passare `model`**, così eredita
-  quel modello dal parent; un passo risolto a `{hosts.<host>.models.giudice}` quel modello lo passa
-  esplicitamente. Perché l'eredità valga, **il parent deve già girare su
+  accadere. Per quella metà la sola lettura è prosa come su un host `prosa`, quindi **ripetigli
+  nel prompt il vincolo di sola lettura** — su ogni host, non solo su quelli senza harness.
+- **`codex`** — subagent nativo dell'host, con il modello risolto secondo la §2.
+
+  **Il ruolo si chiama qui come là.** `finder` esiste anche su Codex, come
+  `.codex/agents/finder.toml`, se `sync-host` è passata su questo progetto: stesso nome, stesso
+  contratto, resa diversa. Se non è passata, non c'è un ruolo da nominare — il passo parte
+  senza, e lo dichiari nell'esito.
+
+  **Nominarlo non impone niente, però.** Su questo host non c'è una lista di tool da restringere, e
+  `sandbox_mode` dentro un file di ruolo **non restringe nulla**: un subagent che lo porta scrive
+  lo stesso. Il ruolo serve a far arrivare il contratto al figlio senza che tu lo ricopi, non a
+  chiudergli una porta. L'unico confine vero dell'host è la sandbox di **sessione**, che chi lancia
+  Codex sceglie all'avvio e non è tua da scegliere.
+
+  Il runtime vuole il modello in due gesti diversi, ed è una proprietà dell'host, non della skill
+  che lo incontra: un passo risolto a `{hosts.<host>.models.worker}` si lancia **senza passare
+  `model`**, così eredita quel modello dal parent; un passo risolto a
+  `{hosts.<host>.models.judge}` quel modello lo passa esplicitamente. Perché l'eredità valga, **il parent deve già girare su
   `{hosts.<host>.models.worker}`**: se non ci gira, fermati e chiedi di selezionarlo per questa
-  sessione, senza fallback — un giudice ereditato al posto di un worker esce a contratto identico a
+  sessione, senza fallback — un judge ereditato al posto di un worker esce a contratto identico a
   un passo girato come doveva, e niente a valle distingue i due.
 
 **L'harness non ha lo stesso spessore sui due host, e `{hosts.<host>.enforcement}` dice quale.**
@@ -241,15 +272,15 @@ Regole valide su ogni host:
 ### Profondità e degradazione
 
 **Chi può ri-delegare.** Un passo delegato **esegue**: non delega a sua volta. Le sole eccezioni
-sono i tre nodi orchestranti che la §3 dichiara raggiungibili anche come figli — `deliver-feature`
+sono i tre nodi orchestranti che la §3 dichiara raggiungibili anche come figli — `develop-feature`
 (che orchestra le proprie fasi), `review` (finder, applicatore, gate, commit) e `commit` (che
-delega l'allineamento a `update-memory`). Ogni altro passo delegato è una **foglia**, e il cammino
-più lungo del grafo resta quello: `nightly-orchestrator → deliver-feature → review → finder`,
-quattro livelli. Un nodo che si accorge di voler delegare, e non è uno dei tre, sta eseguendo il
+delega l'allineamento a `update-memory`). Ogni altro passo delegato è una **foglia**, e i cammini
+più lunghi del grafo restano quelli: `nightly-orchestrator → develop-feature → review → finder` e
+`new-feature → develop-feature → review → finder`, quattro livelli. Un nodo che si accorge di voler delegare, e non è uno dei tre, sta eseguendo il
 lavoro di qualcun altro: torna a contratto e lascia decidere a chi l'ha chiamato.
 
 **La degradazione ha due gradini, non uno.** Un passo la cui resa dipende dall'**indipendenza**
-dei figli — i finder di un giro di `/review`, i tre auditor di `/memory-review` — non degrada a
+dei figli — i finder di un giro di `/review` — non degrada a
 *inline*: degrada prima a **subagent sequenziali**, che è già il caso normale sui backend con
 `{backends.<backend>.sequential_fanout}` (§5) e in cui la cecità reciproca resta intatta perché
 ogni contesto è comunque fresco. Solo se nemmeno quello è possibile si esegue in linea.
@@ -259,6 +290,32 @@ E allora **lo si dichiara nel blocco di ritorno** (`"indipendenza": "persa"`, o 
 degradazione ma la cecità no: tre discipline valutate nello stesso contesto *sono* la singola
 passata già convinta di sé che il fan-out esiste per evitare. Senza quel campo l'esito esce
 identico a quello di un fan-out cieco, e nulla a valle può distinguerli.
+
+### Domandare all'owner
+
+**Un subagent non ha un canale verso l'owner.** Parte da zero, scrive il suo blocco e muore:
+nessuno legge una sua domanda, e una domanda posta lì dentro si trasforma in un'assunzione presa
+in silenzio o in un passo che resta appeso. Quindi **chiede solo chi gira nella conversazione** —
+il nodo che l'owner ha invocato — e un passo delegato che si trova davanti a una scelta vera la
+**restituisce** nel proprio blocco invece di risolverla: è chi l'ha chiamato a portarla in chat.
+
+Le decisioni si pongono come **domanda strutturata**: un titolo, due-quattro opzioni mutuamente
+esclusive, ciascuna con una riga su cosa comporta, e quella consigliata per prima e dichiarata
+tale. Come si renda quella forma è una proprietà dell'host, non della skill — che dichiara di
+voler domandare e si ferma lì, come dichiara un ruolo senza nominare un modello:
+
+- **`claude`** — tool `AskUserQuestion`, una domanda per decisione, **al massimo quattro per
+  chiamata**: se le decisioni sono di più, si fanno più chiamate in sequenza, in ordine di gravità.
+  L'opzione consigliata va per prima, con `(consigliata)` in coda alla label. L'owner può sempre
+  rispondere fuori dalle opzioni, e quella risposta libera **prevale**.
+- **`codex`**, e ogni host senza un tool di domanda strutturata — la stessa lista, numerata, in
+  chat, con le opzioni come lettere e l'invito a rispondere in forma compatta (`1A, 2B, …`). Il
+  contenuto è identico: cambia solo il modo in cui arriva.
+
+**Chi domanda non si ferma a domandare.** Una skill che pone decisioni e poi lascia all'owner il
+compito di rilanciarla a mano con le risposte gli sta chiedendo di fare l'orchestratore al posto
+suo. Le risposte tornano dentro la stessa esecuzione, e la catena prosegue da lì fino a dove il
+suo contratto dichiara di arrivare.
 
 ## 5. Concorrenza
 
@@ -277,12 +334,16 @@ I passi che toccano la stessa working tree (build, test, commit, calcolo di un b
 - Nessuna skill nomina un modello: nomina un ruolo, e il modello lo risolve questo file
   sull'ambiente. Il ruolo è l'unica cosa che una skill ha il diritto di scrivere.
 - Nessuna skill duplica questo contratto, né i valori che esso legge da
-  `.daiku/environment.json`, nemmeno "per comodità".
+  `environment.json`, nemmeno "per comodità".
 - Nessuna skill introduce un terzo ruolo o un profilo di modello proprio.
 - Il tool `Workflow` non è il motore di nessuna skill: l'orchestrazione è dell'agente, che delega
   a subagent secondo questo file. Non invocarlo.
 
-## 7. Le chiavi di `.daiku/environment.json`
+## 7. Le chiavi di `environment.json`
+
+Il file sta in `~/.daiku/environment.json`, uno per owner e per macchina; un progetto può
+sovrascriverlo per intero con un `.daiku/environment.json` proprio. Le due sedi, e l'ordine in cui
+si cercano, sono la §8 di `contracts/project-contract.md`.
 
 | Chiave | Mestiere |
 |---|---|
@@ -292,7 +353,7 @@ I passi che toccano la stessa working tree (build, test, commit, calcolo di un b
 | `backends` | l'insieme dei backend dichiarati; si cita così quando una skill ne valida uno contro l'elenco |
 | `hosts.<host>.models` | i modelli dichiarati per quell'host; si cita così quando conta l'insieme e non il singolo ruolo |
 | `hosts.<host>.models.<ruolo>` | il modello del ruolo che la skill ha dichiarato per quel passo (§2) |
-| `hosts.<host>.models.giudice` | modello con cui gira il ruolo giudice su quell'host |
+| `hosts.<host>.models.judge` | modello con cui gira il ruolo judge su quell'host |
 | `hosts.<host>.models.worker` | modello con cui gira il ruolo worker su quell'host |
 | `hosts.<host>.skill_pointers` | cartella in cui l'host cerca i pointer delle skill invocabili; assente se l'host non ne richiede |
 | `hosts.<host>.enforcement` | `harness` se l'host impone con `deny`, hook e **assenza** di un tool — mai il contenuto di un comando Bash; `prosa` se gli invarianti valgono solo perché scritti (§4) |
@@ -307,3 +368,8 @@ I passi che toccano la stessa working tree (build, test, commit, calcolo di un b
 
 Nessuna chiave è obbligatoria oltre a `contract`: per tutto il resto vale la degradazione della
 §6 di `contracts/project-contract.md`.
+
+**La forma corrente è 2.** È salita da `1` il 19 settembre 2026, quando il ruolo che si chiamava
+`giudice` è diventato `judge`: la chiave `hosts.<host>.models.giudice` non esiste più, e un file
+rimasto alla forma `1` porta ancora quella — il modello del ruolo `judge` non si risolverebbe,
+senza che niente lo dica. È esattamente il caso che il numero serve a rendere riconoscibile.

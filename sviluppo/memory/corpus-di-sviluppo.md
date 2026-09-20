@@ -5,13 +5,19 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 48eaa498-ed6e-4a36-847d-3f8fa95f7f21
-  modified: 2026-09-18T14:35:00.044Z
+  modified: 2026-09-20T11:41:58.009Z
 ---
 
 Dal 18 settembre 2026 `.claude/` porta un **corpus di sviluppo**: `orchestration.md`, dieci
 contratti in `skills/` (`studia-libreria`, `studia-problema`, `decision-doc`, `blueprint`,
 `execute`, `review`, `code-review`, `commit`, `update-memory`, `deliver-feature`) e
 `agents/finder.md`. Serve a sviluppare Daiku con il metodo di Daiku.
+
+**Dal 20 settembre 2026 i nomi non si corrispondono più**, e la derivazione non si trova più per
+omonimia: nel prodotto quei contratti si chiamano `study`, `new-feature` e `develop-feature`, dove
+il cantiere ha ancora `studia-libreria`, `studia-problema` e `deliver-feature`. I rename sono stati
+scritti solo nel prodotto, che è l'unico albero pubblicato; riportarli qui è una decisione a parte,
+che non è stata presa.
 
 **Why:** è una derivazione dei contratti di `plugins/daiku/skills/`, non una copia, perché tre
 scelte dell'owner le fanno divergere e non sono reversibili per copia:
@@ -20,19 +26,50 @@ scelte dell'owner le fanno divergere e non sono reversibili per copia:
   `environment.json`) perché deve girare su progetti diversi. Qui il progetto è uno: path, comandi e
   modelli sono scritti per esteso dentro il contratto che li usa. Una graffa `{…}` in questo corpus
   è un refuso.
-- **Niente worktree.** Il `.gitignore` traccia solo `plugins/`, quindi un worktree nascerebbe senza
-  `CLAUDE.md`, senza `sviluppo/` e senza i contratti che ogni subagent deve leggere. Si lavora sul
-  branch corrente dell'albero principale.
-- **Niente commit per memoria e documentazione.** Stesso motivo: il perimetro di `update-memory` è
-  fuori dall'indice per costruzione, quindi il suo `committed` è sempre `null` e `commit` partiziona
-  in due gruppi invece che in tre. Ciò che quella fase scrive vive **solo su questa macchina**, e
-  non c'è una storia da cui recuperarlo.
+- **Niente worktree.** Si lavora sul branch corrente dell'albero principale. La ragione
+  originaria non vale più — nasceva dal `.gitignore` che tracciava solo `plugins/`, per cui un
+  worktree si sarebbe aperto senza `CLAUDE.md`, senza `sviluppo/` e senza i contratti che ogni
+  subagent deve leggere; da quando il repo versiona tutto, un worktree se li porterebbe dietro. La
+  scelta resta in piedi ma **la sua giustificazione è da rifare**.
+- **Il commit di memoria e documentazione qui c'è**, dal 18 settembre 2026, e prima non c'era: il
+  perimetro di `update-memory` era fuori dall'indice per costruzione, quindi il suo `committed` era
+  sempre `null` e `commit` partizionava in due gruppi invece che in tre. Ora `CLAUDE.md`,
+  `sviluppo/` e la memoria sono versionati come il prodotto.
 
-Cinque contratti del prodotto non sono stati derivati — `perf`, `test-coverage`, `arch-check`,
-`finder-prompt`, `applicatore` — e gli ultimi due sono stati **assorbiti** dentro `review`, che
-quindi qui scrive in casa propria il prompt del finder e il mestiere dell'applicatore.
+Il prodotto ha **diciannove** contratti, questo corpus ne ha **dieci**. I nove non derivati sono
+`applier`, `arch-check`, `finder-prompt`, `init`, `nightly-orchestrator`, `nightly-plan`, `perf`,
+`sync-host`, `test-coverage`. Di questi, `finder-prompt` e `applier` sono stati **assorbiti**
+dentro `review`, che quindi qui scrive in casa propria il prompt del finder e il mestiere
+dell'applicatore; gli altri sette semplicemente non servono a sviluppare Daiku.
 
-**How to apply:** una modifica che vale per entrambi si riporta **a mano** nel contratto
-corrispondente sotto `plugins/daiku/`, che resta l'unico albero distribuito. Nessuno dei due alberi
-aggiorna l'altro, e nessuna skill di questo corpus scrive dentro `plugins/daiku/skills/` per
-allinearlo a sé stessa. Vedi [[alberatura-pacchetto]] e [[si-pubblica-solo-il-prodotto]].
+**Il decimo del cantiere non ha più un gemello nel prodotto.** `memory-review` è stata
+**eliminata dal pacchetto il 19 settembre 2026**, con la ragione che segue: se il corpus avesse
+bisogno di una revisione periodica, vorrebbe dire che il modo in cui cresce non funziona, e il
+rimedio andrebbe messo lì. Al suo posto, `update-memory` gira a **ogni** invocazione di `/commit`,
+senza eccezioni. Nel cantiere la skill resta finché qualcuno non decide di toglierla anche di qui:
+è una decisione a parte, non un allineamento.
+
+**Due nomi non coincidono più**, dopo che il prodotto li ha rinominati: il `study` del pacchetto è
+lo `studia-libreria` di qui, e il suo `new-feature` è lo `studia-problema` di qui. Cercare il
+contratto corrispondente per nome non funziona su questi due.
+
+**E dal 19 settembre 2026 diverge anche il nome di un ruolo.** Nel prodotto il ruolo che decide si
+chiama `judge`, qui ancora `giudice` — 11 occorrenze in 6 file, `orchestration.md` compreso. Nel
+prodotto è anche una chiave di `environment.json` (`hosts.<host>.models.judge`), e per questo la
+forma di quel file è salita a `2`; qui non c'è niente da migrare, perché i modelli sono scritti per
+esteso. Il nome resta disallineato finché non lo autorizzi, come tutto il resto del cantiere.
+
+**How to apply:** dal 19 settembre 2026 `CLAUDE.md` dice che **le skill si modificano solo in
+`plugins/daiku/skills/`**: quelle di qui si leggono e si eseguono, non si toccano, e vale allo
+stesso modo per `.claude/orchestration.md` e `.claude/agents/`. Anche una modifica che varrebbe per
+entrambi i corpus si scrive solo nel prodotto; riportarla qui è una decisione a parte, che si
+chiede all'owner invece di prenderla. Nessuno dei due alberi aggiorna l'altro, e nessuna skill di
+questo corpus scrive dentro `plugins/daiku/skills/` per allinearlo a sé stessa.
+
+**Il corpus è rimasto indietro su un punto.** Dieci contratti di qui — e `orchestration.md` fino
+alla correzione del 19 settembre 2026 — sono scritti sulla premessa che tutto ciò che sta fuori da
+`plugins/` sia escluso da git, quindi parlano di perimetri «fuori dall'indice per costruzione», di
+un `committed` sempre `null` e di un `.gitignore` a lista di ammissione che non esiste più. È una
+premessa falsa da quando il repo versiona tutto, e allinearli è un lavoro da autorizzare.
+
+Vedi [[alberatura-pacchetto]] e [[si-pubblica-solo-il-prodotto]].

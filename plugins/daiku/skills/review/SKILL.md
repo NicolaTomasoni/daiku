@@ -1,15 +1,15 @@
 ---
 name: 'review'
-description: 'Ciclo di review su un diff — baseline congelata, giri che si fermano quando il codice smette di cambiare, ledger dei rilievi già giudicati. Il giro 1 fa il fan-out dei finder (bug sempre, arch/perf dallo scope), i giri successivi rivedono i soli fix appena scritti. Gate una volta all''uscita, poi il commit, che chiude sempre il ciclo salvo --no-commit. Orchestrata da te, delegando ogni fase a un subagent. Stessa disciplina che /deliver-feature esegue nella sua fase Review.'
-argument-hint: '[base-ref | path a "4. review-notes.md"] [--giri N] [--effort low|medium|high] [--with arch-check,perf,test-coverage] [--no-commit] [--backend <nome> se la sessione gira lì]'
+description: 'Ciclo di review su un diff — baseline congelata, giri che si fermano quando il codice smette di cambiare, ledger dei rilievi già giudicati. Il giro 1 fa il fan-out dei finder (bug sempre, arch/perf dallo scope), i giri successivi rivedono i soli fix appena scritti. Gate una volta all''uscita, poi il commit, che chiude sempre il ciclo salvo --no-commit. Orchestrata da te, delegando ogni fase a un subagent. Stessa disciplina che /develop-feature esegue nella sua fase Review.'
+argument-hint: '[file... | base-ref | path a "4. review-notes.md"] [--giri N] [--effort low|medium|high] [--with arch-check,perf,test-coverage] [--no-commit] [--backend <nome> se la sessione gira lì]'
 ---
 
 Sei il **motore di un ciclo di review** su un diff. Un giro è scope → finder → applicazione dei
 fix; il ciclo decide da sé quanti giri fare, guardando cosa il giro ha appena prodotto. Poi il
-gate, una volta sola. Il commit solo se te l'hanno chiesto. Orchestri tu, delegando ogni fase a
-un subagent secondo `contracts/orchestration.md`.
+gate, una volta sola. Infine il commit, che chiude sempre il ciclo salvo `--no-commit`. Orchestri
+tu, delegando ogni fase a un subagent secondo `contracts/orchestration.md`.
 
-Questo file è la **fonte unica** della disciplina di review del progetto: `/deliver-feature` lo
+Questo file è la **fonte unica** della disciplina di review del progetto: `develop-feature` lo
 esegue nella sua fase Review. Se cambia la review, si tocca qui e basta.
 
 **Perché è un ciclo e non una passata.** I fix che l'applicatore scrive sono codice nuovo che
@@ -25,8 +25,8 @@ vederla è rivedere i fix.
 
 ## Quando usarla
 
-- **Il diff di una feature**, consegnato da `/execute` o scritto a mano, quando vuoi la sola
-  review senza l'intera catena `/deliver-feature`.
+- **Il diff di una feature**, consegnato da `execute` o scritto a mano, quando vuoi la sola
+  review senza l'intera catena `develop-feature`.
 - **Le modifiche puntuali stratificate in chat**, una serie di richieste che a fine giornata si
   sono accumulate su molti file e vanno confermate prima di consegnarle.
 
@@ -35,14 +35,24 @@ modalità da dichiarare.
 
 ## Input
 
-Argomenti: `$ARGUMENTS`. Il primo può essere un **base-ref**, il **path al file di consegna
-`4. review-notes.md`** prodotto da `/execute`, o vuoto.
+Argomenti: `$ARGUMENTS`. **Il default è il caso normale, e non richiede argomenti**: senza niente
+rivedi ciò che hai in mano, cioè le modifiche non committate sotto `{code_root}` rispetto a
+`HEAD`, incluse le non tracciate. Gli argomenti servono a dire qualcosa di diverso da quello.
 
+- **Vuoto** — il default: `git diff HEAD -- {code_root}` più i file non tracciati, cioè il
+  lavoro corrente dentro il perimetro in cui vive l'applicazione. Nient'altro entra nello scope,
+  nemmeno se è cambiato.
+- **Uno o più path** (file o cartelle, separati da spazio): la baseline resta `HEAD` e lo scope
+  è il diff **limitato a quei path**, intersecato comunque con `{code_root}`. È la forma per
+  rivedere una parte di ciò che hai in mano invece di tutto: un path che non ha modifiche non
+  aggiunge niente allo scope, e se nessuno dei path ne ha, fermati e dillo invece di rivedere
+  tutto il resto.
+- **Base-ref** (branch, tag, SHA, per esempio `main`): base del diff. Si riconosce perché
+  `git rev-parse --verify` lo risolve e sul filesystem non esiste un path con quel nome; nel
+  dubbio — un branch che si chiama come una cartella — vale il **path**, ed è il caso in cui lo
+  dichiari nell'esito invece di sceglierlo in silenzio.
 - **Path a `4. review-notes.md`** (o alla cartella che lo contiene): verifica che esista; il
   base-ref lo dichiara quel file.
-- **Base-ref** (branch, tag, SHA, es. `main`): base del diff.
-- **Vuoto**: le modifiche non committate sotto `{code_root}` rispetto a `HEAD`, incluse le non
-  tracciate.
 - **`--giri N`** (opzionale): tetto esplicito, per troncare il ciclo a mano. Senza, il numero di
   giri lo decide l'andamento (§ *Quando fare un altro giro*) e l'unico tetto è il guardrail a `6`.
 - **`--effort low|medium|high`** (opzionale): profondità dei finder. Default `medium`. Su un
@@ -55,7 +65,7 @@ Argomenti: `$ARGUMENTS`. Il primo può essere un **base-ref**, il **path al file
   ciclo (§ *Copertura*), togliendo al worker la facoltà di saltarla. Override manuale esplicito,
   mai una disattivazione.
 - **`--no-commit`** (opzionale): sopprime il commit di chiusura, e il ciclo si ferma al report.
-  Lo passa **chi committa da sé** — `/deliver-feature`, che ha una fase di commit propria — non
+  Lo passa **chi committa da sé** — `develop-feature`, che ha una fase di commit propria — non
   chi ha un dubbio sul diff: un ciclo che arriva in fondo con gate verde e nessuna voce bloccante
   ha già deciso, e le condizioni di § *Chiusura* sono lì proprio per fermare tutto il resto.
 - **`--backend <nome>`** (opzionale): il nome del backend su cui la sessione gira, da dichiarare
@@ -97,6 +107,10 @@ I comandi: `git status --porcelain -- {code_root}`, `git diff --stat <base> -- {
 `git ls-files --others --exclude-standard -- {code_root}`. Mai includere file esterni a
 `{code_root}`.
 
+Se l'invocazione ha ristretto lo scope a un **elenco di path** (§ *Input*), quei path entrano nei
+tre comandi come pathspec **dopo** `{code_root}`, non al suo posto: il perimetro dell'applicazione
+resta il confine esterno, e la restrizione lavora dentro di esso.
+
 Decide anche le due discipline condizionali:
 
 - **arch-check** attiva se il diff tocca un file coperto dalle regole architetturali: elenca
@@ -122,7 +136,7 @@ rivedere, dillo e chiudi.
 2. **Apri il ledger**: `{paths.review_state}/review-ledger-<BASE breve>-<HHMMSS di avvio>.json`
    (le prime sette cifre dello SHA, l'orario di avvio della review). È il file che rende
    economici i giri successivi. Il nome porta baseline e orario perché più review possono girare
-   nella stessa sessione — `/deliver-feature` ne esegue una per ogni item della coda notturna —
+   nella stessa sessione — `develop-feature` ne esegue una per ogni item della coda notturna —
    e perché un ledger di una review precedente sulla stessa baseline (succede nella notte, quando
    un item esce bloccato senza commit e il successivo riparte dallo stesso commit) porterebbe ai
    finder gli scartati di un altro diff. Sede: `{paths.review_state}/` sotto la radice tecnica —
@@ -270,7 +284,12 @@ Nel prompt di ciascun finder metti **solo ciò che cambia**, già risolto:
 - la **disciplina** assegnata;
 - `BASE`, e dai giri ≥2 l'elenco dei file toccati dall'applicatore nel giro precedente;
 - il livello di **effort** del ciclo;
-- dal giro 2: **applicati** e **scartati** dei giri precedenti, letti dal ledger.
+- dal giro 2: **applicati** e **scartati** dei giri precedenti, letti dal ledger;
+- il **vincolo di sola lettura**, con queste parole: non modifica file e non esegue comandi che
+  scrivono. Il suo contratto lo dichiara già, ma la §4 di `contracts/orchestration.md` chiede di
+  ripeterlo qui lo stesso: il ruolo `finder` ha `Bash` intero, gli specificatori del suo toolset
+  non restringono il contenuto di un comando, e un finder che «corregge già che c'è» non compare
+  fra gli applicati e nessun giro successivo lo rivede.
 
 I finder non si vedono tra loro: è voluto, ed è la separazione che produce rilievi diversi invece di
 una sola passata già convinta di sé. Lanciali nello **stesso** blocco di tool call per farli girare
@@ -306,9 +325,9 @@ diff non ha girato nessuno. La regola è deterministica, e non la decidi giro pe
    ciclo non può chiudersi in silenzio: `discipline_mancate` non vuoto blocca il commit come
    `giri-esauriti` (§ *Chiusura*), e la consegna che la ospita fa lo stesso.
 
-È la stessa disciplina che `skills/memory-review/SKILL.md` § 3 applica ai propri auditor, dove «ogni auditor
-assente, fallito o che non certifica la propria completezza» diventa un gap e lo stato `incomplete`.
-Qui il posto dove si deposita è il blocco finale.
+Il posto dove quella perdita si deposita è il blocco finale. Vale per ogni fan-out cieco: uno
+che non torna per intero è un fan-out parziale, e senza un campo che lo dica esce identico a uno
+completo.
 
 ### Applicatore — ruolo **worker**, saltato a rilievi zero
 
@@ -341,7 +360,11 @@ che non restituisce il proprio blocco — prosa invece di JSON, blocco incomplet
 torna — si rilancia **una volta sola**, con lo stesso identico prompt. Mai un terzo tentativo: un
 ciclo che rilancia finché ottiene una risposta non sta iterando, sta aspettando.
 
-Cambia solo dove finisce il secondo fallimento, perché i tre passi non sono intercambiabili — e
+Lo **Scope** è il primo, e il più secco: se non torna neanche al rilancio, **fermati e dillo**.
+Senza scope non c'è un giro da fare, e ricostruirlo a intuito vuol dire rivedere un perimetro che
+nessuno ha delimitato.
+
+Per gli altri cambia solo dove finisce il secondo fallimento, perché i tre passi non sono intercambiabili — e
 ciascuno usa un campo che già esiste, così il commit si ferma per la regola che già c'è:
 
 - **applicatore**: il giro non ha prodotto fix e nessuno ha deciso i rilievi. Registralo nel ledger
@@ -360,6 +383,12 @@ ciascuno usa un campo che già esiste, così il commit si ferma per la regola ch
 Il numero di giri non si decide prima di cominciare — si decide guardando cosa il giro ha appena
 prodotto. Dopo ogni giro, nell'ordine:
 
+0. **Oscillazione rilevata** → esci, e l'uscita è `oscillazione`. Viene prima di tutte perché
+   è l'unica che può nascondersi dietro un'altra: l'applicatore sopprime il fix oscillante, gli
+   applicati del giro scendono a zero, e la regola 1 dichiarerebbe `punto-fisso` — cioè l'uscita
+   pulita — su un ciclo che si stava rimpallando la stessa riga. Il campo `oscillazione` del suo
+   blocco la riporta, e tu la verifichi sul ledger come gli altri due segnali
+   (§ *I due segnali si verificano, non si accettano*).
 1. **Zero fix applicati** → punto fisso, esci. È l'uscita pulita.
 2. **Almeno tre fix gravi** → un altro giro, senza discutere. Un perimetro che conteneva tre
    difetti reali ne conteneva abbastanza da contenerne ancora, e hai appena scritto il codice che
@@ -422,7 +451,7 @@ e i path delle memorie che quel diff tocca (§4.1 di `contracts/orchestration.md
 successivi riscrivono, e rifarli a ogni giro è lavoro buttato.
 
 **Decide lui se il diff introduce logica nuova scoperta.** Se no, torna senza scrivere nulla,
-dichiarandolo nel campo `perche`. `--with test-coverage` gli toglie questa facoltà: forza la fase
+dichiarandolo nel proprio blocco, che ha due campi per questo e non uno. `--with test-coverage` gli toglie questa facoltà: forza la fase
 anche se altrimenti l'avrebbe saltata (§ *Input*).
 
 Restituisce il blocco che quel contratto dichiara nella propria § *Modalità automatica*, **per
@@ -458,7 +487,7 @@ di `{areas}` con i rispettivi `{areas.<area>.paths}`, `{areas.<area>.lint_fix}` 
 restituire. Deve anche girare **in foreground e fino in fondo**: diglielo, è la riga che questa
 catena ha già pagato.
 
-**È l'unico punto della catena di consegna che lancia la suite**: `/execute` e le sessioni di chat non la eseguono perché
+**È l'unico punto della catena di consegna che lancia la suite**: `execute` e le sessioni di chat non la eseguono perché
 la esegui tu. Su **questo** diff, se qui non gira, non ha girato nessuno. Quindi non saltarlo mai e
 non delegarlo a chi ti ha invocato.
 
@@ -528,7 +557,7 @@ invece **non** blocca — la review è comunque stata fatta, solo senza fan-out 
 chiusura, perché il blocco esce altrimenti identico a quello di un giro 1 con tre finder
 indipendenti.
 
-Quando parte, delegalo a un subagent **giudice** che legge integralmente
+Quando parte, delegalo a un subagent **judge** che legge integralmente
 `skills/commit/SKILL.md` ed esegue quel contratto sul perimetro `{code_root}`.
 Committare da qui a mano salterebbe l'allineamento di memoria e documentazione, il bump di versione
 e il changelog, che vivono lì — insieme al permesso che quel nodo passa a sua volta al proprio
@@ -557,7 +586,7 @@ quello del codice. Se la sequenza si ferma fra un gruppo e il successivo, `commi
    l'unica cosa che il lettore non può ricavare dal resto del riepilogo.
 
 2. **Chiudi sempre con il blocco a contratto**, così chi ti ha invocato — l'utente o
-   `/deliver-feature` — lo legge senza interpretare la prosa. Nessun campo si
+   `develop-feature` — lo legge senza interpretare la prosa. Nessun campo si
    omette: a zero voci si scrive `"da_confermare": []`. In `giri` e nei contatori
    `applicati`/`gravi`/`scartati` conta **solo** i giri del ciclo: il giro di chiusura sui test
    della fase Copertura non è uno di essi, e si riporta in prosa. In `discipline_giro_1` elenca le discipline
@@ -572,6 +601,7 @@ quello del codice. Se la sequenza si ferma fra un gruppo e il successivo, `commi
      "discipline_giro_1": ["bug"],
      "discipline_mancate": [],
      "indipendenza": "intatta|persa",
+     "oscillazione": 0,
      "applicati": 0, "gravi": 0, "su_fix_precedente": 0, "scartati": 0,
      "gate": "verde|rosso",
      "gate_detail": "<esito reale del check sulle aree toccate, una riga>",
@@ -581,11 +611,16 @@ quello del codice. Se la sequenza si ferma fra un gruppo e il successivo, `commi
      "copertura": "test-scritti|nessun-test-necessario",
      "ledger": "<path del ledger di questa review>",
      "report": "<path di 5. review-report.md, o null se la review non gira su una cartella>",
-     "da_confermare": [
-       {"file": "<path>", "riga": 0, "scenario": "<il bivio in parole semplici: cosa è in gioco, le strade, cosa cambia>", "classe": "arch|bug|perf|test-coverage", "bloccante": true}
-     ]
+     "da_confermare": [ "<le voci come `skills/applier/SKILL.md` § *Il blocco che restituisci* e `skills/test-coverage/SKILL.md` § *Modalità automatica* le dichiarano, per intero e verbatim>" ]
    }
    ```
+
+   `oscillazione` conta le voci che l'applicatore ha registrato in quel campo lungo tutto il
+   ciclo, e **non** è ridondante con `uscita`: un'oscillazione rilevata all'ultimo giro esce con
+   quel nome, ma una rilevata prima — e soppressa — lascia il ciclo proseguire, e a quel punto
+   `uscita` porta il nome di come il ciclo è finito, non di ciò che ha incontrato. È una delle
+   cinque condizioni che fermano il commit (§ *Chiusura*), quindi chi decide a valle deve poterla
+   leggere anche quando non è l'uscita.
 
    `indipendenza` è `persa` **solo** se il fan-out del giro 1 non è girato su subagent
    indipendenti: la delega non era disponibile e hai valutato le discipline in linea, nello stesso
@@ -611,7 +646,7 @@ quello del codice. Se la sequenza si ferma fra un gruppo e il successivo, `commi
 4. **Se il commit non è partito, chiudi dicendo in una riga perché**, e distingui i due casi,
    perché si leggono uguali e non lo sono. Con `--no-commit` il commit è di chi ti ha invocato:
    se il gate è verde e non restano voci bloccanti, chiudi con **«Pronto per il commit.»** e
-   basta — dentro `/deliver-feature` nemmeno quella, lì il commit è una fase successiva della
+   basta — dentro `develop-feature` nemmeno quella, lì il commit è una fase successiva della
    consegna. Se invece a fermarlo è stata una delle condizioni di § *Chiusura*, nominala: il gate
    rosso con il suo dettaglio, le voci bloccanti rimaste, l'uscita `giri-esauriti`,
    l'oscillazione, o le discipline mancate.

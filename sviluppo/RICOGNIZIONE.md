@@ -96,7 +96,7 @@ Tutto il resto diverge.
 | marketplace | `.claude-plugin/marketplace.json` | `.agents/plugins/marketplace.json`; legge **anche** quello Claude |
 | skill | `skills/<n>/SKILL.md` | **identico** |
 | slash command | `commands/*.md` | migrati d'ufficio in skill, **col nome storpiato** (§3.4) |
-| subagent | `agents/*.md` | ignorati (§3.4) |
+| subagent | `agents/*.md` | `agents/` del pacchetto ignorata; i ruoli vivono in `.codex/agents/*.toml`, fuori dal pacchetto (§3.6) |
 | hook | `hooks/hooks.json` | **`plugin_hooks` è una feature rimossa** (§3.4) |
 | skill di sola consultazione | `disable-model-invocation: true` | `agents/openai.yaml` → `policy.allow_implicit_invocation: false` (§3.5) |
 | invocazione di una skill | `/daiku:review` — sempre namespacizzata | `$review` — **nessun namespace** |
@@ -104,6 +104,7 @@ Tutto il resto diverge.
 | skill di progetto | `.claude/skills/` | `.agents/skills/` (repo, risalendo fino alla root) |
 | skill di utente | `~/.claude/skills/` | `~/.codex/skills/` (verificato: esiste ed è in uso) |
 | istruzioni canoniche | `CLAUDE.md` | `AGENTS.md` (+ `project_doc_fallback_filenames`) |
+| memoria dell'agente | cartella di `.md`, sede spostabile con `autoMemoryDirectory` — ma **solo** da `settings.local.json` o dai settings utente: da un `settings.json` committato è ignorata per sicurezza | `~/.codex/memories_1.sqlite`, database consolidato dalle sessioni, feature `memories`: **nessuna chiave ne sposta la sede** (verificato: `codex features list`, schema del db) |
 | dove si installa | `~/.claude/plugins/cache/<mkt>/<plugin>/<versione>/` | `~/.codex/plugins/cache/<mkt>/<plugin>/<versione>/` — stessa forma (verificato) |
 
 ### 3.2 Le variabili di path
@@ -146,8 +147,9 @@ Quattro conseguenze, tutte e quattro dure:
    in fondo allo stesso file lo dicono. Ha ragione il validatore. Gli hook su Codex esistono, ma
    si dichiarano fuori dal pacchetto — `~/.codex/hooks.json` o `<repo>/.codex/hooks.json` — e
    quindi li deve scrivere `init`, non il pacchetto.
-2. **Un pacchetto Codex non trasporta subagent.** Niente `agents/`. I subagent Codex esistono in
-   `.codex/agents/*.toml`, di nuovo fuori dal pacchetto.
+2. **Un pacchetto Codex non trasporta subagent.** Niente `agents/`. I subagent Codex esistono, in
+   `.codex/agents/*.toml`, di nuovo fuori dal pacchetto: cosa portano davvero e cosa no è in §3.6,
+   provato.
 3. **Un pacchetto Codex non trasporta slash command.** Confermato: i contratti diventano skill, e
    non c'è un ripiego.
 4. **`disable-model-invocation: true` è rifiutato.** Su Codex *ogni* skill del pacchetto è
@@ -219,13 +221,47 @@ Con `false` la skill **non viene iniettata nel contesto del modello**, ma resta 
 esplicitamente come `$review`. Verificato: il pacchetto di prova con questo file passa la
 validazione di **entrambi** gli host.
 
-Conta per Daiku più di quanto sembri. I contratti sono una ventina, e la §3 di
-`orchestration.md` ne dichiara invocabili a mano solo una parte: tutti gli altri sono contratti
-interni, che un subagent riceve come path da leggere. Senza questo file finirebbero tutti nel
-contesto di ogni sessione Codex. Il prezzo è che `display_name` e `short_description` diventano
+Conta per Daiku più di quanto sembri, e dal **19 settembre 2026** molto di più di prima: i
+contratti sono diciannove e la §3 di `orchestration.md` ne dichiara invocabili a mano **nove**
+— `new-feature`, `study`, `review`, `commit`, più `init` e `sync-host` per l'installazione, più
+`nightly-plan`, `nightly-orchestrator` e `code-review`. Gli altri dieci sono contratti interni,
+che un subagent riceve come path da leggere. Senza questo file finirebbero tutti nel contesto di
+ogni sessione Codex. Il prezzo è che `display_name` e `short_description` diventano
 obbligatori per ogni skill che lo usa.
 
-### 3.6 Le due trappole
+### 3.6 I subagent di Codex — verificato il 19 settembre 2026
+
+Esistono, e si dichiarano fuori dal pacchetto: `~/.codex/agents/*.toml` per l'utente,
+`<repo>/.codex/agents/*.toml` per il progetto. Un file, un ruolo. Obbligatori `name`,
+`description` e `developer_instructions`; accettati anche `model`, `model_reasoning_effort`,
+`mcp_servers`, `skills.config` e `sandbox_mode`.
+
+Il banco — un repo vuoto con due ruoli, `codex exec --json -s workspace-write`, parent su
+`gpt-5.6-luna` — ha dato quattro esiti:
+
+| Prova | Esito |
+|---|---|
+| ruolo che vieta di scrivere **in prosa**, gli si chiede di creare un file | non scrive: «le istruzioni di sistema impongono un passo di sola analisi» |
+| ruolo con `sandbox_mode = "read-only"` e **nessun divieto in prosa** | **scrive** il file |
+| la stessa, con `--enable multi_agent_v2` | **scrive** lo stesso |
+| sessione intera lanciata con `-s read-only` | `patch rejected: writing is blocked by read-only sandbox` |
+
+Le due cose che contano stanno nelle ultime due righe. `sandbox_mode` **dentro un file di ruolo
+non è imposto**: il subagent scrive comunque, con e senza il multi-agente nuovo. E non è che la
+sandbox non funzioni su Windows — a livello di **sessione** rifiuta la scrittura come deve. È la
+dichiarazione per ruolo a non arrivare da nessuna parte.
+
+Che il file venga comunque letto è provato a parte, con una parola-spia nelle
+`developer_instructions`: il subagent l'ha riportata nella stessa risposta in cui scriveva il
+file. Quindi il ruolo arriva, il confine no.
+
+**Ne segue la forma della resa Codex**, quella che `sync-host` genera dai `agents/*.md` del
+pacchetto: `name`, `description` e `developer_instructions` in una stringa letterale a tre apici
+(`'''`, così i backslash dei path Windows non diventano escape), **senza** `sandbox_mode` e
+**senza** `model`. Provata sul banco: il `finder` reso in questo modo ha rifiutato di modificare
+un README e ha riportato il rifiuto, citando il proprio perimetro.
+
+### 3.7 Le due trappole
 
 **`rules/` è già un'altra cosa su Codex** — verificato: `~/.codex/rules/default.rules` esiste su
 questa macchina. Sono file Starlark che governano l'esecuzione dei comandi fuori sandbox. Il nome
@@ -236,7 +272,7 @@ hook fa ri-chiedere l'approvazione tramite `/hooks`. In più il sistema è dietr
 `features.hooks = true`. Combinato con §3.3 e §3.4, significa che gli hook su Codex sono il pezzo più
 caro da mantenere e il meno automatizzabile.
 
-### 3.7 Il vincolo invalicabile
+### 3.8 Il vincolo invalicabile
 
 **Nessuno dei due host lascia che un pacchetto scriva nel progetto dell'utente.** Su Claude Code
 è un confine di sicurezza esplicito: path traversal fuori dalla root del pacchetto rifiutato,
@@ -344,7 +380,7 @@ aggiornamento comandato e tutto ciò che non è una skill.
 | Manca | Righe | Perché appartiene al metodo |
 |---|---|---|
 | `docs/scripts/check-contratti.py` | 571 | verifica a macchina la topologia di `orchestration.md` §3: che i nodi siano tutti e soli quelli su disco, che ogni contratto consegnato a un subagent compaia fra i chiamanti della propria riga, che ogni rimando a sezione trovi l'heading. L'hook post-edit lo lancia a ogni scrittura sul corpus. |
-| i pointer per il secondo host | ~25 l'uno | il meccanismo esiste (`{hosts.codex.skill_pointers}` in `environment.json`) ma va **ripensato**, non copiato: §1 e §3.1 |
+| i pointer per il secondo host | ~25 l'uno | il meccanismo esiste (`{hosts.<host>.skill_pointers}`) ma va **ripensato**, non copiato: §1 e §3.1. Dal **19 settembre 2026 nessun host lo dichiara** nello scheletro dell'owner: il manifest Codex carica le skill da `./skills/`, quindi la chiave descriveva pointer che non esistono, e con essa dichiarati nessuna skill sarebbe risultata invocabile |
 
 > **Aggiornamento del 18 settembre 2026.** Il verificatore è stato copiato in
 > `plugins/daiku/tools/check-contratti.py` e poi **rimosso**. Risolveva la propria radice per
@@ -352,6 +388,13 @@ aggiornamento comandato e tutto ciò che non è una skill.
 > in `plugins/.claude/` e contava 3 controlli su una ventina, uscendo `1` per costruzione: un
 > comando rosso che non diceva niente su nulla. La proprietà che verificava resta desiderabile e non
 > è verificata da nessuno — vedi §7.4 e il commento in `contratti/orchestration.md` §3.
+>
+> **E non tornerà in quella forma.** Dal **19 settembre 2026** nessun hook lancia più un programma:
+> il post-edit *ricorda* di provare una guardia riscritta e non la esegue, perché far partire un
+> file appena comparso è codice non ancora guardato che parte senza la conferma dell'host e senza
+> l'approvazione per hash che Codex pretende per gli hook (§3.7). Se quella verifica di topologia
+> tornerà, sarà un comando che qualcuno lancia — come `hooks/self-check.mjs` — non un hook che lo
+> lancia da sé.
 
 ### 5.2 Le convenzioni di progetto che il metodo presuppone
 
@@ -371,8 +414,9 @@ Il corpus cita 25 path che risolvono solo nella ReforgIA viva. Tolti quelli di `
 
 ### 5.3 Il quinto livello: gli invarianti dentro `CLAUDE.md`
 
-`memory-review.md` e `update-memory.md` dichiarano `CLAUDE.md` **fonte canonica** del contratto
-della memoria. Un pacchetto che non lo porta consegna due contratti che puntano al vuoto.
+`update-memory.md` dichiara `CLAUDE.md` **fonte canonica** del contratto della memoria. Un
+pacchetto che non lo porta consegna un contratto che punta al vuoto. *(Il secondo lettore di quella
+fonte era `memory-review`, eliminata dal pacchetto il 19 settembre 2026.)*
 
 Le 106 righe di quel file, sezione per sezione:
 
@@ -448,38 +492,55 @@ Daiku/
    │  ├─ orchestration.md                 trasportati da entrambi gli host (§3.3)
    │  ├─ project-contract.md
    │  └─ invarianti.md                    il quinto livello (§5.3)
-   ├─ agents/{finder,auditor-memoria}.md  ← solo Claude: Codex li ignora (§3.4)
+   ├─ agents/{finder,auditor-memoria}.md  ← la fonte dei due ruoli; su Codex li rende
+   │                                         `sync-host` in `.codex/agents/*.toml` (§3.6)
    ├─ hooks/                              ← solo Claude: plugin_hooks rimossa su Codex (§3.4)
    │  ├─ hooks.json
-   │  └─ lib/*.mjs
+   │  ├─ README.md                        la guida dei tre guardrail: rami, gate, banchi
+   │  ├─ self-check.mjs                   i tre banchi in un colpo; non si installa mai
+   │  └─ lib/*.mjs                        i 3 hook + `project-root` e `daiku-config`, importati
    ├─ templates/                        ← ciò che init copia; mai letto in place
-   │  ├─ progetto/{project.json,dominio/,politiche/}
-   │  ├─ owner/environment.json
-   │  ├─ claude/settings.json
-   │  └─ codex/{config.toml,hooks.json,agents/*.toml}
+   │  ├─ project/{project.json,instructions.md,domain/,policies/}  tutto in inglese (§5.6)
+   │  ├─ owner/environment.json           destinazione `~/.daiku/`, non il progetto (7.4)
+   │  └─ codex/hooks.json                 lo scheletro che `sync-host` compila
    └─ README.md
 ```
 
 I due manifest e i due `marketplace.json` non sono ridondanza evitabile: sono i quattro file che i
 due host cercano. Vanno tenuti allineati da un controllo in CI.
 
+**Due voci di `templates/` sono cadute per strada, e vale la pena dire perché.** `claude/settings.json`
+è stato scritto e poi **tolto il 19 settembre 2026**: su Claude Code gli hook li aggancia già il
+pacchetto, e agganciarli una seconda volta dal progetto significava eseguire ogni guardia due volte.
+`codex/{config.toml,agents/*.toml}` non sono mai nati: `sync-host` genera i `.toml` dei ruoli dai
+`.md` del pacchetto, invece di trasportarne uno scheletro, e `config.toml` è dell'utente e non si
+tocca — gli hook di Codex si dichiarano in un `hooks.json` a parte proprio per poterli diffare e
+togliere senza toccare nient'altro.
+
 **L'asimmetria è reale e non si chiude.** Su Claude Code il pacchetto porta hook e subagent e li
-aggiorna da sé; su Codex li deve scrivere `init` nel progetto, perché il manifest li rifiuta.
-Stesso metodo, due gradi di automazione — ed è la stessa asimmetria che `environment.json` già
-dichiara con `{hosts.<host>.enforcement}`: `harness` contro `prosa`. Il pacchetto non la crea, la
-eredita.
+aggiorna da sé; su Codex li deve scrivere `sync-host` dentro il progetto, perché il manifest li
+rifiuta. Stesso metodo, due gradi di automazione — ed è la stessa asimmetria che
+`environment.json` già dichiara con `{hosts.<host>.enforcement}`: `harness` contro `prosa`. Il
+pacchetto non la crea, la eredita.
+
+E non si chiude nemmeno portando i ruoli su Codex, che pure si può fare (§3.6): là il ruolo fa
+arrivare il contratto al figlio, ma non gli toglie niente di mano. Un ruolo scritto in
+`.codex/agents/` risparmia al chiamante di ricopiare il contratto nel prompt; non trasforma
+`prosa` in `harness`.
 
 ### 7.2 Il progetto ospite, dopo `init`
 
 ```text
 progetto/
 ├─ .daiku/                    ← host-neutro: Parametri + Dominio
-│  ├─ project.json
+│  ├─ project.json               qui anche `guardrails`, che accende i dinieghi della guardia
 │  ├─ dominio/*.md            ← l'attuale context/
 │  ├─ politiche/*.md          ← l'attuale rules/, rinominato per la collisione §3.3
 │  └─ skills/                 ← contratti locali al progetto
-├─ .claude/settings.json      ← solo l'aggancio degli hook, zero contratti
-├─ .codex/{config.toml,agents/*.toml}
+├─ .codex/                    ← solo su Codex, e lo scrive `sync-host`: su Claude Code il
+│  ├─ hooks.json                 progetto non riceve niente, né in `.claude/` né altrove
+│  ├─ hooks/*.mjs                (agganciare gli hook una seconda volta li farebbe girare due)
+│  └─ agents/*.toml
 ├─ CLAUDE.md                  ← invarianti del progetto + definizione degli slug citati
 └─ AGENTS.md                  ← rimanda a CLAUDE.md
 
@@ -495,10 +556,10 @@ progetto/
 | `orchestration.md` | `contratti/orchestration.md` | non è una skill; sotto `skills/` Claude Code la scandirebbe (§3.4) |
 | `project-contract.md` | `contratti/project-contract.md` | idem |
 | *(da `CLAUDE.md` di ReforgIA)* | `contratti/invarianti.md` | il quinto livello (§5.3) |
-| `agents/*.md` | `agents/*.md` (Claude) **+** `templates/codex/agents/*.toml` | Codex rifiuta `agents` nel manifest (§3.3) |
+| `agents/*.md` | `agents/*.md`, fonte unica per i due host; su Codex `sync-host` ne genera `.codex/agents/*.toml` | Codex rifiuta `agents` nel manifest (§3.3); la resa e i suoi limiti in §3.6 |
 | `hooks/*.mjs` | `hooks/lib/*.mjs` (Claude) **+** `templates/codex/` | Codex rifiuta `hooks` nel manifest (§3.3) |
-| `settings.json` → blocco `hooks` | `hooks/hooks.json` (Claude) **+** `templates/codex/hooks.json` | eventi e contratto diversi (§3.6) |
-| `settings.json` → `description` | `hooks/README.md` | è prosa, non configurazione |
+| `settings.json` → blocco `hooks` | `hooks/hooks.json` (Claude) **+** `templates/codex/hooks.json` | eventi e contratto diversi (§3.7) |
+| `settings.json` → `description` | `hooks/README.md` — **scritto il 19/09/2026** | è prosa, non configurazione |
 | `project.json` | `templates/progetto/project.json`, svuotato | per progetto |
 | `environment.json` | `templates/owner/environment.json`, svuotato | per owner |
 | `context/README.md` | `templates/progetto/dominio/README.md` | scheletro |
@@ -518,9 +579,12 @@ Meccaniche ma diffuse, e sono il costo vero di questa disposizione.
 2. **`.claude/project.json` → `.daiku/project.json`**, `.claude/context/<ruolo>.md` →
    `.daiku/dominio/<ruolo>.md`, `.claude/rules/` → `.daiku/politiche/`. Il prefisso `.claude/`
    dentro un contratto che deve girare su Codex è una bugia.
-3. **`.claude/environment.json` → `~/.daiku/environment.json`.** Oggi `project-contract.md` §8
+3. **`.claude/environment.json` → `~/.daiku/environment.json`.** ~~Oggi `project-contract.md` §8
    dice che quel file «si copia identico» in ogni progetto: è la duplicazione che §8 stessa
-   condanna. Il modello a pacchetto la rende evitabile.
+   condanna.~~ **Fatto il 19 settembre 2026**: la §8 ora dichiara la home come sede, con un override
+   di progetto in `.daiku/environment.json` per chi non ha una home dell'owner — una CI, un
+   container — o per il progetto che gira su un backend diverso dagli altri. Chi legge prende il
+   primo dei due che trova, intero: non si fondono.
 
 `orchestration.md` §3 regge già questa classe di verifica: la tabella della topologia è il posto
 dove i nuovi indirizzi si dichiarano. **Controllarli a macchina, però, oggi non lo fa nessuno** — il
@@ -556,14 +620,23 @@ Le prove eseguite:
    albero**. Poi è stato installato davvero su Codex e rimosso, e §3.4 riporta cosa ha fatto
    l'host.
 6. **`codex features list`** ha chiuso la questione degli hook senza bisogno di una sessione.
+7. **Banco sui subagent Codex**, il 19 settembre 2026 — l'unica prova che ha richiesto sessioni
+   vere. Un repo vuoto, due ruoli in `.codex/agents/`, sei turni di `codex exec --json`: i quattro
+   esiti sono in §3.6. Il modello è stato scelto a mano (`-m gpt-5.6-luna`) perché il `model` di
+   `config.toml` resta non servibile, ed è la ragione per cui la prova mancante qui sotto non è
+   più mancante.
 
 L'ambiente è stato riportato allo stato iniziale: pacchetto e marketplace di prova rimossi,
 `~/.codex/config.toml` senza una riga di residuo.
 
-**Una sola prova non è stata possibile**: interrogare una sessione Codex su quali skill vede.
-Il `model` dichiarato in `config.toml` (`gpt-5.2`) non è servibile da questo account via CLI, e
-tirare a indovinare un modello valido spenderebbe quota per una risposta che le skill di sistema
-danno già per iscritto (§3.5).
+**Resta non provato**: interrogare una sessione Codex su quali skill vede. Non è più un ostacolo
+tecnico — dal 19 settembre le sessioni si aprono passando il modello a mano — ma una risposta che
+le skill di sistema danno già per iscritto (§3.5), e che non vale la quota.
+
+Il `model` dichiarato in `config.toml` (`gpt-5.2`) **non è servibile da questo account**: una
+sessione che parte con quello muore con `400 · The 'gpt-5.2' model is not supported when using
+Codex with a ChatGPT account`. `codex debug models` elenca i validi — `gpt-5.5`, `gpt-5.6-luna`,
+`gpt-5.6-sol`, `gpt-5.6-terra` — e finché quella riga resta lì va passato `-m` a ogni invocazione.
 
 ---
 

@@ -1,10 +1,10 @@
 {
-  "contract": 1,
+  "contract": 2,
   "default_host": "claude",
   "hosts": {
     "claude": {
       "models": {
-        "giudice": "opus",
+        "judge": "opus",
         "worker": "sonnet"
       },
       "enforcement": "harness",
@@ -14,17 +14,22 @@
     },
     "codex": {
       "models": {
-        "giudice": "<alias del modello con cui gira il ruolo giudice>",
-        "worker": "<alias del modello con cui gira il ruolo worker>"
+        "judge": "<alias of the model the judge role runs on>",
+        "worker": "<alias of the model the worker role runs on>"
       },
       "enforcement": "prosa",
-      "skill_pointers": ".agents/skills/",
+      "settings_file": "~/.codex/config.toml",
       "native_backend": "codex"
     }
   },
   "backends": {
     "claude": {},
-    "codex": {}
+    "codex": {},
+    "<name of a backend native to neither host, or drop this key>": {
+      "base_url": "<URL the environment points to while this backend is active>",
+      "sequential_fanout": true,
+      "caveats": ["<a caveat of this backend to carry into summaries, one per line>"]
+    }
   },
-  "temp_dir": "<directory temporanea di questa macchina>"
+  "temp_dir": "<temporary directory on this machine>"
 }

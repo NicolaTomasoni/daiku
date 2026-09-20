@@ -5,21 +5,30 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 49e5cfe5-3f08-446f-a9cd-5cc35fba4682
-  modified: 2026-09-18T17:59:16.197Z
+  modified: 2026-09-19T19:08:59.045Z
 ---
 
 Un valore tolto da una skill ha tre destinazioni possibili, e la domanda che le separa non è
 «quanto è specifico» ma **chi lo aggiornerebbe al prossimo cambiamento**: `.daiku/project.json`
-se cambia da progetto a progetto, `.daiku/environment.json` se è costante per l'owner e varia per
+se cambia da progetto a progetto, `~/.daiku/environment.json` se è costante per l'owner e varia per
 macchina, `.daiku/domain/<ruolo>.md` se per usarlo serve sapere *perché* esiste — cioè se è
 giudizio e non valore.
+
+**L'ambiente sta nella home, non nel progetto, dal 19 settembre 2026.** Prima `init` lo scriveva in
+`.daiku/environment.json` dentro ogni progetto, che era la duplicazione condannata dalla §8 del
+`project-contract.md` stesso: cambiare l'alias di un modello voleva dire ripetere la stessa
+modifica in N progetti, e la storia condivisa di un repository si portava dietro valori della
+macchina di chi ci lavorava. Resta possibile un **override di progetto** in
+`.daiku/environment.json`: chi legge prende il primo dei due che trova e lo prende **intero**, non
+li fonde. Serve dove una home dell'owner non c'è — una CI, un container — o dove un progetto solo
+gira su un backend diverso dagli altri.
 
 **Why:** il 18 settembre 2026 il corpus è stato separato dal progetto su cui era nato, e la scelta
 è stata di non aprire un quarto livello: i tre bastavano tutti e tre, e un livello nuovo avrebbe
 dovuto essere spiegato in ogni skill che lo tocca.
 
 **Il dominio viaggia, ed è una scelta esplicita dell'owner della stessa giornata.** Il pacchetto
-porta i default sotto `templates/project/domain/<lingua>/`, `init` li deposita una volta sola e
+porta i default sotto `templates/project/domain/`, `init` li deposita una volta sola e
 l'idempotenza garantisce che non tornino a ogni aggiornamento: restano una proposta, non diventano
 una regola del pacchetto. Un default esiste solo dove la risposta è una convenzione
 (`commit-convention.md`), mai dove dipende dallo stack — lì sarebbe un'invenzione travestita da

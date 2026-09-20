@@ -1,7 +1,6 @@
 ---
 name: 'test-coverage'
 description: 'Default misura la copertura per macrocategorie del progetto e aspetta categoria + % target; in modalità --auto decide da sé se il diff introduce logica scoperta e scrive i test sul diff senza chiedere. Test di qualità nel layer corretto'
-argument-hint: '[categoria] (opzionale, una macrocategoria del progetto) [--auto]'
 ---
 
 Skill per **creare test unitari** con un flusso a due tempi: prima misura e mostra la copertura per macrocategoria, **si ferma** e aspetta che tu scelga su cosa lavorare e con quale % target; poi scrive i test rispettando le convenzioni e le regole di qualità del progetto.

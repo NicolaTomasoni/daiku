@@ -1,12 +1,16 @@
 ---
 name: perf
-description: Investiga uno scope per colli di bottiglia di performance (CPU, GPU, I/O, rete, rendering); default propone quick win senza toccare codice, come finder di /review restituisce rilievi in sola lettura sul diff
-argument-hint: [path, modulo o flusso]
+description: 'Investiga uno scope per colli di bottiglia di performance (CPU, GPU, I/O, rete, rendering); default propone quick win senza toccare codice, come finder di /review restituisce rilievi in sola lettura sul diff'
 ---
 
 # Obiettivo
 
 Investiga lo scope indicato e individua cosa rende l'applicativo pesante, lento o eccessivamente costoso in risorse. **Nella modalità di default non modificare codice, configurazioni o test:** è un'indagine, non un fix.
+
+> **Parametri.** Ogni chiave fra graffe di questo contratto si risolve sui file di parametri del
+> progetto, mai a memoria e mai per assunzione: le regole sono nella §5 di
+> `contracts/project-contract.md`, che dice anche **in quale lingua scrivere** e cosa fare quando
+> una chiave non c'è.
 
 ## Due modalità
 
@@ -32,7 +36,7 @@ Risolvi lo scope prima di fare qualsiasi altra cosa:
 * L'argomento è un **path o glob** relativo alla root del repo — la cartella di una feature, di un layer o di un modulo. Usalo verbatim.
 * Accetta anche il **nome breve** di un'unità del progetto (feature frontend, service, adapter, flusso) e risolvilo nella sua cartella, aiutandoti con i cataloghi che il file di dominio indica.
 * Può essere anche un **flusso** trasversale (l'esecuzione di un tool esterno, il polling di uno stato, un ciclo di elaborazione): ricostruiscilo attraverso i layer, senza assumere che l'intero repository sia nel perimetro.
-* **Senza argomento** → chiedi quale scope, elencando le aree plausibili dalla struttura del repo e dai cataloghi che il file di dominio indica. Non partire mai sull'intero repo.
+* **Senza scope** → questo contratto non si lancia a mano: lo scope arriva da chi ti invoca. Se non è arrivato, **fermati e dillo nel blocco**, elencando le aree plausibili perché chi ti ha chiamato possa sceglierne una. Non partire mai sull'intero repo.
 
 Se il path risolto non esiste, segnalalo e fermati.
 
@@ -46,14 +50,14 @@ Valuta l'utilizzo di risorse sia **in idle** sia **durante i processi**: parecch
 
 ## Cosa cercare
 
-Tre livelli. Quali tecnologie li occupino in questo progetto, e i punti caldi che ciascuna si porta dietro, lo dice il file di dominio: qui stanno le forme di spreco, non i nomi.
+**Tre livelli, ed è una lettura di default, non una legge.** Un progetto la cui architettura non si divide così lo dichiara in `.daiku/domain/perf.md`, e allora valgono i livelli che dichiara lui. Quali tecnologie li occupino, e i punti caldi che ciascuna si porta dietro, lo dice lo stesso file: qui sotto stanno le forme di spreco, non i nomi di chi le produce.
 
 **Interfaccia e rendering:**
 
 * rendering ripetuti o componenti che ricalcolano troppo; assenza di memoizzazione mirata;
-* gestione inefficiente di query, hook, effect o subscription; polling troppo aggressivo o senza bail-out;
+* gestione inefficiente delle sottoscrizioni a dati e del lavoro legato al ciclo di vita di un'unità di interfaccia; polling troppo aggressivo o senza bail-out;
 * fetch o query duplicati; invalidazione troppo ampia;
-* GPU tenuta sveglia da animazioni continue, canvas, superfici embedded o effetti visivi non necessari.
+* GPU tenuta sveglia da animazioni continue, da superfici ridisegnate a ogni frame o da effetti visivi non necessari.
 
 **Servizio applicativo:**
 
@@ -90,11 +94,7 @@ Attiva quando `/review` ti invoca. Non è un'indagine da riportare in chat: è u
 - **Confidenza media:** probabile, ma con una condizione da verificare sul codice — nominala nella `descrizione`. `cambiamento` riporta comunque il fix concreto.
 - **Confidenza bassa:** impatto che per giustificarsi richiederebbe una misura o un benchmark (è impatto ipotetico) — nessun `cambiamento`; la `descrizione` porta la misura consigliata.
 - **Non applichi nulla.** La decisione di applicare o scartare ogni rilievo è dell'applicatore di `/review`, che lo riverifica.
-- **Nessuno stop interattivo, nessun output in formato indagine.** Non stampi il report `# Esito indagine performance`: restituisci il blocco JSON atteso dal chiamante:
-
-```json
-{"findings": [{"file": "<path>", "riga": 0, "simbolo": "<Classe.metodo | funzione | Componente>", "confidenza": "alta|media|bassa", "cambiamento": "<il fix concreto, per alta e media>", "descrizione": "<problema, evidenza, e per bassa la misura consigliata>"}]}
-```
+- **Nessuno stop interattivo, nessun output in formato indagine.** Non stampi il report `# Esito indagine performance`: restituisci il blocco dichiarato da `skills/finder-prompt/SKILL.md` § *Il blocco che restituisci*, per intero e con quei nomi di campo: leggilo da lì, qui non è ricopiato. Per questa disciplina `simbolo` è la classe, la funzione o il componente in cui vive il collo di bottiglia, `cambiamento` è il fix concreto, e `descrizione` porta problema ed evidenza, e per la confidenza bassa la misura consigliata.
 
 Se servono misurazioni, privilegia lettura del codice e comandi leggeri. Come si avvia l'applicazione e dove risponde lo dice il file di dominio, che rimanda alla sola fonte di quei valori: se osservi il runtime, dichiara cosa hai misurato. Se non puoi misurare, dichiara esplicitamente nella `descrizione` del finding che la valutazione è **statica**.
 

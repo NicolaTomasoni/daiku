@@ -29,7 +29,7 @@ caso.
 
 È il pattern *dist repo*: jQuery pubblica `jquery/jquery-dist`, Symfony ribalta il monorepo in
 repo read-only con `splitsh-lite`, Google usa Copybara. Quegli strumenti qui sono fuori scala —
-per un albero da 37 file bastano venti righe di script. `git subtree split` **non** è utilizzabile:
+per un albero da 42 file bastano venti righe di script. `git subtree split` **non** è utilizzabile:
 lavora su un prefisso solo, e qui le radici da copiare sono quattro.
 
 **How to apply:** tre cose che lo script deve fare, e che non vengono gratis.

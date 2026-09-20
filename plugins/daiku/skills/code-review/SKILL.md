@@ -1,7 +1,8 @@
 ---
 name: code-review
 allowed-tools: Bash(git remote:*), Bash(gh issue view:*), Bash(gh search:*), Bash(gh issue list:*), Bash(gh pr comment:*), Bash(gh pr diff:*), Bash(gh pr view:*), Bash(gh pr list:*), Bash(glab mr view:*), Bash(glab mr diff:*), Bash(glab mr list:*), Bash(glab mr note:*), Bash(glab issue view:*), Bash(glab issue list:*), mcp__github_inline_comment__create_inline_comment
-description: Code review a pull request
+argument-hint: '[numero della PR, opzionale — senza, elenca quelle aperte e chiede quale] [--comment]'
+description: 'Review di una pull request già pubblicata su GitHub o GitLab, con commenti inline sulla forge; è anche il contratto del finder `bug` che /review delega su un diff locale, e in quella modalità non scrive niente da nessuna parte'
 ---
 
 Provide a code review for the given pull request (GitHub) or merge request (GitLab).
@@ -13,14 +14,31 @@ Provide a code review for the given pull request (GitHub) or merge request (GitL
 
 ## Due modalità
 
-- **Default (pull request).** Il diff è già pubblicato su una forge e l'esito sono commenti sulla PR: è il comportamento descritto in tutto il resto di questo file, dalla *Forge selection* in giù.
+- **Default (pull request).** Il diff è già pubblicato su una forge e l'esito sono commenti sulla PR: è il comportamento descritto in tutto il resto di questo file, dalla *Forge selection* in giù. Scope, permessi ed esito stanno in § *Modalità pull request* qui sotto.
 - **Finder `bug` (invocata da `/review`).** Scope = il diff passato dal chiamante, non una PR. **Sola analisi**: nessun commento sulla forge, nessun fan-out interno, nessuna modifica al codice. Vedi *Modalità finder* qui sotto, che ha la precedenza su tutto il resto del file dove confligge.
+
+## Modalità pull request (lanciata dall'owner)
+
+**Argomenti**: `$ARGUMENTS` — il numero della PR, opzionale, e `--comment`. Senza numero, elenca
+le PR aperte (`gh pr list` / `glab mr list`) e chiedi quale: qui l'owner c'è, ed è l'unica
+modalità in cui puoi chiedergli qualcosa.
+
+**Scope**: la PR indicata, e solo lei. Il working tree non c'entra: il diff lo prendi dalla
+forge.
+
+**Permessi di scrittura**: **nessun file, mai** — né nel repository né altrove. L'unica scrittura
+ammessa sono i **commenti sulla forge**, e solo con `--comment`: senza quell'argomento la review
+resta in chat. Nessun commit, nessun push, nessuna modifica al codice della PR.
+
+**Esito**: il riepilogo in chat che il passo 7 descrive, in `{language.chat}`, e — con
+`--comment` — i commenti inline che i passi 8 e 9 pubblicano. Non c'è un blocco JSON: questa
+modalità non alimenta nessuna decisione a valle, perché chi l'ha lanciata legge l'esito da sé.
 
 ## Modalità finder (invocata da `/review`)
 
 Attiva quando `/review` ti invoca come disciplina `bug`. Sei **già** il subagent assegnato a quella disciplina: la tua unica consegna è trovare difetti di correttezza introdotti dal diff e restituirli nel blocco JSON del chiamante.
 
-**Non si esegue nulla di ciò che presuppone una PR o altri agenti.** In particolare: la *Forge selection* e ogni comando `gh`/`glab` (non c'è una forge in gioco — il frontmatter `allowed-tools` riguarda l'invocazione su PR, qui il perimetro te lo passa il chiamante); il **passo 1** e le sue condizioni di arresto (PR chiusa, draft, già commentata — nessuna si applica a un diff locale: non fermarti mai per quelle ragioni); i **passi 2-5**, cioè l'intero fan-out interno di agenti e la loro validazione, perché il ciclo di `/review` lo fa già a monte con finder indipendenti e a valle con un applicatore che riverifica ogni rilievo; i **passi 7-9**, riepilogo in chat, `--comment`, commenti inline e permalink.
+**Non si esegue nulla di ciò che presuppone una PR o altri agenti.** In particolare: la *Forge selection* e ogni comando `gh`/`glab` (non c'è una forge in gioco — il frontmatter `allowed-tools` riguarda l'invocazione su PR, qui il perimetro te lo passa il chiamante); il **passo 1** e le sue condizioni di arresto (PR chiusa, draft, già commentata — nessuna si applica a un diff locale: non fermarti mai per quelle ragioni); i **passi 2-6**, cioè l'intero fan-out interno di agenti e la loro validazione, perché il ciclo di `/review` lo fa già a monte con finder indipendenti e a valle con un applicatore che riverifica ogni rilievo; i **passi 7-9**, riepilogo in chat, `--comment`, commenti inline e permalink.
 
 **Tre regole di questo file qui non valgono**, perché sono tarate su commenti in una PR e non su un ciclo che riverifica:
 
@@ -48,11 +66,11 @@ confidenza del ciclo è tutta tua.
   la terza deroga tiene in vita: un rilievo verificato a confidenza bassa è informazione, e
   l'applicatore lo riverifica prima di toccare qualsiasi cosa.
 
-Restituisci il blocco JSON atteso dal chiamante, e nient'altro:
-
-```json
-{"findings": [{"file": "<path>", "riga": 0, "simbolo": "<Classe.metodo | funzione | Componente>", "confidenza": "alta|media|bassa", "cambiamento": "<il fix concreto, per alta e media>", "descrizione": "<il difetto, l'evidenza sulla riga, e lo scenario in cui si manifesta>"}]}
-```
+Restituisci il blocco dichiarato da `skills/finder-prompt/SKILL.md` § *Il blocco che
+restituisci*, per intero e con quei nomi di campo, e nient'altro: leggilo da lì, qui non è
+ricopiato. Per questa disciplina `simbolo` è la classe, la funzione o il componente che porta il
+difetto, `cambiamento` è il fix concreto, e `descrizione` porta il difetto, l'evidenza sulla riga
+e lo scenario in cui si manifesta.
 
 ---
 
@@ -72,7 +90,7 @@ If the required CLI for the detected forge is not installed, stop and report tha
 **Agent assumptions (applies to all agents and subagents):**
 - All tools are functional and will work without error. Do not test tools or make exploratory calls. Make sure this is clear to every subagent that is launched.
 - Only call a tool if it is required to complete the task. Every tool call should have a clear purpose.
-- Every agent below is named by its **role** — `giudice` or `worker` — never by a model. `contracts/orchestration.md` is the single place that resolves a role to the model of the current host, and the single place that says how a subagent is launched there: read it before launching any of them.
+- Every agent below is named by its **role** — `judge` or `worker` — never by a model. `contracts/orchestration.md` is the single place that resolves a role to the model of the current host, and the single place that says how a subagent is launched there: read it before launching any of them.
 
 To do this, follow these steps precisely:
 
@@ -97,10 +115,10 @@ Note: Still review Claude generated PR's.
    Agents 1 + 2: `{instructions_file}` compliance worker agents
    Audit changes for `{instructions_file}` compliance in parallel. Note: When evaluating `{instructions_file}` compliance for a file, you should only consider `{instructions_file}` files that share a file path with the file or parents.
 
-   Agent 3: giudice bug agent (parallel subagent with agent 4)
+   Agent 3: judge bug agent (parallel subagent with agent 4)
    Scan for obvious bugs. Focus only on the diff itself without reading extra context. Flag only significant bugs; ignore nitpicks and likely false positives. Do not flag issues that you cannot validate without looking at context outside of the git diff.
 
-   Agent 4: giudice bug agent (parallel subagent with agent 3)
+   Agent 4: judge bug agent (parallel subagent with agent 3)
    Look for problems that exist in the introduced code. This could be security issues, incorrect logic, etc. Only look for issues that fall within the changed code.
 
    **CRITICAL: We only want HIGH SIGNAL issues.** Flag issues where:
@@ -117,7 +135,7 @@ Note: Still review Claude generated PR's.
 
    In addition to the above, each subagent should be told the PR title and description. This will help provide context regarding the author's intent.
 
-5. For each issue found in the previous step by agents 3 and 4, launch parallel subagents to validate the issue. These subagents should get the PR title and description along with a description of the issue. The agent's job is to review the issue to validate that the stated issue is truly an issue with high confidence. For example, if an issue such as "variable is not defined" was flagged, the subagent's job would be to validate that is actually true in the code. Another example would be `{instructions_file}` issues. The agent should validate that the `{instructions_file}` rule that was violated is scoped for this file and is actually violated. Use giudice subagents for bugs and logic issues, and worker subagents for `{instructions_file}` violations.
+5. For each issue found in the previous step by agents 3 and 4, launch parallel subagents to validate the issue. These subagents should get the PR title and description along with a description of the issue. The agent's job is to review the issue to validate that the stated issue is truly an issue with high confidence. For example, if an issue such as "variable is not defined" was flagged, the subagent's job would be to validate that is actually true in the code. Another example would be `{instructions_file}` issues. The agent should validate that the `{instructions_file}` rule that was violated is scoped for this file and is actually violated. Use judge subagents for bugs and logic issues, and worker subagents for `{instructions_file}` violations.
 
 6. Filter out any issues that were not validated in step 5. This step will give us our list of high signal issues for our review.
 

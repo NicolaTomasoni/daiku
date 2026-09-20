@@ -22,7 +22,7 @@ invece di una sola passata già convinta di sé.
 - il livello di **effort** (`low` | `medium` | `high`);
 - dal secondo giro: gli **applicati** e gli **scartati** dei giri precedenti, dal ledger.
 
-Se uno di questi manca, chiedilo al chiamante invece di sceglierlo tu: lo scope indovinato è la sola
+Se uno di questi manca, **non sceglierlo tu e non chiederlo**: restituisci il blocco vuoto dichiarando quale input mancava, e sarà chi ti ha invocato a rilanciarti con quello giusto. Lo scope indovinato è la sola
 cosa che rende incomparabili due giri.
 
 ## La tua disciplina
@@ -74,10 +74,14 @@ cosa che rende incomparabili due giri.
 
 ## Il blocco che restituisci
 
-Solo questo, senza report in prosa. A zero rilievi si scrive `{"findings": []}`.
+**Lo schema è questo, ed è l'unico.** Il contratto della tua disciplina non lo ridichiara: gli
+aggiunge la scala di `confidenza` e dice cosa scrivere dentro `simbolo`, `cambiamento` e
+`descrizione`, che è l'unica cosa a cambiare fra una disciplina e l'altra.
+
+Solo il blocco, senza report in prosa. A zero rilievi si scrive `{"findings": []}`.
 
 ```json
-{"findings": [{"file": "<path>", "riga": 0, "simbolo": "", "confidenza": "alta|media|bassa", "cambiamento": "<il fix concreto, per alta e media>", "descrizione": "<...>"}]}
+{"findings": [{"file": "<path>", "riga": 0, "simbolo": "<Classe.metodo | funzione | modulo | Componente>", "confidenza": "alta|media|bassa", "cambiamento": "<il fix concreto, per alta e media>", "descrizione": "<...>"}]}
 ```
 
 La scala di `confidenza` è dichiarata dal contratto della tua disciplina, nella sua *Modalità

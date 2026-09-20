@@ -31,7 +31,7 @@ Ogni path è **relativo alla radice del repository** (`C:/dev/Daiku`), con separ
 
 | Sede | Cosa c'è |
 |---|---|
-| `plugins/daiku/` | **il prodotto** — l'unico perimetro di codice, e l'unico albero tracciato da git |
+| `plugins/daiku/` | **il prodotto** — l'unico perimetro di codice, e l'unico albero che viene pubblicato |
 | `CLAUDE.md` | gli invarianti di chi sviluppa Daiku |
 | `.claude/orchestration.md` | questo file |
 | `.claude/skills/<nome>/SKILL.md` | i contratti di sviluppo; un subagent ne riceve il **path**, non il nome |
@@ -49,10 +49,14 @@ Le sedi marcate **◦ non esistono ancora**: le crea il contratto che le usa, al
 un'omissione da riparare a mano — una cartella vuota non dice niente a nessuno, e un registro vuoto
 si legge come un registro di zero consegne invece che come un registro mai aperto.
 
-**Tutto ciò che sta fuori da `plugins/` è escluso da git per costruzione** (`.gitignore` a lista
-di ammissione). Non è un dettaglio di igiene: è la ragione per cui il gruppo memoria/documentazione
-di questo repo **non si committa mai**, e i contratti che lo toccano lo dichiarano invece di
-provarci (§ *Il gruppo memoria/doc qui non ha un commit*).
+**Questo repository versiona tutto**: prodotto, ricognizione, punti aperti, memoria, esempi e
+istruzioni. Il `.gitignore` non filtra più niente — esclude soltanto `.claude/settings.local.json`,
+che non deve stare in nessun git. Fino al 18 settembre 2026 era il contrario, e la differenza conta
+qui perché il gruppo memoria/documentazione **adesso si committa** (§ *Il gruppo memoria/doc*).
+
+Il confine di ciò che esce si è spostato altrove: sta nella lista di copia dello script di
+pubblicazione, che copia i soli path ammessi in un **secondo** repository su GitHub. Nessun
+contratto di questo corpus tocca quello script né quel repo.
 
 ## 1. Ruoli
 
@@ -284,23 +288,25 @@ obbligatoria, e un gate che la salta per comodità certificherebbe un pacchetto 
 validato per Codex. Non è però un difetto del diff, e chi legge l'esito deve poterlo distinguere:
 si risolve con un'installazione, non con una consegna.
 
-## 8. Il gruppo memoria/doc qui non ha un commit
+## 8. Il gruppo memoria/doc
 
 Nel prodotto, gli artefatti non-codice — memoria, istruzioni, documento tecnico — vanno in un
-commit distinto dopo quello di feature. **Qui quel commit non esiste**, e non perché lo si sia
-deciso: `git` traccia soltanto `plugins/`, le due vetrine, `README.md` e `.gitignore`, quindi
-`CLAUDE.md` e tutto `sviluppo/` — memoria compresa — sono fuori dall'indice per costruzione.
+commit distinto dopo quello di feature. **Qui vale lo stesso**, dal 18 settembre 2026: `CLAUDE.md`,
+tutto `sviluppo/` e la memoria sono versionati come il prodotto, quindi c'è un indice in cui
+metterli e una storia da cui recuperarli.
 
-Le conseguenze, che i contratti che toccano quei file dichiarano in casa propria:
+Prima non era così — `git` tracciava soltanto `plugins/`, le due vetrine, `README.md` e il
+`.gitignore` — e il corpus era stato scritto su quella premessa. Le conseguenze di allora, che
+**non valgono più**: un `committed` sempre `null` in `update-memory`, due gruppi invece di tre in
+`commit`, l'assenza di un «commit 2» in `deliver-feature`, un perimetro di review «fuori
+dall'indice per costruzione».
 
-- `update-memory` **scrive** i suoi file e **non li committa mai**: il suo `committed` è sempre
-  `null`, e non è una cautela ma un fatto del repository.
-- `commit` partiziona in **due** gruppi, non tre: codice (sotto `plugins/`) e versione/changelog.
-  Non tenta un `git add` su un path ignorato — fallirebbe, e forzarlo con `-f` pubblicherebbe lo
-  sviluppo di Daiku insieme al prodotto.
-- `deliver-feature` non ha un «commit 2». La fase di memoria resta obbligatoria lo stesso: i fatti
-  vanno scritti dove si rileggono, e il fatto che non entrino in un commit li rende **più**
-  fragili, non meno — sono l'unica parte della consegna che vive solo su questa macchina.
+> **Allineamento aperto.** Questa sezione è stata corretta il 19 settembre 2026; i contratti che
+> dipendono da lei — `commit`, `update-memory`, `deliver-feature`, `review`, `blueprint`,
+> `execute`, `decision-doc`, `studia-problema` — portano ancora la premessa vecchia, e vanno
+> riletti prima di fidarsi di ciò che dicono su git. Finché non sono allineati, **vince questa
+> sezione**: dove un contratto dice che il suo perimetro è fuori dall'indice, quel perimetro è
+> nell'indice.
 
 Il giorno in cui il repository diventa pubblico, questa sezione è una delle cose da rileggere
 (`sviluppo/memory/pubblicazione-su-github.md`).
@@ -316,5 +322,8 @@ Il giorno in cui il repository diventa pubblico, questa sezione è una delle cos
 - Il tool `Workflow` non è il motore di nessuna skill: l'orchestrazione è dell'agente, che delega a
   subagent secondo questo file. Non invocarlo.
 - Nessuna skill di questo corpus scrive dentro `plugins/daiku/skills/` o
-  `plugins/daiku/contratti/` **per allinearli a sé stessa**. Il prodotto si modifica perché lo
+  `plugins/daiku/contracts/` **per allinearli a sé stessa**. Il prodotto si modifica perché lo
   decide una consegna, non perché una copia si è mossa.
+- E il contrario vale ancora più stretto: i contratti di **questo** corpus — `.claude/skills/`,
+  questo file, `.claude/agents/` — non si modificano affatto. Una modifica che varrebbe per
+  entrambi si scrive solo nel prodotto; riportarla qui è una decisione che si chiede all'owner.
