@@ -1,16 +1,14 @@
 ---
-name: execute
+name: 'execute'
 description: 'Contratto interno di develop-feature — esegue in autonomia il brief prodotto da blueprint, seguendo il piano a task e aggiornando Memoria e Diario dentro il file; a fine lavoro deposita "4. review-notes.md" per /review.'
+user-invocable: false
 ---
 
 È il passo a valle di `blueprint`. Ricevi la cartella che contiene il brief di esecuzione (`2. blueprint.md`) e lo **porti a termine dall'inizio alla fine in autonomia**. A differenza di `decision-doc` e `blueprint`, qui **esegui davvero**: modifichi il codice del progetto per realizzare la soluzione già decisa.
 
 Il brief è già la tua consegna completa: la sezione **Mandato** ti dice come comportarti, **La soluzione scelta** cosa fare, la **Memoria** il piano a task da seguire. Questa skill non ti dà nuove istruzioni di merito — ti innesca sul file giusto e blinda le due discipline che un esecutore tradisce più spesso: **aggiornare il file mentre lavori** e **fidarti della verifica osservabile invece di autodichiararti a posto**.
 
-> **Parametri.** Ogni chiave fra graffe di questo contratto si risolve sui file di parametri del
-> progetto, mai a memoria e mai per assunzione: le regole sono nella §5 di
-> `contracts/project-contract.md`, che dice anche **in quale lingua scrivere** e cosa fare quando
-> una chiave non c'è.
+> **Parametri.** Ogni chiave fra graffe di questo contratto si risolve sui file di parametri del progetto, mai a memoria e mai per assunzione: le regole sono nella §5 di `contracts/project-contract.md`, che dice anche **in quale lingua scrivere** e cosa fare quando una chiave non c'è.
 
 ## Input: la cartella del brief
 
@@ -106,20 +104,15 @@ Contenuto:
 
 ## Cosa restituisci
 
-Invocato a mano, basta il riepilogo in chat. **Invocato dentro una catena** — la fase Execute di
-`develop-feature` — chiudi con questo blocco, che è il solo formato su cui il chiamante decide se
-proseguire:
+Invocato a mano, basta il riepilogo in chat. **Invocato dentro una catena** — la fase Execute di `develop-feature` — chiudi con questo blocco, che è il solo formato su cui il chiamante decide se proseguire:
 
 ```json
 {"ok": true, "note_review_path": "<path di 4. review-notes.md>", "verify_detail": "<esito reale delle prove mirate sul perimetro toccato>", "detail": "<se ok=false, il motivo>"}
 ```
 
-`verify_detail` porta l'esito **reale** delle prove che hai eseguito sul perimetro che hai
-toccato, non la loro intenzione: la suite completa e il gate di pacchetto non sono tuoi, li possiede `/review`, quindi questo campo è l'unica prova che qualcosa sia stato osservato
-prima della review.
+`verify_detail` porta l'esito **reale** delle prove che hai eseguito sul perimetro che hai toccato, non la loro intenzione: la suite completa e il gate di pacchetto non sono tuoi, li possiede `/review`, quindi questo campo è l'unica prova che qualcosa sia stato osservato prima della review.
 
-Lo schema sta qui, nel file del nodo che lo produce, e chi ti invoca lo cita invece di ricopiarlo
-(§4.2 di `contracts/orchestration.md`).
+Lo schema sta qui, nel file del nodo che lo produce, e chi ti invoca lo cita invece di ricopiarlo (§4.2 di `contracts/orchestration.md`).
 
 ## Regola di taglio
 

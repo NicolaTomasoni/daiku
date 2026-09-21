@@ -1,0 +1,5 @@
+interface:
+  display_name: "Applier"
+  short_description: "Contratto interno aperto da review"
+policy:
+  allow_implicit_invocation: false

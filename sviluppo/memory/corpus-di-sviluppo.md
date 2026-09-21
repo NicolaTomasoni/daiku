@@ -5,13 +5,18 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 48eaa498-ed6e-4a36-847d-3f8fa95f7f21
-  modified: 2026-09-20T17:22:41.439Z
+  modified: 2026-09-21T14:19:51.256Z
 ---
 
-Dal 18 settembre 2026 `.claude/` porta un **corpus di sviluppo**: `orchestration.md`, dieci
-contratti in `skills/` (`studia-libreria`, `studia-problema`, `decision-doc`, `blueprint`,
-`execute`, `review`, `code-review`, `commit`, `update-memory`, `deliver-feature`) e
-`agents/finder.md`. Serve a sviluppare Daiku con il metodo di Daiku.
+Dal 18 settembre 2026 `.claude/` porta un **corpus di sviluppo**: `orchestration.md`, i comandi in
+`commands/` e `agents/finder.md`. Serve a sviluppare Daiku con il metodo di Daiku. Fino al 21
+settembre 2026 i comandi erano dieci contratti in `skills/` (`studia-libreria`, `studia-problema`,
+`decision-doc`, `blueprint`, `execute`, `review`, `code-review`, `commit`, `update-memory`,
+`deliver-feature`); quel giorno, su ordine esplicito dell'owner, il cantiere è passato a **tredici
+comandi** in `commands/` — i dodici convertiti (`translate-skill` e `migliora-skill` si erano
+aggiunti nel frattempo senza aggiornare questa memoria) più `confronta-repo.md`, il comando
+dell'owner precedente al corpus. Corpi identici, a parte il frontmatter (nei comandi non c'è la
+riga `name:`, il nome lo dà il file) e i rimandi fra contratti.
 
 **Dal 20 settembre 2026 i nomi non si corrispondono più**, e la derivazione non si trova più per
 omonimia: nel prodotto quei contratti si chiamano `research` (raccolta, con il riordino delegato
@@ -37,7 +42,8 @@ scelte dell'owner le fanno divergere e non sono reversibili per copia:
   sempre `null` e `commit` partizionava in due gruppi invece che in tre. Ora `CLAUDE.md`,
   `sviluppo/` e la memoria sono versionati come il prodotto.
 
-Il prodotto ha **diciotto** contratti, questo corpus ne ha **dieci**. Gli otto non derivati sono
+Il prodotto ha **diciotto** contratti, questo corpus ne ha **dodici** (più `confronta-repo.md`,
+che non ha un gemello). Gli otto non derivati sono
 `applier`, `arch-check`, `finder-prompt`, `init`, `perf`,
 `research`, `sync-host`, `test-coverage`. Di questi, `finder-prompt` e `applier` sono stati **assorbiti**
 dentro `review`, che quindi qui scrive in casa propria il prompt del finder e il mestiere

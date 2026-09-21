@@ -1,5 +1,4 @@
 ---
-name: 'decision-doc'
 description: 'Studia un problema di Daiku, valuta se serve ancora pensiero strategico ad alto livello o solo chiudere i dettagli tecnici, e produce o aggiorna 0.5. studio-strategico.md oppure 1. decision-doc.md di conseguenza, rifinendo 0. problem.md'
 argument-hint: '[cartella] [analizza solo: <sottoinsieme>]'
 ---
@@ -239,7 +238,7 @@ Quando l'owner risponde:
   decisioni già prese smette di essere letta;
 - se una risposta è una direttiva libera, prevale sulle opzioni: applicala;
 - se l'owner dichiara un'assunzione «vera, fidati» → non toccare il documento; portala in memoria
-  seguendo il contratto che `.claude/skills/update-memory/SKILL.md` dichiara nella propria
+  seguendo il contratto che `.claude/commands/update-memory.md` dichiara nella propria
   § *La forma della memoria di questo progetto*, indice compreso; nel riepilogo dichiarala come
   punto da non risollevare;
 - chiudi con un riepilogo per numero: decisione → cosa hai scritto e dove, più l'elenco di ciò che

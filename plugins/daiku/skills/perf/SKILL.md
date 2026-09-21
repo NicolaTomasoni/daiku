@@ -1,16 +1,14 @@
 ---
 name: 'perf'
 description: 'Investiga uno scope per colli di bottiglia di performance (CPU, GPU, I/O, rete, rendering); default propone quick win senza toccare codice, come finder di /review restituisce rilievi in sola lettura sul diff'
+user-invocable: false
 ---
 
 # Obiettivo
 
 Investiga lo scope indicato e individua cosa rende l'applicativo pesante, lento o eccessivamente costoso in risorse. **Nella modalità di default non modificare codice, configurazioni o test:** è un'indagine, non un fix.
 
-> **Parametri.** Ogni chiave fra graffe di questo contratto si risolve sui file di parametri del
-> progetto, mai a memoria e mai per assunzione: le regole sono nella §5 di
-> `contracts/project-contract.md`, che dice anche **in quale lingua scrivere** e cosa fare quando
-> una chiave non c'è.
+> **Parametri.** Ogni chiave fra graffe di questo contratto si risolve sui file di parametri del progetto, mai a memoria e mai per assunzione: le regole sono nella §5 di `contracts/project-contract.md`, che dice anche **in quale lingua scrivere** e cosa fare quando una chiave non c'è.
 
 ## Due modalità
 

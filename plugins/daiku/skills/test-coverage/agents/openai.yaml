@@ -1,0 +1,5 @@
+interface:
+  display_name: "Test Coverage"
+  short_description: "Copertura e test di review"
+policy:
+  allow_implicit_invocation: false

@@ -35,26 +35,25 @@ per il resto consigliati
 
 
 
-skill riviste:
+**skill riviste**
 research
 study
 
+develop-feature
+decision-doc
+blueprint
+execute
 
 
 
 
 
-
-Ecco il testo estratto dall'immagine:
+**DA FARE**
 
 applier
 arch-check
-blueprint
 code-review
 commit
-decision-doc
-develop-feature
-execute
 finder-prompt
 init
 new-feature

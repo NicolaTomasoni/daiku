@@ -1,0 +1,5 @@
+interface:
+  display_name: "Blueprint"
+  short_description: "Contratto interno aperto da develop-feature"
+policy:
+  allow_implicit_invocation: false

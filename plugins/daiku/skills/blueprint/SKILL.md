@@ -1,6 +1,7 @@
 ---
 name: 'blueprint'
 description: 'Contratto interno di develop-feature — dal documento di decisione e dalla soluzione scelta produce un brief di esecuzione autonoma (2. blueprint.md) e si ferma lì, senza eseguire.'
+user-invocable: false
 ---
 
 È il passo a valle di `decision-doc`. Ricevi la cartella che contiene il documento di decisione (`1. decision-doc.md`) e l'indicazione della **soluzione scelta** dall'utente. Produci **un solo file**, `2. blueprint.md`, che è un **brief di esecuzione autonoma**: contiene **solo** le informazioni necessarie alla soluzione scelta, e una **sezione Memoria** con un **piano di implementazione pre-fatto, diviso in task ordinati**. Ti **fermi al brief**: non esegui il piano e non lanci nessun esecutore. L'esecuzione è un passo separato e atomico (`execute`).
@@ -9,10 +10,7 @@ Il file generato serve a un *futuro* esecutore, che non sa nulla di come è nato
 
 Tu, qui, **non esegui** il piano: lo **prepari** soltanto. Il file resta la fonte di verità — proprio perché è autosufficiente è la consegna perfetta per un esecutore (`execute`) che parte da zero e non sa nulla di come è nato.
 
-> **Parametri.** Ogni chiave fra graffe di questo contratto si risolve sui file di parametri del
-> progetto, mai a memoria e mai per assunzione: le regole sono nella §5 di
-> `contracts/project-contract.md`, che dice anche **in quale lingua scrivere** e cosa fare quando
-> una chiave non c'è.
+> **Parametri.** Ogni chiave fra graffe di questo contratto si risolve sui file di parametri del progetto, mai a memoria e mai per assunzione: le regole sono nella §5 di `contracts/project-contract.md`, che dice anche **in quale lingua scrivere** e cosa fare quando una chiave non c'è.
 
 ## Input: cartella e soluzione scelta
 
@@ -41,7 +39,7 @@ L'argomento indica la **cartella** (dove vive `1. decision-doc.md`) e **quale so
 
 1. **Risolvi la cartella** e apri `1. decision-doc.md`. Individua le decisioni e le opzioni.
 
-2. **Fissa la/le scelta/e** dell'utente da `$ARGUMENTS` (o chiedendo, vedi *Input*).
+2. **Fissa la/le scelta/e** dell'utente da `$ARGUMENTS`.
 
 3. **Distilla la soluzione scelta**: da cosa va fatto e perché, ai vincoli e alle specifiche, ai criteri di completamento. Tieni solo il materiale dell'opzione scelta.
 
@@ -131,9 +129,7 @@ Finisci qui: il tuo unico output è `2. blueprint.md` e il blocco di ritorno. No
 
 ## Cosa restituisci
 
-Invocato a mano, basta il riepilogo in chat. **Invocato dentro una catena** — la fase Brief di
-`develop-feature` — chiudi con questo blocco, che è il solo formato su cui il chiamante decide se
-proseguire:
+Riepiloga in chat (Procedura punto 7) e **chiudi con questo blocco — sei la fase Brief di `develop-feature`** — che è il solo formato su cui il chiamante decide se proseguire:
 
 ```json
 {"ok": true, "brief_path": "<path di 2. blueprint.md>", "detail": "<se ok=false, il motivo esatto>"}
@@ -141,6 +137,4 @@ proseguire:
 
 Se `2. blueprint.md` esisteva già, **non** rieseguire il brief: `ok: true` col path esistente.
 
-Lo schema sta qui, nel file del nodo che lo produce, e chi ti invoca lo cita invece di ricopiarlo
-(§4.2 di `contracts/orchestration.md`): un blocco riscritto nel chiamante diverge da questo alla
-prima modifica, e a divergere per prima è sempre la riga che qualcuno ha aggiunto dopo.
+Lo schema sta qui, nel file del nodo che lo produce, e chi ti invoca lo cita invece di ricopiarlo (§4.2 di `contracts/orchestration.md`): un blocco riscritto nel chiamante diverge da questo alla prima modifica, e a divergere per prima è sempre la riga che qualcuno ha aggiunto dopo.

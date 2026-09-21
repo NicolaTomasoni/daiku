@@ -1,0 +1,5 @@
+interface:
+  display_name: "Arch Check"
+  short_description: "Finder arch di review in sola lettura"
+policy:
+  allow_implicit_invocation: false

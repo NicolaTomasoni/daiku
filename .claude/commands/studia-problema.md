@@ -1,5 +1,4 @@
 ---
-name: 'studia-problema'
 description: 'Studia un problema di Daiku leggendo il pacchetto e i documenti di riferimento, produce 0. problem.md in sviluppo/nuovi-sviluppi/<slug>/ e chiude delegando decision-doc su quella cartella'
 argument-hint: '<descrizione problema>'
 ---
@@ -179,7 +178,7 @@ non si torna in chat e non si chiede niente: la skill finisce quando il file è 
 Mai eseguire il passo inline. Il prompt dev'essere autosufficiente, perché il subagent parte da
 zero:
 
-- il **contratto da leggere**: `.claude/skills/decision-doc/SKILL.md`, per intero, prima di agire,
+- il **contratto da leggere**: `.claude/commands/decision-doc.md`, per intero, prima di agire,
   nella modalità *Da `studia-problema`* che quel file dichiara;
 - l'**input risolto**: la cartella `sviluppo/nuovi-sviluppi/<slug>/` e, dentro, il `0. problem.md`
   che hai appena scritto — è già il documento base, non c'è nulla da concatenare;

@@ -1,5 +1,4 @@
 ---
-name: 'review'
 description: 'Ciclo di review su un diff di plugins/daiku — baseline congelata, giri che si fermano quando il pacchetto smette di cambiare, ledger dei rilievi già giudicati. Gate una volta all''uscita, poi il commit, che chiude sempre il ciclo salvo --no-commit.'
 argument-hint: '[base-ref | path a "4. review-notes.md"] [--giri N] [--effort low|medium|high] [--no-commit]'
 ---
@@ -198,14 +197,14 @@ Dai giri ≥2 il perimetro è una manciata di file e la cecità non compra più 
 
 ### Finder — ruolo **worker**, subagent di tipo `finder`
 
-Ciascuno riceve come contratto da leggere `.claude/skills/code-review/SKILL.md`, nella sua
+Ciascuno riceve come contratto da leggere `.claude/commands/code-review.md`, nella sua
 **modalità finder**, che dichiara cosa cerca, con quale perimetro di lettura e in che forma
 restituisce i rilievi: **non ricopiarlo nel prompt** — un contratto ricopiato si erode di giro in
 giro, e le righe che si perdono per prime sono quelle che tengono insieme il ciclo.
 
 Nel prompt di ciascun finder metti **solo ciò che cambia**, già risolto:
 
-- il path del contratto, `.claude/skills/code-review/SKILL.md`, e l'istruzione di eseguirlo nella
+- il path del contratto, `.claude/commands/code-review.md`, e l'istruzione di eseguirlo nella
   **modalità finder**;
 - `BASE` e il comando con cui vede il proprio scope; dai giri ≥2 l'elenco dei file toccati
   dall'applicatore nel giro precedente;
@@ -434,7 +433,7 @@ per lo stesso argomento con cui il gate blocca: quella passata su questo diff no
 nessuno, e non la farà più.
 
 Quando parte, delegalo a un subagent **giudice** che legge integralmente
-`.claude/skills/commit/SKILL.md` ed esegue quel contratto sul perimetro `plugins/daiku/`.
+`.claude/commands/commit.md` ed esegue quel contratto sul perimetro `plugins/daiku/`.
 Committare da qui a mano salterebbe l'allineamento di memoria e documentazione e il controllo di
 versione che vivono lì. Nessun `git push`, mai.
 

@@ -1,5 +1,4 @@
 ---
-name: 'code-review'
 description: 'Cerca difetti introdotti da un diff di plugins/daiku — contratti in prosa, manifest, codice eseguibile e template. Modalità finder quando la invoca review, modalità pull request quando la lanci tu.'
 argument-hint: '[numero PR] [--comment]'
 allowed-tools: Bash(git remote:*), Bash(git diff:*), Bash(git log:*), Bash(git grep:*), Bash(gh pr view:*), Bash(gh pr diff:*), Bash(gh pr list:*), Bash(gh pr comment:*), Read, Grep, Glob

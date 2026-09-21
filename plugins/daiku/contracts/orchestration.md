@@ -294,16 +294,18 @@ il nodo che l'owner ha invocato — e un passo delegato che si trova davanti a u
 **restituisce** nel proprio blocco invece di risolverla: è chi l'ha chiamato a portarla in chat.
 
 Le decisioni si pongono come **domanda strutturata**: un titolo, due-quattro opzioni mutuamente
-esclusive, ciascuna con una riga su cosa comporta, e quella consigliata per prima e dichiarata
-tale. Come si renda quella forma è una proprietà dell'host, non della skill — che dichiara di
+esclusive con id stabile `A`, `B` (, `C`, `D`), ciascuna con una riga su cosa comporta, e quella
+consigliata per prima e dichiarata tale. Quale sia la consigliata non si inferisce dalla prosa:
+la dice `recommended_id` nel blocco che la porta — per contratto di `decision-doc` è sempre `"A"`,
+già per prima — e chi domanda la riporta senza riordinare. Come si renda quella forma è una proprietà dell'host, non della skill — che dichiara di
 voler domandare e si ferma lì, come dichiara un ruolo senza nominare un modello:
 
 - **`claude`** — tool `AskUserQuestion`, una domanda per decisione, **al massimo quattro per
   chiamata**: se le decisioni sono di più, si fanno più chiamate in sequenza, in ordine di gravità.
-  L'opzione consigliata va per prima, con `(consigliata)` in coda alla label. L'owner può sempre
+  L'opzione `A` va per prima, con `(consigliata)` in coda alla label. L'owner può sempre
   rispondere fuori dalle opzioni, e quella risposta libera **prevale**.
 - **`codex`**, e ogni host senza un tool di domanda strutturata — la stessa lista, numerata, in
-  chat, con le opzioni come lettere e l'invito a rispondere in forma compatta (`1A, 2B, …`). Il
+  chat, con le opzioni come lettere (`A` per prima, dichiarata consigliata) e l'invito a rispondere in forma compatta (`1A, 2B, …`). Il
   contenuto è identico: cambia solo il modo in cui arriva.
 
 **Chi domanda non si ferma a domandare.** Una skill che pone decisioni e poi lascia all'owner il

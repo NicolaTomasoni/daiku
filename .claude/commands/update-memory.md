@@ -1,5 +1,4 @@
 ---
-name: 'update-memory'
 description: 'Passo obbligatorio prima del commit: allinea CLAUDE.md, sviluppo/memory/, RICOGNIZIONE.md e PUNTI-APERTI.md al diff di plugins/daiku appena consegnato. Delta minimo, nessuna scrittura se il diff non la giustifica, nessun commit.'
 argument-hint: '[commit o range, opzionale — default: il diff in index]'
 ---

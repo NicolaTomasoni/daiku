@@ -1,20 +1,18 @@
 ---
 name: 'study'
 description: 'Reorders the dirty notes file collected by research without losing a single verbatim fact — internal contract, opened only by research'
+user-invocable: false
 ---
 
 Reorder the dirty file that `research` collected in `{paths.lib_notes}/`, in the same path, without losing a single verbatim fact. Never collect, never fan out, never open new files: your job is ordering and deduplication.
 
 > Every path below is **relative to the technical root** you execute from (`contracts/project-contract.md` §3).
 
-> **Parameters.** Every brace-enclosed key in this contract resolves against the project's parameter files, never from memory and never by assumption: the rules are in §5 of
-> `contracts/project-contract.md`, which also says **which language to write in** and what to do when
-> a key is missing.
+> **Parameters.** Every brace-enclosed key in this contract resolves against the project's parameter files, never from memory and never by assumption: the rules are in §5 of `contracts/project-contract.md`, which also says **which language to write in** and what to do when a key is missing.
 
 ## Invocation modes
 
-This contract has a single mode: you are always a subagent in a fresh context, opened by
-`research`. Never launch it by hand and it has no other callers.
+This contract has a single mode: you are always a subagent in a fresh context, opened by `research`. Never launch it by hand and it has no other callers.
 
 - **Never ask the owner anything**: you have no channel to them. If the entry is incomplete, declare it in the block instead of stopping to wait.
 - **Rewrite only the received file.** Never commit and never push.

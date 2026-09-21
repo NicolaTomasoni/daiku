@@ -1,5 +1,4 @@
 ---
-name: 'commit'
 description: 'Crea commit seguendo la convenzione di naming — allinea sempre prima gli artefatti di sviluppo al diff staged delegando a update-memory, controlla che i due manifest portino la stessa versione, poi committa il gruppo codice. Mai push.'
 argument-hint: '[file o perimetro, opzionale — default: lo stage corrente]'
 ---
@@ -87,7 +86,7 @@ Saltare la delega non lascia indietro un commit: lascia indietro un fatto che ne
 `.claude/orchestration.md` — leggilo e risolvi da lì il modello, mai da qui. Mai eseguire il passo
 inline. Il prompt dev'essere autosufficiente:
 
-- il **contratto da leggere**: `.claude/skills/update-memory/SKILL.md`, per intero, prima di agire;
+- il **contratto da leggere**: `.claude/commands/update-memory.md`, per intero, prima di agire;
 - l'**input risolto**: il diff **in index** sotto `plugins/daiku/`
   (`git diff --cached --stat -- plugins/daiku/` e `git diff --cached -- plugins/daiku/`), che in
   questo momento è già in stage;

@@ -1,5 +1,4 @@
 ---
-name: 'blueprint'
 description: 'Dal documento di decisione e dalla soluzione scelta produce un brief di esecuzione autonoma (2. blueprint.md) e si ferma lì, senza eseguire'
 argument-hint: '[cartella] [soluzione scelta]'
 ---

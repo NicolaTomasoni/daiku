@@ -1,5 +1,4 @@
 ---
-name: 'execute'
 description: 'Esegue in autonomia il brief prodotto da blueprint, seguendo il piano a task e aggiornando Memoria e Diario dentro il file; a fine lavoro deposita 4. review-notes.md per review'
 argument-hint: '[cartella]'
 ---
@@ -32,7 +31,7 @@ Argomenti: `$ARGUMENTS`
 
 **Scrivi solo sotto `plugins/daiku/`**, salvo i file che il brief elenca uno per uno nella propria
 sezione *Vincoli e perimetro*. Fuori da lì non si tocca niente «già che ci sono»: `CLAUDE.md`,
-`sviluppo/` e `.claude/` sono di altri passi, e `.claude/skills/` in particolare è una derivazione
+`sviluppo/` e `.claude/` sono di altri passi, e `.claude/commands/` in particolare è una derivazione
 di questo corpus che non si riallinea da sola.
 
 Due fatti del repository che valgono a ogni task:
@@ -95,7 +94,7 @@ Sei un esecutore autonomo: nessuno ti controlla mentre lavori, quindi l'unico mo
 | «La verifica fallisce ma il testo è giusto, vado avanti» | Il task **non è finito**. Il verdetto è del controllo, non tuo. Correggi e riesegui. |
 | «Rileggere il brief da capo dopo l'interruzione è uno spreco» | Dopo una compattazione lo stato vive **solo** nel file (task + Diario). Rileggilo per intero. |
 | «Questo dettaglio manca, chiedo» | Deducilo dal brief e dai file che cita. Si chiede **solo** davanti a un blocco reale. |
-| «Già che ci sono allineo anche `.claude/skills/`» | Fuori perimetro. Quel corpus è una derivazione dei contratti del prodotto e si riallinea a mano, quando lo si decide. |
+| «Già che ci sono allineo anche `.claude/commands/`» | Fuori perimetro. Quel corpus è una derivazione dei contratti del prodotto e si riallinea a mano, quando lo si decide. |
 | «Aggiungo il file nuovo al `.gitignore`, tanto è ovvio» | Ogni riammissione **pubblica**. Se il brief la prevede, eseguila; se non la prevede, è un fatto nuovo: annota e dichiara. |
 | «Salto questo task, lo faccio dopo» | Segui l'ordine dato. Adattarlo è lecito solo se emergono fatti nuovi, e va motivato nel Diario. |
 | «La verifica la salto, ho già visto che funziona» | «Ho visto» non è evidenza osservabile: la verifica di chiusura è obbligatoria. |

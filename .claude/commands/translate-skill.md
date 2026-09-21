@@ -1,21 +1,20 @@
 ---
-name: 'translate-skill'
-description: 'Prende una skill di Daiku in input e la riscrive in inglese a comportamento e variabili invariati, sovrascrivendo il file — poi verifica che ogni variabile sia gia in inglese'
+description: 'Prende una skill di Daiku in input e la riscrive in inglese a comportamento e variabili invariati, sovrascrivendo il file — poi verifica che ogni variabile sia già in inglese'
 argument-hint: '[path skill Daiku]'
 ---
 
-Prendi una skill di Daiku in input e riscrivila in inglese, mantenendo comportamento e variabili inalterati. Lavori su **una skill alla volta** e **sovrascrivi il file stesso**: nessun file nuovo, nessuna copia accanto.
+Traduci le skill una alla volta e **sovrascrivi il file stesso**: nessun file nuovo, nessuna copia accanto.
 
 ## Input: quale skill tradurre
 
 Argomenti: `$ARGUMENTS`
 
-L'argomento e il **path** della `SKILL.md` da tradurre (es. `plugins/daiku/skills/research/SKILL.md`). Si accetta anche il solo **nome** (es. `research`), che risolvi come `plugins/daiku/skills/<nome>/SKILL.md`.
+L'argomento è il **path** della `SKILL.md` da tradurre (es. `plugins/daiku/skills/research/SKILL.md`). Si accetta anche il solo **nome** (es. `research`), che risolvi come `plugins/daiku/skills/<nome>/SKILL.md`.
 
-- Se `$ARGUMENTS` e vuoto, **chiedi** quale skill tradurre e fermati finche non la ricevi.
-- Se nomina piu skill, traduci la prima e segnala le altre come non fatte.
-- Se il file non esiste, dillo e fermati.
-- Leggi il file **per intero** prima di toccarlo.
+- Se `$ARGUMENTS` è vuoto, **chiedi** quali skill tradurre e fermati finché non le ricevi.
+- Se nomina più skill, traducile tutte in ordine, una alla volta.
+- Se un file non esiste, dillo e passa alla successiva.
+- Leggi ogni file **per intero** prima di toccarlo.
 
 ## Regola 1 — traduci solo la prosa
 
@@ -43,4 +42,4 @@ Solo chat, in quest'ordine:
 
 1. **file** — il path sovrascritto;
 2. **variabili** — elenco di ogni `{...}` e `$...` trovato, con esito `inglese` o `da rivedere`;
-3. **non tradotto** — una riga su cio che hai lasciato volutamente identico (codice, path, comandi, JSON).
+3. **non tradotto** — una riga su ciò che hai lasciato volutamente identico (codice, path, comandi, JSON).

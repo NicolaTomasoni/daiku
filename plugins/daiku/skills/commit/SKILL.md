@@ -7,10 +7,7 @@ allowed-tools: Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(git s
 
 Crea commit dei file che chi ti invoca ti indica — l'owner in chat, oppure la skill che ti delega. **Senza indicazioni, il perimetro è tutto ciò che è cambiato sotto `{code_root}`**, in stage o no, più i gruppi che la § *Procedura* 3 partiziona da lì. NON eseguire mai `git push`. `.daiku/` non entra in nessun commit, mai: § *Daiku non si committa*.
 
-> **Parametri.** Ogni chiave fra graffe di questo contratto si risolve sui file di parametri del
-> progetto, mai a memoria e mai per assunzione: le regole sono nella §5 di
-> `contracts/project-contract.md`, che dice anche **in quale lingua scrivere** e cosa fare quando
-> una chiave non c'è.
+> **Parametri.** Ogni chiave fra graffe di questo contratto si risolve sui file di parametri del progetto, mai a memoria e mai per assunzione: le regole sono nella §5 di `contracts/project-contract.md`, che dice anche **in quale lingua scrivere** e cosa fare quando una chiave non c'è.
 
 ## Daiku non si committa
 
@@ -20,53 +17,26 @@ Ciò che i passi 5 e 5-bis scrivono sotto `.daiku/` resta nel working tree, non 
 
 ## Convenzione di commit
 
-Leggi `.daiku/domain/commit-convention.md`: porta quali tipi di commit ammette questo progetto e
-quando si usa ciascuno, che forma ha il messaggio, cosa entra nel changelog e quale incremento di
-versione è lecito qui. Daiku lo deposita con un default alla prima inizializzazione, quindi di
-norma esiste; se **non** c'è — l'utente l'ha cancellato — **ricava la convenzione dallo storico**,
-`git log --oneline -30` più i due o tre messaggi più recenti che somigliano al tuo aperti per
-intero, rispecchiandola invece di importarne una tua, e dichiaralo nell'esito.
+Leggi `.daiku/domain/commit-convention.md`: porta quali tipi di commit ammette questo progetto e quando si usa ciascuno, che forma ha il messaggio, cosa entra nel changelog e quale incremento di versione è lecito qui. Daiku lo deposita con un default alla prima inizializzazione, quindi di norma esiste; se **non** c'è — l'utente l'ha cancellato — **ricava la convenzione dallo storico**, `git log --oneline -30` più i due o tre messaggi più recenti che somigliano al tuo aperti per intero, rispecchiandola invece di importarne una tua, e dichiaralo nell'esito.
 
-Il messaggio si scrive in `{language.commit}`, che non è detto sia la lingua in cui stai parlando
-con l'utente: la storia di un repository ha lettori diversi da questa chat (§5.5 di
-`contracts/project-contract.md`).
+Il messaggio si scrive in `{language.commit}`, che non è detto sia la lingua in cui stai parlando con l'utente: la storia di un repository ha lettori diversi da questa chat (§5.5 di `contracts/project-contract.md`).
 
 Sopra la convenzione, qualunque essa sia, valgono due cose che non dipendono dal progetto:
 
-- **La descrizione dice cosa cambia, non come si chiama il lavoro.** Il nome dello sviluppo, della
-  cartella o della feature non entra nel messaggio: chi rilegge lo storico fra un anno cerca il
-  cambiamento, non l'etichetta con cui lo si era battezzato.
-- **Il corpo, se c'è, elenca cosa è stato fatto**, in righe brevi. Niente prosa e niente
-  motivazioni: quelle vivono nel documento di decisione, che sopravvive al commit.
+- **La descrizione dice cosa cambia, non come si chiama il lavoro.** Il nome dello sviluppo, della cartella o della feature non entra nel messaggio: chi rilegge lo storico fra un anno cerca il cambiamento, non l'etichetta con cui lo si era battezzato.
+- **Il corpo, se c'è, elenca cosa è stato fatto**, in righe brevi. Niente prosa e niente motivazioni: quelle vivono nel documento di decisione, che sopravvive al commit.
 
 ## Allineamento di memoria e documentazione
 
 Prima di congelare il codice in un commit, gli artefatti non-codice vanno riallineati **sullo stesso diff**: è il principio della fase `Memory` di `develop-feature`, e vale anche quando il commit arriva da una review standalone o da un lavoro fatto a mano. Nessuna feature entra in un commit lasciando l'artefatto indietro. Questa skill non replica quel contratto: lo **delega**.
 
-**La delega è un passo obbligatorio e non ha eccezioni.** Ogni invocazione di questa skill la
-esegue: quella che chiude una review, quella che l'owner lancia a mano su un diff scritto in chat,
-quella su un gruppo di soli test, su una formattazione, su un revert, su una rinomina. Delega
-**sempre**, senza giudicare prima se il diff «se lo merita» — quel giudizio è di `update-memory`,
-che ha come primo principio «nessun aggiornamento non giustificato» e restituisce `updated: false`
-senza scrivere niente quando non c'è nulla da riflettere. Costa un subagent che torna a mani
-vuote; non delegare costa un artefatto che resta indietro dentro un commit, dove nessuno lo
-ritrova più.
+**La delega è un passo obbligatorio e non ha eccezioni.** Ogni invocazione di questa skill la esegue: quella che chiude una review, quella che l'owner lancia a mano su un diff scritto in chat, quella su un gruppo di soli test, su una formattazione, su un revert, su una rinomina. Delega **sempre**, senza giudicare prima se il diff «se lo merita» — quel giudizio è di `update-memory`, che ha come primo principio «nessun aggiornamento non giustificato» e restituisce `updated: false` senza scrivere niente quando non c'è nulla da riflettere. Costa un subagent che torna a mani vuote; non delegare costa un artefatto che resta indietro dentro un commit, dove nessuno lo ritrova più.
 
-**Nemmeno il gruppo codice vuoto salta il passo.** Se stai committando solo memoria e
-documentazione, non c'è un diff di feature da riflettere e il delegato tornerà `updated: false`
-— ma il suo *Controllo aggiuntivo* sullo stage di `{memory.root}` vale **ogni esecuzione**, ed è
-proprio il caso in cui serve: stai per congelare memoria scritta da qualcun altro. Dichiaraglielo
-nel prompt («il gruppo codice è vuoto: non c'è diff di feature, fai il controllo sullo stage») e
-lascialo decidere.
+**Nemmeno il gruppo codice vuoto salta il passo.** Se stai committando solo memoria e documentazione, non c'è un diff di feature da riflettere e il delegato tornerà `updated: false` — ma il suo *Controllo aggiuntivo* sullo stage di `{memory.root}` vale **ogni esecuzione**, ed è proprio il caso in cui serve: stai per congelare memoria scritta da qualcun altro. Dichiaraglielo nel prompt («il gruppo codice è vuoto: non c'è diff di feature, fai il controllo sullo stage») e lascialo decidere.
 
-**Perché non ha eccezioni.** Nel pacchetto non esiste una revisione periodica del corpus: nessuno
-passa dopo a correggere una memoria invecchiata. Il corpus resta sano perché **ogni** commit
-attraversa questo passo, e una sola eccezione è sufficiente a far entrare nella storia un
-artefatto rimasto indietro, che da lì in avanti nessuno ritrova.
+**Perché non ha eccezioni.** Nel pacchetto non esiste una revisione periodica del corpus: nessuno passa dopo a correggere una memoria invecchiata. Il corpus resta sano perché **ogni** commit attraversa questo passo, e una sola eccezione è sufficiente a far entrare nella storia un artefatto rimasto indietro, che da lì in avanti nessuno ritrova.
 
-**Non si chiede mai all'utente.** Né prima, come conferma, né dopo, come promemoria da eseguire a
-mano. Un allineamento rimandato all'owner è un allineamento che non avviene: il commit parte, il
-diff sparisce dentro la storia, e la riga che lo ricordava resta in una chat chiusa.
+**Non si chiede mai all'utente.** Né prima, come conferma, né dopo, come promemoria da eseguire a mano. Un allineamento rimandato all'owner è un allineamento che non avviene: il commit parte, il diff sparisce dentro la storia, e la riga che lo ricordava resta in una chat chiusa.
 
 **Come delegare.** Un **subagent** in contesto fresco, ruolo **judge** secondo `contracts/orchestration.md` — leggilo e risolvi da lì il modello, mai da qui. Mai eseguire il passo inline. Il prompt dev'essere autosufficiente, perché il subagent parte da zero:
 
@@ -129,14 +99,8 @@ Un gruppo vuoto non produce commit.
 
 2. **Determina l'ambito.**
    - **Con parametri**: i path indicati, e nient'altro — anche se accanto c'è altro modificato.
-   - **Senza parametri**: tutto ciò che `git status --porcelain` riporta come cambiato, dentro e
-     fuori dall'index. Il perimetro del gruppo codice è `{code_root}`; gli altri due gruppi del
-     passo 3 stanno fuori da lì per definizione, e si raccolgono dagli stessi path che quel passo
-     enumera.
-   - **Quello che trovi già in stage non è l'ambito**, è solo un fatto dello stato corrente: se
-     porta file di gruppi diversi, il passo 7 li separa comunque. Non committare l'index così
-     com'è con un `git commit` nudo — mescolerebbe i gruppi, che è esattamente ciò che questa
-     skill esiste per evitare.
+   - **Senza parametri**: tutto ciò che `git status --porcelain` riporta come cambiato, dentro e fuori dall'index. Il perimetro del gruppo codice è `{code_root}`; gli altri due gruppi del passo 3 stanno fuori da lì per definizione, e si raccolgono dagli stessi path che quel passo enumera.
+   - **Quello che trovi già in stage non è l'ambito**, è solo un fatto dello stato corrente: se porta file di gruppi diversi, il passo 7 li separa comunque. Non committare l'index così com'è con un `git commit` nudo — mescolerebbe i gruppi, che è esattamente ciò che questa skill esiste per evitare.
 
 3. **Separa i gruppi.** Partiziona i file da committare in tre gruppi: **codice** (file sotto `{code_root}` e ogni altro sorgente), **memoria/doc** (`{memory.root}`, `{instructions_file}`, `{tech_doc}` — e in nessun gruppo un path sotto `.daiku/`, § *Daiku non si committa*) e **versione/changelog** (`{changelog}`, `{version.file}` e i file di `{version.replicated_in}` quando li tocchi per il bump). I passi 6-7 si eseguono una volta per ciascun gruppo non vuoto, nell'ordine: codice, `{commit.memory_prefix}`, versione/changelog.
 
@@ -158,7 +122,6 @@ Un gruppo vuoto non produce commit.
 
 8. Mostra i commit creati con `git log --oneline -n <quanti ne sono stati prodotti>` — possono essere più di tre, se il delegato ha committato il proprio gruppo da sé — dichiara la decisione presa sulla versione — il numero nuovo con il tema del ciclo, oppure nessun bump e perché — e, se la delega ha restituito voci in `confirm_with_owner`, riportale.
 
-   **Riporta al chiamante lo SHA di ogni commit prodotto, dicendo di quale gruppo è**, come già fai con `confirm_with_owner`: chi ti ha invocato lo mette in un campo del proprio blocco e non può ricavarlo da `git log -1`, che dopo di te restituisce l'ultimo gruppo e non quello del codice. Se ti fermi fra un gruppo e il successivo, dillo esplicitamente: la sequenza è **parziale**, non eseguita.
+**Riporta al chiamante lo SHA di ogni commit prodotto, dicendo di quale gruppo è**, come già fai con `confirm_with_owner`: chi ti ha invocato lo mette in un campo del proprio blocco e non può ricavarlo da `git log -1`, che dopo di te restituisce l'ultimo gruppo e non quello del codice. Se ti fermi fra un gruppo e il successivo, dillo esplicitamente: la sequenza è **parziale**, non eseguita.
 
-**Mai** eseguire `git push`, `git push --force`, o qualsiasi comando che scriva sul remoto.
-**Mai** aggiungere il trailer `Co-Authored-By` né alcuna menzione dell'agente che ha generato il lavoro (`Generated with …` o simili) ai messaggi di commit.
+**Mai** eseguire `git push`, `git push --force`, o qualsiasi comando che scriva sul remoto. **Mai** aggiungere il trailer `Co-Authored-By` né alcuna menzione dell'agente che ha generato il lavoro (`Generated with …` o simili) ai messaggi di commit.

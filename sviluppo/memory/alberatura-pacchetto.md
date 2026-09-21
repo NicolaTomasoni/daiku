@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 48eaa498-ed6e-4a36-847d-3f8fa95f7f21
-  modified: 2026-09-20T17:22:42.575Z
+  modified: 2026-09-21T14:19:32.119Z
 ---
 
 Il repo è **insieme marketplace e pacchetto**: una sola alberatura serve Claude Code e Codex,
@@ -41,11 +41,11 @@ Non si possono spostare: gli host li cercano lì e basta.
 
 - **`CLAUDE.md`** — le istruzioni per chi sviluppa Daiku. Non è Daiku.
 - **`.claude/`** — come si lavora *su* Daiku, non come Daiku funziona. Dentro c'è:
-  - `orchestration.md` + `skills/` (10 contratti) + `agents/finder.md` — il **corpus di sviluppo**,
+  - `orchestration.md` + `commands/` (13 comandi) + `agents/finder.md` — il **corpus di sviluppo**,
     una derivazione dei contratti del prodotto adattata a questo repo: valori scritti per esteso
     invece che parametrizzati, e niente worktree. Non si sincronizza da solo col pacchetto:
     si scrive solo nel prodotto, e un ordine esplicito dell'owner può toccarlo. Vedi [[corpus-di-sviluppo]].
-  - `commands/confronta-repo.md` — una skill dell'owner, precedente al corpus.
+    Fra i 13, `confronta-repo.md` è il comando dell'owner, precedente al corpus.
   - `settings.local.json` — punta `autoMemoryDirectory` (vedi [[memoria-nel-repo]]).
 - **`.vscode/`** — `tasks.json` con gli switch fra backend LLM: tooling personale dell'owner, con
   path della sua home. Non c'entra niente con Daiku.

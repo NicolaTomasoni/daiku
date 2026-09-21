@@ -1,6 +1,7 @@
 ---
 name: 'decision-doc'
 description: 'Contratto interno di /new-feature — studia un problema, valuta se serve ancora pensiero strategico ad alto livello o solo chiudere i dettagli tecnici, produce o aggiorna 0.5. studio-strategico.md oppure 1. decision-doc.md rifinendo 0. problem.md, e restituisce le decisioni a chi lo ha invocato. Non chiede all''owner e non delega la consegna.'
+user-invocable: false
 ---
 
 Ricevi una cartella che contiene il materiale di un problema (note, documenti, codice, requisiti, vincoli, ed eventualmente `0. problem.md` e/o `1. decision-doc.md` da run precedenti). Il tuo compito è triplice:
@@ -13,69 +14,40 @@ Ricevi una cartella che contiene il materiale di un problema (note, documenti, c
 
 Il senso della skill: tu ragioni come un senior engineer scettico ed esaustivo; l'utente legge in cima decisioni astratte con pro e contro (a qualunque stadio) e decide senza dover entrare nei dettagli.
 
-> **Parametri.** Ogni chiave fra graffe di questo contratto si risolve sui file di parametri del
-> progetto, mai a memoria e mai per assunzione: le regole sono nella §5 di
-> `contracts/project-contract.md`, che dice anche **in quale lingua scrivere** e cosa fare quando
-> una chiave non c'è.
+> **Parametri.** Ogni chiave fra graffe di questo contratto si risolve sui file di parametri del progetto, mai a memoria e mai per assunzione: le regole sono nella §5 di `contracts/project-contract.md`, che dice anche **in quale lingua scrivere** e cosa fare quando una chiave non c'è.
 
 ## Modalità di invocazione
 
-**Sei sempre un subagent: questo contratto non si lancia a mano.** Lo apre `new-feature`, in due
-momenti diversi, e la differenza fra i due è tutta qui sotto. Chi ti invoca **sceglie** la
-modalità; i vincoli restano scritti qui, e non si riscrivono nel prompt di chi chiama.
+**Sei sempre un subagent: questo contratto non si lancia a mano.** Lo apre `new-feature`, in due momenti diversi, e la differenza fra i due è tutta qui sotto. Chi ti invoca **sceglie** la modalità; i vincoli restano scritti qui, e non si riscrivono nel prompt di chi chiama.
 
 Quello che vale in entrambe, e che non si deroga:
 
-- **Non chiedi niente all'owner**, in nessun caso. Non hai un canale verso di lui: una domanda
-  posta qui dentro diventa un'assunzione presa in silenzio o un passo che resta appeso
-  (§ *Domandare all'owner* di `contracts/orchestration.md`). Una scelta vera la **restituisci**
-  nel tuo blocco, e la porta in chat chi ti ha chiamato.
+- **Non chiedi niente all'owner**, in nessun caso. Non hai un canale verso di lui: una domanda posta qui dentro diventa un'assunzione presa in silenzio o un passo che resta appeso (§ *Domandare all'owner* di `contracts/orchestration.md`). Una scelta vera la **restituisci** nel tuo blocco, e la porta in chat chi ti ha chiamato.
 - **Scrivi solo dentro la cartella del problema** che hai ricevuto. Non committi, non fai push.
-- **Non deleghi la consegna**, e non lanci `blueprint`, `execute`, `review` o `commit`: la catena
-  da lì in avanti è di `new-feature`, che apre `develop-feature` con la soluzione scelta.
+- **Non deleghi la consegna**, e non lanci `blueprint`, `execute`, `review` o `commit`: la catena da lì in avanti è di `new-feature`, che apre `develop-feature` con la soluzione scelta.
 - **Chiudi sempre con il blocco** di § *Il blocco che restituisci*, per intero.
 
 ### Da `new-feature` — studio
 
-Sei un subagent in contesto fresco, lanciato quando `0. problem.md` è appena stato scritto sul
-codice e riconfrontato con gli appunti delle tecnologie coinvolte. Valgono quattro differenze, e
-nient'altro cambia:
+Sei un subagent in contesto fresco, lanciato quando `0. problem.md` è appena stato scritto sul codice e riconfrontato con gli appunti delle tecnologie coinvolte. Valgono quattro differenze, e nient'altro cambia:
 
-- **L'input arriva risolto** — cartella, `0. problem.md`, path degli appunti di `research` e path
-  delle memorie pertinenti stanno nel prompt. Il punto 2 della procedura non ha quasi nulla da
-  fare: la cartella porta un solo documento, già nella forma giusta; se ne porta altri, li unisci
-  come sempre. Non chiedere niente e non fermarti in attesa, perché non c'è nessuno che risponda.
-- **Gli appunti si aprono prima di studiare le opzioni.** Sono fatti verificati sulle fonti, con
-  versione e data: un'opzione tecnica motivata sulla memoria del modello, quando sul disco c'è la
-  fonte, è il difetto che quel fan-out è stato speso per evitare. Cita il file e la sezione quando
-  un'opzione poggia su di loro.
-- **La Fase 4 non gira qui.** Ti fermi alla lista di decisioni della Fase 3 e la restituisci: il
-  recepimento è interattivo, e arriva come invocazione separata con le risposte già in mano. Fasi
-  1, 2 e 3 girano per intero: lo stadio tecnico produce `1. decision-doc.md`, quello strategico
-  `0.5. studio-strategico.md`. Fermarsi alla direzione non ti esonera dallo scrivere — è l'unico
-  modo perché il tuo giudizio arrivi a chi decide.
+- **L'input arriva risolto** — cartella, `0. problem.md`, path degli appunti di `research` e path delle memorie pertinenti stanno nel prompt. Il punto 2 della procedura non ha quasi nulla da fare: la cartella porta un solo documento, già nella forma giusta; se ne porta altri, li unisci come sempre. Non chiedere niente e non fermarti in attesa, perché non c'è nessuno che risponda.
+- **Gli appunti si aprono prima di studiare le opzioni.** Sono fatti verificati sulle fonti, con versione e data: un'opzione tecnica motivata sulla memoria del modello, quando sul disco c'è la fonte, è il difetto che quel fan-out è stato speso per evitare. Cita il file e la sezione quando un'opzione poggia su di loro.
+- **La Fase 4 non gira qui.** Ti fermi alla lista di decisioni della Fase 3 e la restituisci: il recepimento è interattivo, e arriva come invocazione separata con le risposte già in mano. Fasi 1, 2 e 3 girano per intero: lo stadio tecnico produce `1. decision-doc.md`, quello strategico `0.5. studio-strategico.md`. Fermarsi alla direzione non ti esonera dallo scrivere — è l'unico modo perché il tuo giudizio arrivi a chi decide.
 ### Da `new-feature` — recepimento
 
-Sei un secondo subagent, contesto fresco, e nel prompt ci sono le **risposte dell'owner**,
-decisione per decisione, verbatim. Recepiscile nel documento che le ospita: non ri-analizzare il
-problema e non rimettere in discussione le decisioni già chiuse.
+Sei un secondo subagent, contesto fresco, e nel prompt ci sono le **risposte dell'owner**, decisione per decisione, verbatim. Recepiscile nel documento che le ospita: non ri-analizzare il problema e non rimettere in discussione le decisioni già chiuse.
 
 **Quale gesto sia, dipende dallo stadio del documento**, e sono due gesti diversi:
 
-- **documento strategico** (`0.5. studio-strategico.md`) → la **Fase 4**, che chiude ogni
-  decisione con la scelta dell'owner e rifinisce `0. problem.md` di conseguenza;
-- **documento tecnico** (`1. decision-doc.md`) → il **punto 6 della Procedura tecnica**, che
-  scrive la scelta in coda alla decision card che la ospita.
+- **documento strategico** (`0.5. studio-strategico.md`) → la **Fase 4**, che chiude ogni decisione con la scelta dell'owner e rifinisce `0. problem.md` di conseguenza;
+- **documento tecnico** (`1. decision-doc.md`) → il **punto 6 della Procedura tecnica**, che scrive la scelta in coda alla decision card che la ospita.
 
-**Se dopo il recepimento la direzione è chiusa, prosegui allo stadio tecnico qui e ora**: produci
-`1. decision-doc.md` e restituisci la nuova lista di decisioni nel tuo blocco, con `stage`
-`technical`. È l'unico caso in cui una sola invocazione attraversa i due stadi.
+**Se dopo il recepimento la direzione è chiusa, prosegui allo stadio tecnico qui e ora**: produci `1. decision-doc.md` e restituisci la nuova lista di decisioni nel tuo blocco, con `stage` `technical`. È l'unico caso in cui una sola invocazione attraversa i due stadi.
 
 ## Il blocco che restituisci
 
-**Chiudi sempre con questo blocco**, in entrambe le modalità, così chi ti ha invocato lo legge
-senza interpretare la prosa. Nessun campo si omette: a zero voci si scrive `[]`, e ciò
-che non si applica è `null`.
+**Chiudi sempre con questo blocco**, in entrambe le modalità, così chi ti ha invocato lo legge senza interpretare la prosa. Nessun campo si omette: a zero voci si scrive `[]`, e ciò che non si applica è `null`.
 
 ```json
 {
@@ -84,24 +56,37 @@ che non si applica è `null`.
   "file": "<path del documento prodotto o aggiornato>",
   "verdict": "<la sintesi di apertura della revisione scettica, o null allo stadio tecnico>",
   "applied_fixes": ["<file e cosa hai corretto, uno per fix della Fase 2>"],
-  "decisions": "<la lista della Fase 3 verbatim in markdown, oppure, allo stadio tecnico, titolo, opzioni e opzione consigliata di ogni decision card; null se non ne restano>",
+  "decisions": [
+    {
+      "n": 1,
+      "title": "<titolo breve della decisione>",
+      "problem": "<una riga>",
+      "classification": "<bloccante|rischio serio|punto debole|miglioria allo stadio strategico, null a quello tecnico>",
+      "options": [
+        {"id": "A", "text": "<opzione in una riga: cosa si fa e cosa costa>"},
+        {"id": "B", "text": "<opzione in una riga>"}
+      ],
+      "recommended_id": "A",
+      "recommended_why": "<perché la raccomandata, in una frase>"
+    }
+  ],
   "incorporated": ["<solo al recepimento: numero, scelta, e dove l'hai recepita>"],
   "open_items": ["<cosa resta da decidere, o quale dato mancava per decidere davvero>"]
 }
 ```
 
-Le `decisions` tornano **verbatim**, con tutte le loro opzioni: chi ti ha chiamato le pone
-all'owner senza riscriverle, e una lista riassunta è una lista a cui l'owner risponde con meno di
-quanto hai scritto. **Il loro formato è quello che diventerà la domanda**: titolo breve, problema
-in una riga, 2-4 opzioni mutuamente esclusive e autosufficienti, una sola raccomandata. Una voce
-scritta fuori da quella forma va rimessa in forma da chi la pone, ed è lì che una decisione perde
-per strada l'opzione che nessuno ha più letto.
+Le `decisions` tornano **strutturate**, non in prosa: chi ti ha chiamato le pone all'owner senza riscriverle e senza dover indovinare quale sia la raccomandata, e una lista riassunta è una lista a cui l'owner risponde con meno di quanto hai scritto. Regole del campo, uguali in entrambi gli stadi (`null` se non resta nessuna decisione da porre):
+
+- una voce per decisione, con titolo breve, problema in una riga, 2-4 opzioni mutuamente esclusive e autosufficienti;
+- le opzioni hanno `id` stabile `A`, `B` (`C`, `D`) in quest'ordine, senza saltare lettere;
+- la raccomandata è **sempre `A`**: `recommended_id` vale `"A"`, ed `options[0]` è lei;
+- ogni voce del blocco corrisponde a una decisione nel documento, con stesso titolo, stesse opzioni nello stesso ordine e stessa raccomandata — il documento è la versione leggibile, il blocco quella leggibile dalla macchina, e dicono la stessa cosa.
+
+Una voce scritta fuori da quella forma rende il blocco fallito, non interpretabile: è lì che una decisione perde per strada l'opzione che nessuno ha più letto.
 
 ## Input: la cartella del problema
 
-Tutto arriva dal prompt di chi ti ha invocato, già risolto: **una sola cartella**, come path
-relativo dalla root del repo o assoluto, ed eventualmente una clausola «analizza solo
-<sottoinsieme>».
+Tutto arriva dal prompt di chi ti ha invocato, già risolto: **una sola cartella**, come path relativo dalla root del repo o assoluto, ed eventualmente una clausola «analizza solo <sottoinsieme>».
 
 - Se la cartella non ti è stata passata, o non esiste, **fermati e dillo nel tuo blocco**. Non chiederla: non c'è nessuno che risponda, e una cartella indovinata è un documento scritto nel posto sbagliato.
 - Se compare «analizza solo <sottoinsieme>», **leggi integralmente tutto** per contesto ma **produci rilievi/decisioni solo** sul sottoinsieme indicato. Senza clausola, l'analisi copre tutto.
@@ -165,7 +150,7 @@ Tutto ciò che resta diventa una lista numerata, e ogni voce nasce già nella fo
 
 **La lista si scrive in `0.5. studio-strategico.md`, nella cartella del problema, e non solo nel blocco.** Il blocco la porta a chi deve chiederla; il documento porta tutto — è lui che sopravvive alla sessione e che l'owner rilegge quando torna a decidere. Struttura in § *Struttura dei documenti prodotti*. Se il file esiste già da una run precedente, aggiornalo in place: le decisioni già chiuse restano con la loro risposta, quelle nuove si accodano con la numerazione che continua, e una decisione decaduta non si cancella — si marca decaduta col perché.
 
-Formato **esatto** di ogni voce, ben indentato, opzione raccomandata **in grassetto**:
+Formato **esatto** di ogni voce, ben indentato, raccomandata **sempre A, per prima e in grassetto**:
 
 ```markdown
 # Decisioni strategiche rimaste
@@ -173,12 +158,12 @@ Formato **esatto** di ogni voce, ben indentato, opzione raccomandata **in grasse
 **1. <Titolo breve della decisione>** — [classificazione]
    - Problema: <una riga, con la citazione (file §x) da cui nasce>
    - Opzioni:
-     - A — <opzione in una riga: cosa si fa e cosa costa>
-     - **B — <opzione in una riga> ← raccomandata: <perché, in una frase>**
+     - **A — <opzione in una riga> ← raccomandata: <perché, in una frase>**
+     - B — <opzione in una riga>
      - C — <opzione in una riga>
 ```
 
-Regole: 2–4 opzioni per decisione, **mutuamente esclusive**, ciascuna autosufficiente in una riga (status quo alla pari quando legittimo); **una sola** opzione raccomandata per decisione; ordina per gravità (prima i bloccanti/rischi seri). La forma in cui poi si pongono all'owner è quella di § *Domandare all'owner* di `contracts/orchestration.md`, e a porle è chi ti ha invocato: tu le scrivi già in quella forma, così che possa passarle senza riscriverle. Una risposta libera, fuori dalle opzioni, **prevale** su di esse.
+Regole: 2–4 opzioni per decisione, **mutuamente esclusive**, ciascuna autosufficiente in una riga (status quo alla pari quando legittimo); **la raccomandata è sempre A**, prima e unica in grassetto con `← raccomandata:`; ordina per gravità (prima i bloccanti/rischi seri). La voce del blocco (§ *Il blocco che restituisci*) dice la stessa cosa in JSON, con `recommended_id: "A"`. La forma in cui poi si pongono all'owner è quella di § *Domandare all'owner* di `contracts/orchestration.md`, e a porle è chi ti ha invocato: tu le scrivi già in quella forma, così che possa passarle senza riscriverle né riordinarle. Una risposta libera, fuori dalle opzioni, **prevale** su di esse.
 
 ### Fase 4 — Recepimento
 
@@ -201,7 +186,7 @@ Se dopo il recepimento il problema è ormai ben definito (nessuna decisione stra
 2. **Ancora tutto agli input.** Ogni affermazione su requisiti, vincoli o stato attuale deve poggiare sui file letti o su conoscenza tecnica verificabile. Non inventare requisiti, numeri, vincoli o fatti. Quando un'informazione manca per decidere, **dichiara l'assunzione** o segnala il dato mancante.
 3. **Profondità nel corpo, semplicità in cima.** Il corpo è tecnico ed esaustivo: tecnologie candidate, motivazioni, pro e contro, costi, rischi. La sezione in cima è ad alta astrazione: niente nomi di librerie buttati lì senza spiegazione, solo la scelta, cosa comporta, e perché.
 4. **Trade-off onesti.** Per ogni decisione mostra il prezzo della scelta consigliata, non solo i vantaggi. Una decisione senza contro elencati è sospetta: o è davvero banale (dillo) o non l'hai approfondita abbastanza.
-5. **Una raccomandazione chiara.** Per ogni decisione indica l'opzione che consigli e in una frase il perché. L'utente deve poter decidere leggendo solo la cima.
+5. **Una raccomandazione chiara e stabile.** Per ogni decisione la raccomandata è **sempre A**: la scrivi per prima, la marchi come consigliata e in una frase dici il perché. L'utente deve poter decidere leggendo solo la cima, e chi pone la domanda non deve dover capire quale opzione fosse la raccomandata — lo dice `recommended_id` nel blocco.
 6. **Solo le decisioni che contano, status quo incluso.** Porta in cima **solo** le decisioni che richiedono un vero giudizio umano. Le scelte forzate (senza alternativa reale) non diventano card: citale nell'approfondimento e basta. Non frammentare in micro-decisioni. Quando tenere la situazione attuale è legittimo, mettila tra le opzioni alla pari.
 
 ### Procedura
@@ -212,8 +197,7 @@ Se dopo il recepimento il problema è ormai ben definito (nessuna decisione stra
    - identifica le opzioni tecniche reali (tecnologie, approcci, architetture), inclusa — quando è legittima — l'opzione **non cambiare / status quo**;
    - per ciascuna, motiva: perché potrebbe andare bene, cosa costa, quali rischi e quali vincoli introduce;
    - confronta le opzioni su criteri concreti (adeguatezza al bisogno, complessità, costo, maturità, manutenibilità, lock-in, impatto sull'esistente);
-   - scegli quella che consigli e giustifica la scelta rispetto alle altre.
-   Se il problema impone più decisioni indipendenti, trattale separatamente; ma accorpa quelle che si decidono insieme e tieni fuori dalle card quelle forzate (solo nell'approfondimento).
+   - scegli quella che consigli e giustifica la scelta rispetto alle altre. Se il problema impone più decisioni indipendenti, trattale separatamente; ma accorpa quelle che si decidono insieme e tieni fuori dalle card quelle forzate (solo nell'approfondimento).
 
 3. **Se il materiale è insufficiente per decidere davvero** (manca il problema, i vincoli o il contesto necessario a confrontare le opzioni), **non** produrre un documento sicuro ma senza base: fermati, dichiara cosa manca ed elenca le informazioni o i file che servirebbero.
 
@@ -221,12 +205,7 @@ Se dopo il recepimento il problema è ormai ben definito (nessuna decisione stra
 
 5. **Salva** il documento come `1. decision-doc.md` nella cartella di input. Se esiste già, aggiornalo in place (non sovrascrivere in silenzio ciò che l'utente ha già editato manualmente: se noti modifiche manuali incompatibili con quanto stai per scrivere, segnalale). Salva nella codifica del progetto, senza degradare i caratteri non ASCII.
 
-6. **Le decision card si pongono, e la risposta si scrive dov'è la card.** Valgono le stesse due
-   righe della modalità scettica: le poni tu solo se ne hai il canale — § *Modalità di invocazione*
-   dice quando — e, quando la risposta arriva, ogni card la porta in coda come
-   **Scelta: \<opzione\> (\<data\>)**. Una scelta che vive solo in chat è una scelta che il brief
-   non trova: chi legge il documento fra un mese deve vedere *cosa* è stato scelto accanto al
-   perché c'erano alternative.
+6. **Le decision card non le poni tu, le restituisci.** Non hai un canale verso l'owner — § *Modalità di invocazione* — quindi le porti nel blocco e le pone chi ti ha invocato. Quando la risposta arriva in modalità *recepimento*, ogni card la porta in coda come **Scelta: \<id\> — \<testo\> (\<data\>)**, con l'id stabile del blocco (per contratto la raccomandata è `A`). Una scelta che vive solo in chat è una scelta che il brief non trova: chi legge il documento fra un mese deve vedere *cosa* è stato scelto accanto al perché c'erano alternative.
 
 ## Struttura dei documenti prodotti
 
@@ -243,11 +222,11 @@ Se dopo il recepimento il problema è ormai ben definito (nessuna decisione stra
    La sintesi di apertura della Fase 1: pronto per lo studio tecnico /
    pronto con correzioni / ancora da pensare, e perché in due frasi.
 
-## Decisioni strategiche rimaste     ← il formato esatto della Fase 3, verbatim
+## Decisioni strategiche rimaste     ← il formato esatto della Fase 3
    Per ognuna: classificazione, problema con la citazione da cui nasce,
-   2-4 opzioni mutuamente esclusive, una sola raccomandata.
+   2-4 opzioni mutuamente esclusive con id A, B (, C, D), raccomandata sempre A e per prima.
    Quando l'owner ha risposto, ogni voce porta in coda la riga
-   **Scelta: <opzione> (<data>)** — e dove è stata recepita.
+   **Scelta: <id> — <testo> (<data>)** — e dove è stata recepita.
 
 ## Rilievi che non sono diventati decisioni
    I fix applicati in Fase 2 (file + cosa), e i rilievi giudicati scelte
@@ -268,9 +247,10 @@ Una decisione decaduta non si cancella: resta con la riga **Decaduta: \<perché\
 ## Decisioni da prendere            ← IN CIMA, alto livello, niente tecnicismi
    Per ogni decisione, una "decision card":
    - Decisione: la domanda in una frase, in linguaggio comprensibile
-   - Opzioni: A / B (/ C), descritte per cosa significano, non per come sono fatte
+   - Opzioni: A / B (/ C), descritte per cosa significano, non per come sono fatte,
+     con A per prima perché è la raccomandata
    - Pro e contro: in parole semplici, il prezzo di ciascuna opzione
-   - Consigliato: l'opzione che suggerisci + una frase di perché
+   - Consigliato: sempre A + una frase di perché
    (Ripeti per ogni decisione indipendente.)
 
 ---

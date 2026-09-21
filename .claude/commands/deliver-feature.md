@@ -1,5 +1,4 @@
 ---
-name: 'deliver-feature'
 description: 'Consegna un lavoro su plugins/daiku dal decision-doc già risolto fino al commit, in un''unica invocazione — brief, esecuzione, review a giri, decisione, allineamento degli artefatti di sviluppo, commit, report. Orchestrata da te, delegando ogni fase a un subagent.'
 argument-hint: '[cartella] [soluzione scelta]'
 ---
@@ -89,7 +88,7 @@ riscrittura locale si restringe alla prima modifica del nodo (§4.2 di `.claude/
 
 Subagent che produce il brief. Nel prompt:
 
-- leggi per intero `.claude/skills/blueprint/SKILL.md` e segui quel contratto alla lettera;
+- leggi per intero `.claude/commands/blueprint.md` e segui quel contratto alla lettera;
 - cartella `<cartella>` (contiene `1. decision-doc.md`), soluzione scelta `<verbatim>`;
 - `CLAUDE.md` e `sviluppo/RICOGNIZIONE.md`, da caricare prima di costruire il piano: gli invarianti
   di sviluppo e i fatti verificati sui due host sono ciò contro cui un task regge o non regge;
@@ -108,7 +107,7 @@ anticipo. Riportalo in chat quando la fase torna, e portalo fino al report.
 
 Subagent esecutore. Nel prompt:
 
-- leggi per intero `.claude/skills/execute/SKILL.md` e segui quel contratto alla lettera (autonomia
+- leggi per intero `.claude/commands/execute.md` e segui quel contratto alla lettera (autonomia
   reale, verifica osservabile, aggiorna il file mentre lavori, verifica di chiusura obbligatoria —
   **senza** lanciare il gate di pacchetto, che è della fase 3 — deposita `4. review-notes.md` col
   base-ref reale);
@@ -128,7 +127,7 @@ salta — è l'unico punto della catena che esegue il gate (`.claude/orchestrati
 senza di lei nessuno ha provato che il pacchetto validi ancora. Senza di lei non esiste la decisione
 della fase 4, quindi non esiste il commit.
 
-**Delegala a un subagent** che esegue integralmente `.claude/skills/review/SKILL.md` sul file
+**Delegala a un subagent** che esegue integralmente `.claude/commands/review.md` sul file
 `<cartella>/4. review-notes.md` (nome fisso per contratto di `execute`: non concatenare il path
 restituito, il suo formato non è garantito). È la stessa disciplina che gira da `review`
 standalone: una sola fonte, nessuna copia — **non riscriverla qui**.
@@ -256,7 +255,7 @@ Se `staged` è `false`, non c'è nulla da consegnare: salta 5b e 6, vai al repor
 
 **5b. Allineamento degli artefatti di sviluppo — ruolo giudice.** Nel prompt:
 
-- leggi per intero `.claude/skills/update-memory/SKILL.md` e segui quel contratto alla lettera;
+- leggi per intero `.claude/commands/update-memory.md` e segui quel contratto alla lettera;
 - il diff da ispezionare è quello **in index** sotto `plugins/daiku/`
   (`git diff --cached --stat -- plugins/daiku/` e `git diff --cached -- plugins/daiku/`): è il diff
   integrale, lo stesso che il commit produrrà;
@@ -283,7 +282,7 @@ Un solo subagent, **due** commit al massimo e nell'ordine dichiarato, sul branch
 prompt: esegui solo comandi Git, in ordine, senza chiedere conferma.
 
 **Commit 1 — il lavoro.** I file sotto `plugins/` sono **già** in index: non eseguire `git add`,
-committi esattamente ciò che c'è. Messaggio conforme a `.claude/skills/commit/SKILL.md`,
+committi esattamente ciò che c'è. Messaggio conforme a `.claude/commands/commit.md`,
 § *Convenzione* — tipo(scope): descrizione, corpo asciutto, italiano. **Mai** trailer di co-autoria
 né menzioni all'agente che ha generato il lavoro. Poi `git log --oneline -1` per leggerne lo SHA.
 

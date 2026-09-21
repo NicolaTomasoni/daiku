@@ -1,16 +1,14 @@
 ---
 name: 'test-coverage'
 description: 'Default misura la copertura per macrocategorie del progetto e aspetta categoria + % target; in modalità --auto decide da sé se il diff introduce logica scoperta e scrive i test sul diff senza chiedere. Test di qualità nel layer corretto'
+user-invocable: false
 ---
 
 Skill per **creare test unitari** con un flusso a due tempi: prima misura e mostra la copertura per macrocategoria, **si ferma** e aspetta che tu scelga su cosa lavorare e con quale % target; poi scrive i test rispettando le convenzioni e le regole di qualità del progetto.
 
 Le regole architetturali restano quelle del progetto — gli invarianti di `{instructions_file}` e le rule di area in `.daiku/policies/`: questa skill non le sostituisce, le applica anche ai test.
 
-> **Parametri.** Ogni chiave fra graffe di questo contratto si risolve sui file di parametri del
-> progetto, mai a memoria e mai per assunzione: le regole sono nella §5 di
-> `contracts/project-contract.md`, che dice anche **in quale lingua scrivere** e cosa fare quando
-> una chiave non c'è.
+> **Parametri.** Ogni chiave fra graffe di questo contratto si risolve sui file di parametri del progetto, mai a memoria e mai per assunzione: le regole sono nella §5 di `contracts/project-contract.md`, che dice anche **in quale lingua scrivere** e cosa fare quando una chiave non c'è.
 
 ## Contesto di dominio
 
@@ -73,8 +71,7 @@ L'utente indica **categoria/file** e **% target** (es. "<macrocategoria> al 95%"
 
 Se la richiesta è ambigua (categoria senza target, o "alza la coverage" senza scope), **chiedi**: un target verificabile è ciò che rende la Fase 3 autonoma (criteri di successo solidi, non "fai funzionare").
 
-Traduci subito la scelta in un obiettivo verificabile, es.:
-`copertura di <path della categoria> da X% a ≥95%, rimisurata con lo stesso comando della Fase 1`.
+Traduci subito la scelta in un obiettivo verificabile, es.: `copertura di <path della categoria> da X% a ≥95%, rimisurata con lo stesso comando della Fase 1`.
 
 ---
 
@@ -137,4 +134,4 @@ Obiettivo: coprire con test **la logica introdotta o cambiata dal diff**, non al
   ```json
   {"written_tests": [{"file": "<path>", "covers": "<cosa copre, una riga>"}], "to_confirm": [{"file": "<path>", "line": 0, "scenario": "<il bivio in parole semplici: cosa è in gioco, le strade, cosa cambia>", "class": "test-coverage", "blocking": true}], "skipped": false, "why": "<se saltata: perché non c'è logica nuova scoperta; altrimenti vuoto>"}
   ```
-  Nessun campo si omette: a zero voci si scrive `[]`. La suite la esegue il Gate di `/review` subito dopo.
+Nessun campo si omette: a zero voci si scrive `[]`. La suite la esegue il Gate di `/review` subito dopo.

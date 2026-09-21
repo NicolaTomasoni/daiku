@@ -1,12 +1,12 @@
-# Orchestrazione delle skill di Daiku — contratto unico
+# Orchestrazione dei comandi di Daiku — contratto unico
 
-Questo file è il **punto unico di modifica** per come le skill di `.claude/skills/` delegano
-lavoro e quale ruolo gira su ogni passo. Le skill dicono *cosa* va fatto e *in che ordine*; qui
+Questo file è il **punto unico di modifica** per come i comandi di `.claude/commands/` delegano
+lavoro e quale ruolo gira su ogni passo. I comandi dicono *cosa* va fatto e *in che ordine*; qui
 sta *chi* lo fa e *come* lo si lancia.
 
 ## Questo corpus non è il prodotto
 
-Le skill in `.claude/skills/` servono a **sviluppare** Daiku. Sono una derivazione dei contratti
+I comandi in `.claude/commands/` servono a **sviluppare** Daiku. Sono una derivazione dei contratti
 che stanno in `plugins/daiku/skills/`, adattata a questo repository e a nient'altro. Non si
 esportano, non si pubblicano, non tornano indietro nel pacchetto per copia: se una modifica qui
 vale anche per il prodotto, la si riporta a mano nel contratto corrispondente sotto
@@ -34,7 +34,7 @@ Ogni path è **relativo alla radice del repository** (`C:/dev/Daiku`), con separ
 | `plugins/daiku/` | **il prodotto** — l'unico perimetro di codice, e l'unico albero che viene pubblicato |
 | `CLAUDE.md` | gli invarianti di chi sviluppa Daiku |
 | `.claude/orchestration.md` | questo file |
-| `.claude/skills/<nome>/SKILL.md` | i contratti di sviluppo; un subagent ne riceve il **path**, non il nome |
+| `.claude/commands/<nome>.md` | i contratti di sviluppo; un subagent ne riceve il **path**, non il nome |
 | `.claude/agents/finder.md` | il subagent a toolset ristretto dei finder di `/review` |
 | `sviluppo/RICOGNIZIONE.md` | il documento di riferimento: i due host, cosa manca, perché ogni file sta dove sta |
 | `sviluppo/PUNTI-APERTI.md` | le decisioni ancora da prendere |
@@ -112,7 +112,7 @@ inline nella conversazione: è ciò che tiene la catena lunga dentro un contesto
 rende un passo ripetibile.
 
 1. **Prompt autosufficiente.** Il subagent parte da zero: nel prompt gli dai il **contratto da
-   leggere** (il path della skill sotto `.claude/skills/`, mai il suo nome), l'input risolto
+   leggere** (il path del comando sotto `.claude/commands/`, mai il suo nome), l'input risolto
    (cartella, scope, base-ref) e il formato di ritorno. Non contare su nulla che sia solo nella
    tua conversazione.
 
@@ -324,6 +324,6 @@ Il giorno in cui il repository diventa pubblico, questa sezione è una delle cos
 - Nessuna skill di questo corpus scrive dentro `plugins/daiku/skills/` o
   `plugins/daiku/contracts/` **per allinearli a sé stessa**. Il prodotto si modifica perché lo
   decide una consegna, non perché una copia si è mossa.
-- E il contrario vale ancora più stretto: i contratti di **questo** corpus — `.claude/skills/`,
+- E il contrario vale ancora più stretto: i contratti di **questo** corpus — `.claude/commands/`,
   questo file, `.claude/agents/` — non si modificano affatto. Una modifica che varrebbe per
   entrambi si scrive solo nel prodotto; riportarla qui è una decisione che si chiede all'owner.

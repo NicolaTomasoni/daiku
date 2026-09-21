@@ -1,0 +1,5 @@
+interface:
+  display_name: "Perf"
+  short_description: "Finder performance di review in sola lettura"
+policy:
+  allow_implicit_invocation: false

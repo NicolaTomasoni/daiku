@@ -1,5 +1,4 @@
 ---
-name: 'studia-libreria'
 description: 'Studia una libreria, una tecnologia o un host dalle fonti reali e produce un md di appunti operativi in sviluppo/appunti-lib'
 argument-hint: '[nome libreria/tecnologia/host]'
 ---

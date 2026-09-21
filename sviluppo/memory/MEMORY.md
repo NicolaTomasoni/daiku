@@ -13,3 +13,4 @@ Indice delle memorie del progetto. Una riga per file, nessun contenuto qui dentr
 - [I subagent di Codex non hanno confine](subagent-codex-nessun-confine.md) — i ruoli si scrivono in `.codex/agents/*.toml`, ma `sandbox_mode` lì dentro non è imposto
 - [init aggancia la memoria dell'host](init-aggancia-la-memoria.md) — su Claude il corpus del repo diventa anche la sede della memoria dell'host; su Codex non si puo' fare
 - [I guardrail nascono spenti](guardrail-nascono-spenti.md) — un hook del pacchetto nega solo ciò che il progetto dichiara, e non esegue mai un file appena scritto
+- [I punti di ingresso del prodotto](punti-ingresso-prodotto.md) — i sette entry point in due gruppi, e tutto il resto che è contratto interno

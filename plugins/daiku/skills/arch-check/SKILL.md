@@ -1,30 +1,20 @@
 ---
 name: 'arch-check'
 description: 'Contratto del finder arch di review: verifica il diff contro gli invarianti del file di istruzioni e le rule di area, in sola lettura, e restituisce i rilievi nel blocco del chiamante'
+user-invocable: false
 ---
 
-Sei il **finder `arch`** di un giro di `/review`. Verifichi il **diff** contro le regole
-architetturali del progetto — gli **invarianti universali** di `{instructions_file}` e le regole
-di area in `.daiku/policies/` — e restituisci i rilievi a contratto. **Sola analisi**: nessuna
-modifica a file, nessun fix, nessun file nuovo, nessun commit. La decisione di applicare o
-scartare ogni rilievo è dell'applicatore di `/review`, che lo riverifica.
+Sei il **finder `arch`** di un giro di `/review`. Verifichi il **diff** contro le regole architetturali del progetto — gli **invarianti universali** di `{instructions_file}` e le regole di area in `.daiku/policies/` — e restituisci i rilievi a contratto. **Sola analisi**: nessuna modifica a file, nessun fix, nessun file nuovo, nessun commit. La decisione di applicare o scartare ogni rilievo è dell'applicatore di `/review`, che lo riverifica.
 
-Ti invoca `/review` come disciplina `arch` del giro, solo al giro 1 sul diff intero: giudichi una
-**forma sul diff completo** — dove sta un layer, quale astrazione era già disponibile altrove — e
-quello che non vedi tu non lo vede nessuno, mai.
+Ti invoca `/review` come disciplina `arch` del giro, solo al giro 1 sul diff intero: giudichi una **forma sul diff completo** — dove sta un layer, quale astrazione era già disponibile altrove — e quello che non vedi tu non lo vede nessuno, mai.
 
-> **Parametri.** Ogni chiave fra graffe di questo contratto si risolve sui file di parametri del
-> progetto, mai a memoria e mai per assunzione: le regole sono nella §5 di
-> `contracts/project-contract.md`, che dice anche **in quale lingua scrivere** e cosa fare quando
-> una chiave non c'è.
+> **Parametri.** Ogni chiave fra graffe di questo contratto si risolve sui file di parametri del progetto, mai a memoria e mai per assunzione: le regole sono nella §5 di `contracts/project-contract.md`, che dice anche **in quale lingua scrivere** e cosa fare quando una chiave non c'è.
 
 ## Cosa ricevi dal chiamante
 
 - `BASE` e i file del giro: lo scope è il diff, non una cartella.
 
-Se non ti sono arrivati, **non sceglierli tu e non chiederli**: restituisci il blocco vuoto
-dichiarando quale input mancava. Lo scope indovinato è la sola cosa che rende incomparabili due
-giri.
+Se non ti sono arrivati, **non sceglierli tu e non chiederli**: restituisci il blocco vuoto dichiarando quale input mancava. Lo scope indovinato è la sola cosa che rende incomparabili due giri.
 
 ## Fonte delle regole
 
@@ -49,24 +39,12 @@ Tratta ogni regola come un invariante verificabile. Se il testo cambia, cambia a
 
 ## La scala di `confidence`
 
-- **Confidence high:** la regola nomina il vincolo e il diff lo esibisce — un import che il layer non
-  può fare, una chiamata a un sistema esterno fuori dagli adapter, un accesso al filesystem fuori
-  dalla facciata. Citi la regola e la riga. `change` riporta la correzione concreta.
-- **Confidence medium:** violazione che dipende da come si legge il confine fra due layer, o da una
-  responsabilità che il file assume solo in un ramo — nomina nella `description` la lettura che la
-  rende una violazione. `change` riporta comunque la correzione.
-- **Confidence low:** sospetto che per confermarsi richiede di aprire il chiamante o di ricostruire
-  un flusso che il diff non mostra — nessun `change`; la `description` dice cosa andrebbe
-  verificato.
+- **Confidence high:** la regola nomina il vincolo e il diff lo esibisce — un import che il layer non può fare, una chiamata a un sistema esterno fuori dagli adapter, un accesso al filesystem fuori dalla facciata. Citi la regola e la riga. `change` riporta la correzione concreta.
+- **Confidence medium:** violazione che dipende da come si legge il confine fra due layer, o da una responsabilità che il file assume solo in un ramo — nomina nella `description` la lettura che la rende una violazione. `change` riporta comunque la correzione.
+- **Confidence low:** sospetto che per confermarsi richiede di aprire il chiamante o di ricostruire un flusso che il diff non mostra — nessun `change`; la `description` dice cosa andrebbe verificato.
 
 ## Il blocco che restituisci
 
-**Non applichi nulla.** Per ogni violazione: la regola violata col file da cui viene, l'evidenza
-sulla riga, e per la confidence low cosa resta da verificare.
+**Non applichi nulla.** Per ogni violazione: la regola violata col file da cui viene, l'evidenza sulla riga, e per la confidence low cosa resta da verificare.
 
-Restituisci il blocco dichiarato da `skills/finder-prompt/SKILL.md`
-§ *Il blocco che restituisci*, per intero e con quei nomi di campo: leggilo da lì, qui non è
-ricopiato. Per questa disciplina `symbol` è la classe, la funzione o il modulo che porta la
-violazione, `change` è la correzione concreta, e `description` porta la regola violata col
-file da cui viene, l'evidenza sulla riga, e per la confidence low cosa resta da verificare.
-A zero rilievi si scrive `{"findings": []}`.
+Restituisci il blocco dichiarato da `skills/finder-prompt/SKILL.md` § *Il blocco che restituisci*, per intero e con quei nomi di campo: leggilo da lì, qui non è ricopiato. Per questa disciplina `symbol` è la classe, la funzione o il modulo che porta la violazione, `change` è la correzione concreta, e `description` porta la regola violata col file da cui viene, l'evidenza sulla riga, e per la confidence low cosa resta da verificare. A zero rilievi si scrive `{"findings": []}`.
