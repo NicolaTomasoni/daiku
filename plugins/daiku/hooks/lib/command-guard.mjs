@@ -20,7 +20,7 @@
  *    ramo spento — §6 di `contracts/project-contract.md`, *ciò che il JSON non dichiara
  *    non esiste*.
  *
- * I rami sono quattro, e si dividono in due famiglie.
+ * I rami sono cinque, e si dividono in tre famiglie.
  *
  * **Un fatto del sistema operativo**, acceso su ogni progetto Daiku perché non dipende
  * da nessuna scelta di chi lavora:
@@ -30,19 +30,30 @@
  *     parte; solo `rd /s` si limita a sganciarla. Vale ovunque ci sia una junction, e
  *     una junction non si vede leggendo la riga di comando.
  *
- * **Tre policy di progetto**, spente finché il JSON non le accende:
+ * **Sempre accesi**, su ogni progetto Daiku, perché a un agente non si lascia mai
+ * nessuna di queste libertà — mai fidarsi di un LLM, vedi `CLAUDE.md`:
  *
- *  2. **Il pool di worktree** (`{worktree.pool}`). Dentro un worktree del pool una
+ *  2. **I commit che contengono `.daiku/`.** Il repository è del cliente e non vede
+ *     nulla del metodo: niente di `.daiku/` entra in un commit, in qualunque caso.
+ *     `git add` e `git commit` con un pathspec sotto `.daiku/`, e il `git commit` nudo
+ *     o con `-a` quando in stage — o, con `-a`, nell'albero — risulta una modifica
+ *     sotto `.daiku/`. Lo stage si legge con un `git status` in sola lettura, che
+ *     quando fallisce degrada a permesso.
+ *  3. **`git commit --no-verify`.** Una regola per prefisso combacia sull'inizio della
+ *     riga, quindi `git commit -m "…" -n` le passa accanto: qui il sottocomando si
+ *     guarda davvero, in qualunque posizione stia il flag. Gli hook di commit devono
+ *     sempre girare.
+ *  4. **`git push`.** Stessa ragione: una regola per prefisso non entra dentro `sh -c`,
+ *     mentre qui il push si riconosce anche dentro un wrapper, dietro un `sudo` o in
+ *     coda a un altro comando. Il push resta un gesto manuale dell'owner. `--dry-run`
+ *     no: quello non spinge niente.
+ *
+ * **Una policy di progetto**, spenta finché il JSON non l'accende:
+ *
+ *  5. **Il pool di worktree** (`{worktree.pool}`). Dentro un worktree del pool una
  *     rimozione porta via file non committati senza recupero, e `pnpm install` riscrive
  *     il `virtualStoreDir` del `node_modules` condiviso rendendo incoerente
  *     l'installazione della radice. Nessun pool dichiarato, nessuno dei due controlli.
- *  3. **`git commit --no-verify`** (`{guardrails.deny_no_verify}`). Una regola per
- *     prefisso combacia sull'inizio della riga, quindi `git commit -m "…" -n` le passa
- *     accanto: qui il sottocomando si guarda davvero, in qualunque posizione stia il flag.
- *  4. **`git push`** (`{guardrails.deny_push}`). Stessa ragione: una regola per prefisso
- *     non entra dentro `sh -c`, mentre qui il push si riconosce anche dentro un wrapper,
- *     dietro un `sudo` o in coda a un altro comando. `--dry-run` no: quello non spinge
- *     niente.
  *
  * Dove l'host ha un `deny` di sistema, quello resta la porta vera per 3 e 4: assoluto, e
  * nessuna sorgente sotto lo può togliere. I due rami qui chiudono le forme che il
@@ -65,10 +76,11 @@
  * fail-open guasto è indistinguibile da uno che non ha niente da dire.
  */
 
+import { spawnSync } from 'node:child_process';
 import { lstatSync } from 'node:fs';
 import { isAbsolute, join, resolve } from 'node:path';
 import { invocatoDirettamente, radiceProgetto } from './project-root.mjs';
-import { AMBIENTE_REALE as LETTURE, acceso, contesto, contestoFinto, dentro } from './daiku-config.mjs';
+import { AMBIENTE_REALE as LETTURE, contesto, contestoFinto, dentro } from './daiku-config.mjs';
 
 const RADICE = radiceProgetto();
 
@@ -479,14 +491,16 @@ function guardiaPath(riga, cwd, amb, ctx, profondita = 0) {
 
 // --- guardia su git -----------------------------------------------------------
 //
-// Due soli sottocomandi, e tutti e due **spenti finché il progetto non li accende** con
-// `{guardrails.deny_no_verify}` e `{guardrails.deny_push}`. Che il push sia un gesto
-// dell'owner, o che gli hook di commit debbano sempre girare, è una decisione di chi
-// tiene il repository: qui non si presume, si legge.
+// Quattro rami dietro il gate del progetto, e un solo interruttore in tutto il file.
+// Il gate resta: senza `.daiku/project.json` questo progetto non ha aperto Daiku, e la
+// guardia non legge nemmeno la riga. Dietro il gate, push, `--no-verify` e commit di
+// `.daiku/` sono negati **sempre** — a un agente non si lascia mai nessuna di queste
+// libertà, e mai fidarsi di un LLM è la regola che lo dice (vedi `CLAUDE.md`). L'unica
+// cosa che il progetto dichiara è il pool dei worktree.
 //
-// Acceso il ramo, la ragione di leggere la riga invece di affidarsi a una regola
-// dell'host è che una regola combacia per **prefisso** e non entra dentro `sh -c`, quindi
-// non vede né un flag spostato in coda né un wrapper.
+// La ragione di leggere la riga invece di affidarsi a una regola dell'host è che una
+// regola combacia per **prefisso** e non entra dentro `sh -c`, quindi non vede né un
+// flag spostato in coda né un wrapper.
 
 /** Le invocazioni di `git` nella riga, ciascuna come token `[sottocomando, …argomenti]`.
  *
@@ -525,26 +539,24 @@ function invocazioniGit(riga, profondita = 0) {
  * Un `-n` **quotato** non è il flag: sta dentro il messaggio di commit. È la sola
  * ragione per cui i token ricordano di essere stati fra virgolette.
  */
-function guardiaCommit(riga, ctx) {
-  if (!acceso(ctx, 'deny_no_verify')) return null;
+function guardiaCommit(riga) {
   for (const invocazione of invocazioniGit(riga)) {
     if (!invocazione.length || invocazione[0].t !== 'commit') continue;
     const argomenti = invocazione.slice(1);
     if (argomenti.some((x) => !x.q && (x.t === '--no-verify' || /^-[a-z]*n/i.test(x.t)))) {
       return {
         motivo:
-          '`git commit` con `-n`/`--no-verify` non è ammesso su questo progetto, che lo dichiara ' +
-          'in `{guardrails.deny_no_verify}`: usa il commit normale e lascia girare gli hook. Se ' +
-          'un hook di commit è rotto, si aggiusta quello — saltarlo lascia il difetto nella storia.',
+          '`git commit` con `-n`/`--no-verify` non è ammesso: usa il commit normale ' +
+          'e lascia girare gli hook. Se un hook di commit è rotto, si aggiusta quello ' +
+          '— saltarlo lascia il difetto nella storia.',
       };
     }
   }
   return null;
 }
 
-/** `git push`, dove il progetto lo tiene come gesto dell'owner. */
-function guardiaPush(riga, ctx) {
-  if (!acceso(ctx, 'deny_push')) return null;
+/** `git push`, che resta un gesto manuale dell'owner. */
+function guardiaPush(riga) {
   for (const invocazione of invocazioniGit(riga)) {
     if (!invocazione.length || invocazione[0].t !== 'push') continue;
     const argomenti = invocazione.slice(1);
@@ -552,12 +564,192 @@ function guardiaPush(riga, ctx) {
     if (argomenti.some((x) => !x.q && (x.t === '--dry-run' || /^-[a-zA-Z]*n/.test(x.t)))) continue;
     return {
       motivo:
-        '`git push` non è ammesso su questo progetto, che lo dichiara in ' +
-        "`{guardrails.deny_push}`: il push resta un gesto manuale dell'owner. Se il " +
-        'lavoro è pronto, fermati e dillo — lo lancia chi ha le credenziali.',
+        '`git push` non è ammesso: il push resta un gesto manuale ' +
+        "dell'owner. Se il lavoro è pronto, fermati e dillo: lo lancia chi ha le " +
+        'credenziali.',
     };
   }
   return null;
+}
+
+/** Un pathspec che nomina `.daiku/`, in qualunque forma la shell lo scriva.
+ *
+ * Il confronto è sul testo del token, non sul disco: chi nomina esplicitamente
+ * `.daiku/` in un `add` o un `commit` sta facendo il gesto vietato, in qualunque
+ * directory lo faccia. Le virgolette non cambiano il significato di un pathspec —
+ * `"..."` intorno a un path resta quel path — quindi si guardano anche i token
+ * quotati. Solo un segmento intero conta: `.daiku.md` o `x.daiku/y` non sono
+ * `.daiku/`, e restano permessi.
+ */
+function ePathDaiku(testo) {
+  const normalizzato = String(testo).replace(/\\/g, '/').replace(/^\.\//, '');
+  return /(^|\/)\.daiku(\/|$)/.test(normalizzato);
+}
+
+/** Le opzioni di `git commit` che mangiano il token dopo di sé: quel token è un
+ * valore (un messaggio, un autore, una data), non un pathspec. La forma compatta
+ * (`-am`, `-sm`) vale come la sciolta: la `m` dentro un gruppo di flag corte vuole
+ * comunque il suo messaggio dopo. */
+const OPZIONI_CON_VALORE = new Set([
+  '-m',
+  '--message',
+  '--author',
+  '--date',
+  '--cleanup',
+  '--untracked-files',
+  '--template',
+  '--fixup',
+  '--squash',
+]);
+
+function mangiaValore(pezzo) {
+  if (pezzo.q) return false;
+  if (OPZIONI_CON_VALORE.has(pezzo.t)) return true;
+  return /^-[a-z]*m[a-z]*$/i.test(pezzo.t);
+}
+
+/** Una riga di `git status --porcelain` con qualcosa in stage (prima colonna):
+ * è ciò che un `git commit` nudo congelerebbe. `??` e `!!` non sono in stage. */
+function eStaged(riga) {
+  const x = riga[0];
+  return !!x && x !== ' ' && x !== '?' && x !== '!';
+}
+
+/** Una riga con una modifica tracciata, in stage o nell'albero: è ciò che
+ * `git commit -a` si porterebbe dentro. */
+function eTracciata(riga) {
+  return eStaged(riga) || (riga.length > 1 && riga[1] !== ' ' && riga[1] !== '?' && riga[1] !== '!');
+}
+
+/** `git add` e `git commit` che toccano `.daiku/`, senza interruttore.
+ *
+ * Due strati, perché il divieto regga in qualunque caso senza leggere più del
+ * necessario:
+ *
+ *  1. **il pathspec esplicito** — `add` o `commit` che nominano `.daiku/` — si nega
+ *     sul testo della riga, senza toccare il disco;
+ *  2. **lo stage** — il `commit` nudo congela tutto l'index, e `commit -a` allarga
+ *     lo stage all'albero tracciato — si legge con un `git status` in sola lettura
+ *     confinato a `.daiku/`. Se git non risponde, degrada a permesso: è il contratto
+ *     fail-open, e lo prova il banco.
+ *
+ * Un `commit` limitato per pathspec a path fuori da `.daiku/` non congela ciò che
+ * resta in stage, e resta permesso: è la forma con cui le skill consegnano gli altri
+ * gruppi lasciando `.daiku/` dov'è.
+ */
+function guardiaDaiku(riga, cwd, amb, profondita = 0) {
+  let base = cwd;
+  for (const segmento of segmenta(riga)) {
+    const token = tokenizza(segmento);
+    if (!token.length) continue;
+    const capo = testa(token);
+    if (!capo) continue;
+
+    if (WRAPPER.test(capo.nome) && profondita < 3) {
+      const payload = payloadWrapper(token, capo.indice);
+      if (payload) {
+        const esito = guardiaDaiku(payload, base, amb, profondita + 1);
+        if (esito) return esito;
+      }
+      continue;
+    }
+    const eseguito = payloadExec(token, capo.indice);
+    if (eseguito && profondita < 3) {
+      const esito = guardiaDaiku(eseguito, base, amb, profondita + 1);
+      if (esito) return esito;
+    }
+
+    const cambio = cambioDirectory(token);
+    if (cambio) {
+      base = cambio.ignoto ? null : assolutizza(cambio.dir, base);
+      continue;
+    }
+
+    const esito = giudizioDaikuSegmento(token, base, amb);
+    if (esito) return esito;
+  }
+  return null;
+}
+
+function giudizioDaikuSegmento(token, base, amb) {
+  const capo = testa(token);
+  if (!capo || !GIT.test(capo.nome)) return null;
+
+  // Le opzioni globali si saltano come fa `invocazioniGit`, ma il `-C` si ricorda:
+  // è la directory in cui lo stage va letto.
+  let j = capo.indice + 1;
+  let dirC = null;
+  while (j < token.length && !token[j].q && token[j].t.startsWith('-')) {
+    if ((token[j].t === '-C' || token[j].t === '-c') && j + 1 < token.length) {
+      if (token[j].t === '-C') dirC = token[j + 1].t;
+      j += 2;
+      continue;
+    }
+    j += 1;
+  }
+  if (j >= token.length) return null;
+  const sottocomando = token[j].t;
+  if (sottocomando !== 'add' && sottocomando !== 'commit') return null;
+
+  let tutto = false; // `-a`/`--all` di `commit`
+  const bersagli = [];
+  let saltaProssimo = false;
+  let dopoSeparatore = false;
+  for (const x of token.slice(j + 1)) {
+    if (saltaProssimo) {
+      saltaProssimo = false;
+      continue;
+    }
+    if (!dopoSeparatore && !x.q && x.t === '--') {
+      dopoSeparatore = true;
+      continue;
+    }
+    if (!dopoSeparatore && !x.q && x.t.startsWith('-')) {
+      if (sottocomando === 'commit' && mangiaValore(x)) saltaProssimo = true;
+      if (sottocomando === 'commit' && (x.t === '-a' || x.t === '--all')) tutto = true;
+      continue;
+    }
+    bersagli.push(x.t);
+  }
+
+  if (bersagli.some(ePathDaiku)) {
+    return {
+      motivo:
+        'questo comando nomina `.daiku/`: niente di Daiku entra in un commit, in ' +
+        'qualunque caso — il repository è del cliente e non vede nulla del metodo. ' +
+        'Togli quel path dal comando. Vedi `skills/commit/SKILL.md`, “Daiku non si committa”.',
+    };
+  }
+
+  // Un `add` senza pathspec esplicito decide al commit, non qui.
+  if (sottocomando === 'add') return null;
+  // Un `commit` limitato a path altrui non congela lo stage che resta.
+  if (bersagli.length) return null;
+
+  const dirGit = dirC ? (base ? assolutizza(dirC, base) : null) : base;
+  if (!dirGit) return null; // base ignota: vedi § Forme non coperte
+  // L'eccezione resta dentro questo ramo: se git non risponde, questo ramo permette
+  // e gli altri decidono — è il contratto di `valuta`, provato dal banco.
+  let righe;
+  try {
+    righe = amb.statoDaiku(dirGit);
+  } catch {
+    return null; // git irraggiungibile: fail-open
+  }
+  if (!righe) return null; // git irraggiungibile: fail-open
+  const tocca = tutto ? righe.some(eTracciata) : righe.some(eStaged);
+  if (!tocca) return null;
+  return {
+    motivo: tutto
+      ? '`git commit -a` allarga lo stage a tutto l’albero tracciato, e sotto `.daiku/` ' +
+        'risulta una modifica: niente di Daiku entra in un commit, in qualunque caso. ' +
+        'Togli `.daiku/` dallo stage (`git restore --staged -- .daiku/`) oppure committi ' +
+        'per pathspec i soli file fuori da `.daiku/`.'
+      : 'lo stage contiene modifiche sotto `.daiku/`, e un `git commit` nudo le ' +
+        'congelerebbe: niente di Daiku entra in un commit, in qualunque caso. Toglile ' +
+        'dallo stage (`git restore --staged -- .daiku/`) oppure committi per pathspec ' +
+        'i soli file fuori da `.daiku/`.',
+  };
 }
 
 // --- ambiente -----------------------------------------------------------------
@@ -575,19 +767,44 @@ const AMBIENTE_REALE = {
       return null; // non esiste
     }
   },
+  /** Le righe di `git status --porcelain` confinate a `.daiku/`, dalla directory
+   * indicata. Sola lettura: `[]` è pulito, `null` è git irraggiungibile — e `null`
+   * degrada a permesso, per il contratto fail-open. */
+  statoDaiku: (dir) => {
+    try {
+      const esito = spawnSync('git', ['status', '--porcelain', '--', '.daiku'], {
+        cwd: dir,
+        encoding: 'utf-8',
+        timeout: 10000,
+      });
+      if (esito.error || esito.status !== 0 || typeof esito.stdout !== 'string') return null;
+      return esito.stdout
+        .split('\n')
+        .map((l) => l.trimEnd())
+        .filter((l) => l);
+    } catch {
+      return null;
+    }
+  },
 };
 
 /** La decisione, senza uscire dal processo: è ciò che il banco di prova chiama.
  *
- * Il disco lo interroga un ramo solo — quello dei link — e la sua eccezione resta
- * dentro di lui: gli altri tre decidono su path e parametri, quindi reggono anche a
- * filesystem irraggiungibile. È provato dal banco, non dichiarato qui.
+ * Il disco lo interrogano due rami — quello dei link e quello dello stage di
+ * `.daiku/` — e la loro eccezione resta dentro di loro: gli altri decidono su path
+ * e parametri, quindi reggono anche a filesystem irraggiungibile. È provato dal
+ * banco, non dichiarato qui.
  */
 function valuta(riga, cwd, amb, ctx) {
   // Il gate, prima di ogni altra cosa: senza `.daiku/project.json` questo progetto non ha
   // aperto Daiku, e la guardia non ha niente da sorvegliare. Non si legge nemmeno la riga.
   if (!ctx || !ctx.presente) return null;
-  return guardiaPath(riga, cwd, amb, ctx) || guardiaCommit(riga, ctx) || guardiaPush(riga, ctx);
+  return (
+    guardiaPath(riga, cwd, amb, ctx) ||
+    guardiaDaiku(riga, cwd, amb) ||
+    guardiaCommit(riga) ||
+    guardiaPush(riga)
+  );
 }
 
 /** La stessa decisione, con il contratto **fail-open** addosso: qualunque eccezione
@@ -641,17 +858,17 @@ function ambienteFinto() {
   const voce = (p) => albero.get(chiave(p)) || (antenati.has(chiave(p)) ? { tipo: 'dir' } : undefined);
   return {
     eLink: (p) => (voce(p) ? voce(p).tipo === 'link' : null),
+    // Di default lo stage di `.daiku/` è pulito: i casi che provano lo stage sporco
+    // passano il proprio settimo elemento e il ciclo lo innesta qui sotto.
+    statoDaiku: () => [],
   };
 }
 
 const CWD_RADICE = 'C:/dev/progetto';
 const CWD_WT = 'C:/dev/wt/wt-1';
 
-/** Un progetto che ha aperto Daiku e ha acceso tutto quello che c'è da accendere. */
-const CTX_PIENO = contestoFinto({
-  pool: 'C:/dev/wt',
-  guardrails: { deny_push: true, deny_no_verify: true },
-});
+/** Un progetto che ha aperto Daiku e dichiara il pool: tutto ciò che resta da accendere. */
+const CTX_PIENO = contestoFinto({ pool: 'C:/dev/wt' });
 
 /** Un progetto che ha aperto Daiku e non ha dichiarato né pool né guardrail. */
 const CTX_NUDO = contestoFinto({});
@@ -672,13 +889,17 @@ const CASI = [
   ['progetto senza Daiku: il push passa', 'git push', CWD_RADICE, 'permetti', '', CTX_ASSENTE],
   ['progetto senza Daiku: la junction non è affare suo', 'rm -rf c:/dev/wt/wt-1/node_modules', CWD_RADICE, 'permetti', '', CTX_ASSENTE],
   ['progetto senza Daiku: nemmeno --no-verify', 'git commit -n -m wip', CWD_RADICE, 'permetti', '', CTX_ASSENTE],
+  ['progetto senza Daiku: nemmeno .daiku/', 'git add .daiku/project.json', CWD_RADICE, 'permetti', '', CTX_ASSENTE],
 
-  // --- gli interruttori: un ramo spento non nega ------------------------------
-  ['guardrail non dichiarato: il push passa', 'git push', CWD_RADICE, 'permetti', '', CTX_NUDO],
-  ['guardrail non dichiarato: --no-verify passa', 'git commit --no-verify -m wip', CWD_RADICE, 'permetti', '', CTX_NUDO],
+  // --- l'unico interruttore rimasto è il pool: push, --no-verify e .daiku/ negano
+  // sempre, senza chiave, e i casi qui sotto lo provano a interruttori spenti -----
+  ['senza dichiarazione il push è negato lo stesso', 'git push', CWD_RADICE, 'nega', 'gesto manuale', CTX_NUDO],
+  ['senza dichiarazione --no-verify è negato lo stesso', 'git commit --no-verify -m wip', CWD_RADICE, 'nega', 'non è ammesso', CTX_NUDO],
+  ['chiavi spente esplicite non spengono niente', 'git push', CWD_RADICE, 'nega', 'gesto manuale', contestoFinto({ guardrails: { deny_push: false, deny_no_verify: false } })],
   ['nessun pool dichiarato: il worktree altrui non si tocca', 'rm -rf c:/dev/wt/wt-1/docs', CWD_RADICE, 'permetti', '', CTX_NUDO],
   ['nessun pool dichiarato: nemmeno pnpm install', 'pnpm install', CWD_WT, 'permetti', '', CTX_NUDO],
   ['il link però resta protetto: è un fatto del sistema, non una policy', 'rm -rf c:/dev/wt/wt-1/node_modules', CWD_RADICE, 'nega', 'attraversa un link', CTX_NUDO],
+  ['.daiku/ nega lo stesso senza interruttori: non ne ha', 'git add .daiku/project.json', CWD_RADICE, 'nega', '.daiku/', CTX_NUDO],
   ['un worktree fuori dal pool dichiarato non è sorvegliato', 'rm -rf c:/dev/altrove/docs', CWD_RADICE, 'permetti', '', CTX_PIENO],
 
   // --- il cd che sposta la base, che è la forma che sfuggiva ------------------
@@ -710,11 +931,25 @@ const CASI = [
   ['pnpm remove <pacchetto> non è una rimozione di path', 'pnpm remove left-pad', CWD_WT, 'permetti', ''],
 
   // --- il ramo commit: le forme che una regola per prefisso non vede ---------
-  ['git commit --no-verify', 'git commit --no-verify -m "wip"', CWD_RADICE, 'nega', 'non è ammesso su questo progetto'],
-  ['git commit -n in coda', 'git commit -m "wip" -n', CWD_RADICE, 'nega', 'non è ammesso su questo progetto'],
-  ['git commit -n dentro un wrapper', 'bash -lc "git commit -n -m wip"', CWD_RADICE, 'nega', 'non è ammesso su questo progetto'],
+  ['git commit --no-verify', 'git commit --no-verify -m "wip"', CWD_RADICE, 'nega', 'non è ammesso'],
+  ['git commit -n in coda', 'git commit -m "wip" -n', CWD_RADICE, 'nega', 'non è ammesso'],
+  ['git commit -n dentro un wrapper', 'bash -lc "git commit -n -m wip"', CWD_RADICE, 'nega', 'non è ammesso'],
   ['git commit con -n dentro il messaggio non è il flag', 'git commit -m "fix -n del parser"', CWD_RADICE, 'permetti', ''],
   ['git commit normale', 'git commit -m "feat: qualcosa"', CWD_RADICE, 'permetti', ''],
+
+  // --- il ramo .daiku/: nessun commit contiene `.daiku/`, in qualunque caso ----
+  ['git add con pathspec .daiku/', 'git add .daiku/policies/area.md', CWD_RADICE, 'nega', '.daiku/'],
+  ['git add misto codice + .daiku/', 'git add apps/x.py .daiku/project.json', CWD_RADICE, 'nega', '.daiku/'],
+  ['git add .daiku/ dentro un wrapper', 'bash -c "git add .daiku/project.json"', CWD_RADICE, 'nega', '.daiku/'],
+  ['git commit con pathspec .daiku/ dopo --', 'git commit -m "x" -- .daiku/domain/commit-convention.md', CWD_RADICE, 'nega', '.daiku/'],
+  ['cd + commit con pathspec .daiku/', 'cd /c/dev/progetto && git commit -- .daiku/project.json', CWD_RADICE, 'nega', '.daiku/'],
+  ['il messaggio che nomina .daiku/ non è un pathspec', 'git commit -m "fix .daiku loader"', CWD_RADICE, 'permetti', ''],
+  ['git commit nudo con .daiku/ in stage', 'git commit -m "feat: x"', CWD_RADICE, 'nega', 'stage', CTX_PIENO, ['M  .daiku/project.json']],
+  ['git commit -a con .daiku/ modificato', 'git commit -a -m "x"', CWD_RADICE, 'nega', '.daiku/', CTX_PIENO, [' M .daiku/policies/area.md']],
+  ['git commit -a pulito', 'git commit -a -m "x"', CWD_RADICE, 'permetti', '', CTX_PIENO, []],
+  ['commit limitato ad altri path con .daiku/ in stage', 'git commit -- docs/x.md', CWD_RADICE, 'permetti', '', CTX_PIENO, ['M  .daiku/project.json']],
+  ['git add -A passa qui: decide il commit', 'git add -A', CWD_RADICE, 'permetti', ''],
+  ['git commit nudo pulito', 'git commit -m "docs: x"', CWD_RADICE, 'permetti', ''],
 
   // --- il push: negato dove è dichiarato, e le forme che restano permesse -----
   ['git push nudo', 'git push', CWD_RADICE, 'nega', 'gesto manuale'],
@@ -755,11 +990,12 @@ function selfCheck() {
   const falliti = [];
   let eseguiti = 0;
 
-  for (const [nome, riga, cwd, atteso, contiene, ctx] of CASI) {
+  for (const [nome, riga, cwd, atteso, contiene, ctx, stato] of CASI) {
     eseguiti += 1;
     let esito;
     try {
-      esito = valuta(riga, cwd, amb, ctx || CTX_PIENO);
+      const ambCaso = stato === undefined ? amb : { ...amb, statoDaiku: () => stato };
+      esito = valuta(riga, cwd, ambCaso, ctx || CTX_PIENO);
     } catch (errore) {
       falliti.push(`${nome}: eccezione ${errore && errore.message}`);
       continue;
@@ -780,15 +1016,22 @@ function selfCheck() {
     eLink: () => {
       throw new Error('filesystem irraggiungibile');
     },
+    statoDaiku: () => {
+      throw new Error('git irraggiungibile');
+    },
   };
-  // Solo il ramo dei link interroga il disco: senza disco quello permette. Gli altri tre
-  // decidono su path e parametri, che il disco non serve a leggere, e restano negati.
+  // Il disco e git li interrogano i rami dei link e dello stage di `.daiku/`: senza
+  // quelli, permettono. Gli altri decidono su path e parametri, che il disco non serve
+  // a leggere, e restano negati — compreso il pathspec `.daiku/`, che non chiede niente
+  // a nessuno.
   const ambienteRotto = [
     ['rm -rf c:/dev/wt/wt-1/node_modules', CWD_RADICE, 'nega'],
     ['rm -rf c:/dev/progetto/node_modules', CWD_RADICE, 'permetti'],
     ['pnpm install', CWD_WT, 'nega'],
     ['git push', CWD_RADICE, 'nega'],
     ['git commit -n -m x', CWD_RADICE, 'nega'],
+    ['git add .daiku/project.json', CWD_RADICE, 'nega'],
+    ['git commit -m x', CWD_RADICE, 'permetti'],
   ];
   for (const [riga, cwd, atteso] of ambienteRotto) {
     eseguiti += 1;
@@ -826,12 +1069,12 @@ function selfCheck() {
   }
 
   eseguiti += 1;
-  const conGuardrail = contesto('C:/dev/progetto', letture({
+  const conChiaviMorte = contesto('C:/dev/progetto', letture({
     'C:/dev/progetto/.daiku/project.json':
-      '{"contract": 2, "worktree": {"pool": "../wt"}, "guardrails": {"deny_push": true}}',
+      '{"contract": 2, "worktree": {"pool": "../wt"}, "guardrails": {"deny_push": false, "deny_no_verify": false}}',
   }));
-  if (!acceso(conGuardrail, 'deny_push') || acceso(conGuardrail, 'deny_no_verify') || !dentro('C:/dev/wt/wt-1', conGuardrail.pool)) {
-    falliti.push('un project.json con pool e un solo guardrail non si legge come dichiarato');
+  if (!conChiaviMorte.presente || !dentro('C:/dev/wt/wt-1', conChiaviMorte.pool)) {
+    falliti.push('un project.json con pool e chiavi legacy non si legge come dichiarato');
   }
 
   process.stdout.write(
@@ -851,7 +1094,8 @@ function selfCheck() {
 //  - **Un bersaglio costruito da una variabile di shell** (`rm -rf "$DIR"`,
 //    `cd $ALTRO && rm -rf node_modules`). La guardia vede il testo, non il valore: dopo
 //    un `cd` non risolvibile la base diventa *ignota* e i bersagli **relativi** non si
-//    giudicano affatto — si permette, e non è una copertura.
+//    giudicano affatto — si permette, e non è una copertura. Vale anche per lo stage
+//    di `.daiku/`: senza base il `git status` non si lancia.
 //  - **Un bersaglio che arriva da una pipeline** (`Get-ChildItem x | Remove-Item -Recurse`,
 //    `find … -print0 | xargs -0 rm -rf`): nella riga non c'è nessun path da leggere.
 //  - **`powershell -EncodedCommand <base64>`** e ogni altra forma offuscata.
@@ -868,7 +1112,13 @@ function selfCheck() {
 //  - **Ogni progetto che non ha aperto Daiku**, e ogni ramo che il suo `project.json` non
 //    accende. Non è un limite tecnico ma il confine voluto: un pacchetto installato una
 //    volta è attivo ovunque, e negare un comando a chi non ha dichiarato niente sarebbe
-//    un guasto con l'aspetto di una tutela. Chi vuole la copertura la dichiara.
+//    un guasto con l'aspetto di una tutela. Chi vuole la copertura la dichiara. Il ramo
+//    `.daiku/` è l'eccezione che conferma il confine: interruttore non ne ha, ma il gate
+//    sì — senza `.daiku/project.json` resta spento anche lui.
+//  - **Il terminale dell'owner**, dove questo hook non gira affatto: lì il divieto su
+//    `.daiku/` vive nel testo della skill commit, e nessun diniego lo impone. Se un
+//    comando manuale mette `.daiku/` in stage, il `commit` nudo di un agente dopo di lui
+//    resta negato dallo stage che si legge qui — un commit manuale, no.
 
 async function principale() {
   const grezzo = await leggiStdin();

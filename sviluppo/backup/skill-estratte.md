@@ -153,11 +153,11 @@ lo username dentro il path. Non serve conservarlo — serve sapere che c'era.
 
 ---
 
-## Il preambolo dei parametri — 12 copie in 11 skill
+## Il preambolo dei parametri — 9 copie in 9 skill
 
 **Categoria:** sezione ripetuta.
 **Dove era:** `applier`, `commit`, `deliver-feature`, `execute`, `finder-prompt`,
-`nightly-orchestrator` (entrambe le varianti), `nightly-plan`, `review` (entrambe),
+`review` (entrambe),
 `test-coverage`, `update-memory`.
 **Perché:** otto righe identiche, parola per parola, in undici file. Il contratto le prescriveva
 copiate alla lettera (§5.1), e quella prescrizione produceva dodici punti in cui la stessa regola
@@ -192,10 +192,10 @@ sono nella §7 di `contracts/orchestration.md`.
 
 ---
 
-## Il vincolo di codifica — 7 righe in 7 skill
+## Il vincolo di codifica — 6 righe in 6 skill
 
 **Categoria:** logica di progetto, e insieme sezione ripetuta.
-**Dove era:** `arch-check`, `blueprint`, `decision-doc` (due volte), `nightly-plan`,
+**Dove era:** `arch-check`, `blueprint`, `decision-doc` (due volte),
 `study-problem`, `update-memory`.
 **Perché:** prescriveva UTF-8 e nominava gli accenti di una lingua sola. Il progetto ospite può
 scrivere in un'altra lingua e in un'altra codifica; l'invariante vero è che la scrittura non
@@ -413,7 +413,7 @@ non si riscrivono qui.
 
 ---
 
-## `deliver-feature` e `nightly-orchestrator` — il branch `main` cablato
+## `deliver-feature` — il branch `main` cablato
 
 **Categoria:** logica di progetto.
 **Perché:** l'acquisizione del worktree, il reset, la creazione e il merge nominavano `main` come
@@ -483,31 +483,6 @@ Con essi sono caduti gli esempi di dominio che nominavano fornitori e componenti
    - l'area tecnica coinvolta (backend, frontend, adapter, service, UI)
    - un nome slug kebab-case per la cartella (es. `nvidia-nim-api-switch`, `subagent-fanout-codex`)
    - qual è l'area coinvolta (backend/frontend/integrazione/architettura)
-```
-
----
-
-## `nightly-plan` — gli esempi di coda e la data via PowerShell
-
-**Categoria:** logica di progetto (qui anche di macchina).
-**Perché:** gli esempi nominavano cartelle, opzioni e tecnologie di quel progetto
-(`resource-leaks`, `Postgres + AGE`, `adapter SpotBugs`, `try-with-resources`), e il `run_id` si
-ricavava con un comando PowerShell, che su una macchina POSIX non esiste. La data serve reale; la
-shell da cui chiederla no.
-**Sostituito da:** esempi con segnaposto, e «la data odierna reale della macchina, chiesta alla
-shell e mai ricordata a memoria».
-
-```markdown
-resource-leaks -> Soluzione 1
-db -> Opzione B (Postgres + AGE)
-analyzer-locali -> Soluzione 2 — adapter SpotBugs
-
-3. **Ricava il `run_id`** dalla data odierna reale (`Get-Date -Format yyyy-MM-dd` in PowerShell) …
-
-  "run_id": "nightly-2026-07-10",
-  "backend": "claude",
-      "id": "resource-leaks",
-      "selected_solution": "Soluzione 1 — try-with-resources"
 ```
 
 ---

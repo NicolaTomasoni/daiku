@@ -250,11 +250,11 @@ Chiudi con l'elenco, senza abbellimenti:
      chiedere.
   2. **Fidarsi del progetto**, se non lo è già: gli hook di `<repo>/.codex/` caricano solo quando
      quel layer è trusted. Gli hook utente non hanno questo vincolo, quelli di progetto sì.
-  3. **Accendere i guardrail che vuole**, se non l'ha già fatto. La guardia sui comandi nega
-     soltanto quello che `.daiku/project.json` dichiara: `{guardrails.deny_push}`,
-     `{guardrails.deny_no_verify}` e — per le rimozioni dentro i worktree — `{worktree.pool}`.
-     Senza quelle chiavi l'hook gira e non nega niente, ed è voluto. Guarda cosa c'è nel JSON e
-     dillo: «acceso X, spento Y», non un invito generico a configurare qualcosa.
+  3. **Dichiarare il pool**, se non l'ha già fatto. La guardia sui comandi nega soltanto le
+     rimozioni dentro i worktree che `.daiku/project.json` dichiara in `{worktree.pool}`;
+     push, `--no-verify` e commit di `.daiku/` sono negati sempre, senza chiave. Guarda
+     cosa c'è nel JSON e dillo: «pool X» o «nessun pool», non un invito generico a
+     configurare qualcosa.
 
   4. **Riaprire la sessione.** `SessionStart` non può scattare nella sessione in cui il file è
      appena comparso, e l'approvazione del punto 1 si dà comunque a hook già in servizio.

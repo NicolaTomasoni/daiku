@@ -28,3 +28,38 @@ se lancio deliver feature o decision doc lo script prosegue da lì in avanti, si
 se chiamo review dando uno scope, esegue la catena su quello
 
 per il resto consigliati
+
+
+
+
+
+
+
+skill riviste:
+research
+study
+
+
+
+
+
+
+
+Ecco il testo estratto dall'immagine:
+
+applier
+arch-check
+blueprint
+code-review
+commit
+decision-doc
+develop-feature
+execute
+finder-prompt
+init
+new-feature
+perf
+review
+sync-host
+test-coverage
+update-memory

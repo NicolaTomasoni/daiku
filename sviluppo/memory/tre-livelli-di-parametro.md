@@ -5,13 +5,13 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 49e5cfe5-3f08-446f-a9cd-5cc35fba4682
-  modified: 2026-09-19T19:08:59.045Z
+  modified: 2026-09-20T15:38:47.133Z
 ---
 
 Un valore tolto da una skill ha tre destinazioni possibili, e la domanda che le separa non è
 «quanto è specifico» ma **chi lo aggiornerebbe al prossimo cambiamento**: `.daiku/project.json`
 se cambia da progetto a progetto, `~/.daiku/environment.json` se è costante per l'owner e varia per
-macchina, `.daiku/domain/<ruolo>.md` se per usarlo serve sapere *perché* esiste — cioè se è
+macchina, `.daiku/domain/<role>.md` se per usarlo serve sapere *perché* esiste — cioè se è
 giudizio e non valore.
 
 **L'ambiente sta nella home, non nel progetto, dal 19 settembre 2026.** Prima `init` lo scriveva in

@@ -119,7 +119,7 @@ Ogni affermazione è ancorata al codice (file + righe), con path relativi alla r
 È una **prima** stesura: è scritta con la conoscenza che hai adesso, e il punto 5 la rimette in
 discussione su ciò che le fonti diranno.
 
-### 4. La conoscenza che ti manca — `study`, ruolo **worker**
+### 4. La conoscenza che ti manca — `research`, ruolo **worker**
 
 Guarda le tecnologie di terze parti che l'indagine ha nominato e chiediti, per ciascuna, se la
 conosci abbastanza per *decidere* su di essa. **Studiala se vale almeno una** di queste:
@@ -133,7 +133,7 @@ conosci abbastanza per *decidere* su di essa. **Studiala se vale almeno una** di
 Non studiarla se è ferma da anni e la feature non tocca la sua superficie pubblica. E se
 `{paths.lib_notes}/<slug-tecnologia>.md` esiste già, **leggilo prima di decidere**: se copre la
 versione in uso ed è recente, quello è lo studio — riusalo e non rilanciare niente. Se copre una
-versione più vecchia, lancia `study`, che aggiorna invece di ripartire da zero.
+versione più vecchia, lancia `research`, che raccoglie e poi fa riordinare a `study` invece di ripartire da zero.
 
 **La decisione è tua e non si chiede.** L'owner ha chiesto una feature, non un piano di studi. E
 non è una scelta a sensazione: il modello che «si sente sicuro» su una libreria giovane è
@@ -142,15 +142,13 @@ fan-out, mentre un'API inventata costa un giro di review, e a volte passa.
 
 Un subagent per tecnologia, tutti nello stesso blocco di tool call. Nel prompt:
 
-- il **contratto da leggere**: `skills/study/SKILL.md`, per intero, nella modalità
-  *Da `new-feature`* che quel file dichiara;
-- la **tecnologia** e la **versione in uso nel progetto**, come l'indagine l'ha letta dal manifest;
-- le **domande** a cui gli appunti devono rispondere — tre-sei, concrete, ricavate dai gap e dai
-  dubbi che hai appena scritto. Sono ciò che distingue uno studio mirato da un'enciclopedia che
-  nessuno rilegge;
-- il **vincolo di perimetro**: scrive solo `{paths.lib_notes}/<slug-tecnologia>.md`, non committa
-  e non fa push;
-- il **formato di ritorno**: il blocco che quel contratto dichiara, per intero.
+- il **contratto da leggere**: `skills/research/SKILL.md`, per intero, invocazione
+  `from-new-feature` — i vincoli di quella modalità restano lì e non si ricopiano qui;
+- l'**input risolto** di quella invocazione: la `technology` e la `in_use_version` nel
+  progetto, come l'indagine l'ha letta dal manifest, e le `questions` a cui gli appunti devono
+  rispondere — tre-sei, concrete, ricavate dai gap e dai dubbi che hai appena scritto. Sono ciò
+  che distingue uno studio mirato da un'enciclopedia che nessuno rilegge;
+- il **formato di ritorno**: quello che l'invocazione dichiara (il solo path del file in `{paths.lib_notes}/`). Gli appunti si leggono aprendo quel file, non leggendo campi.
 
 Se nessuna tecnologia lo merita, dillo in una riga in chat e passa al punto 6: il punto 5 non ha
 niente da riconfrontare.
@@ -197,7 +195,7 @@ Un subagent in contesto fresco. Nel prompt:
 
 ### 7. Le decisioni si chiedono in chat
 
-Il blocco è tornato e porta `decisioni` **verbatim**. Le poni all'owner come domanda strutturata,
+Il blocco è tornato e porta `decisions` **verbatim**. Le poni all'owner come domanda strutturata,
 secondo § *Domandare all'owner* di `contracts/orchestration.md`, che dice come quella forma si
 rende sull'host corrente.
 
@@ -226,12 +224,12 @@ dell'owner**, decisione per decisione, **verbatim**, comprese quelle libere.
 
 ### 9. Se lo stadio era strategico, si torna al 7
 
-Il blocco del punto 6 dichiara lo `stadio`. Se era `strategico`, il recepimento chiude le
+Il blocco del punto 6 dichiara lo `stage`. Se era `strategic`, il recepimento chiude le
 decisioni in `0.5. studio-strategico.md` e **prosegue da sé allo stadio tecnico nella stessa
-esecuzione**, come il suo contratto prescrive: il blocco che torna porta allora `stadio: tecnico`
+esecuzione**, come il suo contratto prescrive: il blocco che torna porta allora `stage: technical`
 e una nuova lista di decisioni. Torni al punto 7 e le poni.
 
-**Un solo giro in più.** Se anche il secondo blocco torna `strategico`, il problema non è pronto
+**Un solo giro in più.** Se anche il secondo blocco torna `strategic`, il problema non è pronto
 per essere eseguito: fermati, riporta all'owner il verdetto e ciò che resta aperto, e lascia la
 cartella com'è. Non c'è un terzo giro, e non si passa alla consegna con la direzione ancora in
 discussione.
@@ -260,7 +258,7 @@ torna neanche allora:
 | Passo | Cosa ne segue |
 |---|---|
 | un fronte d'indagine | lo copri tu con una lettura mirata e lo dichiari nel documento |
-| `study` | procedi **senza** quegli appunti, e nel documento marca `[da verificare]` i punti che dovevano coprire. Non scrivere a memoria i fatti che lo studio doveva portare: è esattamente ciò che si stava evitando |
+| `research` | procedi **senza** quegli appunti, e nel documento marca `[da verificare]` i punti che dovevano coprire. Non scrivere a memoria i fatti che lo studio doveva portare: è esattamente ciò che si stava evitando |
 | `decision-doc` (punto 6) | la catena si ferma. `0. problem.md` resta consegnato, e lo dici con il comando da lanciare a mano sulla cartella. **Non scrivere tu le decisioni**: porle qui significa scriverle fuori dal documento che le ospita |
 | il recepimento (punto 8) | è il caso peggiore, perché le risposte dell'owner esistono solo in chat. Riportale **verbatim** nell'esito, insieme al comando con cui si recepiscono, e fermati |
 | `develop-feature` (punto 10) | il suo blocco dichiara già i propri fallimenti: riportalo così com'è, senza reinterpretarlo |
@@ -270,7 +268,7 @@ torna neanche allora:
 - Rispetta i vincoli di runtime che `{instructions_file}` dichiara, e in ogni caso: **niente
   ricerche sull'intero filesystem**.
 - **Non committare** e non fare push: il commit è della consegna, che gira sul proprio worktree.
-- Fuori dalla cartella del problema si scrive solo in `{paths.lib_notes}/`, e ci scrive `study`.
+- Fuori dalla cartella del problema si scrive solo in `{paths.lib_notes}/`, e ci scrivono `research` (raccolta) e `study` solo via `research` (riordino).
 - Usa **sempre path relativi alla root del repo** per i link ai file.
 - Salva nella codifica del progetto, senza degradare i caratteri non ASCII.
 

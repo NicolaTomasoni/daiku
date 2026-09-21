@@ -1,16 +1,22 @@
 ---
-name: commit
+name: 'commit'
 argument-hint: '[file..., opzionale — default: tutto ciò che è cambiato nel perimetro del codice]'
-description: Crea commit seguendo la convenzione del progetto — allinea sempre prima memoria e documentazione al diff staged delegando a update-memory, decide il bump di versione e aggiorna il changelog, poi commit separati (codice, memoria/doc, versione/changelog), senza mai fare push
+description: 'Crea commit seguendo la convenzione del progetto — allinea sempre prima memoria e documentazione al diff staged delegando a update-memory, decide il bump di versione e aggiorna il changelog, poi commit separati (codice, memoria/doc, versione/changelog), senza mai fare push'
 allowed-tools: Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(git show:*), Bash(git add:*), Bash(git commit:*), Read, Edit, Agent
 ---
 
-Crea commit dei file che chi ti invoca ti indica — l'owner in chat, oppure la skill che ti delega. **Senza indicazioni, il perimetro è tutto ciò che è cambiato sotto `{code_root}`**, in stage o no, più i gruppi che la § *Procedura* 3 partiziona da lì. NON eseguire mai `git push`.
+Crea commit dei file che chi ti invoca ti indica — l'owner in chat, oppure la skill che ti delega. **Senza indicazioni, il perimetro è tutto ciò che è cambiato sotto `{code_root}`**, in stage o no, più i gruppi che la § *Procedura* 3 partiziona da lì. NON eseguire mai `git push`. `.daiku/` non entra in nessun commit, mai: § *Daiku non si committa*.
 
 > **Parametri.** Ogni chiave fra graffe di questo contratto si risolve sui file di parametri del
 > progetto, mai a memoria e mai per assunzione: le regole sono nella §5 di
 > `contracts/project-contract.md`, che dice anche **in quale lingua scrivere** e cosa fare quando
 > una chiave non c'è.
+
+## Daiku non si committa
+
+Niente di ciò che sta sotto `.daiku/` entra in un commit — né `project.json`, né `domain/`, né `policies/`, né la memoria quando `{memory.root}` sta lì dentro. Il repository è del cliente e non vede nulla del metodo di lavoro: Daiku è segreto e vive solo su questa macchina. Vale in ogni gruppo del passo 3, in ogni invocazione — gruppo codice pieno o vuoto, delega andata o fallita — e per i commit del delegato come per i tuoi: il permesso che gli dai (§ *Allineamento di memoria e documentazione*) non copre mai un path sotto `.daiku/`.
+
+Ciò che i passi 5 e 5-bis scrivono sotto `.daiku/` resta nel working tree, non staged: lo dichiari nell'esito come lavoro locale non consegnato, con i suoi path. Se un file sotto `.daiku/` è già in stage quando arrivi — messo lì da chi ti ha preceduto — non lo committi in nessun modo: committi gli altri gruppi **per pathspec** (`git commit -- <i file del gruppo>`, la forma del passo 7), mai nudo, e dichiari lo stage lasciato com'era.
 
 ## Convenzione di commit
 
@@ -67,10 +73,10 @@ diff sparisce dentro la storia, e la riga che lo ricordava resta in una chat chi
 - il **contratto da leggere**: `skills/update-memory/SKILL.md`, per intero, prima di agire;
 - l'**input risolto**: il diff **in index** sotto `{code_root}` (`git diff --cached --stat -- {code_root}` e `git diff --cached -- {code_root}`), che in questo momento è già in stage. Nessun argomento da passare: è il caso «dentro un commit» previsto dal suo stesso contratto;
 - il **vincolo di perimetro**: mai toccare file sotto `{code_root}`, e mai toccare il **gruppo codice** già in stage — quello è perimetro tuo;
-- il **permesso di commit, dichiarato esplicitamente**: «**sei autorizzato a committare il tuo gruppo** — `{memory.root}`, `{instructions_file}`, `.daiku/policies/`, `{tech_doc}` — mettendo in stage **solo quei path, elencati uno per uno**, e in tal caso dichiaralo in `committed`». Senza questa riga il suo default è **no** e lui non committa: il permesso è una proprietà dell'invocazione, e la stessa skill invocata dentro `develop-feature` non ce l'ha. Qui gliela dai perché è il gruppo che ha appena scritto, sa cosa ci ha messo e perché, e una consegna in meno è un punto in meno in cui la catena si può fermare a metà. **Il pathspec esplicito non è pedanteria**: in questo momento l'index porta già il gruppo codice (passo 4), e un `git add -A` o un `git commit -a` del delegato si porterebbe via la feature dentro un commit `{commit.memory_prefix}`;
+- il **permesso di commit, dichiarato esplicitamente**: «**sei autorizzato a committare il tuo gruppo** — `{memory.root}`, `{instructions_file}`, `{tech_doc}` — mettendo in stage **solo quei path, elencati uno per uno, e mai un path sotto `.daiku/`** (§ *Daiku non si committa*), e in tal caso dichiaralo in `committed`». Senza questa riga il suo default è **no** e lui non committa: il permesso è una proprietà dell'invocazione, e la stessa skill invocata dentro `develop-feature` non ce l'ha. Qui gliela dai perché è il gruppo che ha appena scritto, sa cosa ci ha messo e perché, e una consegna in meno è un punto in meno in cui la catena si può fermare a metà. **Il pathspec esplicito non è pedanteria**: in questo momento l'index porta già il gruppo codice (passo 4), e un `git add -A` o un `git commit -a` del delegato si porterebbe via la feature dentro un commit `{commit.memory_prefix}`;
 - il **formato di ritorno**: il blocco JSON che quel contratto dichiara nella propria § *Procedura*, punto 7, per intero e con quei nomi di campo — leggilo da lì, non lo elenchi qui, perché un elenco ricopiato si restringe alla prima aggiunta di campo.
 
-**Dopo la delega.** Se `updated` è `true`, i file che ha toccato — `{memory.root}`, `{instructions_file}`, `.daiku/policies/`, `{tech_doc}` — entrano nel gruppo memoria/doc e finiscono nel commit `{commit.memory_prefix}` separato: ripartiziona prima di procedere. Se ha già committato quel gruppo da sé, **non rifare quel commit**: verificalo con `git log` e prosegui col resto della sequenza, che resta tua. Se `confirm_with_owner` non è vuoto, **riportane le voci all'utente nell'esito finale**: sono fatti in conflitto lasciati intatti di proposito, e non si risolvono da soli né si nascondono dentro un commit.
+**Dopo la delega.** Se `updated` è `true`, i file che ha toccato — `{memory.root}`, `{instructions_file}`, `{tech_doc}`, **esclusi in ogni caso i path sotto `.daiku/`** — entrano nel gruppo memoria/doc e finiscono nel commit `{commit.memory_prefix}` separato: ripartiziona prima di procedere. Se ha già committato quel gruppo da sé, **non rifare quel commit**: verificalo con `git log` e prosegui col resto della sequenza, che resta tua. Se `confirm_with_owner` non è vuoto, **riportane le voci all'utente nell'esito finale**: sono fatti in conflitto lasciati intatti di proposito, e non si risolvono da soli né si nascondono dentro un commit.
 
 **Se il blocco non torna** — prosa al posto del JSON, blocco incompleto, subagent che non risponde — il passo è fallito: lo rilanci **una volta sola**, con lo stesso identico prompt (§4.2 di `contracts/orchestration.md`). Se non torna neanche allora, **il gruppo memoria/doc di questa invocazione è vuoto**: non ricostruirlo guardando `git status`, perché committeresti file che nessuno ti ha dichiarato e che possono essere di un altro flusso. Prosegui con gli altri gruppi e dichiara nell'esito che l'allineamento non è stato fatto su questo diff — è l'unica cosa che impedisce a un artefatto rimasto indietro di sembrare allineato.
 
@@ -100,9 +106,9 @@ Il changelog è documentazione, ma **non appartiene al gruppo memoria/doc**: non
 
 ## Commit separato della memoria e documentazione
 
-Gli aggiornamenti agli artefatti non-codice — `{memory.root}`, `{instructions_file}`, `.daiku/policies/`, `{tech_doc}` — **non si mescolano mai** al commit di feature: vanno in un **commit distinto**, con prefisso `{commit.memory_prefix}` (convenzione del progetto, es. `{commit.memory_prefix} update`), esattamente come fa la fase `Commit` di `develop-feature`. Questo vale sia quando committi lo stage, sia quando committi un perimetro indicato dall'utente, sia quando i file arrivano dalla delega descritta sopra.
+Gli aggiornamenti agli artefatti non-codice — `{memory.root}`, `{instructions_file}`, `{tech_doc}` — **non si mescolano mai** al commit di feature: vanno in un **commit distinto**, con prefisso `{commit.memory_prefix}` (convenzione del progetto, es. `{commit.memory_prefix} update`), esattamente come fa la fase `Commit` di `develop-feature`. Questo vale sia quando committi lo stage, sia quando committi un perimetro indicato dall'utente, sia quando i file arrivano dalla delega descritta sopra. Ciò che sta sotto `.daiku/` non entra in nessun commit: § *Daiku non si committa*.
 
-Regola pratica: se tra i file da committare compaiono **sia** file sotto `{code_root}` (o altro codice) **sia** modifiche a `{memory.root}`/`{instructions_file}`/`.daiku/policies/`/`{tech_doc}`, produci **un commit per gruppo** — prima quello di codice con il tipo appropriato (`feat`/`fix`/...), poi quello di memoria/doc con prefisso `{commit.memory_prefix}`, e per ultimo, se il bump lo tocca, quello di versione/changelog: sono i tre gruppi del punto 3 della § *Procedura*, non due.
+Regola pratica: se tra i file da committare compaiono **sia** file sotto `{code_root}` (o altro codice) **sia** modifiche a `{memory.root}`/`{instructions_file}`/`{tech_doc}`, produci **un commit per gruppo** — prima quello di codice con il tipo appropriato (`feat`/`fix`/...), poi quello di memoria/doc con prefisso `{commit.memory_prefix}`, e per ultimo, se il bump lo tocca, quello di versione/changelog: sono i tre gruppi del punto 3 della § *Procedura*, non due.
 
 **C'è un caso in cui quell'ordine non vale, ed è dichiarato.** Quando il delegato dell'allineamento usa il permesso che gli hai dato (§ *Allineamento di memoria e documentazione*), il commit `{commit.memory_prefix}` esce al passo 5, quindi **prima** di quello di codice. È il prezzo del fatto che l'allineamento gira sul diff **in index**, cioè prima che il codice sia congelato: per averlo dopo bisognerebbe committare il codice per primo, e allora non ci sarebbe più niente da allineare prima del congelamento — che è l'intera ragione per cui questo passo esiste. L'ordine dichiarato resta quello dei gruppi che **committi tu**, e l'esito dice chi ha prodotto quale SHA. È anche la differenza con `develop-feature`, che quel permesso non lo dà proprio perché lì l'ordine dei commit è suo. Il commit `{commit.memory_prefix}` include solo quegli artefatti; mai file sotto `{code_root}`. Se le uniche modifiche sono agli artefatti non-codice, fai un solo commit `{commit.memory_prefix}`.
 
@@ -132,7 +138,7 @@ Un gruppo vuoto non produce commit.
      com'è con un `git commit` nudo — mescolerebbe i gruppi, che è esattamente ciò che questa
      skill esiste per evitare.
 
-3. **Separa i gruppi.** Partiziona i file da committare in tre gruppi: **codice** (file sotto `{code_root}` e ogni altro sorgente), **memoria/doc** (`{memory.root}`, `{instructions_file}`, `.daiku/policies/`, `{tech_doc}`) e **versione/changelog** (`{changelog}`, `{version.file}` e i file di `{version.replicated_in}` quando li tocchi per il bump). I passi 6-7 si eseguono una volta per ciascun gruppo non vuoto, nell'ordine: codice, `{commit.memory_prefix}`, versione/changelog.
+3. **Separa i gruppi.** Partiziona i file da committare in tre gruppi: **codice** (file sotto `{code_root}` e ogni altro sorgente), **memoria/doc** (`{memory.root}`, `{instructions_file}`, `{tech_doc}` — e in nessun gruppo un path sotto `.daiku/`, § *Daiku non si committa*) e **versione/changelog** (`{changelog}`, `{version.file}` e i file di `{version.replicated_in}` quando li tocchi per il bump). I passi 6-7 si eseguono una volta per ciascun gruppo non vuoto, nell'ordine: codice, `{commit.memory_prefix}`, versione/changelog.
 
 4. **Metti in stage il gruppo codice** (`git add <file>`), senza committare. Serve prima del passo 5: il diff su cui la memoria va allineata è quello in index, ed è lì che `update-memory` lo cerca.
 
@@ -143,7 +149,7 @@ Un gruppo vuoto non produce commit.
 6. Determina file inclusi e messaggio commit, senza chiedere conferma su nome/descrizione né sul numero di versione scelto: procedi direttamente.
 
 7. Crea il commit (per ciascun gruppo non vuoto, separatamente):
-   - Fai staging dei soli file del gruppo corrente (`git add <file>`), mai mescolare gruppi diversi in un unico commit. Il gruppo codice è già in stage dal passo 4: verifica con `git status` che non vi sia entrato altro.
+   - Fai staging dei soli file del gruppo corrente (`git add <file>`), mai mescolare gruppi diversi in un unico commit e mai un path sotto `.daiku/` (§ *Daiku non si committa*). Il gruppo codice è già in stage dal passo 4: verifica con `git status` che non vi sia entrato altro. Se `.daiku/` risulta in stage, committi **per pathspec** (`git commit -- <i file del gruppo>`), mai nudo.
    - **Se nell'index c'è anche roba di un altro gruppo** — perché chi ti ha preceduto l'aveva già messa lì — non toglierla dall'index: committa **per pathspec**, `git commit -- <i file del gruppo>`, che congela quei soli path e lascia il resto in stage per il gruppo a cui appartiene. È l'unica forma che separa i gruppi senza toccare lo stato che l'owner aveva preparato.
    - Crea il commit con messaggio multiriga, con la sintassi del tool che stai usando in quel momento (mai mischiarle):
      - **Tool Bash** (Git Bash/POSIX sh): `git commit -F -` alimentato da un heredoc quotato, oppure `git commit -m` con il messaggio in chiaro. Mai `@'...'@` (è sintassi PowerShell, non valida in sh: produce un messaggio con `@` letterali in testa/coda).

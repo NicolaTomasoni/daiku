@@ -106,6 +106,16 @@ scelta può restare giusta dopo che la ragione per cui fu presa è evaporata, e 
 il perché invece di lasciare in piedi quello vecchio. Se una correzione cambia il metodo e non
 solo un fatto, fermati e chiedi invece di deciderla da solo.
 
+## Mai fidarsi di un LLM
+
+Un'istruzione scritta in una skill non è un vincolo: un agente può ignorarla, fraintenderla o non
+caricarla affatto. Perciò **dove possiamo aggiungere un controllo deterministico, lo aggiungiamo
+sempre, by design**: ogni divieto che conta vive in due sedi — il testo della skill, che dice cosa
+fare, e un controllo che lo impone — hook con banco di prova, validatore, script — e il banco si
+lancia davvero (il comando sta scritto accanto al controllo, e gira prima di un rilascio). Un
+controllo senza banco è indistinguibile dal silenzio. Se un divieto non ha una sede deterministica,
+non esiste: o gli si costruisce, o si toglie il divieto.
+
 ## Verificare il pacchetto
 
 Le due validazioni vanno passate entrambe, sullo stesso albero:

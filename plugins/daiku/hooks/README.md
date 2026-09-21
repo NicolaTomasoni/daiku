@@ -5,7 +5,7 @@ altri due non fermano mai niente e si limitano a dire quello che sanno.
 
 | Hook | Evento | Cosa fa |
 |---|---|---|
-| `lib/command-guard.mjs` | `PreToolUse` su `Bash`/`PowerShell` | nega quattro gesti distruttivi, e solo quelli che il progetto dichiara |
+| `lib/command-guard.mjs` | `PreToolUse` su `Bash`/`PowerShell` | nega cinque gesti distruttivi: quattro sempre, uno solo dove il progetto lo dichiara |
 | `lib/contracts-post-edit.mjs` | `PostToolUse` su `Edit`/`Write` | dopo una scrittura sul corpus, segnala i guasti che non fallirebbero da soli |
 | `lib/session-advice.mjs` | `SessionStart` | all'avvio, dice se Daiku è aperto a metà e se un lavoro è rimasto in volo |
 
@@ -33,18 +33,26 @@ quelli che Daiku non l'hanno mai visto. Perciò la prima domanda di `command-gua
 comando è pericoloso?» ma «questo progetto mi ha chiesto qualcosa?».
 
 1. **Senza `.daiku/project.json` non nega niente**, mai, senza nemmeno leggere la riga.
-2. **Ogni ramo ha il proprio interruttore** nel JSON, e un interruttore assente è un ramo spento.
+2. **Un solo ramo ha il proprio interruttore**: `{worktree.pool}`. Gli altri quattro negano
+   sempre — a un agente non si lascia mai la libertà di pushare, di saltare gli hook di
+   commit o di committare `.daiku/`: mai fidarsi di un LLM.
 
 | Ramo | Acceso da | Cosa nega |
 |---|---|---|
 | link di Windows | *nessun interruttore*: basta `.daiku/` | una rimozione ricorsiva che attraversa una junction e svuota la directory reale dall'altra parte |
+| commit di `.daiku/` | *nessun interruttore*: basta `.daiku/project.json` | ogni commit che contiene `.daiku/` — pathspec esplicito in `add`/`commit`, o già in stage (letto con `git status` in sola lettura, che se fallisce degrada a permesso) |
 | pool di worktree | `worktree.pool` | rimozioni dentro un worktree del pool, e `pnpm install` lanciato da lì |
-| `--no-verify` | `guardrails.deny_no_verify` | `git commit` con `-n` o `--no-verify`, in qualunque posizione stia il flag |
-| push | `guardrails.deny_push` | `git push`, anche dentro un wrapper o in coda a un altro comando; `--dry-run` no |
+| `--no-verify` | *nessun interruttore*: basta `.daiku/project.json` | `git commit` con `-n` o `--no-verify`, in qualunque posizione stia il flag |
+| push | *nessun interruttore*: basta `.daiku/project.json` | `git push`, anche dentro un wrapper o in coda a un altro comando; `--dry-run` no |
 
 Il primo ramo non ha interruttore perché non è una policy: che `rm -rf` entri in una junction e
 distrugga quello che sta dall'altra parte è un fatto del sistema operativo, vero in ogni
-progetto, e una junction non si vede leggendo la riga di comando.
+progetto, e una junction non si vede leggendo la riga di comando. Il secondo non ne ha per
+decisione dell'owner e non per fatto del sistema: il repository è del cliente, Daiku è segreto,
+e il divieto vale in qualunque caso — per questo non si dichiara. Lo stesso vale per
+`--no-verify` e push, per decisione dell'owner: a un agente non si lascia mai nessuna delle due
+libertà. Dove un divieto può avere una sede deterministica, ce l'ha sempre — mai fidarsi di un
+LLM.
 
 Gli altri tre sono decisioni di chi tiene il repository, e Daiku non le presume. È la §6 di
 `contracts/project-contract.md` — *ciò che il JSON non dichiara non esiste* — applicata a un
@@ -54,8 +62,7 @@ Un esempio completo, in `.daiku/project.json`:
 
 ```json
 {
-  "worktree": { "pool": "../wt", "prefix": "wt-", "max": 3 },
-  "guardrails": { "deny_push": true, "deny_no_verify": true }
+  "worktree": { "pool": "../wt", "prefix": "wt-", "max": 3 }
 }
 ```
 

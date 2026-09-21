@@ -3,7 +3,7 @@
 Questa cartella contiene i **contratti canonici** delle skill del progetto. Una skill, un
 contratto, ogni host.
 
-**Non tutti si lanciano.** I nove che si invocano a mano si scrivono `/<nome>` — per esempio
+**Non tutti si lanciano.** I sette che si invocano a mano si scrivono `/<nome>` — per esempio
 `/new-feature` — e un host che per invocarli richiede un pointer lo trova sotto
 `{hosts.<host>.skill_pointers}`, che rimanda qui. Gli altri sono **contratti interni**: un
 subagent li riceve come path da leggere, e qui sotto si nominano senza la barra, perché non c'è
@@ -24,7 +24,7 @@ uno dei tre può negare un comando:
 
 | Hook | Quando | Cosa fa |
 |---|---|---|
-| guardia sui comandi | prima di ogni comando di shell | nega quattro gesti distruttivi |
+| guardia sui comandi | prima di ogni comando di shell | nega cinque gesti distruttivi |
 | controlli sul corpus | dopo una scrittura | segnala i guasti che non fallirebbero da soli, per esempio un frontmatter di `SKILL.md` che si svuota in silenzio |
 | stato del progetto | all'avvio di una sessione | dice se Daiku è aperto a metà e se un lavoro è rimasto in volo |
 
@@ -33,13 +33,16 @@ Due cose li governano, e sono la ragione per cui installarli non cambia come lav
 - **Su un progetto senza `.daiku/` la guardia non nega niente.** Un pacchetto è attivo su ogni
   repository che l'host apre; un guardrail che negasse comandi a chi non ha aperto Daiku sarebbe
   un guasto, non una tutela.
-- **Ogni diniego è dichiarato dal progetto**, in `.daiku/project.json`: `guardrails.deny_push`,
-  `guardrails.deny_no_verify`, e `worktree.pool` per le rimozioni dentro i worktree di consegna.
-  Appena installato non è acceso niente, e `/init` non li accende al posto tuo.
+- **Un solo diniego è dichiarato dal progetto**: le rimozioni dentro i worktree che
+  `.daiku/project.json` dichiara in `worktree.pool`. Appena installato non è acceso niente, e
+  `/init` non lo accende al posto tuo.
 
-L'unica eccezione è una rimozione ricorsiva che attraversa una **junction di Windows**, negata su
-ogni progetto Daiku: non è una policy ma un fatto del sistema — `rm -rf` entra nel link e svuota
-la directory reale dall'altra parte — e dalla riga di comando non si vede.
+Tutto il resto è negato sempre, senza chiave: una rimozione ricorsiva che attraversa una
+**junction di Windows** — non è una policy ma un fatto del sistema, `rm -rf` entra nel link e
+svuota la directory reale dall'altra parte, e dalla riga di comando non si vede — ogni commit
+che contiene **`.daiku/`** — il repository è del cliente e non vede nulla del metodo — e ogni
+**`git push`** e ogni commit con **`--no-verify`**: a un agente non si lascia mai nessuna di
+queste libertà.
 
 I tre hook girano con **Node**, senza dipendenze da installare. Dove `node` non è nel `PATH` non
 partono, e siccome non fermano mai un turno il risultato è che tacciono.
@@ -52,8 +55,8 @@ prova e come arrivano sui due host.
 Tre idee reggono tutto.
 
 **1. Skill atomiche + skill orchestranti.** Le skill di base fanno *una* cosa (studia, progetta,
-esegui, rivedi, committa). Le skill orchestranti (`/new-feature`, `develop-feature`, `/review`,
-`/nightly-orchestrator`) le incatenano nell'ordine giusto, delegando ogni fase
+esegui, rivedi, committa). Le skill orchestranti (`/new-feature`, `develop-feature`, `/review`)
+le incatenano nell'ordine giusto, delegando ogni fase
 a un **subagent in contesto fresco**. L'orchestrazione è dell'agente: non c'è uno script che la
 esegue al posto suo.
 
@@ -97,14 +100,15 @@ documento di decisione — gli fa saltare da sé i pezzi già fatti. Non esiste 
 o un `/develop-feature` da lanciare a mano, ed è deliberato: due modi di arrivare allo stesso passo
 sono due scope e due permessi da tenere allineati per sempre, e il secondo si erode in silenzio.
 
-**Sono nove i comandi che si lanciano, e stanno in tre gruppi.** Quattro sono il lavoro di ogni
+**Sono sette i comandi che si lanciano, e stanno in due gruppi.** Cinque sono il lavoro di ogni
 giorno:
 
 | Quando | Cosa lanci |
 |---|---|
 | comincia un lavoro, che ci sia già qualcosa sul disco o no | `/new-feature <descrizione o cartella>` |
-| appunti su una tecnologia, fuori da una feature | `/study <libreria>` (deposita il file e si ferma) |
+| appunti su una tecnologia, fuori da una feature | `/research <libreria>` (deposita il file e si ferma) |
 | hai un diff scritto a mano e vuoi la review | `/review` (senza argomenti: ciò che hai in mano nel perimetro del codice) |
+| vuoi solo i bug di ciò che hai in mano, senza giri né fix | `/code-review [path...]` (un passaggio solo, esito in chat) |
 | un diff da congelare, fuori da una review | `/commit` (senza argomenti: idem) |
 
 Due si lanciano una volta per progetto, e girano **prima** che esista una catena:
@@ -114,16 +118,9 @@ Due si lanciano una volta per progetto, e girano **prima** che esista una catena
 | il progetto non ha ancora `.daiku/` | `/init` (prima di tutto il resto) |
 | sei su Codex, o il pacchetto ha portato hook o ruoli nuovi | `/sync-host` (su Claude Code non serve: lo dice e si ferma) |
 
-Tre coprono i modi d'uso che il ciclo interattivo non tocca:
-
-| Quando | Cosa lanci |
-|---|---|
-| più feature in fila, non presidiato | `/nightly-plan "..."` poi `/nightly-orchestrator` |
-| rivedere una pull request già pubblicata, non il tuo disco | `/code-review <numero PR>` |
-
 Tutto il resto — `decision-doc`, `develop-feature`, `update-memory`, `blueprint`, `execute`,
-`arch-check`, `perf`, `test-coverage`, `finder-prompt`, `applier` — non si lancia: sono i
-contratti che i nove aprono, e che un subagent riceve come path da leggere.
+`arch-check`, `perf`, `test-coverage`, `finder-prompt`, `applier`, `study` — non si lancia: sono i
+contratti che i sette aprono, e che un subagent riceve come path da leggere.
 
 **Su un host che dichiara `{hosts.<host>.skill_pointers}`** sono invocabili le skill che hanno lì
 il proprio pointer, e quali siano lo dichiara `contracts/orchestration.md` §3; un host che non
@@ -136,15 +133,19 @@ Chi apre chi. Con la barra le skill che si lanciano anche da sole, senza i contr
 le apre** — una alla volta, ciascuna in un subagent con il contesto pulito.
 
 La barra dice che quel contratto è anche un entry point, non che da solo faccia la stessa cosa:
-`/code-review`, che qui è il finder `bug` su un diff locale, lanciato a mano guarda invece una
-**pull request** e commenta sulla forge. Chi invoca sceglie la modalità, e ogni nodo raggiungibile
+`/research`, che qui è la raccolta che `new-feature` si procura, lanciato a mano deposita gli
+appunti e si ferma. Chi invoca sceglie la modalità, e ogni nodo raggiungibile
 in più di un modo le dichiara in casa propria.
+
+**Gli entry point sono 7, e nel diagramma sono i nodi con la barra.** Cinque stanno nella
+catena — `/new-feature`, `/research`, `/review`, `/code-review`, `/commit` — e due stanno fuori e nel diagramma
+non compaiono: `/init` e `/sync-host` (apertura del progetto).
 
 ```mermaid
 flowchart TD
     subgraph NF["/new-feature"]
         direction TB
-        st["/study"] --> dd["decision-doc"]
+        rs["/research"] --> st["study"] --> dd["decision-doc"]
 
         subgraph DF["develop-feature"]
             direction TB
@@ -207,7 +208,7 @@ Da una descrizione fino al commit, in un'unica esecuzione:
 
 ```text
 /new-feature "<descrizione>"
-   → indagine sul codice → study sulle tecnologie che servono → riconfronto
+   → indagine sul codice → research (+ study) sulle tecnologie che servono → riconfronto
      → decision-doc → ⏸ le decisioni, poste in chat → recepimento
        → develop-feature (brief → esecuzione → review → commit → merge)
 ```
@@ -226,7 +227,7 @@ qualcuno decida su di esso.
 | Stadio | Cosa fa | Output |
 |---|---|---|
 | indagine | fan-out sul codice, un fronte per area | `0. problem.md` |
-| `study` | appunti operativi su una tecnologia, dalle fonti reali | un md in `paths.lib_notes` |
+| `research` + `study` | appunti operativi su una tecnologia, dalle fonti reali | un md in `paths.lib_notes` |
 | riconfronto | riscrive il problema su ciò che gli appunti smentiscono | `0. problem.md` rifinito |
 | `decision-doc` | valuta lo stadio e studia le decisioni | `0.5. studio-strategico.md` oppure `1. decision-doc.md` |
 | `develop-feature` | brief → esecuzione → review a giri → gate → memoria → commit → merge | il lavoro committato e `5. review-report.md` |
@@ -275,8 +276,7 @@ uno dopo l'altro, nell'ordine.
 ### B. La consegna — `develop-feature`
 
 È la metà a valle della catena: dal decision-doc risolto fino al codice integrato, senza fermarsi
-a ogni stadio. La aprono `/new-feature`, quando le decisioni sono chiuse, e
-`/nightly-orchestrator`, per ogni item della coda: **non si lancia a mano**, e riceve la cartella e
+a ogni stadio. La apre `/new-feature`, quando le decisioni sono chiuse: **non si lancia a mano**, e riceve la cartella e
 la soluzione scelta già risolte nel prompt.
 
 Undici fasi: worktree, brief (`blueprint`), esecuzione (`execute`), review, decisione, stage,
@@ -287,42 +287,12 @@ La fase **Review** non è una copia: è `skills/review/SKILL.md` eseguito integr
 la stessa disciplina che gira da `/review` standalone (con `--no-commit`: qui il commit è una
 fase successiva della consegna). Il commit è condizionale: solo a
 gate verde e senza rilievi bloccanti, e in **commit distinti**, uno per gruppo non vuoto: prima il
-codice, poi doc e memoria, per ultimo — solo se toccati — versione e changelog. È la **stessa unità
-atomica** che la run notturna invoca per ogni item della coda.
+codice, poi doc e memoria, per ultimo — solo se toccati — versione e changelog.
 
 Quello che questa skill possiede in proprio, e che non vive in nessun altro contratto, è il **ciclo
 di vita del worktree**: nessuna consegna lavora sull'albero principale, che vede solo il merge. Un
 lavoro bloccato resta sul branch del suo worktree — non si parcheggia in una patch e non si
-integra — quindi la consegna successiva parte pulita, al prezzo di un worktree in meno nel pool
-finché l'owner non lo tratta.
-
-### C. Run notturna — `/nightly-plan` → `/nightly-orchestrator`
-
-Lavora **più feature in fila, non presidiato**. Due skill:
-
-```text
-/nightly-plan "<cartella> -> Soluzione 1; <cartella> -> Opzione B; ..." → nightly-run.json
-
-/nightly-orchestrator → legge la coda, pre-flight sull'ambiente,
-                        poi per ogni item in sequenza il contratto /develop-feature
-```
-
-`nightly-run.json` è **solo l'input statico** della coda: cartelle, soluzioni e ambiente
-dichiarato, senza stato di avanzamento. `nightly-review.md` è il deliverable: si costruisce **per append**, un blocco per item, man mano che la coda avanza — mai
-un report generato in un colpo solo a fine notte.
-
-- **`/nightly-plan`** è l'**unico momento in cui sei presente**: qui si chiede e si verifica
-  (cartelle esistono, soluzione scelta, ambiente). Produce solo la coda, non esegue nulla.
-- **`/nightly-orchestrator`** fa pre-flight e loop sequenziale sugli item — mai in parallelo:
-  build, test, commit e base-ref non sono serializzabili sullo stesso repo. La ripresa dopo
-  un'interruzione si ricostruisce dallo stato osservabile (report, gli artefatti numerati nella
-  cartella di ciascun item, `git log`).
-
-**Il campo `backend` della coda** — uno dei backend dichiarati in `{backends}` — dichiara
-l'**ambiente**, non i modelli: quelli vengono dai ruoli. Serve a due cose sole — il **pre-flight**
-(l'ambiente attivo deve coincidere con quello dichiarato, altrimenti la run aborta: così non
-spendi la notte sul backend sbagliato) e la **concorrenza** del fan-out di review, che diventa
-sequenziale sui backend che lo dichiarano (`contracts/orchestration.md` §5).
+integra — e quel worktree esce dal pool finché l'owner non lo tratta.
 
 
 ## Come si orchestra (la parte che era in uno script)
@@ -372,13 +342,14 @@ script sono stati rimossi.
   risposte prosegue fino al commit. È il comando con cui comincia un lavoro, che sul disco ci sia
   già qualcosa o no. Dentro apre `decision-doc` e `develop-feature`, che per questo non si
   lanciano da sé.
-- **`/study [libreria/tecnologia]`** — studia una libreria dalle fonti reali (docs ufficiali,
+- **`/research [libreria/tecnologia]`** — studia una libreria dalle fonti reali (docs ufficiali,
   repo, package registry) e produce appunti operativi nella cartella che `paths.lib_notes`
-  dichiara. Lanciata a mano **deposita il file e si ferma**: non apre niente a valle. Dentro una
+  dichiara. Lanciata a mano **deposita il file e si ferma**: non apre niente a valle — il riordino
+  lo fa `study`, contratto interno, sullo stesso file. Dentro una
   feature la decide `/new-feature`, senza chiedertelo.
 
 ### Qualità e manutenzione
-- **`/review [base-ref | path a "4. review-notes.md"] [--giri N] [--effort …] [--with arch-check,perf,test-coverage] [--no-commit]`**
+- **`/review [base-ref | path a "4. review-notes.md"] [--rounds N] [--effort …] [--with arch-check,perf,test-coverage] [--no-commit]`**
   — ciclo di review su un diff, in due velocità che decide lui. Il **giro 1** è il fan-out: bug
   sempre attivo, arch-check/perf accesi dallo scope. I **giri successivi** rivedono i soli file
   toccati dai fix, con il solo finder bug, perché quei fix sono codice che nessuno ha ancora
@@ -386,10 +357,9 @@ script sono stati rimossi.
   decide l'andamento (tre fix gravi ne impongono un altro, sotto decide il merito), guardrail a 6,
   ledger dei rilievi già scartati. Gate sempre, una volta all'uscita, poi **committa**,
   delegandolo a `/commit`: lo sopprime `--no-commit`, che passa chi committa da sé.
-- **`/code-review [numero PR] [--comment]`** — review di una pull request già pubblicata invece
-  che del working tree: controlli preliminari, fan-out su bug e conformità agli invarianti,
-  validazione dei rilievi e, solo su `--comment`, commenti inline sulla PR.
-### I contratti interni — non si lanciano, li aprono i nove
+- **`/code-review [path...] [--effort …]`** — un passaggio solo-bug sullo scope che gli dici:
+  niente fan-out, niente fix, niente commit. L'esito è in chat.
+### I contratti interni — non si lanciano, li aprono i sette
 
 Restano file sotto `skills/`, e un subagent li riceve come path da leggere. Sono elencati qui
 perché è dove si va a vedere cosa fa un passo, non perché ci sia un comando da digitare.
@@ -398,8 +368,7 @@ perché è dove si va a vedere cosa fa un passo, non perché ci sia un comando d
   problema e produce `0.5. studio-strategico.md` o `1. decision-doc.md`, restituendo le decisioni
   a chi lo ha aperto. Lo apre `new-feature`, due volte: studio, poi recepimento delle risposte.
 - **`develop-feature`** — la catena dal decision-doc risolto fino al commit: worktree, brief,
-  esecuzione, review, allineamento, i tre commit, merge, report. La aprono `new-feature` e
-  `nightly-orchestrator`.
+  esecuzione, review, allineamento, i tre commit, merge, report. La apre `new-feature`.
 - **`blueprint`** — dal decision-doc più la soluzione scelta produce il brief `2. blueprint.md`
   e si ferma lì. Fase 1 di `develop-feature`.
 - **`execute`** — esegue il brief, aggiorna Memoria e Diario mentre lavora, deposita
@@ -411,16 +380,11 @@ perché è dove si va a vedere cosa fa un passo, non perché ci sia un comando d
 - **`arch-check`**, **`perf`** — le due discipline condizionali di un giro di review.
 - **`test-coverage`** — la fase Copertura dopo il ciclo.
 - **`finder-prompt`**, **`applier`** — il prompt di un finder e l'applicatore dei suoi rilievi.
+- **`study`** — riordina il file sporco di appunti raccolto da `research`, senza perdere un fatto
+  verbatim, e restituisce il blocco di ritorno. Lo apre `research`, a ogni invocazione.
 
 ### Git
 - **`/commit`** — committa le modifiche fatte nella chat corrente, senza mai fare push. Decide se
   il diff staged giustifica un allineamento di memoria e documentazione e in tal caso lo delega a
   `update-memory`; codice, artefatti non-codice e versione/changelog finiscono in **commit
   distinti** — fino a tre, in quest'ordine, e solo per i gruppi non vuoti.
-
-### Run notturna (non presidiata)
-- **`/nightly-plan ["cartella -> soluzione; ..."]`** — genera la coda statica
-  `nightly-run.json` nella cartella che `paths.nightly` dichiara. Non esegue nulla.
-- **`/nightly-orchestrator`** (senza argomenti; path esplicito solo come override) — pre-flight
-  sull'ambiente, poi ogni item della coda consegnato **uno alla volta** col contratto
-  `develop-feature`. Non scrive codice applicativo.

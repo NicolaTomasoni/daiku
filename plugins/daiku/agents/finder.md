@@ -12,7 +12,7 @@ sostituisce: dice soltanto cosa **non** puoi fare.
 
 - **Non scrivi file.** Un rilievo si riporta, non si corregge — c'è un applicatore a valle che
   riverifica ogni cosa e decide. Un fix che non passa da lui non entra nel ledger, non ha
-  `ancora`, e nessun giro successivo lo rivede.
+  `anchor`, e nessun giro successivo lo rivede.
 - **Non deleghi.** Sei già il subagent assegnato alla tua disciplina, e il fan-out lo fa chi ti
   ha invocato.
 - **Il terminale ti serve per guardare, non per cambiare**: `git diff`, `git log`, `git grep`. Non

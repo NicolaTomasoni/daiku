@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 48eaa498-ed6e-4a36-847d-3f8fa95f7f21
-  modified: 2026-09-19T18:30:29.830Z
+  modified: 2026-09-20T17:22:42.575Z
 ---
 
 Il repo è **insieme marketplace e pacchetto**: una sola alberatura serve Claude Code e Codex,
@@ -20,7 +20,7 @@ perché i due host cercano file con nomi diversi e ignorano quelli dell'altro. R
 
 | Dentro il pacchetto | Cosa c'è | Chi lo legge |
 |---|---|---|
-| `skills/` | i **19 contratti** del metodo, uno per cartella | **entrambi** gli host, stessi identici file |
+| `skills/` | i **18 contratti** del metodo, uno per cartella | **entrambi** gli host, stessi identici file |
 | `contracts/` | `orchestration.md`, `project-contract.md` | le skill li aprono per path; non sono skill loro stessi |
 | `agents/` | `finder` — l'unico subagent a toolset ristretto | solo Claude Code: Codex lo rifiuta |
 | `hooks/` | il wiring `hooks.json`, i **tre hook** in `lib/` e i **due moduli** che importano (`project-root.mjs`, `daiku-config.mjs`); accanto, fuori da `lib/`, `self-check.mjs` e `README.md`, che sono di chi sviluppa il pacchetto e non si trasportano | solo Claude Code: su Codex `plugin_hooks` è rimossa |
@@ -43,9 +43,8 @@ Non si possono spostare: gli host li cercano lì e basta.
 - **`.claude/`** — come si lavora *su* Daiku, non come Daiku funziona. Dentro c'è:
   - `orchestration.md` + `skills/` (10 contratti) + `agents/finder.md` — il **corpus di sviluppo**,
     una derivazione dei contratti del prodotto adattata a questo repo: valori scritti per esteso
-    invece che parametrizzati, e niente worktree. Non si sincronizza da solo col pacchetto, e dal
-    19 settembre 2026 **non si modifica affatto**: si scrive solo nel prodotto, e riportare la
-    modifica qui è una decisione che si chiede all'owner. Vedi [[corpus-di-sviluppo]].
+    invece che parametrizzati, e niente worktree. Non si sincronizza da solo col pacchetto:
+    si scrive solo nel prodotto, e un ordine esplicito dell'owner può toccarlo. Vedi [[corpus-di-sviluppo]].
   - `commands/confronta-repo.md` — una skill dell'owner, precedente al corpus.
   - `settings.local.json` — punta `autoMemoryDirectory` (vedi [[memoria-nel-repo]]).
 - **`.vscode/`** — `tasks.json` con gli switch fra backend LLM: tooling personale dell'owner, con

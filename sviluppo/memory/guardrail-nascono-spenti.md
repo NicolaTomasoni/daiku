@@ -1,6 +1,6 @@
 ---
 name: guardrail-nascono-spenti
-description: "i tre hook del pacchetto non negano nulla che il progetto non abbia dichiarato, e nessuno di loro esegue un file perché è appena comparso"
+description: "la guardia nega sempre push, --no-verify e commit di .daiku/, e solo il pool si dichiara; nessun hook esegue un file perché è appena comparso"
 metadata: 
   node_type: memory
   type: project
@@ -12,12 +12,17 @@ metadata:
 installa una volta ed è attivo su **ogni** repository che l'host apre. Da lì discendono due regole
 che valgono per qualunque hook Daiku porti, oggi e in futuro.
 
-**Primo: niente si accende da solo.** Senza `.daiku/project.json` la guardia sui comandi non nega
-niente e non legge nemmeno la riga; con quel file, ogni ramo resta spento finché una chiave non lo
-accende — `guardrails.deny_push`, `guardrails.deny_no_verify`, e `worktree.pool` per le rimozioni
-dentro i worktree di consegna. L'unica eccezione è la rimozione ricorsiva che attraversa una
-junction di Windows: quello non è una policy ma un fatto del sistema operativo, vero in ogni
-progetto e invisibile leggendo la riga di comando.
+**Primo: quasi niente si accende da solo.** Senza `.daiku/project.json` la guardia sui comandi
+non nega niente e non legge nemmeno la riga — questo resta. Con quel file, dal 21 settembre 2026
+negano sempre, senza interruttore: i commit che contengono `.daiku/`, `git push` e `git commit
+-n`/`--no-verify`. L'unico ramo che resta spento finché il progetto non lo accende è il pool dei
+worktree, con `{worktree.pool}`. La rimozione ricorsiva che attraversa una junction di Windows non
+ha mai avuto interruttore: non è una policy ma un fatto del sistema operativo.
+
+Il ribaltamento è una decisione dell'owner, non un fatto nuovo: a un agente non si lascia mai la
+libertà di pushare, di saltare gli hook o di committare il metodo — mai fidarsi di un LLM. Il
+disegno opt-in del 19 settembre valeva finché il divieto viveva nel testo delle skill; dal momento
+in cui il diniego è deterministico, una chiave per dichiararlo sarebbe una riga che nessuno guarda.
 
 **Secondo: un hook non esegue un file perché è comparso.** Il controllo post-scrittura *ricorda* di
 lanciare il banco di prova di una guardia riscritta, e non lo lancia.
@@ -32,10 +37,15 @@ che l'host chiede prima di un comando sia l'approvazione per hash che Codex pret
 gli hook. Un hook che dice «lancia il banco» e uno che lo lancia da solo hanno lo stesso valore
 diagnostico e un rischio molto diverso.
 
-**How to apply:** un ramo nuovo nasce **spento**, con la sua chiave nel JSON (dichiarata nella §4.1
-di `contracts/project-contract.md`, che non fa salire `contract` perché è una chiave opzionale), la
-sua riga nella tabella di `plugins/daiku/hooks/README.md`, e nel banco un caso che prova che da
-spento **non** nega — è quel caso, non l'altro, a dire che il gate tiene. I tre banchi si lanciano
+Il 21 settembre 2026 l'owner ha ristretto questa decisione ai soli rami che dipendono davvero dal
+progetto (il pool): push, `--no-verify` e commit di `.daiku/` negano sempre, perché un diniego che
+dipende da una chiave che qualcuno deve ricordarsi di accendere protegge solo i progetti diligenti.
+
+**How to apply:** un ramo nuovo nasce **acceso**, senza chiave — è la regola dal 21 settembre 2026:
+dove un divieto può avere una sede deterministica, ce l'ha sempre. Fa eccezione il ramo che dipende
+davvero dal progetto (oggi solo il pool dei worktree): quello nasce **spento**, con la sua chiave
+nel JSON, e nel banco un caso che prova che da spento **non** nega. Ogni ramo ha la sua riga nella
+tabella di `plugins/daiku/hooks/README.md`, e i tre banchi si lanciano
 insieme con `node plugins/daiku/hooks/self-check.mjs`, che somma i controlli e esce `1` al primo
 rosso: va aggiunto a ogni verifica di rilascio accanto ai due validatori.
 

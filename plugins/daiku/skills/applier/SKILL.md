@@ -19,8 +19,8 @@ ciclo, e nessuno lo rivedrà.
 ## Cosa ricevi dal chiamante
 
 - i **rilievi di tutti i finder** del giro, raggruppati per disciplina;
-- dal ledger, gli **applicati dei giri precedenti** (`file`, `simbolo`, `ancora`, `cosa`): servono
-  per `su_fix_precedente` e per l'oscillazione;
+- dal ledger, gli **applicati dei giri precedenti** (`file`, `symbol`, `anchor`, `what`): servono
+  per `on_previous_fix` e per l'oscillazione;
 - lo scope del giro e la `BASE`;
 - `{memory.index}` e i **path** delle memorie che il tuo perimetro tocca, da aprire prima di
   decidere: è il canale di §4.1 di `contracts/orchestration.md`. Se il chiamante non te li passa,
@@ -42,15 +42,15 @@ ciclo, e nessuno lo rivedrà.
 - Se per decidere ti manca solo una verifica che qui non puoi fare (una misura, una resa a schermo),
   non trasformarla in una voce aperta: se è verificabile con un test dentro lo scope scrivilo,
   altrimenti annota il limite.
-- **Oscillazione, la rilevi prima di applicare**: se l'`ancora` che stai per produrre coincide con
+- **Oscillazione, la rilevi prima di applicare**: se l'`anchor` che stai per produrre coincide con
   una già registrata nel ledger per lo stesso file e simbolo in un giro precedente a quello
-  dell'ultimo fix, **non applicare** e riportala nel campo `oscillazione`. Registrala **anche** fra
-  gli `scartati`, con `perche: "oscillazione"` e le due ancore nel testo: un fix che non applichi
-  non entra negli `applicati`, quindi senza quella riga sparisce dal ledger e la verifica di chi ti
+  dell'ultimo fix, **non applicare** e riportala nel campo `oscillation`. Registrala **anche** fra
+  gli `discarded`, con `why: "oscillation"` e le due ancore nel testo: un fix che non applichi
+  non entra negli `applied`, quindi senza quella riga sparisce dal ledger e la verifica di chi ti
   ha invocato non ha su cosa girare. È una **prevenzione**, non
   la misura: chi ti ha invocato rifà comunque il confronto sul ledger dopo il tuo giro, perché il
   segnale che decide se qualcuno rileggerà il tuo lavoro non può venire da te. Lo stesso vale per
-  `su_fix_precedente`: dichiaralo con onestà, sapendo che è verificabile.
+  `on_previous_fix`: dichiaralo con onestà, sapendo che è verificabile.
 - **Non modificare nulla fuori da `{code_root}`**: qualunque path esterno è off-limits, senza
   eccezioni. Se la documentazione richiederebbe allineamento, **annotalo** senza toccarla: è
   competenza della fase Memory, non una voce da confermare.
@@ -69,10 +69,10 @@ questo contratto a decidere cosa applichi e cosa lasci aperto.
   rilegge nessun finder.
 - **Un difetto che un test rivela nel codice di produzione non si corregge e non si scarta.** È
   l'unica deroga al «risolvi tu» che non nasce da un bivio: la correzione starebbe fuori dallo
-  scope e nessun giro la rivedrebbe più. Va in `da_confermare` con `bloccante: true` — nello
+  scope e nessun giro la rivedrebbe più. Va in `to_confirm` con `blocking: true` — nello
   `scenario` cosa il test ha rivelato, quale comportamento è in dubbio, cosa cambia a correggerlo —
   perché mette in dubbio la correttezza del consegnato, e da lì ferma il commit di chi ti ospita.
-  Scartarlo lo farebbe sparire: gli `scartati` non bloccano niente.
+  Scartarlo lo farebbe sparire: gli `discarded` non bloccano niente.
 - Tutto il resto — come decidi un rilievo, come classifichi un fix, cosa restituisci — resta
   identico al giro normale.
 
@@ -81,15 +81,15 @@ questo contratto a decidere cosa applichi e cosa lasci aperto.
 Ogni fix torna **classificato**, perché è su quella classificazione che il ciclo decide se
 continuare.
 
-- **`grave`** non è un aggettivo a sensibilità. Un fix è grave se, **senza di esso**, in uno scenario
+- **`severe`** non è un aggettivo a sensibilità. Un fix è grave se, **senza di esso**, in uno scenario
   raggiungibile dal flusso: si perde o si corrompe lavoro dell'utente o un file su disco; un processo
   esterno continua a girare, o a scrivere, quando doveva essere fermo; il sistema riporta come vero
   un risultato che non lo è — un conteggio, uno stato, un'etichetta; oppure un flusso si blocca, non
   parte, o non si spegne. **Non** sono gravi nome, forma, ridondanza, leggibilità, messaggi, commenti
   e le difese su scenari non raggiungibili.
-- **`su_fix_precedente`** è vero se il fix **riscrive una riga scritta da un fix precedente**: stesso
-  file, e l'`ancora` di quel fix — te la dà il ledger — sta fra le righe che stai modificando, oppure
-  non esiste più nel file dopo il tuo edit. Lo stesso `simbolo` da solo **non basta**: due bug
+- **`on_previous_fix`** è vero se il fix **riscrive una riga scritta da un fix precedente**: stesso
+  file, e l'`anchor` di quel fix — te la dà il ledger — sta fra le righe che stai modificando, oppure
+  non esiste più nel file dopo il tuo edit. Lo stesso `symbol` da solo **non basta**: due bug
   indipendenti nella stessa funzione non sono una regressione, e contarli come tale forza giri
   inutili. È il segnale più informativo del ciclo: sono le correzioni che regrediscono, la classe di
   difetto che nessuna singola passata può trovare.
@@ -97,10 +97,10 @@ continuare.
 ## Il blocco che restituisci
 
 ```json
-{"applicati": [{"file": "", "simbolo": "", "ancora": "", "riga": 0, "cosa": "", "grave": true, "su_fix_precedente": false}], "scartati": [{"file": "", "simbolo": "", "riga": 0, "perche": ""}], "da_confermare": [{"file": "", "riga": 0, "scenario": "<il bivio in parole semplici: cosa è in gioco, le strade, cosa cambia>", "classe": "arch|bug|perf|test-coverage", "bloccante": true}], "oscillazione": [{"file": "", "simbolo": "", "ancora_attuale": "", "ancora_precedente": ""}]}
+{"applied": [{"file": "", "symbol": "", "anchor": "", "line": 0, "what": "", "severe": true, "on_previous_fix": false}], "discarded": [{"file": "", "symbol": "", "line": 0, "why": ""}], "to_confirm": [{"file": "", "line": 0, "scenario": "<il bivio in parole semplici: cosa è in gioco, le strade, cosa cambia>", "class": "arch|bug|perf|test-coverage", "blocking": true}], "oscillation": [{"file": "", "symbol": "", "current_anchor": "", "previous_anchor": ""}]}
 ```
 
-`da_confermare` è la **sola** eccezione a «risolvi tu», e contiene una cosa sola: un **bivio vero**.
+`to_confirm` è la **sola** eccezione a «risolvi tu», e contiene una cosa sola: un **bivio vero**.
 Esistono due o più strade tecnicamente difendibili e sceglierne una cambia il risultato in modo
 materiale — comportamento visibile, costo, rischio, o una scelta di prodotto che non è tua da fare.
 Se sai qual è la strada giusta non è un bivio: applicala. Se la differenza fra le strade è
@@ -114,7 +114,7 @@ Ogni voce si scrive **in modo semplice**, comprensibile senza aprire il codice: 
 una frase, quali sono le strade e cosa cambia scegliendo l'una o l'altra. Niente gergo del rilievo,
 niente riassunto del diff.
 
-`bloccante` è `true` **solo** se il bivio mette in dubbio la correttezza del codice consegnato (un
+`blocking` è `true` **solo** se il bivio mette in dubbio la correttezza del codice consegnato (un
 bug reale la cui correzione ha più strade incompatibili, comportamento ambiguo dove
 un'interpretazione sbagliata rompe qualcosa, regressione sospetta); `false` quando il codice
 consegnato resta corretto qualunque strada si scelga. Si decide **qui**, dove il rilievo nasce e il

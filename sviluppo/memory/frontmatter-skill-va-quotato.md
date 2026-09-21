@@ -1,13 +1,16 @@
 ---
 name: frontmatter-skill-va-quotato
 description: "I valori del frontmatter di una SKILL.md vanno quotati, altrimenti la skill si carica coi metadati vuoti e nessuno la trova"
-metadata:
+metadata: 
+  node_type: memory
   type: project
+  originSessionId: cb57e80e-86fe-473f-a2a8-05597ba47418
+  modified: 2026-09-20T17:23:00.584Z
 ---
 
 Nel frontmatter di una `SKILL.md` i valori di `description` e `argument-hint` vanno **quotati con
 apice singolo** (l'apice interno si raddoppia). Quando il difetto fu trovato, il 18 settembre 2026,
-otto contratti su diciotto avevano YAML non valido; oggi i contratti sono diciannove e l'albero
+otto contratti su diciotto avevano YAML non valido; oggi i contratti sono diciotto e l'albero
 passa entrambi i validatori.
 
 **Why:** i file nascevano come `commands/*.md`, e il parser dei comandi tollerava quello che
@@ -31,9 +34,10 @@ memoria esiste: un `argument-hint` non quotato che comincia con `[` è una **seq
 YAML, quindi il valore si carica come lista invece che come stringa, e nessuno dei due validatori
 lo segnala perché una lista è YAML valido.
 
-Al 19 settembre 2026 il pacchetto è **pulito**: tutti e diciannove i contratti hanno ogni valore
+Al 19 settembre 2026 il pacchetto è **pulito**: tutti e diciassette i contratti hanno ogni valore
 di frontmatter quotato, verificato caricandoli uno per uno con `yaml.safe_load` e controllando che
 ogni campo torni una stringa. È quel controllo, non il validatore, a dire se la regola è
-rispettata.
+rispettata. Dal 20 settembre 2026 i contratti sono diciotto: `research` nasce già con i valori
+quotati.
 
 Vedi [[alberatura-pacchetto]].

@@ -1,7 +1,7 @@
 ---
 name: 'review'
 description: 'Ciclo di review su un diff — baseline congelata, giri che si fermano quando il codice smette di cambiare, ledger dei rilievi già giudicati. Il giro 1 fa il fan-out dei finder (bug sempre, arch/perf dallo scope), i giri successivi rivedono i soli fix appena scritti. Gate una volta all''uscita, poi il commit, che chiude sempre il ciclo salvo --no-commit. Orchestrata da te, delegando ogni fase a un subagent. Stessa disciplina che /develop-feature esegue nella sua fase Review.'
-argument-hint: '[file... | base-ref | path a "4. review-notes.md"] [--giri N] [--effort low|medium|high] [--with arch-check,perf,test-coverage] [--no-commit] [--backend <nome> se la sessione gira lì]'
+argument-hint: '[file... | base-ref | path a "4. review-notes.md"] [--rounds N] [--effort low|medium|high] [--with arch-check,perf,test-coverage] [--no-commit] [--backend <nome> se la sessione gira lì]'
 ---
 
 Sei il **motore di un ciclo di review** su un diff. Un giro è scope → finder → applicazione dei
@@ -53,7 +53,7 @@ rivedi ciò che hai in mano, cioè le modifiche non committate sotto `{code_root
   dichiari nell'esito invece di sceglierlo in silenzio.
 - **Path a `4. review-notes.md`** (o alla cartella che lo contiene): verifica che esista; il
   base-ref lo dichiara quel file.
-- **`--giri N`** (opzionale): tetto esplicito, per troncare il ciclo a mano. Senza, il numero di
+- **`--rounds N`** (opzionale): tetto esplicito, per troncare il ciclo a mano. Senza, il numero di
   giri lo decide l'andamento (§ *Quando fare un altro giro*) e l'unico tetto è il guardrail a `6`.
 - **`--effort low|medium|high`** (opzionale): profondità dei finder. Default `medium`. Su un
   perimetro davvero puntuale — una manciata di file — `high` produce soprattutto rilievi incerti
@@ -66,7 +66,7 @@ rivedi ciò che hai in mano, cioè le modifiche non committate sotto `{code_root
   mai una disattivazione.
 - **`--no-commit`** (opzionale): sopprime il commit di chiusura, e il ciclo si ferma al report.
   Lo passa **chi committa da sé** — `develop-feature`, che ha una fase di commit propria — non
-  chi ha un dubbio sul diff: un ciclo che arriva in fondo con gate verde e nessuna voce bloccante
+  chi ha un dubbio sul diff: un ciclo che arriva in fondo con gate green e nessuna voce bloccante
   ha già deciso, e le condizioni di § *Chiusura* sono lì proprio per fermare tutto il resto.
 - **`--backend <nome>`** (opzionale): il nome del backend su cui la sessione gira, da dichiarare
   solo se non è quello nativo dell'host; incide unicamente sulla concorrenza del fan-out, ed è
@@ -136,9 +136,8 @@ rivedere, dillo e chiudi.
 2. **Apri il ledger**: `{paths.review_state}/review-ledger-<BASE breve>-<HHMMSS di avvio>.json`
    (le prime sette cifre dello SHA, l'orario di avvio della review). È il file che rende
    economici i giri successivi. Il nome porta baseline e orario perché più review possono girare
-   nella stessa sessione — `develop-feature` ne esegue una per ogni item della coda notturna —
-   e perché un ledger di una review precedente sulla stessa baseline (succede nella notte, quando
-   un item esce bloccato senza commit e il successivo riparte dallo stesso commit) porterebbe ai
+   nella stessa sessione — e una consegna ripresa riparte dallo stesso commit —
+   e perché un ledger di una review precedente sulla stessa baseline porterebbe ai
    finder gli scartati di un altro diff. Sede: `{paths.review_state}/` sotto la radice tecnica —
    fuori dal repository versionato — se il `.gitignore` non la copre, dillo in chiusura invece di
    scriverci dentro comunque — ma **stabile**, non a
@@ -148,8 +147,8 @@ rivedere, dillo e chiudi.
    questa review sta rivedendo — la **cartella di lavoro**, normalizzata con slash `/`, quando
    l'input era `4. review-notes.md` o la cartella che lo contiene; `null` su una review lanciata a
    mano su un base-ref nudo. Scriverlo costa una riga e serve al passo dopo: la baseline **da sola
-   non identifica una review**, e nella notte i `base` coincidono per costruzione — un item esce
-   bloccato senza commit, `HEAD` non si muove, e il successivo riparte dallo stesso commit.
+   non identifica una review** — una consegna ripresa riparte dallo stesso commit, e due review
+   diverse possono condividere lo stesso `base`.
 
    **Non si riapre mai un ledger che hai trovato da solo.** Si riapre solo quello il cui path ti
    è stato consegnato nel prompt da chi ti invoca, e solo se **entrambi** i campi coincidono: il
@@ -161,39 +160,39 @@ rivedere, dillo e chiudi.
    **Se i candidati restano più di uno, non si sceglie**: ledger nuovo, e lo dichiari in chiusura.
    Vale anche quando il ledger consegnato non porta `item` — è di prima di questa regola, e non
    sai di chi è. Aprirne uno nuovo costa un triage; prendere quello sbagliato porta ai finder gli
-   `scartati` di un altro diff, all'applicatore `applicati` le cui `ancora` nel suo codice non
-   esistono, e fa girare `su_fix_precedente` e `oscillazione` contro le stringhe di un'altra
+   `discarded` di un altro diff, all'applicatore `applied` le cui `anchor` nel suo codice non
+   esistono, e fa girare `on_previous_fix` e `oscillation` contro le stringhe di un'altra
    feature — cioè rompe in silenzio i due segnali su cui il ciclo decide.
 
    Perché serva a qualcosa, il ledger deve essere **raggiungibile**: il suo path entra nel blocco
    di ritorno (§ *Esito*), e senza di esso una review interrotta al quarto giro riparte da zero —
-   si ripaga l'intero triage e, soprattutto, spariscono le `ancora` degli applicati, quindi
-   `su_fix_precedente` e `oscillazione` non possono più scattare sui fix già scritti. Sono i due
+   si ripaga l'intero triage e, soprattutto, spariscono le `anchor` degli applicati, quindi
+   `on_previous_fix` e `oscillation` non possono più scattare sui fix già scritti. Sono i due
    segnali su cui l'intero criterio di iterazione è costruito.
 
 ```json
-{"base": "<sha>", "item": "<cartella di lavoro, o null>", "giri": [{"n": 1, "discipline": ["bug"], "discipline_mancate": [], "applicati": [{"file": "", "simbolo": "", "ancora": "", "riga": 0, "cosa": "", "grave": true, "su_fix_precedente": false}], "scartati": [{"file": "", "simbolo": "", "riga": 0, "perche": ""}], "da_confermare": [], "oscillazione": [{"file": "", "simbolo": "", "ancora_attuale": "", "ancora_precedente": ""}], "verdetto": "continua|fermati", "perche": ""}], "uscita": null, "copertura": null, "gate": null, "gate_detail": null}
+{"base": "<sha>", "item": "<cartella di lavoro, o null>", "rounds": [{"n": 1, "disciplines": ["bug"], "missing_disciplines": [], "applied": [{"file": "", "symbol": "", "anchor": "", "line": 0, "what": "", "severe": true, "on_previous_fix": false}], "discarded": [{"file": "", "symbol": "", "line": 0, "why": ""}], "to_confirm": [], "oscillation": [{"file": "", "symbol": "", "current_anchor": "", "previous_anchor": ""}], "verdict": "continue|stop", "why": ""}], "outcome": null, "coverage": null, "gate": null, "gate_detail": null}
 ```
 
 ### Il ledger conserva anche ciò che blocca, non solo ciò che fa ripartire
 
-I `giri` fanno ripartire il ciclo; i quattro campi in coda — `uscita`, `copertura`, `gate`,
-`gate_detail` — e `discipline_mancate` dentro ogni giro sono ciò su cui il **commit** si ferma.
+I `rounds` fanno ripartire il ciclo; i quattro campi in coda — `outcome`, `coverage`, `gate`,
+`gate_detail` — e `missing_disciplines` dentro ogni giro sono ciò su cui il **commit** si ferma.
 Senza di essi una ripresa li perde tutti, e li perde in silenzio: nel ledger una disciplina mai
 tornata e una disciplina mai attivata producono la stessa identica riga.
 
-- **`discipline_mancate` si scrive nel giro in cui la disciplina non è tornata**, subito, con lo
+- **`missing_disciplines` si scrive nel giro in cui la disciplina non è tornata**, subito, con lo
   stesso nome che userà il blocco finale. È il campo che distingue i due esiti che si somigliano
-  (§ *Finder*). Alla ripresa, `discipline_mancate` del blocco finale è l'**unione** di quelli di
+  (§ *Finder*). Alla ripresa, `missing_disciplines` del blocco finale è l'**unione** di quelli di
   tutti i giri registrati: una `arch` mancata al giro 1 blocca il commit anche se la sessione è
-  caduta al giro 3 e la ripresa ha chiuso a `punto-fisso`. `arch` e `perf` si fanno una volta
+  caduta al giro 3 e la ripresa ha chiuso a `fixed-point`. `arch` e `perf` si fanno una volta
   sola al giro 1: quello che non hanno visto allora non lo vedrà nessuno, mai.
-- **`uscita`, `copertura`, `gate` e `gate_detail` si scrivono appena li hai**, non alla fine
-  insieme al report: `uscita` quando esci dal ciclo, `copertura` quando la fase Copertura torna,
+- **`outcome`, `coverage`, `gate` e `gate_detail` si scrivono appena li hai**, non alla fine
+  insieme al report: `outcome` quando esci dal ciclo, `coverage` quando la fase Copertura torna,
   `gate` e `gate_detail` quando il gate torna. Restano `null` finché quel passo non è girato, ed è
   quella distinzione a rendere la ripresa possibile.
 - **Alla ripresa non si rifà ciò che il ledger dichiara già fatto.** Se l'ultimo giro registrato
-  porta `verdetto: "fermati"`, il ciclo era già uscito: non aprire un altro giro — salta al primo
+  porta `verdict: "stop"`, il ciclo era già uscito: non aprire un altro giro — salta al primo
   passo che nel ledger è ancora `null`, nell'ordine copertura → gate → chiusura. Un gate già verde
   ripagato è l'intera suite, cioè proprio la risorsa che il gate, girando una volta sola, esiste
   per non spendere due volte.
@@ -202,40 +201,40 @@ tornata e una disciplina mai attivata producono la stessa identica riga.
 
 **Mai per numero di riga.** Un fix sposta tutto ciò che sta sotto di sé: al giro 3 «la riga 88
 che avevo corretto» non è più la riga 88, e i due segnali su cui questo ciclo decide —
-`su_fix_precedente` e l'uscita `oscillazione` — scatterebbero a caso o non scatterebbero mai.
+`on_previous_fix` e l'uscita `oscillation` — scatterebbero a caso o non scatterebbero mai.
 
 Ogni fix si registra con due ancore che sopravvivono ai giri successivi:
 
-- **`ancora`** — il testo della riga corretta dopo il fix, normalizzato agli spazi, troncato a
-  ~80 caratteri. È l'**identità del fix**: due fix con la stessa `ancora` nello stesso file sono
+- **`anchor`** — il testo della riga corretta dopo il fix, normalizzato agli spazi, troncato a
+  ~80 caratteri. È l'**identità del fix**: due fix con la stessa `anchor` nello stesso file sono
   lo stesso fix.
-- **`simbolo`** — il nome qualificato del contenitore in cui il fix sta: `Classe.metodo`,
+- **`symbol`** — il nome qualificato del contenitore in cui il fix sta: `Classe.metodo`,
   `funzione`, `ComponenteReact`, o il nome della costante/blocco di modulo per il codice fuori da
   una funzione. Serve a **orientarsi** e a **raggruppare** — è il criterio con cui l'uscita
-  `oscillazione` (§ *Uscite*) individua due fix che si rimpallano la stessa area — ma da solo non
+  `oscillation` (§ *Uscite*) individua due fix che si rimpallano la stessa area — ma da solo non
   identifica un fix.
 
-`riga` resta nel ledger come **indicazione per il lettore umano**, mai come identità: non
+`line` resta nel ledger come **indicazione per il lettore umano**, mai come identità: non
 confrontarla mai fra giri diversi.
 
 ### I due segnali si verificano, non si accettano
 
-`grave` è un giudizio di merito e resta dell'applicatore: nessun altro ha in mano il contesto per
-darlo. `su_fix_precedente` e `oscillazione` no — sono **misure su stringhe**, e le fai tu dopo ogni
+`severe` è un giudizio di merito e resta dell'applicatore: nessun altro ha in mano il contesto per
+darlo. `on_previous_fix` e `oscillation` no — sono **misure su stringhe**, e le fai tu dopo ogni
 giro, prima di emettere il verdetto. È la stessa asimmetria che regge il ciclo: chi ha scritto i
 fix non è la fonte del segnale che decide se qualcuno li rileggerà.
 
 Con il ledger in mano, entrambe costano un comando:
 
-- **`oscillazione`**: per ogni fix nuovo, l'`ancora` coincide con una già registrata per lo stesso
-  `file` e `simbolo` in un giro **precedente a quello dell'ultimo fix**? È un confronto di stringhe
+- **`oscillation`**: per ogni fix nuovo, l'`anchor` coincide con una già registrata per lo stesso
+  `file` e `symbol` in un giro **precedente a quello dell'ultimo fix**? È un confronto di stringhe
   sul ledger, e l'identità di un fix è già definita così (§ *Come si identifica un fix*). Il
-  confronto gira anche sulle voci del campo `oscillazione` dell'applicatore, che porta le due
-  ancore di ogni fix che ha soppresso: quei fix non sono fra gli `applicati` proprio perché non
+  confronto gira anche sulle voci del campo `oscillation` dell'applicatore, che porta le due
+  ancore di ogni fix che ha soppresso: quei fix non sono fra gli `applied` proprio perché non
   sono stati applicati, e senza le loro ancore l'unica stop condition del ciclo resterebbe
   un'autodichiarazione del passo che verifichi. Le sue voci entrano nel ledger del giro come le
   altre.
-- **`su_fix_precedente`**: l'`ancora` di un fix di un giro precedente non compare più nel suo file
+- **`on_previous_fix`**: l'`anchor` di un fix di un giro precedente non compare più nel suo file
   (`git grep -F '<ancora>' -- <file>` a vuoto), oppure cade fra le righe che il fix nuovo ha
   toccato. Entrambi i casi dicono che una correzione ne ha riscritta un'altra.
 
@@ -315,15 +314,15 @@ diff non ha girato nessuno. La regola è deterministica, e non la decidi giro pe
 
 1. Un finder che non restituisce il blocco — prosa invece di JSON, blocco incompleto, subagent che
    non torna — **si rilancia una volta sola**, con lo stesso identico prompt.
-2. Se non torna neanche allora, la sua disciplina entra in `discipline_mancate` — **nel ledger, nel
-   giro in cui è successo**, e da lì nel blocco finale. Non entra in `discipline_giro_1`, che
+2. Se non torna neanche allora, la sua disciplina entra in `missing_disciplines` — **nel ledger, nel
+   giro in cui è successo**, e da lì nel blocco finale. Non entra in `disciplines_round_1`, che
    elenca chi ha **restituito**, e non si compensa lanciando un'altra disciplina al suo posto.
    Scriverla solo nel blocco finale la fa sparire alla prima interruzione, ed è la perdita che si
    nota meno: alla ripresa il ciclo esce pulito e il commit parte su un diff che quella disciplina
    non ha mai visto.
 3. Un giro con una disciplina mancata **prosegue** — i rilievi degli altri finder valgono — ma il
-   ciclo non può chiudersi in silenzio: `discipline_mancate` non vuoto blocca il commit come
-   `giri-esauriti` (§ *Chiusura*), e la consegna che la ospita fa lo stesso.
+   ciclo non può chiudersi in silenzio: `missing_disciplines` non vuoto blocca il commit come
+   `rounds-exhausted` (§ *Chiusura*), e la consegna che la ospita fa lo stesso.
 
 Il posto dove quella perdita si deposita è il blocco finale. Vale per ogni fan-out cieco: uno
 che non torna per intero è un fan-out parziale, e senza un campo che lo dica esce identico a uno
@@ -343,14 +342,14 @@ Nel prompt metti **solo ciò che cambia**, già risolto:
 
 - il path del contratto (`skills/applier/SKILL.md`);
 - i **rilievi di tutti i finder** del giro, raggruppati per disciplina;
-- gli **applicati dei giri precedenti** dal ledger (`file`, `simbolo`, `ancora`, `cosa`): servono per
-  `su_fix_precedente` e per l'oscillazione;
+- gli **applicati dei giri precedenti** dal ledger (`file`, `symbol`, `anchor`, `what`): servono per
+  `on_previous_fix` e per l'oscillazione;
 - lo scope del giro e la `BASE`;
 - `{memory.index}` e i path delle memorie che lo scope tocca, da aprire prima di decidere
   (§4.1 di `contracts/orchestration.md`).
 
 È l'**unico** passo del ciclo che scrive, ed è ciò che rende leggibile un giro: lo scope dei giri
-≥2 sono i file che ha toccato lui, e l'identità di un fix è l'`ancora` che registra lui. Scrivi
+≥2 sono i file che ha toccato lui, e l'identità di un fix è l'`anchor` che registra lui. Scrivi
 applicati, scartati e voci aperte nel ledger prima del giro successivo.
 
 ### Un passo che non torna, quando non è un finder
@@ -368,13 +367,13 @@ Per gli altri cambia solo dove finisce il secondo fallimento, perché i tre pass
 ciascuno usa un campo che già esiste, così il commit si ferma per la regola che già c'è:
 
 - **applicatore**: il giro non ha prodotto fix e nessuno ha deciso i rilievi. Registralo nel ledger
-  con `verdetto: "fermati"` e il motivo, esci dal ciclo, e apri una voce `da_confermare` con
-  `bloccante: true` che elenca i rilievi rimasti senza decisione. `git status` dice se ha fatto in
+  con `verdict: "stop"` e il motivo, esci dal ciclo, e apri una voce `to_confirm` con
+  `blocking: true` che elenca i rilievi rimasti senza decisione. `git status` dice se ha fatto in
   tempo a scrivere qualcosa: se sì, quei file entrano nel perimetro del gate come gli altri.
-- **copertura**: entra in `discipline_mancate` come `test-coverage`, ed è vero alla lettera — su
+- **copertura**: entra in `missing_disciplines` come `test-coverage`, ed è vero alla lettera — su
   quel diff la copertura non è stata valutata da nessuno, e la fase gira una volta sola dopo il
-  ciclo. `copertura` resta `null` nel ledger.
-- **gate**: `gate: "rosso"` con `gate_detail` che dice che il gate non è tornato, non che è
+  ciclo. `coverage` resta `null` nel ledger.
+- **gate**: `gate: "red"` con `gate_detail` che dice che il gate non è tornato, non che è
   fallito. Non è un tecnicismo: il campo è l'unica cosa che chi legge ha, e un rosso per silenzio
   si indaga diversamente da un rosso per test.
 
@@ -383,10 +382,10 @@ ciascuno usa un campo che già esiste, così il commit si ferma per la regola ch
 Il numero di giri non si decide prima di cominciare — si decide guardando cosa il giro ha appena
 prodotto. Dopo ogni giro, nell'ordine:
 
-0. **Oscillazione rilevata** → esci, e l'uscita è `oscillazione`. Viene prima di tutte perché
+0. **Oscillazione rilevata** → esci, e l'uscita è `oscillation`. Viene prima di tutte perché
    è l'unica che può nascondersi dietro un'altra: l'applicatore sopprime il fix oscillante, gli
-   applicati del giro scendono a zero, e la regola 1 dichiarerebbe `punto-fisso` — cioè l'uscita
-   pulita — su un ciclo che si stava rimpallando la stessa riga. Il campo `oscillazione` del suo
+   applicati del giro scendono a zero, e la regola 1 dichiarerebbe `fixed-point` — cioè l'uscita
+   pulita — su un ciclo che si stava rimpallando la stessa riga. Il campo `oscillation` del suo
    blocco la riporta, e tu la verifichi sul ledger come gli altri due segnali
    (§ *I due segnali si verificano, non si accettano*).
 1. **Zero fix applicati** → punto fisso, esci. È l'uscita pulita.
@@ -395,12 +394,12 @@ prodotto. Dopo ogni giro, nell'ordine:
    li corregge.
 3. **Altrimenti, verdetto di merito** — lo emetti tu, in una riga motivata nel ledger, e pesa
    **cosa** è stato applicato, mai quanto:
-   - **continua** se anche un solo fix ha `su_fix_precedente: true`: le tue correzioni stanno
+   - **continue** se anche un solo fix ha `on_previous_fix: true`: le tue correzioni stanno
      regredendo, e un giro che si ferma qui consegna proprio quel difetto;
-   - **continua** se i gravi — uno o due — stanno su codice appena riscritto o toccano un flusso
+   - **continue** se i gravi — uno o due — stanno su codice appena riscritto o toccano un flusso
      che il giro ha modificato in più punti: è un'area ancora calda;
-   - **fermati** se il giro ha prodotto solo rifiniture, o gravi isolati in aree che per il resto
-     non ha toccato. Uscita `resa-decrescente`: dichiara quali fix ti hanno convinto a fermarti.
+   - **stop** se il giro ha prodotto solo rifiniture, o gravi isolati in aree che per il resto
+     non ha toccato. Uscita `diminishing-returns`: dichiara quali fix ti hanno convinto a fermarti.
 
 Il criterio **non** è «meno di N rilievi»: i rilievi che i finder *trovano* non scendono sotto
 soglia da soli — sotto una certa soglia continui a trovarne di diversi a ogni passata. Quello che
@@ -412,30 +411,30 @@ correzioni gravi ti dice quanto era sporco il perimetro che hai appena riscritto
 
 Esci al **primo** che si verifica, e dichiara quale:
 
-1. **`punto-fisso`** — il giro ha applicato zero fix.
-2. **`resa-decrescente`** — verdetto di merito negativo alla regola 3.
-3. **`oscillazione`** — l'applicatore ha rilevato, prima di applicare (il criterio è nel suo contratto), che
-   l'`ancora` in uscita per un fix coincide con una già registrata nel ledger per lo stesso
-   `file` e `simbolo` in un giro precedente a quello dell'ultimo fix: il campo `oscillazione` del
+1. **`fixed-point`** — il giro ha applicato zero fix.
+2. **`diminishing-returns`** — verdetto di merito negativo alla regola 3.
+3. **`oscillation`** — l'applicatore ha rilevato, prima di applicare (il criterio è nel suo contratto), che
+   l'`anchor` in uscita per un fix coincide con una già registrata nel ledger per lo stesso
+   `file` e `symbol` in un giro precedente a quello dell'ultimo fix: il campo `oscillation` del
    suo JSON lo riporta con le due ancore, e **tu lo verifichi sul ledger** come gli altri due
    segnali (§ *I due segnali si verificano, non si accettano*) — se la tua verifica e il suo blocco
    divergono, vale la tua. Non si applica oltre: due giri che si rimpallano la stessa riga non
    stanno convergendo. Fermati e riporta entrambe le versioni. Attenzione a non confonderla con
-   `su_fix_precedente`, che è il caso sano e frequente — un fix che ne corregge un altro
+   `on_previous_fix`, che è il caso sano e frequente — un fix che ne corregge un altro
    *avanzando*; qui invece si torna indietro.
-4. **`giri-troncati`** — hai raggiunto il tetto esplicito `--giri N` passato a mano. Sei tu a
+4. **`rounds-truncated`** — hai raggiunto il tetto esplicito `--rounds N` passato a mano. Sei tu a
    troncare: sai cosa stai consegnando, non è un'anomalia.
-5. **`giri-esauriti`** — hai raggiunto, senza un `--giri N` esplicito, il guardrail a **6**. Non
+5. **`rounds-exhausted`** — hai raggiunto, senza un `--rounds N` esplicito, il guardrail a **6**. Non
    è un budget da spendere: arrivarci è un'anomalia, perché significa che sei ancora lontano dal
    punto fisso su un codice che hai scritto tu. Riportalo come tale, con l'elenco dei gravi
    dell'ultimo giro.
 
-Un diff corretto al primo colpo esce a `punto-fisso` dopo un giro solo: il ciclo non impone un
+Un diff corretto al primo colpo esce a `fixed-point` dopo un giro solo: il ciclo non impone un
 secondo giro a chi non ha nulla da correggere.
 
 **L'uscita dice perché il ciclo si è fermato, non che la consegna sia sana.** Se restano voci
-`da_confermare` con `bloccante: true`, il codice ha bivi aperti sulla propria correttezza anche
-a `punto-fisso`: riportale insieme all'uscita, in prosa e nel campo `bloccanti` del blocco
+`to_confirm` con `blocking: true`, il codice ha bivi aperti sulla propria correttezza anche
+a `fixed-point`: riportale insieme all'uscita, in prosa e nel campo `blocking` del blocco
 finale, e non chiamare «pulita» quell'uscita. Il commit, quando richiesto, non parte comunque
 (§ *Chiusura*).
 
@@ -457,7 +456,7 @@ anche se altrimenti l'avrebbe saltata (§ *Input*).
 Restituisce il blocco che quel contratto dichiara nella propria § *Modalità automatica*, **per
 intero e con quei nomi di campo**: leggilo da lì, non ridichiararlo qui.
 
-Le sue voci `da_confermare` entrano nel ledger e nel blocco finale come le altre: è l'unica via
+Le sue voci `to_confirm` entrano nel ledger e nel blocco finale come le altre: è l'unica via
 per cui la classe `test-coverage` può comparire lì.
 
 **Se ha scritto test, fai un giro di chiusura su di essi**: un finder `bug` sui soli file di
@@ -471,8 +470,8 @@ lo scope ristretto ai file di test e cosa fare del difetto di produzione che un 
 **dichiaragli la modalità e non riscrivergli i vincoli nel prompt** — una lista di deroghe scritta
 qui si erode alla prima modifica di quel contratto, e la prima riga a cadere è quella che
 trasforma un difetto reale in una voce bloccante invece che in un rilievo scartato (§3 di
-`contracts/orchestration.md`). Questo giro non conta in `giri` né nei
-contatori `applicati`/`gravi`/`scartati` del blocco finale: si riporta in prosa.
+`contracts/orchestration.md`). Questo giro non conta in `rounds` né nei
+contatori `applied`/`severe`/`discarded` del blocco finale: si riporta in prosa.
 
 ### Gate — ruolo **worker**, sempre
 
@@ -484,7 +483,7 @@ Nemmeno lui ha un contratto proprio: quello che sa lo sa dal prompt, e nel promp
 `BASE`, `{code_root}`, il modo in cui **ricalcola** da sé l'elenco dei file (qui sotto), le aree
 di `{areas}` con i rispettivi `{areas.<area>.paths}`, `{areas.<area>.lint_fix}` e
 `{areas.<area>.gate}`, il perimetro di ciò che gli è lecito correggere, e il blocco da
-restituire. Deve anche girare **in foreground e fino in fondo**: diglielo, è la riga che questa
+restituire. Sul foreground vedi il capoverso qui sotto: è la riga che questa
 catena ha già pagato.
 
 **È l'unico punto della catena di consegna che lancia la suite**: `execute` e le sessioni di chat non la eseguono perché
@@ -520,26 +519,26 @@ Correggi da te **solo** ciò che è di natura lint/formato dentro l'elenco, e **
 invariata**: ciò che `{areas.<area>.lint_fix}` applica da sé, più una soppressione locale
 motivata. Il gate gira dopo l'ultimo finder, quindi qualunque cosa scriva qui è codice che
 nessuno rivedrà: se per far passare il lint servisse una modifica che cambia comportamento,
-**non farla** — riporta `gate: "rosso"` con quel dettaglio. Il ciclo **non si riapre** dopo il
+**non farla** — riporta `gate: "red"` con quel dettaglio. Il ciclo **non si riapre** dopo il
 gate, che gira una volta sola: un rosso, qui, blocca il commit.
 
 Se il rosso viene da test falliti o da un errore di compilazione/import, **non inventare un
-fix**: riporta `gate: "rosso"` con l'output reale.
+fix**: riporta `gate: "red"` con l'output reale.
 
 ```json
-{"gate": "verde|rosso", "gate_detail": "<esito effettivo dei comandi eseguiti, mai una dichiarazione non verificata>"}
+{"gate": "green|red", "gate_detail": "<esito effettivo dei comandi eseguiti, mai una dichiarazione non verificata>"}
 ```
 
 ### Chiusura — il commit chiude il ciclo
 
-**Il commit è l'ultimo passo del ciclo, non un'opzione.** Una review che arriva qui con gate verde
+**Il commit è l'ultimo passo del ciclo, non un'opzione.** Una review che arriva qui con gate green
 e nessuna voce bloccante ha già deciso: il lavoro è consegnabile, e lasciarlo non committato non
 lo rende più sicuro — lo rende solo un albero sporco che qualcun altro dovrà interpretare. Chi
 committa da sé lo sopprime con `--no-commit` (§ *Input*); in ogni altro caso parte.
 
-Il commit parte **solo** se valgono tutte: nessuna voce `da_confermare` con
-`bloccante: true`, nessuna oscillazione rilevata, uscita diversa da `giri-esauriti`,
-`discipline_mancate` vuoto, e **gate verde**. In caso contrario chiudi con il report e fermati.
+Il commit parte **solo** se valgono tutte: nessuna voce `to_confirm` con
+`blocking: true`, nessuna oscillazione rilevata, uscita diversa da `rounds-exhausted`,
+`missing_disciplines` vuoto, e **gate green**. In caso contrario chiudi con il report e fermati.
 
 Queste cinque condizioni sono ciò che rende il commit automatico difendibile, ed è il motivo per
 cui non si allentano mai «perché tanto ormai il commit è sempre»: prima erano la seconda porta
@@ -547,12 +546,12 @@ dopo un flag che l'utente digitava a mano, adesso sono **l'unica**. Un ciclo che
 consegna codice che ha attraversato ogni disciplina prevista; un ciclo che ne salta una consegna
 un diff che nessuno ha guardato per intero, e lo fa senza che nessuno abbia premuto niente.
 
-`giri-esauriti` blocca il commit perché è un'uscita per esaurimento, non per convergenza: il
-ciclo stava ancora correggendo difetti quando gli è finito lo spazio. `giri-troncati` no: lì sei
-tu a troncare con `--giri N`, e sai cosa stai consegnando — il commit può partire.
+`rounds-exhausted` blocca il commit perché è un'uscita per esaurimento, non per convergenza: il
+ciclo stava ancora correggendo difetti quando gli è finito lo spazio. `rounds-truncated` no: lì sei
+tu a troncare con `--rounds N`, e sai cosa stai consegnando — il commit può partire.
 
-`discipline_mancate` blocca per lo stesso argomento con cui il gate blocca: se una disciplina qui
-non ha girato, su quel diff non ha girato nessuno, e non girerà più. Un `indipendenza: "persa"`
+`missing_disciplines` blocca per lo stesso argomento con cui il gate blocca: se una disciplina qui
+non ha girato, su quel diff non ha girato nessuno, e non girerà più. Un `independence: "lost"`
 invece **non** blocca — la review è comunque stata fatta, solo senza fan-out cieco — ma va detto in
 chiusura, perché il blocco esce altrimenti identico a quello di un giro 1 con tre finder
 indipendenti.
@@ -565,14 +564,14 @@ figlio, e che non è tuo da dare. Nessun `git push`, mai.
 
 **Se il suo blocco non torna**, vale la regola generale di § *Un passo che non torna, quando non è
 un finder*: lo rilanci **una volta sola**, con lo stesso identico prompt. Se non torna neanche
-allora, `commit` è `saltato` con il motivo, `commit_sha` è `null`, e **non committi tu** per
+allora, `commit` è `skipped` con il motivo, `commit_sha` è `null`, e **non committi tu** per
 chiudere il buco: `git log` dice cosa è già entrato, mai cosa manca, e un commit fatto qui
 salterebbe l'allineamento di memoria e documentazione e il bump che vivono in quel contratto.
 
 **Lo SHA torna con lui.** Il subagent riporta lo SHA di ogni commit prodotto (§ *Procedura* 8 di
 `skills/commit/SKILL.md`): quello del **codice** finisce verbatim in `commit_sha`. Non ricavarlo da
 `git log -1` — dopo `/commit` la working tree porta due o tre commit distinti e l'ultimo non è
-quello del codice. Se la sequenza si ferma fra un gruppo e il successivo, `commit` è `parziale`,
+quello del codice. Se la sequenza si ferma fra un gruppo e il successivo, `commit` è `partial`,
 `commit_sha` porta ciò che esiste davvero, e lo dici in chiusura.
 
 ## Esito
@@ -580,51 +579,51 @@ quello del codice. Se la sequenza si ferma fra un gruppo e il successivo, `commi
 1. **Relaziona in chat**, corto: giri eseguiti e perché ti sei fermato — con il verdetto che ha
    chiuso il ciclo — quali discipline hanno girato al giro 1 e quanti rilievi hanno prodotto,
    cosa è stato applicato, cosa scartato e con che motivo, le voci da confermare, l'esito del
-   gate e quello del commit. Se qualche fix aveva `su_fix_precedente: true`, dillo: è la parte
+   gate e quello del commit. Se qualche fix aveva `on_previous_fix: true`, dillo: è la parte
    del lavoro che un solo giro non avrebbe trovato. E se il giro 1 è stato meno di quello che
    doveva essere — una disciplina mancata, il fan-out degradato in linea — dillo per primo: è
    l'unica cosa che il lettore non può ricavare dal resto del riepilogo.
 
 2. **Chiudi sempre con il blocco a contratto**, così chi ti ha invocato — l'utente o
    `develop-feature` — lo legge senza interpretare la prosa. Nessun campo si
-   omette: a zero voci si scrive `"da_confermare": []`. In `giri` e nei contatori
-   `applicati`/`gravi`/`scartati` conta **solo** i giri del ciclo: il giro di chiusura sui test
-   della fase Copertura non è uno di essi, e si riporta in prosa. In `discipline_giro_1` elenca le discipline
+   omette: a zero voci si scrive `"to_confirm": []`. In `rounds` e nei contatori
+   `applied`/`severe`/`discarded` conta **solo** i giri del ciclo: il giro di chiusura sui test
+   della fase Copertura non è uno di essi, e si riporta in prosa. In `disciplines_round_1` elenca le discipline
    che hanno **restituito** il blocco, non quelle che hai lanciato: una disciplina lanciata e mai
    tornata non ha girato su quel diff, e scriverla lì la dichiarerebbe fatta — va in
-   `discipline_mancate`, che è la sua controparte e senza la quale quella perdita non si vede più.
+   `missing_disciplines`, che è la sua controparte e senza la quale quella perdita non si vede più.
 
    ```json
    {
-     "giri": 0,
-     "uscita": "punto-fisso|resa-decrescente|oscillazione|giri-troncati|giri-esauriti",
-     "discipline_giro_1": ["bug"],
-     "discipline_mancate": [],
-     "indipendenza": "intatta|persa",
-     "oscillazione": 0,
-     "applicati": 0, "gravi": 0, "su_fix_precedente": 0, "scartati": 0,
-     "gate": "verde|rosso",
+     "rounds": 0,
+     "outcome": "fixed-point|diminishing-returns|oscillation|rounds-truncated|rounds-exhausted",
+     "disciplines_round_1": ["bug"],
+     "missing_disciplines": [],
+     "independence": "intact|lost",
+     "oscillation": 0,
+     "applied": 0, "severe": 0, "on_previous_fix": 0, "discarded": 0,
+     "gate": "green|red",
      "gate_detail": "<esito reale del check sulle aree toccate, una riga>",
-     "commit": "eseguito|parziale|non-richiesto|saltato",
+     "commit": "done|partial|not-requested|skipped",
      "commit_sha": "<sha del commit del codice, o null>",
-     "bloccanti": 0,
-     "copertura": "test-scritti|nessun-test-necessario",
+     "blocking": 0,
+     "coverage": "tests-written|no-tests-needed",
      "ledger": "<path del ledger di questa review>",
      "report": "<path di 5. review-report.md, o null se la review non gira su una cartella>",
-     "da_confermare": [ "<le voci come `skills/applier/SKILL.md` § *Il blocco che restituisci* e `skills/test-coverage/SKILL.md` § *Modalità automatica* le dichiarano, per intero e verbatim>" ]
+     "to_confirm": [ "<le voci come `skills/applier/SKILL.md` § *Il blocco che restituisci* e `skills/test-coverage/SKILL.md` § *Modalità automatica* le dichiarano, per intero e verbatim>" ]
    }
    ```
 
-   `oscillazione` conta le voci che l'applicatore ha registrato in quel campo lungo tutto il
-   ciclo, e **non** è ridondante con `uscita`: un'oscillazione rilevata all'ultimo giro esce con
+   `oscillation` conta le voci che l'applicatore ha registrato in quel campo lungo tutto il
+   ciclo, e **non** è ridondante con `outcome`: un'oscillazione rilevata all'ultimo giro esce con
    quel nome, ma una rilevata prima — e soppressa — lascia il ciclo proseguire, e a quel punto
-   `uscita` porta il nome di come il ciclo è finito, non di ciò che ha incontrato. È una delle
+   `outcome` porta il nome di come il ciclo è finito, non di ciò che ha incontrato. È una delle
    cinque condizioni che fermano il commit (§ *Chiusura*), quindi chi decide a valle deve poterla
    leggere anche quando non è l'uscita.
 
-   `indipendenza` è `persa` **solo** se il fan-out del giro 1 non è girato su subagent
+   `independence` è `lost` **solo** se il fan-out del giro 1 non è girato su subagent
    indipendenti: la delega non era disponibile e hai valutato le discipline in linea, nello stesso
-   contesto. Un fan-out sequenziale su un backend che lo impone resta `intatta` — i contesti sono
+   contesto. Un fan-out sequenziale su un backend che lo impone resta `intact` — i contesti sono
    comunque freschi e ciechi fra loro (§4 di `contracts/orchestration.md`, *Profondità e
    degradazione*). Non è un campo di modestia: è ciò che distingue, a valle, una review da una
    passata sola.
@@ -633,7 +632,7 @@ quello del codice. Se la sequenza si ferma fra un gruppo e il successivo, `commi
    «solo `{code_root}`» resta: `{instructions_file}`, `.daiku/policies/`, `{memory.root}` e `{tech_doc}` sono
    competenza di `update-memory`, che `/commit` delega **sempre**, come passo obbligatorio e non
    come giudizio sul diff. Quindi **non chiudere mai con un promemoria all'utente** del tipo
-   «ricordati di riallineare il documento tecnico»: ciò che esce di qui col gate verde è deciso, e
+   «ricordati di riallineare il documento tecnico»: ciò che esce di qui col gate green è deciso, e
    un lavoro deciso si porta dietro i propri artefatti da sé. Una riga che gira quel lavoro a chi
    legge non lo rende più sicuro — lo rende solo probabile che non avvenga, perché il commit parte
    comunque e la riga resta in una chat chiusa.
@@ -641,14 +640,14 @@ quello del codice. Se la sequenza si ferma fra un gruppo e il successivo, `commi
    Se nel ciclo hai visto un **cambiamento di comportamento visibile all'utente** (nuovo flusso,
    azione, default o semantica che un lettore umano dovrebbe ora leggere diversa), nominalo nel
    report come **fatto sul diff**, al pari degli altri: serve a chi legge per capire cosa sta
-   consegnando, non a ingaggiarlo. Non è un rilievo di codice e **non** entra in `da_confermare`.
+   consegnando, non a ingaggiarlo. Non è un rilievo di codice e **non** entra in `to_confirm`.
 
 4. **Se il commit non è partito, chiudi dicendo in una riga perché**, e distingui i due casi,
    perché si leggono uguali e non lo sono. Con `--no-commit` il commit è di chi ti ha invocato:
    se il gate è verde e non restano voci bloccanti, chiudi con **«Pronto per il commit.»** e
    basta — dentro `develop-feature` nemmeno quella, lì il commit è una fase successiva della
    consegna. Se invece a fermarlo è stata una delle condizioni di § *Chiusura*, nominala: il gate
-   rosso con il suo dettaglio, le voci bloccanti rimaste, l'uscita `giri-esauriti`,
+   rosso con il suo dettaglio, le voci bloccanti rimaste, l'uscita `rounds-exhausted`,
    l'oscillazione, o le discipline mancate.
 
 5. **Deposita il report**, se la review gira su una cartella di lavoro (l'input era
@@ -671,21 +670,21 @@ quello del codice. Se la sequenza si ferma fra un gruppo e il successivo, `commi
 | «Il primo giro ha trovato tanto, il secondo chiude di sicuro» | È l'assunzione che questo ciclo ha smesso di fare. Su un perimetro largo il secondo e il terzo giro trovano quanto il primo, e in parte dentro le correzioni del primo. |
 | «Sono al giro 5, mi fermo che è già tanto» | Il tetto è un guardrail, non un budget. Se il giro 5 applica tre gravi il perimetro è ancora sporco: il problema non è quanti giri hai fatto, è il codice che stai per consegnare. |
 | «Nessun rilievo al giro 1: salto anche il gate» | Il gate gira **sempre**. È l'unica verifica reale che il diff compili e passi i test. Salta il giro 2, non il gate. |
-| «`arch` non è tornato, ma gli altri due sì: vado avanti» | Vai avanti, ma **dichiaralo**. Rilancialo una volta; se non torna, `discipline_mancate` lo registra e il commit non parte. `arch` gira una volta sola sul diff intero: quello che non ha visto adesso non lo vedrà nessuno, mai. |
-| «I finder li ho girati io in sequenza nello stesso contesto, l'esito è lo stesso» | Non è lo stesso: la cecità reciproca era il valore. Se la delega non c'è, degrada prima a subagent sequenziali; se nemmeno quelli, `indipendenza: "persa"` nel blocco. Un esito indistinguibile è peggio di un esito peggiore. |
-| «Il ledger dice riga 88, vado a vedere la riga 88» | Fra un giro e l'altro le righe si spostano: il numero nel ledger è per te che leggi, non per confrontare. L'identità di un fix è `file` + `ancora`; `simbolo` serve solo a orientarsi e a raggruppare. |
+| «`arch` non è tornato, ma gli altri due sì: vado avanti» | Vai avanti, ma **dichiaralo**. Rilancialo una volta; se non torna, `missing_disciplines` lo registra e il commit non parte. `arch` gira una volta sola sul diff intero: quello che non ha visto adesso non lo vedrà nessuno, mai. |
+| «I finder li ho girati io in sequenza nello stesso contesto, l'esito è lo stesso» | Non è lo stesso: la cecità reciproca era il valore. Se la delega non c'è, degrada prima a subagent sequenziali; se nemmeno quelli, `independence: "lost"` nel blocco. Un esito indistinguibile è peggio di un esito peggiore. |
+| «Il ledger dice riga 88, vado a vedere la riga 88» | Fra un giro e l'altro le righe si spostano: il numero nel ledger è per te che leggi, non per confrontare. L'identità di un fix è `file` + `anchor`; `symbol` serve solo a orientarsi e a raggruppare. |
 | «I test li ha scritti la fase copertura, quelli sono per definizione giusti» | Un test che passa può affermare la cosa sbagliata o non esercitare il ramo che dice di coprire — e nessun finder li ha letti. Per questo dopo la copertura c'è un giro di chiusura sui soli file di test. |
-| «Il lint non passa, riscrivo due righe e va» | Il gate gira dopo l'ultimo finder: quello che scrivi lì non lo rivede nessuno. A semantica invariata sì; se cambia comportamento, riporta `gate: "rosso"` — il ciclo non si riapre per il gate, e un rosso blocca il commit. |
+| «Il lint non passa, riscrivo due righe e va» | Il gate gira dopo l'ultimo finder: quello che scrivi lì non lo rivede nessuno. A semantica invariata sì; se cambia comportamento, riporta `gate: "red"` — il ciclo non si riapre per il gate, e un rosso blocca il commit. |
 | «Il gate lo metto in background e intanto scrivo il report» | Il gate è l'ultima verifica reale, e chi lo invoca aspetta il suo ritorno. In background non c'è nessuno che legge il rosso. |
 | «Uscita punto-fisso, consegna pulita» | L'uscita dice perché il ciclo si è fermato. Se restano voci bloccanti, il codice ha bivi aperti sulla propria correttezza: si riportano, e la consegna non è pulita. |
 | «Questo rilievo l'ho scartato al giro 1, ma riproposto sembra sensato» | Il ledger dice perché l'hai scartato. Riaprilo solo con evidenza nuova, altrimenti paghi due volte lo stesso triage. |
 | «Questo rilievo è a bassa confidenza: lo segno da confermare» | La confidenza è la stima del finder, non un permesso. Lo verifichi e decidi tu: applicarlo, oppure scartarlo dichiarando perché. |
 | «Nel dubbio lo lascio aperto, tanto poi decide l'utente» | L'utente decide i bivi, non i tuoi dubbi. Se sai qual è la strada giusta, quella è già la decisione: prendila. |
 | «Questo file fuori da `{code_root}` andrebbe sistemato già che ci sono» | Vincolo hard di scope. Fuori da `{code_root}` non si legge come rilievo e non si tocca. |
-| «Il gate è rosso per un test, ci metto una pezza» | Solo lint e formato si correggono qui. Un test rosso è `gate: "rosso"` con l'output reale, e il commit non parte. |
+| «Il gate è rosso per un test, ci metto una pezza» | Solo lint e formato si correggono qui. Un test rosso è `gate: "red"` con l'output reale, e il commit non parte. |
 | «Il fix è provato: ho scritto il test e passa» | Se il codice trasforma dati che arrivano da fuori — sorgenti di un cliente, file importati, output di uno strumento — un input scritto da te prova che il meccanismo fa quello che avevi in mente, non che **si accende ancora** su quelli veri. Il caso reale ha commenti, stringhe e forme che non avresti inventato. Prendine uno e passalo dentro: un giro di fix tutti verdi sui casi sintetici ha già reso inerte, su codice reale, la funzione che doveva riparare. |
 | «Committo io con `git commit`, il contratto è lungo» | Il contratto di commit tiene insieme memoria, documentazione, changelog e versione. Saltarlo lascia il repo disallineato senza che nessuno se ne accorga. Il commit si delega a `/commit`, sempre. |
-| «Il commit ormai parte sempre, quelle cinque condizioni sono burocrazia» | Erano la seconda porta dopo un flag digitato a mano; adesso sono l'unica. Un gate rosso, una voce bloccante, `giri-esauriti`, un'oscillazione o una disciplina mancata fermano il commit — e se ne salti una consegni un diff che nessuno ha guardato per intero, senza che nessuno abbia premuto niente. |
+| «Il commit ormai parte sempre, quelle cinque condizioni sono burocrazia» | Erano la seconda porta dopo un flag digitato a mano; adesso sono l'unica. Un gate red, una voce bloccante, `rounds-exhausted`, un'oscillazione o una disciplina mancata fermano il commit — e se ne salti una consegni un diff che nessuno ha guardato per intero, senza che nessuno abbia premuto niente. |
 
 ## Regola di taglio
 

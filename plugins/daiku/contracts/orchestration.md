@@ -31,8 +31,8 @@ report) resta un **worker**: non merita un ruolo terzo.
 
 ## 2. Il modello di un ruolo
 
-Il modello di un passo è `{hosts.<host>.models.<ruolo>}`, dove `<host>` è l'host corrente e
-`<ruolo>` è quello che la skill ha dichiarato per quel passo. È l'unica risoluzione ammessa, e
+Il modello di un passo è `{hosts.<host>.models.<role>}`, dove `<host>` è l'host corrente e
+`<role>` è quello che la skill ha dichiarato per quel passo. È l'unica risoluzione ammessa, e
 avviene qui: la skill dichiara il ruolo e si ferma lì.
 
 **Risoluzione dell'host.** L'host è quello su cui stai girando, e lo sai da dove stai girando: non
@@ -56,23 +56,23 @@ Ogni contratto sotto `skills/` è, prima di tutto, un **path che un subagent ric
 legge**: è la forma che li fa funzionare identici su ogni host, senza un pointer per ciascuno.
 Alcuni, in più, **si lanciano a mano**. Le due cose non si escludono, perché non descrivono il
 file ma l'invocazione: lo stesso contratto è un **entry point** quando lo lanci tu ed è un
-**contratto interno** quando è una catena a delegarlo. `code-review` è il finder che `/review`
-delega e insieme la skill che lanci su una pull request; `study` sono gli appunti che
-`new-feature` si procura quando le servono e insieme il comando con cui li chiedi tu.
+**contratto interno** quando è una catena a delegarlo. `research` è la raccolta che
+`new-feature` si procura quando le serve, con il riordino delegato a `study`, e insieme il comando con cui chiedi gli appunti tu.
 
-**Gli entry point sono nove, e non è un numero che cresce da solo.** Un contratto si lancia a
+**Gli entry point sono sette, e non è un numero che cresce da solo.** Un contratto si lancia a
 mano solo se è il **punto d'ingresso di una catena**, mai perché è comodo averlo sotto mano:
 ciò che sta in mezzo a una catena lo raggiunge chi l'ha aperta, e aggiungerlo qui significa
 aprire un secondo modo di arrivarci, con scope e permessi diversi da mantenere allineati per
-sempre. I nove stanno in tre gruppi, che non si usano negli stessi momenti.
+sempre. I sette stanno in due gruppi, che non si usano negli stessi momenti.
 
-**Il metodo — sono questi quattro, e sono tutto il lavoro di ogni giorno:**
+**Il metodo — sono questi cinque, e sono tutto il lavoro di ogni giorno:**
 
 | Entry point | Perché |
 |---|---|
 | `new-feature` | si parte da un'idea e non c'è ancora niente sul disco: dalla descrizione fino al commit, in un'unica esecuzione. Dentro ci sono lo studio, le decisioni e la consegna, che per questo non si lanciano da sé |
-| `study` | gli appunti su una tecnologia valgono anche da soli, prima che esista una consegna che li consumi. Lanciato così **deposita il file e si ferma**: non apre niente a valle |
+| `research` | gli appunti su una tecnologia valgono anche da soli, prima che esista una consegna che li consumi. Lanciato così **deposita il file riordinato e si ferma**: non apre niente a valle |
 | `review` | la review vive anche da sola, su un diff scritto a mano |
+| `code-review` | un passaggio solo-bug sullo scope che gli dici, senza giri né fix: occhi sul codice senza aprire un ciclo |
 | `commit` | chiude una review lanciata con `--no-commit`, o un diff scritto fuori da una review |
 
 **L'installazione — due comandi che si lanciano una volta per progetto**, e che nessuna catena
@@ -83,26 +83,19 @@ può raggiungere perché girano *prima* che ci sia una catena:
 | `init` | è il primo di tutti: apre `.daiku/` su un progetto che non ce l'ha, e finché non gira nessun altro contratto ha i valori con cui lavorare |
 | `sync-host` | porta guardrail e ruoli di subagent nello strato dell'host che non sa riceverli dal pacchetto, e si rilancia a ogni aggiornamento |
 
-**I tre modi d'uso che il ciclo interattivo non copre:**
-
-| Entry point | Perché |
-|---|---|
-| `nightly-plan` | la coda della notte si prepara a mano, prima che la notte cominci |
-| `nightly-orchestrator` | scandisce la notte: lo lanci quando la coda è pronta. Non presidiato, quindi fuori dal ciclo interattivo per costruzione |
-| `code-review` | è l'unico che guarda una **pull request** invece del working tree: il diff è già pubblicato e l'esito sono commenti sulla forge, non file sul disco |
-
 Tutto il resto — `decision-doc`, `develop-feature`, `update-memory`, `blueprint`, `execute`,
-`finder-prompt`, `applier`, `arch-check`, `perf`, `test-coverage` — è **contratto interno**: un
+`finder-prompt`, `applier`, `arch-check`, `perf`, `test-coverage`, `study` — è **contratto interno**: un
 subagent lo riceve come *path da leggere*, non come skill da invocare. I primi tre lo sono
 diventati il 19 settembre 2026, e ciascuno ha già chi lo apre: `decision-doc` e `develop-feature`
-li apre `new-feature`, `update-memory` lo apre `commit`, a ogni invocazione. Un contratto interno
+li apre `new-feature`, `update-memory` lo apre `commit`, a ogni invocazione. `study` lo è diventato
+con la scissione da `research`, che lo apre a ogni invocazione per il riordino. Un contratto interno
 **non chiede niente all'owner** e non ha `argument-hint`: una scelta vera la restituisce nel
 proprio blocco, e chi l'ha chiamato la porta in chat (§ *Domandare all'owner*).
 
 Che un host esponga per nome anche un contratto non dichiarato qui è una comodità di quell'host,
 non un'invocabilità dichiarata: dichiarata è questa sezione.
 
-Su un host che dichiara `{hosts.<host>.skill_pointers}` una skill di queste tre tabelle si lancia
+Su un host che dichiara `{hosts.<host>.skill_pointers}` una skill di queste due tabelle si lancia
 solo se lì ha il proprio pointer, e non tutte ce l'hanno: quelle che non ce l'hanno restano
 raggiungibili dagli host che quella chiave non la dichiarano, e che caricano i contratti
 direttamente da `skills/`. Aggiungere il pointer che manca, o quello di un contratto
@@ -111,8 +104,8 @@ interno che serve lanciare a mano, è dodici righe — non un'altra copia del co
 ### Un contratto raggiungibile in più di un modo dichiara le proprie modalità in casa
 
 Lo stesso file è entry point e contratto interno, e le due invocazioni non hanno lo stesso scope
-né gli stessi permessi: `code-review` commenta una pull request quando lo lanci tu e non scrive
-niente quando è `/review` a invocarlo. Quella differenza **si dichiara nel nodo**, una sezione per
+né gli stessi permessi: `research` deposita gli appunti e si ferma quando lo lanci tu, e
+alimenta la catena quando è `new-feature` a procurarselo. Quella differenza **si dichiara nel nodo**, una sezione per
 modalità, con scope, permessi di scrittura e blocco di ritorno. Chi invoca **sceglie** la modalità
 e non riscrive i vincoli: una lista di deroghe scritta nel chiamante si erode a ogni modifica del
 nodo, e nessuno se ne accorge finché il nodo non fa, in modalità finder, qualcosa che quella lista
@@ -135,23 +128,22 @@ ricostruire il grafo dalla prosa di chi chiama.
 |---|---|---|---|---|
 | `init` | owner | radice tecnica, o niente e vale la directory corrente | il referto di § *Referto* del suo file: scritto, lasciato com'era, da compilare | no |
 | `sync-host` | owner | radice tecnica, o niente e vale la directory corrente | il referto di § *Referto* del suo file: copiato, agganciato, non agganciato, ruoli scritti, e i gesti che restano all'utente | no |
-| `new-feature` | owner | descrizione della feature o del problema, in linguaggio naturale | § *Esito* del suo file: la cartella aperta, i documenti che la catena ha prodotto e l'esito della consegna | sì — indagine per area, `study`, `decision-doc` due volte, e `develop-feature` come figlio orchestrante |
-| `decision-doc` | `new-feature` § *Lo studio delle decisioni* e § *Il recepimento* | cartella del problema, eventuale sottoinsieme da analizzare, il documento già scritto, i path degli appunti di `study` e delle memorie pertinenti, e al recepimento le risposte dell'owner per numero | `0.5. studio-strategico.md` o `1. decision-doc.md` sul disco, con `0. problem.md` rifinito, e il blocco di § *Il blocco che restituisci* del suo file | no |
-| `study` | owner, `new-feature` § *La conoscenza che ti manca* | nome della tecnologia; da `new-feature` anche la versione in uso nel progetto e le domande a cui gli appunti devono rispondere | appunti in `{paths.lib_notes}/` — da owner si ferma lì; come figlio anche il blocco di § *Modalità di invocazione* del suo file | sì — ricerca per blocco tematico, foglie |
+| `new-feature` | owner | descrizione della feature o del problema, in linguaggio naturale | § *Esito* del suo file: la cartella aperta, i documenti che la catena ha prodotto e l'esito della consegna | sì — indagine per area, `research`, `decision-doc` due volte, e `develop-feature` come figlio orchestrante |
+| `decision-doc` | `new-feature` § *Lo studio delle decisioni* e § *Il recepimento* | cartella del problema, eventuale sottoinsieme da analizzare, il documento già scritto, i path degli appunti di `research` e delle memorie pertinenti, e al recepimento le risposte dell'owner per numero | `0.5. studio-strategico.md` o `1. decision-doc.md` sul disco, con `0. problem.md` rifinito, e il blocco di § *Il blocco che restituisci* del suo file | no |
+| `research` | owner, `new-feature` § *La conoscenza che ti manca* | nome della tecnologia; da `new-feature` anche la versione in uso nel progetto e le domande a cui gli appunti devono rispondere | path del file in `{paths.lib_notes}/`, in entrambe le modalità, niente altro | sì — fan-out per blocco tematico (foglie) + `study` come figlio foglia |
+| `study` | `research` § *Passaggio 2* soltanto | path del file sporco, tecnologia, versione studiata e ultima con date | file riordinato in `{paths.lib_notes}/` + il blocco di § *Il blocco che restituisci* del suo file | no — foglia |
 | `blueprint` | `develop-feature` fase 1 | cartella con `1. decision-doc.md`, soluzione scelta verbatim, memorie pertinenti | § *Cosa restituisci* del suo file | no |
 | `execute` | `develop-feature` fase 2 | cartella con `2. blueprint.md`, memorie pertinenti | § *Cosa restituisci* del suo file | no |
-| `develop-feature` | `new-feature` § *La consegna*, `nightly-orchestrator` §2 | cartella, soluzione scelta, id dell'item, `run_id` e backend della coda | § *Esito* del suo file | sì — le sue fasi, e `review` come figlio orchestrante |
-| `review` | owner, `develop-feature` fase 3 | base-ref o path di `4. review-notes.md`, ledger da riaprire (scelto su `base` **e** `item`), `--no-commit` da chi committa da sé, effort, backend della coda, radici di lavoro e artefatti quando gira su un worktree | § *Esito* del suo file | sì — finder, applicatore, copertura, gate, `commit` |
+| `develop-feature` | `new-feature` § *La consegna* | cartella e soluzione scelta | § *Esito* del suo file | sì — le sue fasi, e `review` come figlio orchestrante |
+| `review` | owner, `develop-feature` fase 3 | base-ref o path di `4. review-notes.md`, ledger da riaprire (scelto su `base` **e** `item`), `--no-commit` da chi committa da sé, effort, `--backend` quando la sessione gira lì, radici di lavoro e artefatti quando gira su un worktree | § *Esito* del suo file | sì — finder, applicatore, copertura, gate, `commit` |
 | il finder di un giro (`finder-prompt`) | `review` § *Finder* | disciplina e contratto, `BASE` e file del giro, effort, applicati e scartati dal ledger | § *Il blocco che restituisci* del suo file | no |
-| `code-review` | owner (su PR), `review` come finder `bug` | PR **oppure** scope del giro | § *Modalità pull request* oppure § *Modalità finder* del suo file, che dichiarano scope, permessi ed esito di ciascuna | sì su PR, **no** come finder |
-| `arch-check` | `review` come finder `arch` | cartella **oppure** scope del giro | il blocco di `finder-prompt` § *Il blocco che restituisci*; scope e permessi li dichiara la sua § *Modalità finder* | no |
+| `code-review` | owner, `review` come finder `bug` | scope detto a mano **oppure** scope del giro | report in chat **oppure** § *Il blocco che restituisci* di `finder-prompt`, con la scala di `confidence` che il suo file dichiara | **no** |
+| `arch-check` | `review` come finder `arch` | scope del giro | il blocco di `finder-prompt` § *Il blocco che restituisci*; scope e permessi li dichiara il suo file | no |
 | `perf` | `review` come finder `perf` | scope **oppure** scope del giro | il blocco di `finder-prompt` § *Il blocco che restituisci*; scope e permessi li dichiara la sua § *Modalità finder* | no |
 | `test-coverage` | `review` § *Copertura* con `--auto` | macrocategoria **oppure** diff finale del ciclo e memorie pertinenti | § *Modalità automatica* del suo file | no |
 | `applier` | `review` § *Applicatore* | rilievi di tutti i finder del giro, applicati dei giri precedenti, scope e `BASE`, memorie pertinenti, e la **modalità** quando è il giro di chiusura sui test | § *Il blocco che restituisci* del suo file | no |
 | `commit` | owner, `review` § *Chiusura* (sempre, salvo `--no-commit`) | perimetro del gruppo codice; memoria/doc e versione/changelog li partiziona da sé (§ *Procedura* 3 del suo file) | § *Procedura* 8 del suo file, in chat | sì — `update-memory`, **sempre e senza eccezioni** |
-| `update-memory` | `develop-feature` fase 5b, `commit` § *Allineamento* (**sempre**, a ogni invocazione di `commit`) | diff in index, cartella dell'item dove depositare il proprio artefatto (da `develop-feature`), **permesso di commit del proprio gruppo** | § *Procedura* 7 del suo file | no |
-| `nightly-plan` | owner | le voci della coda, in chat | `{paths.nightly}/nightly-run.json` | no |
-| `nightly-orchestrator` | owner | la coda `nightly-run.json` | riepilogo in chat, un item per riga | sì — pre-flight, e `develop-feature` per item |
+| `update-memory` | `develop-feature` fase 5b, `commit` § *Allineamento* (**sempre**, a ogni invocazione di `commit`) | diff in index, cartella della feature dove depositare il proprio artefatto (da `develop-feature`), **permesso di commit del proprio gruppo** | § *Procedura* 7 del suo file | no |
 
 **Un arco nuovo si dichiara qui.** Collegare un nodo a un chiamante che non lo aveva significa
 aggiornare la sua riga — i chiamanti, l'input che ora riceve risolto, il permesso che
@@ -187,7 +179,7 @@ Come si lancia, per host:
   `finder` è l'unico **ruolo del pacchetto**, definito in `agents/` nella sua radice, e lì ha un
   **toolset ristretto**: niente `Edit`, niente `Write`, nessuna delega ad altri agent. È la
   differenza fra un vincolo dichiarato nel prompt e uno vero: un finder che «corregge già che
-  c'è» non compare fra gli applicati, non ha un'`ancora` nel ledger, e nessun giro successivo lo
+  c'è» non compare fra gli applicati, non ha un'`anchor` nel ledger, e nessun giro successivo lo
   rivede.
 
   **Il confine vero è quale tool c'è, non cosa ci scrivi dentro** — e su questo ruolo passa a
@@ -272,11 +264,13 @@ Regole valide su ogni host:
 ### Profondità e degradazione
 
 **Chi può ri-delegare.** Un passo delegato **esegue**: non delega a sua volta. Le sole eccezioni
-sono i tre nodi orchestranti che la §3 dichiara raggiungibili anche come figli — `develop-feature`
+sono i nodi orchestranti che la §3 dichiara raggiungibili anche come figli — `develop-feature`
 (che orchestra le proprie fasi), `review` (finder, applicatore, gate, commit) e `commit` (che
-delega l'allineamento a `update-memory`). Ogni altro passo delegato è una **foglia**, e i cammini
-più lunghi del grafo restano quelli: `nightly-orchestrator → develop-feature → review → finder` e
-`new-feature → develop-feature → review → finder`, quattro livelli. Un nodo che si accorge di voler delegare, e non è uno dei tre, sta eseguendo il
+delega l'allineamento a `update-memory`) — **più `research`, che come figlio di `new-feature`
+orchestra il proprio fan-out di raccolta e ne delega il riordino a `study`, foglia**. Ogni altro
+passo delegato è una **foglia**, e il cammino più lungo del grafo resta di quattro livelli,
+`new-feature → develop-feature → review → finder`, con la catena di raccolta a tre livelli
+`new-feature → research → study`. Un nodo che si accorge di voler delegare, e non è uno dei quattro, sta eseguendo il
 lavoro di qualcun altro: torna a contratto e lascia decidere a chi l'ha chiamato.
 
 **La degradazione ha due gradini, non uno.** Un passo la cui resa dipende dall'**indipendenza**
@@ -323,8 +317,8 @@ Il **fan-out parallelo** è il default: i passi indipendenti (i finder di una re
 di un audit) girano insieme.
 
 Eccezione: i backend che dichiarano `{backends.<backend>.sequential_fanout}` girano i passi
-indipendenti **in sequenza**. Se la coda o l'invocazione dichiara uno di quei backend,
-sequenzializza il fan-out; in ogni altro caso resta parallelo.
+indipendenti **in sequenza**. Se l'invocazione dichiara uno di quei backend (`review` con
+`--backend`), sequenzializza il fan-out; in ogni altro caso resta parallelo.
 
 I passi che toccano la stessa working tree (build, test, commit, calcolo di un base-ref) sono
 **sempre** sequenziali, su ogni host: non sono serializzabili altrimenti.
@@ -352,7 +346,7 @@ si cercano, sono la §8 di `contracts/project-contract.md`.
 | `hosts` | l'insieme degli host dichiarati; si cita così quando una skill li **enumera** invece di nominarne uno |
 | `backends` | l'insieme dei backend dichiarati; si cita così quando una skill ne valida uno contro l'elenco |
 | `hosts.<host>.models` | i modelli dichiarati per quell'host; si cita così quando conta l'insieme e non il singolo ruolo |
-| `hosts.<host>.models.<ruolo>` | il modello del ruolo che la skill ha dichiarato per quel passo (§2) |
+| `hosts.<host>.models.<role>` | il modello del ruolo che la skill ha dichiarato per quel passo (§2) |
 | `hosts.<host>.models.judge` | modello con cui gira il ruolo judge su quell'host |
 | `hosts.<host>.models.worker` | modello con cui gira il ruolo worker su quell'host |
 | `hosts.<host>.skill_pointers` | cartella in cui l'host cerca i pointer delle skill invocabili; assente se l'host non ne richiede |

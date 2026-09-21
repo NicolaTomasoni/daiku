@@ -74,11 +74,6 @@ export function contesto(radice, amb = AMBIENTE_REALE) {
   }
 }
 
-/** Un guardrail acceso è `true` scritto nel JSON, non un default. */
-export function acceso(ctx, nome) {
-  return !!ctx && ctx.presente === true && !!ctx.guardrails && ctx.guardrails[nome] === true;
-}
-
 /** `assoluto` sta dentro `base`? Confronto per prefisso, insensibile al caso di Windows. */
 export function dentro(assoluto, base) {
   if (!assoluto || !base) return false;

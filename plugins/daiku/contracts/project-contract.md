@@ -72,7 +72,6 @@ di un file, la presenza o assenza di un'area. Tre divieti, in ordine di gravità
 | `version.replicated_in` | altri file che portano la stessa versione e si aggiornano insieme; lista vuota o assente se non ce ne sono |
 | `paths.studies` | cartella che ospita le cartelle di lavoro, una per problema, con dentro i file numerati del metodo |
 | `paths.lib_notes` | cartella degli appunti su una tecnologia studiata |
-| `paths.nightly` | cartella degli artefatti della catena notturna: la coda e il registro delle consegne |
 | `paths.review_state` | cartella in cui vive il ledger di una review; sta **fuori** dal repository versionato ma è stabile, non a scadenza di sessione |
 | `memory.root` | radice del corpus di memoria persistente, dentro il repository; su Claude Code è anche la cartella in cui l'host scrive la propria memoria (§4.2) |
 | `memory.index` | file indice del corpus, quello che si legge per primo |
@@ -81,8 +80,6 @@ di un file, la presenza o assenza di un'area. Tre divieti, in ordine di gravità
 | `worktree.prefix` | prefisso dei nomi dei worktree del pool, seguito dal numero (`1`..`worktree.max`) |
 | `worktree.max` | numero massimo di worktree del pool: mai uno in più, mai un nome fuori convenzione |
 | `worktree.branch_prefix` | prefisso del branch di ciascun worktree, seguito dal suo nome |
-| `guardrails.deny_push` | `true` se su questo progetto `git push` resta un gesto dell'owner e un agente non lo lancia (§4.1) |
-| `guardrails.deny_no_verify` | `true` se su questo progetto gli hook di commit devono sempre girare, quindi `git commit -n`/`--no-verify` non è ammesso (§4.1) |
 | `areas` | l'insieme delle aree dichiarate; si cita così quando una skill le **enumera** invece di nominarne una (§5.3) |
 | `areas.<area>.paths` | i path che appartengono all'area, ciascuno usabile come pathspec Git |
 | `areas.<area>.gate` | comando di gate dell'area: lint, formato, type-check, test e build di pacchetto |
@@ -92,29 +89,18 @@ di un file, la presenza o assenza di un'area. Tre divieti, in ordine di gravità
 
 Nessuna chiave è obbligatoria oltre a `contract`: tutto il resto è soggetto alla §6.
 
-### 4.1 Le due chiavi che un hook legge
+### 4.1 Ciò che un hook leggeva e non legge più
 
-`guardrails.*` è l'unica parte di questo file che **non** viene sostituita dentro una frase: la
-legge un programma, `hooks/lib/command-guard.mjs`, per decidere se negare un comando prima che
-parta. Resta qui lo stesso, e per la ragione di sempre — un valore che cambia da progetto a
-progetto non può stare dentro ciò che si distribuisce byte-identico — ma porta con sé tre regole
-sue, che valgono solo per lei.
+Fino al 21 settembre 2026 due chiavi accendevano due rami della guardia sui comandi —
+`guardrails.deny_push` e `guardrails.deny_no_verify`. Quel giorno l'owner le ha tolte: a un
+agente non si lascia mai la libertà di pushare o di saltare gli hook di commit, quindi non c'è
+niente da dichiarare. Le chiavi non esistono più nella tabella qui sopra; un `project.json` che
+se le porta ancora dietro ha due righe in più che nessuno guarda, non un difetto.
 
-- **Si dichiara solo ciò che si vuole acceso.** Una chiave assente, o diversa da `true`, è un
-  ramo spento. Non è la §6 applicata a malincuore: è il caso normale, perché un pacchetto
-  installato una volta è attivo su ogni repository che l'host apre, e negare un comando a chi
-  non ha chiesto niente sarebbe un guasto con l'aspetto di una tutela.
-- **Vale solo dove `.daiku/project.json` esiste.** Senza quel file la guardia non legge nemmeno
-  la riga di comando.
-- **Non è una sede per gli invarianti.** Qui sta l'interruttore, non la regola: *perché* su
-  questo progetto il push è dell'owner lo dice il file di istruzioni (`{instructions_file}`),
-  che è la sede di ciò che va capito. Il JSON dichiara solo che il guardrail è acceso — è la
-  stessa linea della §2, e questa chiave la sfiora più di ogni altra.
-
-Un terzo ramo della stessa guardia non ha interruttore proprio e si accende da `worktree.pool`:
-se il progetto dichiara un pool, le rimozioni dentro i suoi worktree e i `pnpm install` lanciati
-da lì vengono negati. Non serviva una chiave in più — un pool dichiarato *è* la dichiarazione
-che quelle directory sono di Daiku. `hooks/README.md` porta la tabella completa dei rami.
+Resta un solo ramo guidato dal JSON: quello dei worktree, acceso da `worktree.pool` — un pool
+dichiarato *è* la dichiarazione che quelle directory sono di Daiku. Gli altri quattro rami della
+guardia (junction, `.daiku/`, `--no-verify`, push) negano su ogni progetto che ha aperto Daiku,
+senza interruttore. `hooks/README.md` porta la tabella completa dei rami.
 
 ### 4.2 La chiave che legge l'host
 
@@ -210,13 +196,13 @@ il nome di un'area è un valore, e un valore dentro una skill rompe l'atomicità
 
 ### 5.4 Rimandare a un file di dominio
 
-Un file di dominio si trova per **ruolo**, con la convenzione `.daiku/domain/<ruolo>.md`. La
+Un file di dominio si trova per **ruolo**, con la convenzione `.daiku/domain/<role>.md`. La
 skill dichiara **quale domanda quel file risponde**, mai la risposta: se scrive cosa ci
 troverà, ha riportato dentro di sé il dominio che stava spostando fuori.
 
 Forma:
 
-> Leggi `.daiku/domain/<ruolo>.md`: porta <la domanda a cui risponde>. Se non esiste,
+> Leggi `.daiku/domain/<role>.md`: porta <la domanda a cui risponde>. Se non esiste,
 > <comportamento senza di esso>, e dichiaralo nell'esito.
 
 Per esempio, una skill di copertura scrive «porta le macrocategorie di questo progetto e da quale
@@ -225,7 +211,7 @@ punto di forza si testa ciascun layer», non l'elenco delle macrocategorie.
 #### Un ruolo può viaggiare con uno scheletro già scritto
 
 Il pacchetto **può** portare un file di dominio di default, sotto
-`templates/project/domain/<ruolo>.md`. `init` lo deposita in `.daiku/domain/<ruolo>.md`
+`templates/project/domain/<role>.md`. `init` lo deposita in `.daiku/domain/<role>.md`
 la prima volta e **non lo tocca mai più**: da quel momento è dell'utente, che lo riscrive come gli
 pare senza che nessun aggiornamento glielo porti via.
 
@@ -258,7 +244,7 @@ pubblici diversi, e su molti progetti non coincidono.
 
 - **`{language.chat}`** — tutto ciò che legge una persona: la risposta in chat, il riepilogo di
   fine skill, il referto, e i documenti che il metodo produce (`0. problem.md`,
-  `1. decision-doc.md`, `2. blueprint.md`, le note di review, il report della notte).
+  `1. decision-doc.md`, `2. blueprint.md`, le note di review, il report di consegna).
 - **`{language.commit}`** — tutto ciò che resta nella storia condivisa del repository: il
   messaggio di commit e la voce di changelog. È separata perché un progetto con interfaccia in
   una lingua ha spesso una storia Git in un'altra, e chi legge `git log` fra due anni non è chi
@@ -334,6 +320,11 @@ serve a rendere riconoscibile.
 solo `memory-review`, che quel giorno è stata eliminata dal pacchetto, e dopo di lei nessuna
 skill la citava più. È il caso della quarta regola qui sopra, ed è scritto qui perché chi
 applica la prima meccanicamente si aspetterebbe un `3`.
+
+**Ed è rimasta `2` il 21 settembre 2026**, quando `guardrails.deny_push` e
+`guardrails.deny_no_verify` sono state rimosse: dopo la rimozione nessuna skill le citava più —
+la guardia che le leggeva non è una skill — ed è lo stesso caso. Un `project.json` che se le
+porta ancora dietro non si legge male: ha due righe che nessuno guarda.
 
 ## 8. Progetto o ambiente — in quale dei due file
 

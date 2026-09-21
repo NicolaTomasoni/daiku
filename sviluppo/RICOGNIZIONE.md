@@ -222,9 +222,10 @@ esplicitamente come `$review`. Verificato: il pacchetto di prova con questo file
 validazione di **entrambi** gli host.
 
 Conta per Daiku più di quanto sembri, e dal **19 settembre 2026** molto di più di prima: i
-contratti sono diciannove e la §3 di `orchestration.md` ne dichiara invocabili a mano **nove**
-— `new-feature`, `study`, `review`, `commit`, più `init` e `sync-host` per l'installazione, più
-`nightly-plan`, `nightly-orchestrator` e `code-review`. Gli altri dieci sono contratti interni,
+contratti sono diciotto e la §3 di `orchestration.md` ne dichiara invocabili a mano **sette**
+— `new-feature`, `research`, `review`, `code-review`, `commit`, più `init` e `sync-host` per l'installazione.
+(`code-review` è rientrato fra gli invocabili il 20 settembre
+2026 come entry manuale solo-bug sullo scope detto, dopo l'eliminazione della sua modalità pull request.) Gli altri undici sono contratti interni,
 che un subagent riceve come path da leggere. Senza questo file finirebbero tutti nel contesto di
 ogni sessione Codex. Il prezzo è che `display_name` e `short_description` diventano
 obbligatori per ogni skill che lo usa.
@@ -407,7 +408,6 @@ Il corpus cita 25 path che risolvono solo nella ReforgIA viva. Tolti quelli di `
 | `CLAUDE.md` | 22 file | vedi §5.3 — è il caso grosso |
 | `memory/` + `memory/MEMORY.md` | 10 file | il corpus di memoria persistente e il suo indice |
 | `docs/nuovi-sviluppi/<nome>/` | tutti, implicitamente | la cartella di una feature, con i file numerati `0.`–`5.` |
-| `docs/nightly/` | 4 file | coda statica `nightly-run.json` + deliverable append-only `nightly-review.md` |
 | `docs/appunti-lib/` | 3 file | gli appunti che `studia-libreria` deposita |
 | `.dev-runtime/review/` | 3 file | i ledger dei rilievi già giudicati, uno per ciclo di review |
 | `docs/scripts/` | 2 file | dove vive il verificatore del corpus |

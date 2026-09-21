@@ -1,5 +1,5 @@
 ---
-name: perf
+name: 'perf'
 description: 'Investiga uno scope per colli di bottiglia di performance (CPU, GPU, I/O, rete, rendering); default propone quick win senza toccare codice, come finder di /review restituisce rilievi in sola lettura sul diff'
 ---
 
@@ -90,13 +90,13 @@ Valuta l'utilizzo di risorse sia **in idle** sia **durante i processi**: parecch
 Attiva quando `/review` ti invoca. Non è un'indagine da riportare in chat: è un canale di analisi sul diff, come arch/bug — ma **solo analisi**: nessuna modifica a file, nessun fix, nessun commit.
 
 - **Scope = il diff**, non una cartella. Cerca colli di bottiglia **solo nel codice toccato dalla feature**; non allargare a codice adiacente non modificato: modifiche chirurgiche, niente refactoring fuori scope.
-- **Confidenza alta:** win evidente all'ispezione e behavior-preserving — N+1 query, ricalcolo/riserializzazione ridondante, memoizzazione mancante, polling senza bail-out, invalidazione troppo ampia, lettura ripetuta degli stessi dati. `cambiamento` riporta il fix concreto.
-- **Confidenza media:** probabile, ma con una condizione da verificare sul codice — nominala nella `descrizione`. `cambiamento` riporta comunque il fix concreto.
-- **Confidenza bassa:** impatto che per giustificarsi richiederebbe una misura o un benchmark (è impatto ipotetico) — nessun `cambiamento`; la `descrizione` porta la misura consigliata.
+- **Confidence high:** win evidente all'ispezione e behavior-preserving — N+1 query, ricalcolo/riserializzazione ridondante, memoizzazione mancante, polling senza bail-out, invalidazione troppo ampia, lettura ripetuta degli stessi dati. `change` riporta il fix concreto.
+- **Confidence medium:** probabile, ma con una condizione da verificare sul codice — nominala nella `description`. `change` riporta comunque il fix concreto.
+- **Confidence low:** impatto che per giustificarsi richiederebbe una misura o un benchmark (è impatto ipotetico) — nessun `change`; la `description` porta la misura consigliata.
 - **Non applichi nulla.** La decisione di applicare o scartare ogni rilievo è dell'applicatore di `/review`, che lo riverifica.
-- **Nessuno stop interattivo, nessun output in formato indagine.** Non stampi il report `# Esito indagine performance`: restituisci il blocco dichiarato da `skills/finder-prompt/SKILL.md` § *Il blocco che restituisci*, per intero e con quei nomi di campo: leggilo da lì, qui non è ricopiato. Per questa disciplina `simbolo` è la classe, la funzione o il componente in cui vive il collo di bottiglia, `cambiamento` è il fix concreto, e `descrizione` porta problema ed evidenza, e per la confidenza bassa la misura consigliata.
+- **Nessuno stop interattivo, nessun output in formato indagine.** Non stampi il report `# Esito indagine performance`: restituisci il blocco dichiarato da `skills/finder-prompt/SKILL.md` § *Il blocco che restituisci*, per intero e con quei nomi di campo: leggilo da lì, qui non è ricopiato. Per questa disciplina `symbol` è la classe, la funzione o il componente in cui vive il collo di bottiglia, `change` è il fix concreto, e `description` porta problema ed evidenza, e per la confidence low la misura consigliata.
 
-Se servono misurazioni, privilegia lettura del codice e comandi leggeri. Come si avvia l'applicazione e dove risponde lo dice il file di dominio, che rimanda alla sola fonte di quei valori: se osservi il runtime, dichiara cosa hai misurato. Se non puoi misurare, dichiara esplicitamente nella `descrizione` del finding che la valutazione è **statica**.
+Se servono misurazioni, privilegia lettura del codice e comandi leggeri. Come si avvia l'applicazione e dove risponde lo dice il file di dominio, che rimanda alla sola fonte di quei valori: se osservi il runtime, dichiara cosa hai misurato. Se non puoi misurare, dichiara esplicitamente nella `description` del finding che la valutazione è **statica**.
 
 # Criteri di classificazione
 

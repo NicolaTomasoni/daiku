@@ -18,7 +18,6 @@
   "paths": {
     "studies": "<folder holding the working folders, one per problem>",
     "lib_notes": "<folder of the notes on a technology>",
-    "nightly": "<folder of the nightly queue and its log>",
     "review_state": "<folder of the review ledger, outside version control>"
   },
   "memory": {
@@ -33,10 +32,6 @@
     "prefix": "<prefix of the pool's worktree names>",
     "max": 0,
     "branch_prefix": "<prefix of each worktree's branch>"
-  },
-  "guardrails": {
-    "deny_push": false,
-    "deny_no_verify": false
   },
   "areas": {
     "<area name>": {

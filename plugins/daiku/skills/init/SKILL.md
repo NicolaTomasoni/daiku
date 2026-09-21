@@ -171,17 +171,11 @@ proprio; due cartelle che passano dallo stesso comando sono una sola area.
 Le due chiavi di **lingua** sono l'eccezione alla prima regola, e solo perché le hai chieste: le
 scrivi con le risposte del *Passo 0*, verbatim. Se non hai avuto risposta, non le scrivi.
 
-Le quattro chiavi di `paths` — dove vivono le cartelle di lavoro, gli appunti, la coda notturna e
+Le tre chiavi di `paths` — dove vivono le cartelle di lavoro, gli appunti e
 il ledger di review — le **proponi** guardando cosa il repository ha già: una cartella di studi che
 esiste vale più di un nome inventato. Se non c'è nulla di simile, scegli tu un percorso coerente
 con la struttura che hai davanti e **dillo nel referto**, perché quelle cartelle le creeranno le
 skill al primo uso ed è bene che l'utente sappia dove.
-
-Le due chiavi di `guardrails` le lasci **spente**, e le elenchi nel referto fra le cose che
-l'utente decide. Accendono i dinieghi della guardia sui comandi — `git push` e `git commit
---no-verify` — e non sono una preferenza da indovinare: dipendono da come quel repository è
-tenuto, e un diniego comparso da solo è la cosa che fa disinstallare un pacchetto. Nel referto
-dì cosa accendono e dove si accendono, in una riga.
 
 Quando un valore è ricavabile ma non certo — un `tech_doc` plausibile, un `changelog` che potrebbe
 essere quello — **non scriverlo di nascosto**: o lo confermi con quello che hai letto, o lo lasci
@@ -307,7 +301,7 @@ host. Il corpus di `{memory.root}` lì esiste lo stesso e lo scrive `update-memo
 Su **Claude Code**, invece, la memoria che l'agente si scrive da sé finisce per default in
 `~/.claude/projects/<progetto>/memory/`: fuori dal repository, invisibile in un `git diff`, non
 condivisa con nessuno e persa al primo cambio di macchina. Il tuo compito è portarla dentro, dove
-si vede e si committa insieme al resto. Quattro cose, in quest'ordine:
+si vede — e si committa insieme al resto, salvo che stia sotto `.daiku/` (punto 5). Cinque cose, in quest'ordine:
 
 1. **Crea la cartella** `{memory.root}` se non c'è, e dentro `{memory.index}` se manca: un titolo,
    una riga che dichiara che quello è l'indice del corpus, e nient'altro. Vuoto va bene; assente
@@ -332,6 +326,8 @@ si vede e si committa insieme al resto. Quattro cose, in quest'ordine:
 4. **Verifica che sia davvero committabile**: apri il `.gitignore` e controlla che nessuna regola
    escluda `{memory.root}`. Se una la esclude **non toccare il `.gitignore`**: dillo nel referto.
    Quella riga l'ha scritta qualcuno apposta, e toglierla è una decisione sua.
+
+5. **Tieni `.daiku/` fuori da git.** Niente di ciò che sta sotto `.daiku/` si committa mai: il repository è del cliente e non vede nulla del metodo, Daiku è segreto. Se il `.gitignore` non esclude `.daiku/`, **non aggiungerlo tu** — questo passo non tocca il `.gitignore` — ma mettilo fra le cose da compilare, in una riga. Se `{memory.root}` sta sotto `.daiku/`, il corpus resta locale per conseguenza: dillo nel referto in una riga, perché chi si aspettava la memoria versionata deve saperlo.
 
 #### Perché quella chiave va in `settings.local.json` e non nel file committato
 

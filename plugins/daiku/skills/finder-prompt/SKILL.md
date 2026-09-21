@@ -48,8 +48,8 @@ cosa che rende incomparabili due giri.
    - **giro 1**: `git diff <BASE> -- {code_root}`, e **leggi ogni riga aggiunta per intero** prima di
      giudicare;
    - **giri ≥2**: `git diff <BASE> -- <i soli file toccati dall'applicatore nel giro precedente>`.
-     Oltre ai file, ricevi gli **applicati del giro precedente** dal ledger (`file`, `simbolo`,
-     `ancora`, `cosa`): sono il tuo **fuoco**. Giudica le righe di quei fix e ciò che ne dipende; il
+     Oltre ai file, ricevi gli **applicati del giro precedente** dal ledger (`file`, `symbol`,
+     `anchor`, `what`): sono il tuo **fuoco**. Giudica le righe di quei fix e ciò che ne dipende; il
      resto del diff di quei file è già stato giudicato ed è solo contesto. Aprire un file fuori da
      quell'elenco **per contesto** è lecito; giudicarlo no.
 
@@ -75,16 +75,16 @@ cosa che rende incomparabili due giri.
 ## Il blocco che restituisci
 
 **Lo schema è questo, ed è l'unico.** Il contratto della tua disciplina non lo ridichiara: gli
-aggiunge la scala di `confidenza` e dice cosa scrivere dentro `simbolo`, `cambiamento` e
-`descrizione`, che è l'unica cosa a cambiare fra una disciplina e l'altra.
+aggiunge la scala di `confidence` e dice cosa scrivere dentro `symbol`, `change` e
+`description`, che è l'unica cosa a cambiare fra una disciplina e l'altra.
 
 Solo il blocco, senza report in prosa. A zero rilievi si scrive `{"findings": []}`.
 
 ```json
-{"findings": [{"file": "<path>", "riga": 0, "simbolo": "<Classe.metodo | funzione | modulo | Componente>", "confidenza": "alta|media|bassa", "cambiamento": "<il fix concreto, per alta e media>", "descrizione": "<...>"}]}
+{"findings": [{"file": "<path>", "line": 0, "symbol": "<Classe.metodo | funzione | modulo | Componente>", "confidence": "high|medium|low", "change": "<il fix concreto, per alta e media>", "description": "<...>"}]}
 ```
 
-La scala di `confidenza` è dichiarata dal contratto della tua disciplina, nella sua *Modalità
+La scala di `confidence` è dichiarata dal contratto della tua disciplina, nella sua *Modalità
 finder*: usala, non una tua. La confidenza è la tua stima, non un permesso — l'applicatore
 riverifica ogni rilievo prima di applicarlo, quindi un rilievo verificato a confidenza bassa è
 informazione, un rilievo taciuto no.

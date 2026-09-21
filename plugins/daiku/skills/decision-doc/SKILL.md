@@ -41,7 +41,7 @@ Sei un subagent in contesto fresco, lanciato quando `0. problem.md` è appena st
 codice e riconfrontato con gli appunti delle tecnologie coinvolte. Valgono quattro differenze, e
 nient'altro cambia:
 
-- **L'input arriva risolto** — cartella, `0. problem.md`, path degli appunti di `study` e path
+- **L'input arriva risolto** — cartella, `0. problem.md`, path degli appunti di `research` e path
   delle memorie pertinenti stanno nel prompt. Il punto 2 della procedura non ha quasi nulla da
   fare: la cartella porta un solo documento, già nella forma giusta; se ne porta altri, li unisci
   come sempre. Non chiedere niente e non fermarti in attesa, perché non c'è nessuno che risponda.
@@ -68,8 +68,8 @@ problema e non rimettere in discussione le decisioni già chiuse.
   scrive la scelta in coda alla decision card che la ospita.
 
 **Se dopo il recepimento la direzione è chiusa, prosegui allo stadio tecnico qui e ora**: produci
-`1. decision-doc.md` e restituisci la nuova lista di decisioni nel tuo blocco, con `stadio`
-`tecnico`. È l'unico caso in cui una sola invocazione attraversa i due stadi.
+`1. decision-doc.md` e restituisci la nuova lista di decisioni nel tuo blocco, con `stage`
+`technical`. È l'unico caso in cui una sola invocazione attraversa i due stadi.
 
 ## Il blocco che restituisci
 
@@ -79,18 +79,18 @@ che non si applica è `null`.
 
 ```json
 {
-  "stadio": "strategico|tecnico",
-  "perche_stadio": "<una frase sul perché quello stadio e non l'altro>",
+  "stage": "strategic|technical",
+  "stage_why": "<una frase sul perché quello stadio e non l'altro>",
   "file": "<path del documento prodotto o aggiornato>",
-  "verdetto": "<la sintesi di apertura della revisione scettica, o null allo stadio tecnico>",
-  "fix_applicati": ["<file e cosa hai corretto, uno per fix della Fase 2>"],
-  "decisioni": "<la lista della Fase 3 verbatim in markdown, oppure, allo stadio tecnico, titolo, opzioni e opzione consigliata di ogni decision card; null se non ne restano>",
-  "recepite": ["<solo al recepimento: numero, scelta, e dove l'hai recepita>"],
-  "aperto": ["<cosa resta da decidere, o quale dato mancava per decidere davvero>"]
+  "verdict": "<la sintesi di apertura della revisione scettica, o null allo stadio tecnico>",
+  "applied_fixes": ["<file e cosa hai corretto, uno per fix della Fase 2>"],
+  "decisions": "<la lista della Fase 3 verbatim in markdown, oppure, allo stadio tecnico, titolo, opzioni e opzione consigliata di ogni decision card; null se non ne restano>",
+  "incorporated": ["<solo al recepimento: numero, scelta, e dove l'hai recepita>"],
+  "open_items": ["<cosa resta da decidere, o quale dato mancava per decidere davvero>"]
 }
 ```
 
-Le `decisioni` tornano **verbatim**, con tutte le loro opzioni: chi ti ha chiamato le pone
+Le `decisions` tornano **verbatim**, con tutte le loro opzioni: chi ti ha chiamato le pone
 all'owner senza riscriverle, e una lista riassunta è una lista a cui l'owner risponde con meno di
 quanto hai scritto. **Il loro formato è quello che diventerà la domanda**: titolo breve, problema
 in una riga, 2-4 opzioni mutuamente esclusive e autosufficienti, una sola raccomandata. Una voce

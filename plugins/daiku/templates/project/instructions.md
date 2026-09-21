@@ -85,7 +85,7 @@ for the go-ahead.
 
 Declared exceptions:
 
-- `develop-feature`, and the nightly run that reuses its contract, may commit after the gate and
+- `develop-feature` may commit after the gate and
   after memory and documentation have been aligned to the staged diff.
 - `commit`, invoked explicitly, authorises the commit under its own convention. Before committing
   it always delegates the alignment of memory and documentation to `update-memory` — a mandatory

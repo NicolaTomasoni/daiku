@@ -111,10 +111,10 @@ Invocato a mano, basta il riepilogo in chat. **Invocato dentro una catena** — 
 proseguire:
 
 ```json
-{"ok": true, "note_review_path": "<path di 4. review-notes.md>", "verifica_detail": "<esito reale delle prove mirate sul perimetro toccato>", "detail": "<se ok=false, il motivo>"}
+{"ok": true, "note_review_path": "<path di 4. review-notes.md>", "verify_detail": "<esito reale delle prove mirate sul perimetro toccato>", "detail": "<se ok=false, il motivo>"}
 ```
 
-`verifica_detail` porta l'esito **reale** delle prove che hai eseguito sul perimetro che hai
+`verify_detail` porta l'esito **reale** delle prove che hai eseguito sul perimetro che hai
 toccato, non la loro intenzione: la suite completa e il gate di pacchetto non sono tuoi, li possiede `/review`, quindi questo campo è l'unica prova che qualcosa sia stato osservato
 prima della review.
 
