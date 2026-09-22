@@ -1,371 +1,370 @@
-# Parametri di progetto — contratto unico
+# Project parameters — single contract
 
-Questo file è il **punto unico di modifica** per come una skill ricava i valori specifici del
-progetto su cui gira. Le skill in `skills/` dicono *cosa* va fatto e *in che ordine*;
-`.daiku/project.json` dice *con quali valori*; i file di `.daiku/domain/` portano il dominio e
-il giudizio locali.
+This file is the **single point of change** for how a skill derives the specific values of the
+project it runs on. The skills in `skills/` say *what* is to be done and *in what order*;
+`.daiku/project.json` says *with which values*; the files in `.daiku/domain/` carry the local
+domain and judgement.
 
-Il criterio che regge tutto è uno solo: **il file di una skill è identico byte per byte in ogni
-progetto**. Qualunque valore specifico scritto dentro una skill distrugge quell'atomicità e va
-spostato di livello. Se ti trovi a personalizzare una skill, il posto giusto è qui sotto.
+The criterion holding everything together is a single one: **a skill's file is byte-identical in every
+project**. Any specific value written inside a skill destroys that atomicity and must be
+moved a level down. If you find yourself customising a skill, the right place is below.
 
-`contracts/orchestration.md` resta il contratto di *chi* esegue un passo e come lo si delega: è
-ortogonale a questo file e non lo tocca. I valori che consuma non stanno qui ma in
-`environment.json`, il secondo livello di parametri: dove vive quel file, e dove passa il confine
-fra i due, è nella §8.
+`contracts/orchestration.md` remains the contract of *who* runs a step and how it is delegated: it is
+orthogonal to this file and does not touch it. The values it consumes do not live here but in
+`environment.json`, the second parameter level: where that file lives, and where the boundary
+between the two passes, is in §8.
 
-## 1. I quattro livelli
+## 1. The four levels
 
-| Livello | Sede | Contiene | Si esporta con la skill |
+| Level | Location | Contains | Ships with the skill |
 |---|---|---|---|
-| **Metodo** | `skills/**` | cosa va fatto, in che ordine, con quali vincoli | sì, byte-identico |
-| **Ambiente** | `~/.daiku/environment.json` | host, modello per ruolo, backend, path di macchina | sì: uno per owner, non si copia nei progetti (§8) |
-| **Parametri** | `.daiku/project.json` | path, comandi letterali, nomi di file, aree esistenti | no, uno per progetto |
-| **Dominio** | `.daiku/domain/*.md` | liste, tassonomie, criteri di giudizio locali | sì, come **scheletro che si sovrascrive** (§5.4) |
+| **Method** | `skills/**` | what is to be done, in what order, with which constraints | yes, byte-identical |
+| **Environment** | `~/.daiku/environment.json` | host, model per role, backend, machine paths | yes: one per owner, not copied into projects (§8) |
+| **Parameters** | `.daiku/project.json` | paths, literal commands, file names, existing areas | no, one per project |
+| **Domain** | `.daiku/domain/*.md` | lists, taxonomies, local judgement criteria | yes, as a **skeleton to be overwritten** (§5.4) |
 
-## 2. Cosa può stare in `project.json`
+## 2. What may live in `project.json`
 
-Solo ciò che una skill **sostituisce dentro una frase**: un path, un comando letterale, il nome
-di un file, la presenza o assenza di un'area. Tre divieti, in ordine di gravità:
+Only what a skill **substitutes inside a sentence**: a path, a literal command, the name
+of a file, the presence or absence of an area. Three prohibitions, in order of severity:
 
-- **Niente descrizioni al posto dei comandi.** Un comando è la stringa esatta da eseguire più la
-  cwd da cui eseguirla. «Il gate del backend» non è un valore; la riga che lo esegue lo è. Una
-  skill che riceve una descrizione invece di un comando diventa vaga, e questo è il modo
-  principale in cui la parametrizzazione può peggiorare il risultato invece di conservarlo.
-- **Niente chiave che richieda una spiegazione per essere capita.** Se per usare un valore serve
-  sapere *perché* esiste, quella è conoscenza di dominio e va in `.daiku/domain/`.
-- **Niente duplicazione di `CLAUDE.md` o `.daiku/policies/`.** Il JSON non contiene invarianti,
-  confini fra layer, convenzioni di stile o criteri architetturali: hanno già la loro sede, e la
-  skill li legge da lì. È il modo in cui questo file smette di essere un file di parametri.
+- **No descriptions in place of commands.** A command is the exact string to run plus the
+  cwd to run it from. "The backend's gate" is not a value; the line running it is. A
+  skill receiving a description instead of a command goes vague, and this is the main
+  way parameterisation can worsen the result instead of preserving it.
+- **No key requiring an explanation to be understood.** If using a value requires knowing
+  *why* it exists, that is domain knowledge and belongs in `.daiku/domain/`.
+- **No duplication of `CLAUDE.md` or `.daiku/policies/`.** The JSON holds no invariants,
+  layer boundaries, style conventions or architectural criteria: they already have their home, and the
+  skill reads them from there. It is how this file stops being a parameter file.
 
-## 3. Convenzioni di forma
+## 3. Form conventions
 
-- **Ogni path è relativo alla radice tecnica** (la directory da cui le skill girano), tranne
-  `repo_root` che è assoluto. I separatori sono `/`: funzionano sia in PowerShell sia in shell
-  POSIX, e i path che Git restituisce hanno già quella forma. Quelli che puntano **fuori** dalla
-  radice tecnica la risalgono con `../`, e Git li accetta in quella forma sia come pathspec sia
-  come argomento di `git add`: si usano come sono, senza riscriverli.
-- **Ogni comando è un oggetto `{ "cwd": <path>, "run": [<riga>, …] }`**: le righe di `run` si
-  eseguono in ordine, ciascuna dalla cwd dichiarata. Una riga è una stringa eseguibile così
-  com'è, non un modello da completare.
-- **Segnaposto `<FILES>`**: se una riga di `run` lo contiene, la skill lo sostituisce con
-  l'elenco dei file su cui sta lavorando, separati da spazio. È l'unico segnaposto ammesso
-  dentro un comando.
-- **Un'area è una parte del progetto con un gate proprio.** Il nome dell'area è la sua chiave
-  sotto `areas`; una skill itera su quelle dichiarate e non conosce nomi di area a priori.
+- **Every path is relative to the technical root** (the directory the skills run from), except
+  `repo_root` which is absolute. Separators are `/`: they work in both PowerShell and POSIX
+  shells, and the paths Git returns already have that form. Those pointing **outside** the
+  technical root climb it with `../`, and Git accepts them in that form both as pathspecs and
+  as `git add` arguments: use them as they are, without rewriting them.
+- **Every command is a `{ "cwd": <path>, "run": [<line>, …] }` object**: the `run` lines
+  run in order, each from the declared cwd. A line is a string executable as
+  it is, not a template to complete.
+- **`<FILES>` placeholder**: if a `run` line contains it, the skill replaces it with
+  the list of files it is working on, separated by spaces. It is the only placeholder allowed
+  inside a command.
+- **An area is a part of the project with its own gate.** The area's name is its key
+  under `areas`; a skill iterates over the declared ones and knows no area names a priori.
 
-## 4. Le chiavi
+## 4. The keys
 
-| Chiave | Mestiere |
+| Key | Purpose |
 |---|---|
-| `contract` | numero intero della forma di questo file (vedi §7) |
-| `name` | nome del progetto, come compare nei testi rivolti all'utente |
-| `repo_root` | path assoluto della root del repository |
-| `code_root` | radice del codice applicativo, con slash finale; è anche il pathspec Git con cui si delimita ogni perimetro di codice |
-| `instructions_file` | file di istruzioni che l'host carica a ogni sessione e che porta gli invarianti del progetto; è `CLAUDE.md` su un host, `AGENTS.md` su un altro |
-| `language.chat` | lingua di ciò che si scrive per una persona: risposte in chat, riepiloghi, referti e i documenti del metodo (§5.5) |
-| `language.commit` | lingua di ciò che finisce nella storia del repository: messaggi di commit e voci di changelog (§5.5) |
-| `tech_doc` | path del documento tecnico che un lettore umano apre per sapere cosa fa il sistema e perché; assente se il progetto non ne ha uno |
-| `changelog` | path del registro delle versioni rilasciate |
-| `version.file` | file che porta la versione canonica dell'applicazione |
-| `version.field` | punto esatto del file in cui quella versione vive |
-| `version.replicated_in` | altri file che portano la stessa versione e si aggiornano insieme; lista vuota o assente se non ce ne sono |
-| `paths.studies` | cartella che ospita le cartelle di lavoro, una per problema, con dentro i file numerati del metodo |
-| `paths.lib_notes` | cartella degli appunti su una tecnologia studiata |
-| `paths.review_state` | cartella in cui vive il ledger di una review; sta **fuori** dal repository versionato ma è stabile, non a scadenza di sessione |
-| `memory.root` | radice del corpus di memoria persistente, dentro il repository; su Claude Code è anche la cartella in cui l'host scrive la propria memoria (§4.2) |
-| `memory.index` | file indice del corpus, quello che si legge per primo |
-| `commit.memory_prefix` | prefisso del messaggio del commit di memoria e documentazione |
-| `worktree.pool` | directory del pool di worktree di consegna, relativa alla radice tecnica |
-| `worktree.prefix` | prefisso dei nomi dei worktree del pool, seguito dal numero (`1`..`worktree.max`) |
-| `worktree.max` | numero massimo di worktree del pool: mai uno in più, mai un nome fuori convenzione |
-| `worktree.branch_prefix` | prefisso del branch di ciascun worktree, seguito dal suo nome |
-| `areas` | l'insieme delle aree dichiarate; si cita così quando una skill le **enumera** invece di nominarne una (§5.3) |
-| `areas.<area>.paths` | i path che appartengono all'area, ciascuno usabile come pathspec Git |
-| `areas.<area>.gate` | comando di gate dell'area: lint, formato, type-check, test e build di pacchetto |
-| `areas.<area>.lint_fix` | comando che applica le sole correzioni di lint sicure ai file indicati |
-| `areas.<area>.test_targeted` | comando che esegue i soli test indicati |
-| `areas.<area>.coverage` | comandi che producono la misura di copertura dell'area |
+| `contract` | integer of this file's form (see §7) |
+| `name` | project name, as it appears in user-facing texts |
+| `repo_root` | absolute path of the repository root |
+| `code_root` | application code root, with trailing slash; it is also the Git pathspec delimiting every code perimeter |
+| `instructions_file` | instructions file the host loads on every session and carrying the project's invariants; it is `CLAUDE.md` on one host, `AGENTS.md` on another |
+| `language.chat` | language of what is written for a person: chat replies, summaries, reports and the method's documents (§5.5) |
+| `language.commit` | language of what ends up in the repository's history: commit messages and changelog entries (§5.5) |
+| `tech_doc` | path of the technical document a human reader opens to learn what the system does and why; absent if the project has none |
+| `changelog` | path of the released-versions log |
+| `version.file` | file carrying the application's canonical version |
+| `version.field` | exact spot in the file where that version lives |
+| `version.replicated_in` | other files carrying the same version and updated together; empty or absent list if there are none |
+| `paths.studies` | folder hosting the work folders, one per problem, with the method's numbered files inside |
+| `paths.lib_notes` | folder of notes on a studied technology |
+| `paths.review_state` | folder where a review's ledger lives; it sits **outside** the versioned repository but is stable, not session-scoped |
+| `memory.root` | root of the persistent memory corpus, inside the repository; on Claude Code it is also the folder where the host writes its own memory (§4.2) |
+| `memory.index` | index file of the corpus, the one read first |
+| `commit.memory_prefix` | prefix of the memory-and-documentation commit message |
+| `worktree.pool` | delivery-worktree pool directory, relative to the technical root |
+| `worktree.prefix` | prefix of the pool worktrees' names, followed by the number (`1`..`worktree.max`) |
+| `worktree.max` | maximum number of pool worktrees: never one more, never an off-convention name |
+| `worktree.branch_prefix` | branch prefix of each worktree, followed by its name |
+| `areas` | the set of declared areas; cited thus when a skill **enumerates** them instead of naming one (§5.3) |
+| `areas.<area>.paths` | the paths belonging to the area, each usable as a Git pathspec |
+| `areas.<area>.gate` | the area's gate command: lint, format, type-check, test and package build |
+| `areas.<area>.lint_fix` | command applying only safe lint fixes to the given files |
+| `areas.<area>.test_targeted` | command running only the given tests |
+| `areas.<area>.coverage` | commands producing the area's coverage measure |
 
-Nessuna chiave è obbligatoria oltre a `contract`: tutto il resto è soggetto alla §6.
+No key is mandatory besides `contract`: everything else is subject to §6.
 
-### 4.1 Ciò che un hook leggeva e non legge più
+### 4.1 What a hook used to read and no longer reads
 
-Fino al 21 settembre 2026 due chiavi accendevano due rami della guardia sui comandi —
-`guardrails.deny_push` e `guardrails.deny_no_verify`. Quel giorno l'owner le ha tolte: a un
-agente non si lascia mai la libertà di pushare o di saltare gli hook di commit, quindi non c'è
-niente da dichiarare. Le chiavi non esistono più nella tabella qui sopra; un `project.json` che
-se le porta ancora dietro ha due righe in più che nessuno guarda, non un difetto.
+Until 21 September 2026 two keys lit two branches of the command guard —
+`guardrails.deny_push` and `guardrails.deny_no_verify`. That day the owner removed them: an
+agent is never left free to push or to skip commit hooks, so there is nothing
+to declare. The keys no longer exist in the table above; a `project.json` still
+carrying them has two extra lines nobody looks at, not a defect.
 
-Resta un solo ramo guidato dal JSON: quello dei worktree, acceso da `worktree.pool` — un pool
-dichiarato *è* la dichiarazione che quelle directory sono di Daiku. Gli altri quattro rami della
-guardia (junction, `.daiku/`, `--no-verify`, push) negano su ogni progetto che ha aperto Daiku,
-senza interruttore. `hooks/README.md` porta la tabella completa dei rami.
+A single JSON-driven branch remains: the worktree one, lit by `worktree.pool` — a declared pool
+*is* the declaration that those directories belong to Daiku. The guard's other four branches
+(junction, `.daiku/`, `--no-verify`, push) deny on every project that opened Daiku,
+with no switch. `hooks/README.md` carries the full branch table.
 
-### 4.2 La chiave che legge l'host
+### 4.2 The key the host reads
 
-`memory.root` ha un secondo lettore che non è una skill e non è un hook: è **l'host**, su Claude
-Code, dove la memoria che l'agente si scrive da sé è una cartella di file e la sua sede si dichiara
-con `autoMemoryDirectory`. `init` la fa puntare lì, e da quel momento quel corpus ha due scrittori
-— l'host di sua iniziativa, `update-memory` sul diff di ogni commit — e una sede sola, versionata
-insieme al codice. È la ragione per cui questa cartella sta dentro il repository e non accanto: una
-memoria che non entra in un diff non la rilegge nessuno, non la corregge nessuno e sparisce col
-portatile su cui è nata.
+`memory.root` has a second reader that is neither a skill nor a hook: it is **the host**, on Claude
+Code, where the memory the agent writes for itself is a folder of files and its location is declared
+with `autoMemoryDirectory`. `init` points it there, and from that moment that corpus has two writers
+— the host on its own initiative, `update-memory` on every commit's diff — and a single location, versioned
+together with the code. It is why this folder sits inside the repository and not beside it: a
+memory that does not enter a diff is re-read by nobody, corrected by nobody and dies with the
+laptop it was born on.
 
-Due conseguenze, e nessuna delle due è un dettaglio di installazione.
+Two consequences, and neither is an installation detail.
 
-**Il puntamento non si committa.** Claude Code ignora `autoMemoryDirectory` quando arriva da un
-`.claude/settings.json` versionato — un repository clonato non deve poter dirottare dove l'agente
-scrive — quindi quella chiave vive in `.claude/settings.local.json`, che è di quella macchina e
-resta fuori dal repository. I file della memoria si committano; la riga che dice all'host di
-scriverli lì, no. Su un clone la memoria torna al default **in silenzio**, e nessuna skill se ne
-accorge: `{memory.root}` lo aprono per path e lo trovano dov'era. Il rimedio è rilanciare `/init`
-su quella macchina.
+**The pointing is not committed.** Claude Code ignores `autoMemoryDirectory` when it arrives from a
+versioned `.claude/settings.json` — a cloned repository must not be able to divert where the agent
+writes — so that key lives in `.claude/settings.local.json`, which belongs to that machine and
+stays out of the repository. The memory files are committed; the line telling the host to
+write them there is not. On a clone the memory falls back to the default **silently**, and no skill notices:
+`{memory.root}` is opened by path and found where it was. The remedy is to re-run `/init`
+on that machine.
 
-**Su Codex non c'è niente da dichiarare.** Lì la memoria dell'agente non è fatta di file ma di un
-database nella home (`~/.codex/memories_1.sqlite`), consolidato dalle sessioni passate, e non
-esiste una chiave che ne sposti la sede. `memory.root` resta il corpus del metodo, scritto dalle
-skill e leggibile da chiunque: perde il secondo scrittore, non il mestiere.
+**On Codex there is nothing to declare.** There the agent's memory is not made of files but of a
+database in the home directory (`~/.codex/memories_1.sqlite`), consolidated from past sessions, and there is no
+key moving its location. `memory.root` remains the method's corpus, written by the
+skills and readable by anyone: it loses the second writer, not the job.
 
-È anche il motivo per cui `memory.root` e `memory.index` sono le uniche chiavi che `init` scrive
-**sempre**, anche su un progetto che non aveva nessun corpus. La §6 vale per tutto il resto: qui
-la cartella non si rileva, si assegna.
+It is also why `memory.root` and `memory.index` are the only keys `init` **always**
+writes, even on a project that had no corpus. §6 applies to everything else: here
+the folder is not detected, it is assigned.
 
-## 5. Come una skill lo consuma
+## 5. How a skill consumes it
 
-### 5.1 La riga di apertura — una sola, identica in ogni skill parametrizzata
+### 5.1 The opening line — one only, identical in every parameterised skill
 
-Va in testa al corpo della skill, subito dopo il paragrafo che ne dichiara il mestiere, e si
-copia alla lettera:
+It goes at the top of the skill's body, right after the paragraph declaring its job, and is
+copied verbatim:
 
 ```markdown
-> **Parametri.** Ogni chiave fra graffe di questo contratto si risolve sui file di parametri del
-> progetto, mai a memoria e mai per assunzione: le regole sono nella §5 di
-> `contracts/project-contract.md`, che dice anche **in quale lingua scrivere** e cosa fare quando
-> una chiave non c'è.
+> **Parameters.** Every key in braces in this contract resolves on the project parameter
+> files, never from memory and never by assumption: the rules are in §5 of
+> `contracts/project-contract.md`, which also says **in which language to write** and what to do
+> when a key is missing.
 ```
 
-**Era un blocco di otto righe, ripetuto in ogni skill.** Si è ridotto a una riga perché otto
-righe identiche in dodici file sono dodici copie che divergono alla prima modifica, e perché ciò
-che dicevano è esattamente il contenuto di questa sezione: un rimando lo raggiunge senza
-duplicarlo. Chi legge la skill apre un file in più; chi modifica la regola ne apre uno solo.
+**It was an eight-line block, repeated in every skill.** It shrank to one line because eight
+identical lines in twelve files are twelve copies diverging at the first change, and because what
+they said is exactly the content of this section: a reference reaches it without
+duplicating it. Whoever reads the skill opens one more file; whoever changes the rule opens only one.
 
-**Da quale dei due file si risolve una chiave**, e non serve che la skill lo dica:
+**Which of the two files a key resolves from** need not be said by the skill:
 
-- un percorso che compare nella tabella §4 → `.daiku/project.json`;
-- un percorso che compare nella §7 di `contracts/orchestration.md` — `hosts`, `backends`,
-  `default_host`, `temp_dir` → `environment.json`, che la §8 dice dove si cerca.
+- a path appearing in the §4 table → `.daiku/project.json`;
+- a path appearing in §7 of `contracts/orchestration.md` — `hosts`, `backends`,
+  `default_host`, `temp_dir` → `environment.json`, whose §8 says where to look.
 
-Nessuna chiave sta in tutti e due (§8), quindi il percorso citato basta a dire dove guardare.
+No key lives in both (§8), so the cited path is enough to say where to look.
 
-**Cosa fare quando la chiave non c'è** è la §6, e vale senza che la skill la ripeta: quella cosa
-non esiste in questo progetto o in questo ambiente — si salta la parte che la usa, lo si dichiara
-nell'esito, non la si inventa e non la si chiede.
+**What to do when the key is missing** is §6, and applies without the skill repeating it: that thing
+does not exist in this project or in this environment — skip the part using it, declare it
+in the outcome, do not invent it and do not ask for it.
 
-### 5.2 Citare una chiave in prosa
+### 5.2 Citing a key in prose
 
-Si cita con il **percorso puntato dalla radice del JSON, fra graffe, dentro un code span**:
-`` `{code_root}` ``, `` `{version.file}` ``, `` `{areas.<area>.gate}` ``. In un'area, `<area>` è
-il nome dell'area su cui si sta iterando.
+It is cited with the **dotted path from the JSON root, in braces, inside a code span**:
+`` `{code_root}` ``, `` `{version.file}` ``, `` `{areas.<area>.gate}` ``. In an area, `<area>` is
+the name of the area being iterated over.
 
-La forma vale **solo** dentro un code span: graffe in prosa nuda, o dentro un esempio JSON di
-output della skill, non sono citazioni. Il percorso citato deve esistere nella tabella §4: se
-serve un valore che lì non c'è, si aggiunge la chiave qui — non si scrive il valore nella skill.
+The form applies **only** inside a code span: bare braces in plain prose, or inside a skill-output
+JSON example, are not citations. The cited path must exist in the §4 table: if
+a value is needed that is not there, add the key here — do not write the value into the skill.
 
-Una frase con una chiave si legge come se il valore fosse già dentro:
+A sentence with a key reads as if the value were already inside:
 
-> Calcola lo scope con `git diff <BASE> -- {code_root}`, poi esegui `{areas.<area>.gate}`.
+> Compute the scope with `git diff <BASE> -- {code_root}`, then run `{areas.<area>.gate}`.
 
-### 5.3 Una parte che vale solo per certe aree
+### 5.3 A part applying only to certain areas
 
-**La forma normale è l'iterazione, non la sezione condizionale.** Una skill non conosce i nomi
-delle aree: le enumera da `{areas}`, le filtra su `{areas.<area>.paths}` e lavora su quelle che
-restano. Così la stessa frase copre un progetto con una sola area e uno con cinque:
+**The normal form is iteration, not the conditional section.** A skill knows no area
+names: it enumerates them from `{areas}`, filters on `{areas.<area>.paths}` and works on those that
+remain. Thus the same sentence covers a single-area project and a five-area one:
 
-> Per ogni area dichiarata in `{areas}` che il perimetro tocca, esegui `{areas.<area>.gate}` e
-> riporta l'esito reale dei comandi. Un'area che il perimetro non tocca non si gira.
+> For each area declared in `{areas}` touched by the perimeter, run `{areas.<area>.gate}` and
+> report the commands' real outcome. An area untouched by the perimeter is not run.
 
-Quando una parte dipende davvero dall'**esistenza di una chiave** e non si può scrivere per
-iterazione, si apre la sezione con una guardia, prima riga, in grassetto:
+When a part truly depends on a **key's existence** and cannot be written by
+iteration, open the section with a guard, first line, in bold:
 
-> **Vale solo se `{areas.<area>.coverage}` è dichiarata.**
+> **Applies only if `{areas.<area>.coverage}` is declared.**
 
-La guardia non spiega cosa fare se la chiave manca: lo dice già il blocco §5.1, una volta per
-tutta la skill. Nominare un'area precisa dentro una skill è invece un'eccezione da giustificare:
-il nome di un'area è un valore, e un valore dentro una skill rompe l'atomicità.
+The guard does not explain what to do if the key is missing: the §5.1 block already says it, once for
+the whole skill. Naming a specific area inside a skill is instead an exception to justify:
+an area's name is a value, and a value inside a skill breaks atomicity.
 
-### 5.4 Rimandare a un file di dominio
+### 5.4 Referring to a domain file
 
-Un file di dominio si trova per **ruolo**, con la convenzione `.daiku/domain/<role>.md`. La
-skill dichiara **quale domanda quel file risponde**, mai la risposta: se scrive cosa ci
-troverà, ha riportato dentro di sé il dominio che stava spostando fuori.
+A domain file is found by **role**, with the `.daiku/domain/<role>.md` convention. The
+skill declares **which question that file answers**, never the answer: if it writes what it will
+find there, it has reported back inside itself the domain it was moving out.
 
-Forma:
+Form:
 
-> Leggi `.daiku/domain/<role>.md`: porta <la domanda a cui risponde>. Se non esiste,
-> <comportamento senza di esso>, e dichiaralo nell'esito.
+> Read `.daiku/domain/<role>.md`: it carries <the question it answers>. If it does not exist,
+> <behaviour without it>, and declare it in the outcome.
 
-Per esempio, una skill di copertura scrive «porta le macrocategorie di questo progetto e da quale
-punto di forza si testa ciascun layer», non l'elenco delle macrocategorie.
+For example, a coverage skill writes "it carries this project's macrocategories and from which
+strength each layer is tested", not the macrocategories' list.
 
-#### Un ruolo può viaggiare con uno scheletro già scritto
+#### A role may travel with a pre-written skeleton
 
-Il pacchetto **può** portare un file di dominio di default, sotto
-`templates/project/domain/<role>.md`. `init` lo deposita in `.daiku/domain/<role>.md`
-la prima volta e **non lo tocca mai più**: da quel momento è dell'utente, che lo riscrive come gli
-pare senza che nessun aggiornamento glielo porti via.
+The package **may** carry a default domain file, under
+`templates/project/domain/<role>.md`. `init` deposits it in `.daiku/domain/<role>.md`
+the first time and **never touches it again**: from then on it belongs to the user, who rewrites it as they
+please without any update taking it away.
 
-È la scelta opposta a quella ovvia, e la ragione è pratica: un ruolo senza default costringe ogni
-progetto a scriverselo da zero prima di ottenere il comportamento pieno, e nel frattempo la skill
-degrada in silenzio. Meglio una risposta di default dichiarata, che si vede e si cambia, di un
-file assente che nessuno sa di dover scrivere.
+It is the opposite choice to the obvious one, and the reason is practical: a role without a default forces every
+project to write one from scratch before getting full behaviour, and meanwhile the skill
+degrades silently. Better a declared default answer, visible and changeable, than an
+absent file nobody knows they must write.
 
-**Il default resta dominio, non diventa metodo.** La skill continua a porre la domanda e a non
-conoscere la risposta: se cancelli il file, vale la degradazione della §6 esattamente come prima.
-Ciò che viaggia è una risposta *plausibile*, non una risposta *vincolante*.
+**The default stays domain, it does not become method.** The skill keeps asking the question and not
+knowing the answer: if you delete the file, the §6 degradation applies exactly as before.
+What travels is a *plausible* answer, not a *binding* one.
 
-**Un default esiste solo dove è sensato.** Un ruolo la cui risposta dipende dallo stack o
-dall'architettura — le macrocategorie di test, i punti caldi di performance — non ne ha e non deve
-averne uno: lì un default è un'invenzione travestita da regola. Un ruolo la cui risposta è una
-convenzione, che va bene finché non ti dà fastidio, sì.
+**A default exists only where it makes sense.** A role whose answer depends on the stack or
+the architecture — the test macrocategories, the performance hot spots — has none and must have
+none: there a default is an invention disguised as a rule. A role whose answer is a
+convention, fine until it bothers you, does.
 
-E c'è un secondo caso, più stretto: un ruolo la cui risposta **deve esistere dal primo giorno
-perché più di uno scrive già sulla stessa cosa**. È quello di `memory-contract.md`: su Claude Code
-il corpus di `{memory.root}` ha due scrittori appena `init` finisce — l'host di sua iniziativa e
-`update-memory` a ogni commit (§4.2) — e una forma non dichiarata non resta indeterminata, diventa
-due forme nella stessa cartella. Lì il default non anticipa una scelta dell'utente: gli evita di
-doverla fare prima di aver scritto la prima memoria.
+And there is a second, narrower case: a role whose answer **must exist from day one
+because more than one writer already writes on the same thing**. That is `memory-contract.md`: on Claude Code
+the `{memory.root}` corpus has two writers as soon as `init` finishes — the host on its own initiative and
+`update-memory` on every commit (§4.2) — and an undeclared form does not stay indeterminate, it becomes
+two forms in the same folder. There the default does not anticipate a user choice: it spares them
+having to make it before writing their first memory.
 
-### 5.5 La lingua — si legge qui una volta, non si ripete in ogni skill
+### 5.5 The language — read here once, not repeated in every skill
 
-Le skill di questo pacchetto sono scritte in italiano, ma **la lingua in cui una skill scrive non
-è quella in cui è scritta**: è quella che il progetto dichiara. Sono due chiavi perché sono due
-pubblici diversi, e su molti progetti non coincidono.
+The skills of this package are written in English, but **the language a skill writes in is not
+the one it is written in**: it is the one the project declares. There are two keys because there are two
+different audiences, and on many projects they do not coincide.
 
-- **`{language.chat}`** — tutto ciò che legge una persona: la risposta in chat, il riepilogo di
-  fine skill, il referto, e i documenti che il metodo produce (`0. problem.md`,
-  `1. decision-doc.md`, `2. blueprint.md`, le note di review, il report di consegna).
-- **`{language.commit}`** — tutto ciò che resta nella storia condivisa del repository: il
-  messaggio di commit e la voce di changelog. È separata perché un progetto con interfaccia in
-  una lingua ha spesso una storia Git in un'altra, e chi legge `git log` fra due anni non è chi
-  sta guardando questa chat adesso.
+- **`{language.chat}`** — everything a person reads: the chat reply, the end-of-skill summary, the report, and the documents the method produces (`0. problem.md`,
+  `1. decision-doc.md`, `2. blueprint.md`, the review notes, the delivery report).
+- **`{language.commit}`** — everything staying in the repository's shared history: the
+  commit message and the changelog entry. It is separate because a project with an interface in
+  one language often has a Git history in another, and whoever reads `git log` in two years is not who
+  is watching this chat right now.
 
-**Vale per ogni contratto del pacchetto, senza che nessuno la ripeta.** Ogni skill parametrizzata
-porta in testa la riga della §5.1, che rimanda a questa §5: quella riga basta, e una skill che
-riscrivesse la regola qui sopra la farebbe divergere alla prima modifica.
+**It applies to every contract in the package, without anyone repeating it.** Every parameterised skill
+carries at the top the §5.1 line, which refers to this §5: that line is enough, and a skill
+rewriting the rule above would make it diverge at the first change.
 
-Se una delle due chiavi non c'è, la §6 dice che quella cosa non esiste — e qui significa una cosa
-precisa: **rispecchia la lingua di ciò che hai davanti**. Per la chat, la lingua in cui l'utente ti
-ha scritto; per un commit, quella dei messaggi già nello storico. Non è un ripiego elegante, ma è
-l'unico che non impone una scelta che nessuno ha fatto.
+If one of the two keys is missing, §6 says that thing does not exist — and here it means one specific
+thing: **mirror the language of what is in front of you**. For chat, the language the user wrote
+to you in; for a commit, that of the messages already in the history. It is not an elegant fallback, but it is
+the only one that imposes no choice nobody made.
 
-### 5.6 Ciò che `init` deposita è in inglese, e le due chiavi non lo riguardano
+### 5.6 What `init` deposits is in English, and the two keys do not concern it
 
-Le due chiavi della §5.5 dicono come le skill parlano a una persona e cosa lasciano nella storia
-del repository. **Non dicono in che lingua è fatto Daiku.** Gli scheletri che il pacchetto porta —
-`project.json`, il file di istruzioni, i README di `domain/` e di `policies/`, i default di
-dominio — arrivano in inglese, e `init` li compila in inglese qualunque cosa l'utente abbia
-risposto.
+The two keys of §5.5 say how the skills speak to a person and what they leave in the repository's
+history. **They do not say in which language Daiku is made.** The skeletons the package carries —
+`project.json`, the instructions file, the `domain/` and `policies/` READMEs, the domain
+defaults — arrive in English, and `init` compiles them in English whatever the user
+answered.
 
-Il corpus sta in una lingua sola perché lo rileggono le skill a ogni esecuzione, perché un
-progetto cambia mani, e perché un file di istruzioni mezzo tradotto è la peggiore delle due forme.
-Da quel momento quei file sono dell'utente, che li riscrive nella lingua che preferisce: la regola
-vincola ciò che Daiku scrive, non ciò che ci viene scritto dopo.
+The corpus lives in a single language because the skills re-read it on every run, because a
+project changes hands, and because a half-translated instructions file is the worst of both forms.
+From then on those files belong to the user, who rewrites them in whatever language they prefer: the rule
+binds what Daiku writes, not what is written into them afterwards.
 
-## 6. Degradazione — ciò che il JSON non dichiara non esiste
+## 6. Degradation — what the JSON does not declare does not exist
 
-Una chiave assente non è un errore da segnalare all'utente né una domanda da fare: è
-l'affermazione che quella cosa, in questo progetto, non c'è.
+An absent key is neither an error to report to the user nor a question to ask: it is
+the statement that that thing, in this project, is not there.
 
-- **Manca una chiave che serve a un passo**: il passo si salta, e l'esito lo dichiara in una
-  riga. Nessun valore di ripiego, nessuna euristica, nessun comando indovinato.
-- **Manca un'area**: la parte di lavoro che la riguarda non esiste. Un progetto senza frontend
-  non produce un gate frontend rosso: non produce niente, e lo dice.
-- **Manca `.daiku/project.json`**: la skill non è parametrizzabile su questo progetto. Fermati e
-  dillo, invece di ricadere sui valori di un altro progetto.
-- **Un comando dichiarato fallisce**: è un esito reale, non una chiave mancante. Si riporta
-  l'output, non si cerca un comando alternativo.
+- **A key needed by a step is missing**: the step is skipped, and the outcome declares it in one
+  line. No fallback value, no heuristics, no guessed command.
+- **An area is missing**: the work concerning it does not exist. A project without a frontend
+  does not produce a red frontend gate: it produces nothing, and says so.
+- **`.daiku/project.json` is missing**: the skill cannot be parameterised on this project. Stop and
+  say so, instead of falling back on another project's values.
+- **A declared command fails**: it is a real outcome, not a missing key. Report
+  the output, do not look for an alternative command.
 
-Il prezzo di questa regola è dichiarato: un JSON incompleto produce una skill che fa meno, non
-una skill che sbaglia. È la direzione voluta.
+The price of this rule is declared: an incomplete JSON produces a skill that does less, not
+a skill that gets it wrong. It is the intended direction.
 
-## 7. Versione del contratto
+## 7. Contract version
 
-`contract` è un intero che identifica la **forma** del file, non il suo contenuto.
+`contract` is an integer identifying the **form** of the file, not its content.
 
-- **Si incrementa** solo quando la forma cambia in modo che una skill scritta sulla forma
-  precedente leggerebbe male: una chiave rinominata o rimossa, un tipo che cambia, un
-  significato che si sposta.
-- **Non si incrementa** per una chiave nuova e opzionale: una skill che non la conosce la ignora,
-  una skill che la vuole e non la trova ricade sulla §6. È il caso normale.
-- **Le skill non si ramificano su `contract`**: la §6 copre già ogni chiave mancante. Il numero
-  serve a rendere riconoscibile un JSON rimasto indietro, quindi una skill che degrada per una
-  chiave assente riporta anche il `contract` che ha letto.
-- **Non si incrementa per una chiave rimossa che nessuna skill leggeva.** È l'unica eccezione
-  alla prima regola, e si tiene in piedi da sé: il numero serve a rendere riconoscibile un JSON
-  che una skill **leggerebbe male**, e una chiave che nessuno apriva non può essere letta male da
-  nessuno. Un `project.json` che se la porta ancora dietro ha una riga in più che nessuno guarda,
-  non un difetto. La condizione è stretta e va verificata, non assunta: *nessuna* skill del
-  pacchetto la cita.
-- **Incrementarlo è un lavoro coordinato**: si aggiorna questo file, poi il `project.json` di
-  ogni progetto, poi le skill che leggono la forma nuova. Finché quel giro non è chiuso,
-  l'aggiornamento delle skill non è più atomico — che è la ragione per cui il numero esiste.
+- **It is incremented** only when the form changes so that a skill written on the
+  previous form would read badly: a renamed or removed key, a changing type, a
+  shifting meaning.
+- **It is not incremented** for a new optional key: a skill not knowing it ignores it,
+  a skill wanting it and not finding it falls back on §6. It is the normal case.
+- **Skills do not branch on `contract`**: §6 already covers every missing key. The number
+  exists to make a lagging JSON recognisable, so a skill degrading on an
+  absent key also reports the `contract` it read.
+- **It is not incremented for a removed key no skill read.** It is the only exception
+  to the first rule, and it stands on its own: the number exists to make recognisable a JSON
+  that a skill **would read badly**, and a key nobody opened cannot be read badly by
+  anyone. A `project.json` still carrying it has one extra line nobody looks at,
+  not a defect. The condition is strict and must be verified, not assumed: *no* skill in the
+  package cites it.
+- **Incrementing it is a coordinated job**: update this file, then the `project.json` of
+  every project, then the skills reading the new form. Until that round is closed,
+  updating the skills is no longer atomic — which is why the number exists.
 
-La forma corrente è **2**. È salita da `1` quando `memory_catalogs` è diventato `memory.catalogs`,
-accanto a `memory.root` e `memory.index` che prima non esistevano: una skill scritta sulla forma
-`1` cercherebbe la chiave vecchia e non la troverebbe, che è esattamente il caso che il numero
-serve a rendere riconoscibile.
+The current form is **2**. It rose from `1` when `memory_catalogs` became `memory.catalogs`,
+beside `memory.root` and `memory.index` which did not exist before: a skill written on form
+`1` would look for the old key and not find it, which is exactly the case the number
+exists to make recognisable.
 
-**Ed è rimasta `2` il 19 settembre 2026**, quando `memory.catalogs` è stata rimossa: la leggeva
-solo `memory-review`, che quel giorno è stata eliminata dal pacchetto, e dopo di lei nessuna
-skill la citava più. È il caso della quarta regola qui sopra, ed è scritto qui perché chi
-applica la prima meccanicamente si aspetterebbe un `3`.
+**And it stayed `2` on 19 September 2026**, when `memory.catalogs` was removed: only
+`memory-review` read it, which that day was deleted from the package, and after it no
+skill cited it any more. It is the fourth rule's case above, and it is written here because whoever
+applies the first one mechanically would expect a `3`.
 
-**Ed è rimasta `2` il 21 settembre 2026**, quando `guardrails.deny_push` e
-`guardrails.deny_no_verify` sono state rimosse: dopo la rimozione nessuna skill le citava più —
-la guardia che le leggeva non è una skill — ed è lo stesso caso. Un `project.json` che se le
-porta ancora dietro non si legge male: ha due righe che nessuno guarda.
+**And it stayed `2` on 21 September 2026**, when `guardrails.deny_push` and
+`guardrails.deny_no_verify` were removed: after removal no skill cited them any more —
+the guard reading them is not a skill — and it is the same case. A `project.json` still
+carrying them does not read badly: it has two lines nobody looks at.
 
-## 8. Progetto o ambiente — in quale dei due file
+## 8. Project or environment — in which of the two files
 
-I file di parametri sono due, e la domanda che li separa è una sola: **quel valore cambia da
-progetto a progetto, o resta lo stesso su tutti i progetti dello stesso owner?**
+There are two parameter files, and a single question separates them: **does that value change from
+project to project, or does it stay the same across all of one owner's projects?**
 
-- **Varia per progetto** → `.daiku/project.json`, con le chiavi della §4.
-- **È costante per l'owner, e varia semmai per macchina o per host** → `~/.daiku/environment.json`,
-  con le chiavi dichiarate in `contracts/orchestration.md` §7, che di quei valori è il consumatore
-  principale.
+- **Varies per project** → `.daiku/project.json`, with the §4 keys.
+- **Constant for the owner, varying at most per machine or per host** → `~/.daiku/environment.json`,
+  with the keys declared in `contracts/orchestration.md` §7, which is their main
+  consumer.
 
-I due file hanno la **stessa forma**: `contract` in testa (§7), valori letterali e mai
-descrizioni (§2), stessa convenzione di citazione fra graffe dentro un code span (§5.2), stessa
-riga di apertura (§5.1, che li copre entrambi) e stessa degradazione (§6). Quelle regole si
-leggono qui una volta e valgono per entrambi: non si riscrivono altrove. Cambia solo la radice
-del percorso citato e il file che la skill apre.
+The two files have the **same form**: leading `contract` (§7), literal values and never
+descriptions (§2), same brace-citation convention inside a code span (§5.2), same
+opening line (§5.1, covering both) and same degradation (§6). Those rules are
+read here once and apply to both: they are not rewritten elsewhere. Only the cited path's root
+changes, and the file the skill opens.
 
-### Dove vive ciascuno dei due
+### Where each of the two lives
 
-`project.json` sta **nel progetto**, sotto `.daiku/`: è del progetto, si versiona con lui, e chi
-ne fa un clone se lo ritrova già scritto.
+`project.json` lives **in the project**, under `.daiku/`: it belongs to the project, is versioned with it, and whoever
+clones it finds it already written.
 
-`environment.json` no: sta in `~/.daiku/environment.json`, **uno per owner e per macchina**. Se
-stesse dentro ogni progetto sarebbe esattamente la duplicazione che questa sezione condanna —
-cambiare l'alias di un modello vorrebbe dire ripetere la stessa identica modifica in N progetti —
-e per giunta porterebbe nella storia condivisa di un repository dei valori che sono della macchina
-di chi ci lavora.
+`environment.json` does not: it lives in `~/.daiku/environment.json`, **one per owner and per machine**. If
+it lived inside every project it would be exactly the duplication this section condemns —
+changing a model's alias would mean repeating the same identical change in N projects —
+and on top of that it would carry into a repository's shared history values belonging to the machine
+of whoever works there.
 
-**Un progetto può però sovrascriverlo.** Chi lo legge cerca in quest'ordine:
+**A project may still override it.** Whoever reads it looks in this order:
 
-1. `.daiku/environment.json` nella radice tecnica, se esiste;
+1. `.daiku/environment.json` in the technical root, if it exists;
 2. `~/.daiku/environment.json`.
 
-**Vince il primo che trova, e lo prende intero**: i due non si fondono. Un override di progetto è
-un file completo, non un elenco di differenze — così ciò che si legge resta un file solo, e nessuno
-deve ricostruire a mente da quale delle due sedi arrivi ciascuna chiave. Serve dove una home
-dell'owner non c'è (una CI, un container) o dove un progetto preciso gira su un backend che gli
-altri non usano.
+**The first one found wins, and is taken whole**: the two are not merged. A project override is
+a complete file, not a list of differences — so what is read stays a single file, and nobody
+must reconstruct in their head which of the two locations each key comes from. It serves where an owner's home
+is missing (a CI, a container) or where one precise project runs on a backend the
+others do not use.
 
-**Quando un valore sembra stare in tutti e due**, decide chi lo aggiornerebbe al prossimo
-cambiamento: se metterlo in `project.json` costringesse a ripetere la stessa identica modifica in
-N progetti, è di ambiente. Un valore di ambiente non si duplica mai in `project.json`, nemmeno
-"per averlo sotto mano": la duplicazione ricrea un livello più in là esattamente il problema che
-l'atomicità chiude.
+**When a value seems to belong in both**, whoever would update it at the next
+change decides: if putting it in `project.json` forced repeating the same identical change in
+N projects, it belongs to the environment. An environment value is never duplicated in `project.json`, not even
+"to have it at hand": duplication recreates one level further exactly the problem that
+atomicity closes.

@@ -1,5 +1,5 @@
 interface:
   display_name: "Test Coverage"
-  short_description: "Copertura e test di review"
+  short_description: "Coverage and tests of review"
 policy:
   allow_implicit_invocation: false

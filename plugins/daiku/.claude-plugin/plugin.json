@@ -1,8 +1,8 @@
 {
   "name": "daiku",
   "version": "0.1.0",
-  "description": "Metodo di sviluppo autonomo architecture-first: i contratti delle skill, l'orchestrazione a ruoli e i contratti dei parametri di progetto.",
+  "description": "Autonomous architecture-first development method: skill contracts, role orchestration, and project parameter contracts.",
   "author": { "name": "Nicola Tomasoni" },
-  "keywords": ["metodo", "orchestrazione", "review", "memoria", "contratti"],
+  "keywords": ["method", "orchestration", "review", "memory", "contracts"],
   "hooks": "./hooks/hooks.json"
 }

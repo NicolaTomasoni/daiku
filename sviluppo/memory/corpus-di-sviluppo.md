@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 48eaa498-ed6e-4a36-847d-3f8fa95f7f21
-  modified: 2026-09-21T14:19:51.256Z
+  modified: 2026-09-22T11:51:49.601Z
 ---
 
 Dal 18 settembre 2026 `.claude/` porta un **corpus di sviluppo**: `orchestration.md`, i comandi in
@@ -58,6 +58,18 @@ senza eccezioni. Nel cantiere la skill resta finché qualcuno non decide di togl
 
 **Due nomi non coincidono più**, dopo che il prodotto li ha rinominati: il `research` del pacchetto (con `study` come foglia di riordino) è lo `studia-libreria` di qui, e il suo `new-feature` è lo `studia-problema` di qui. Cercare il
 contratto corrispondente per nome non funziona su questi due.
+
+**Dal 22 settembre 2026 i due corpus non parlano più la stessa lingua.** `plugins/daiku/` è tutto
+in inglese — contratti, skill, commenti e messaggi degli hook, `short_description` degli
+`openai.yaml` — mentre il cantiere resta in italiano, e ci resta per scelta: lo legge chi
+costruisce Daiku, non chi lo installa. Il confine fra le due lingue coincide ora con quello fra
+prodotto e cantiere, che è più facile da tenere del confine fra due pubblici che si aveva prima.
+Conseguenza pratica: **cercare un passaggio del prodotto per le sue parole italiane non funziona
+più**, e un rilievo scritto in italiano su una riga del pacchetto va tradotto prima di applicarlo.
+Nello stesso giorno, su ordine esplicito dell'owner, sono state corrette qui due citazioni rimaste
+ai nomi morti delle chiavi dei banchi (`controlli`/`passati`/`falliti` → `checks`/`passed`/`failed`)
+in `orchestration.md` e `commands/review.md`: erano le uniche due sedi del cantiere che nominavano
+identificatori del prodotto. Vedi [[confine-degli-identificatori]].
 
 **E dal 19 settembre 2026 diverge anche il nome di un ruolo.** Nel prodotto il ruolo che decide si
 chiama `judge`, qui ancora `giudice` — 11 occorrenze in 6 file, `orchestration.md` compreso. Nel

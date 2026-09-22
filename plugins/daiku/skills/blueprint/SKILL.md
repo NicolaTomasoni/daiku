@@ -1,140 +1,140 @@
 ---
 name: 'blueprint'
-description: 'Contratto interno di develop-feature — dal documento di decisione e dalla soluzione scelta produce un brief di esecuzione autonoma (2. blueprint.md) e si ferma lì, senza eseguire.'
+description: 'Internal develop-feature contract — from the decision document and the chosen solution it produces an autonomous execution brief (2. blueprint.md) and stops there, without executing.'
 user-invocable: false
 ---
 
-È il passo a valle di `decision-doc`. Ricevi la cartella che contiene il documento di decisione (`1. decision-doc.md`) e l'indicazione della **soluzione scelta** dall'utente. Produci **un solo file**, `2. blueprint.md`, che è un **brief di esecuzione autonoma**: contiene **solo** le informazioni necessarie alla soluzione scelta, e una **sezione Memoria** con un **piano di implementazione pre-fatto, diviso in task ordinati**. Ti **fermi al brief**: non esegui il piano e non lanci nessun esecutore. L'esecuzione è un passo separato e atomico (`execute`).
+It is the step downstream of `decision-doc`. You receive the folder containing the decision document (`1. decision-doc.md`) and the indication of the **chosen solution** by the user. You produce **a single file**, `2. blueprint.md`, which is an **autonomous execution brief**: it contains **only** the information needed for the chosen solution, and a **Memory section** with a **ready-made implementation plan, split into ordered tasks**. You **stop at the brief**: you do not execute the plan and you do not launch any executor. Execution is a separate and atomic step (`execute`).
 
-Il file generato serve a un *futuro* esecutore, che non sa nulla di come è nato: deve istruirlo a portare a termine il lavoro **dall'inizio alla fine in autonomia, senza chiedere altro all'utente** — perché ogni specifica è già definita nel documento e la preferenza dell'utente è già stata espressa — e a **compilare la Memoria man mano** che esegue i task, prendendo nota e rispettando l'ordine prestabilito.
+The generated file serves a *future* executor, who knows nothing of how it came to be: it must instruct it to carry the work through **from start to finish autonomously, without asking anything else of the user** — because every specification is already defined in the document and the user preference has already been expressed — and to **fill in the Memory as it goes** while executing the tasks, taking notes and respecting the established order.
 
-Tu, qui, **non esegui** il piano: lo **prepari** soltanto. Il file resta la fonte di verità — proprio perché è autosufficiente è la consegna perfetta per un esecutore (`execute`) che parte da zero e non sa nulla di come è nato.
+You, here, **do not execute** the plan: you only **prepare** it. The file remains the source of truth — precisely because it is self-sufficient it is the perfect handoff for an executor (`execute`) starting from zero and knowing nothing of how it came to be.
 
-> **Parametri.** Ogni chiave fra graffe di questo contratto si risolve sui file di parametri del progetto, mai a memoria e mai per assunzione: le regole sono nella §5 di `contracts/project-contract.md`, che dice anche **in quale lingua scrivere** e cosa fare quando una chiave non c'è.
+> **Parameters.** Every key in braces in this contract resolves on the project parameter files, never from memory and never by assumption: the rules are in §5 of `contracts/project-contract.md`, which also says **in which language to write** and what to do when a key is missing.
 
-## Input: cartella e soluzione scelta
+## Input: folder and chosen solution
 
-Argomenti: `$ARGUMENTS`
+Arguments: `$ARGUMENTS`
 
-L'argomento indica la **cartella** (dove vive `1. decision-doc.md`) e **quale soluzione** è stata scelta.
+The argument indicates the **folder** (where `1. decision-doc.md` lives) and **which solution** was chosen.
 
-- Se la cartella non ti è stata passata, o non esiste, **fermati e dillo nel blocco**: non c'è nessuno a cui chiederla.
-- Cerca `1. decision-doc.md` nella cartella. Se non c'è ma c'è `0.5. studio-strategico.md`, **fermati**: le decisioni non sono chiuse, e un brief costruito sullo studio strategico congelerebbe un piano su opzioni che nessuno ha scelto. Se non c'è né l'uno né l'altro, fermati lo stesso e dichiara cosa hai trovato nella cartella.
-- **Identifica la soluzione scelta** confrontando l'indicazione che hai ricevuto con le decisioni del documento. Se è ambigua o assente, **non chiedere e non indovinare**: fermati, e nel blocco elenca le decisioni e le opzioni che il documento dichiara davvero, così che chi ti ha invocato possa portarle a chi decide. È la stessa regola dei tre casi qui sopra e di quello qui sotto, e non ha eccezioni — non hai un canale verso l'owner (§ *Domandare all'owner* di `contracts/orchestration.md`). Il brief che produci, a sua volta, deve rendere l'esecuzione successiva autonoma.
-- Se le decisioni nel documento sono più d'una, raccogli **tutte** le scelte dell'utente (una per decisione) prima di generare il brief.
-- Con la cartella ricevi anche `{memory.index}` e i **path** delle memorie che il perimetro tocca, da aprire prima di decidere: è il canale di §4.1 di `contracts/orchestration.md`. Se il chiamante non te li passa, apri l'indice e scegli tu — un brief che ignora una decisione già presa la fa riscoprire all'esecutore a sue spese.
-- Con più scelte, **verifica che siano reciprocamente coerenti** (l'opzione scelta per una decisione non deve contraddire quella di un'altra). Se sono incompatibili, fermati e riporta nel blocco quali si contraddicono e perché, senza generare il brief.
+- If the folder was not passed to you, or does not exist, **stop and say so in the block**: there is nobody to ask for it.
+- Look for `1. decision-doc.md` in the folder. If it is not there but `0.5. strategic-study.md` is, **stop**: decisions are not closed, and a brief built on the strategic study would freeze a plan on options nobody chose. If neither one nor the other is there, stop just the same and declare what you found in the folder.
+- **Identify the chosen solution** by comparing the indication you received with the decisions of the document. If it is ambiguous or absent, **do not ask and do not guess**: stop, and in the block list the decisions and options the document truly declares, so that whoever invoked you can bring them to whoever decides. It is the same rule as the three cases above and the one below, and it has no exceptions — you have no channel to the owner (§ *Ask the owner* of `contracts/orchestration.md`). The brief you produce, in turn, must make the later execution autonomous.
+- If the decisions in the document are more than one, collect **all** the user choices (one per decision) before generating the brief.
+- With the folder you also receive `{memory.index}` and the **paths** of the memories the perimeter touches, to open before deciding: it is the channel of §4.1 of `contracts/orchestration.md`. If the caller does not pass them to you, open the index and choose yourself — a brief that ignores a decision already taken makes the executor rediscover it at its own expense.
+- With several choices, **verify that they are mutually coherent** (the option chosen for one decision must not contradict that of another). If they are incompatible, stop and report in the block which ones contradict each other and why, without generating the brief.
 
-## Principi
+## Principles
 
-1. **Solo ciò che serve.** Nel brief entra solo l'informazione necessaria a realizzare la soluzione scelta: la decisione pertinente, l'opzione scelta, la sua motivazione, i vincoli e le specifiche rilevanti, i criteri di completamento. **Scarta** le opzioni non scelte e le decisioni non correlate — non devono distrarre l'esecutore.
-2. **Niente perdita di specifiche.** Tutto ciò che serve a eseguire deve essere *dentro* `2. blueprint.md` (o puntare esplicitamente a un file di riferimento nella cartella). L'esecutore non deve tornare al documento di decisione né all'utente per recuperare un dettaglio.
-3. **Ancora il piano al codice reale, non solo al documento.** Il documento di decisione è ad alta astrazione e può non riflettere lo stato attuale del codice. Prima di congelare il piano, **leggi il codice e i file coinvolti** e verifica che le assunzioni reggano (i file esistono, le firme sono quelle attese, il punto d'innesto è dove credi). Se la realtà diverge dal documento, **adatta i task** e annota la divergenza. Un piano costruito senza guardare il terreno è la prima causa di errore.
-4. **Verifica osservabile, non auto-dichiarata.** Ogni task ha un **criterio di verifica eseguibile**: il controllo osservabile più forte disponibile per quel tipo di lavoro — build, test, `grep`, un comando per il codice; un controllo concreto equivalente quando il lavoro non è codice (un file prodotto nella forma attesa, un output confrontabile). Mai "fatto quando sembra fatto": il verdetto è del controllo, non dell'esecutore. Niente task vaghi.
-5. **Verifica di chiusura obbligatoria.** Gli ultimi task del piano sono sempre una verifica di chiusura: il controllo più forte **mirato al perimetro toccato** (per il codice: import dei moduli toccati e i soli test che coprono ciò che è cambiato; altrimenti il controllo concreto equivalente) e una auto-review del risultato contro i criteri di completamento iniziali. Senza questo, l'autonomia produce risultati sbagliati con sicurezza. Il gate di pacchetto — suite completa, lint, type-check, build — **non entra nel piano**: è di `/review`, che lo esegue sempre sul diff.
-6. **Ancorato agli input.** Non inventare specifiche, vincoli o task che il documento, i file di riferimento e il codice non giustificano. Se un dettaglio operativo manca davvero, scrivilo come **assunzione esplicita** dentro il brief, così l'esecutore procede con consapevolezza invece di fermarsi.
-7. **Tu prepari, non esegui.** Non modificare il codice del progetto. Puoi e devi **leggerlo** per ancorare il piano (principio 3), ma il tuo unico output scritto è `2. blueprint.md`.
+1. **Only what is needed.** The brief includes only the information needed to realise the chosen solution: the relevant decision, the chosen option, its rationale, the relevant constraints and specifications, the completion criteria. **Discard** the unchosen options and the unrelated decisions — they must not distract the executor.
+2. **No loss of specifications.** Everything needed to execute must be *inside* `2. blueprint.md` (or explicitly point to a reference file in the folder). The executor must not return to the decision document nor to the user to recover a detail.
+3. **Anchor the plan to the real code, not only to the document.** The decision document is highly abstract and may not reflect the current state of the code. Before freezing the plan, **read the code and the files involved** and verify that the assumptions hold (the files exist, the signatures are as expected, the integration point is where you believe). If reality diverges from the document, **adapt the tasks** and annotate the divergence. A plan built without looking at the ground is the first cause of error.
+4. **Observable verification, not self-declared.** Every task has an **executable verification criterion**: the strongest observable check available for that kind of work — build, test, `grep`, a command for code; a concrete equivalent check when the work is not code (a file produced in the expected form, a comparable output). Never "done when it looks done": the verdict belongs to the check, not to the executor. No vague tasks.
+5. **Mandatory closing verification.** The last tasks of the plan are always a closing verification: the strongest check **targeted at the touched perimeter** (for code: imports of the touched modules and only the tests covering what changed; otherwise the concrete equivalent check) and a self-review of the result against the initial completion criteria. Without this, autonomy produces wrong results with confidence. The package gate — full suite, lint, type-check, build — **does not enter the plan**: it belongs to `/review`, which always runs it on the diff.
+6. **Anchored to the inputs.** Do not invent specifications, constraints or tasks that the document, the reference files and the code do not justify. If an operational detail is truly missing, write it as an **explicit assumption** inside the brief, so the executor proceeds knowingly instead of stopping.
+7. **You prepare, you do not execute.** Do not modify the project code. You can and must **read it** to anchor the plan (principle 3), but your only written output is `2. blueprint.md`.
 
-## Procedura
+## Procedure
 
-1. **Risolvi la cartella** e apri `1. decision-doc.md`. Individua le decisioni e le opzioni.
+1. **Resolve the folder** and open `1. decision-doc.md`. Locate the decisions and the options.
 
-2. **Fissa la/le scelta/e** dell'utente da `$ARGUMENTS`.
+2. **Pin down the choice(s)** of the user from `$ARGUMENTS`.
 
-3. **Distilla la soluzione scelta**: da cosa va fatto e perché, ai vincoli e alle specifiche, ai criteri di completamento. Tieni solo il materiale dell'opzione scelta.
+3. **Distill the chosen solution**: from what must be done and why, to the constraints and specifications, to the completion criteria. Keep only the material of the chosen option.
 
-4. **Ancora al codice reale.** Leggi i file e i punti del codice che la soluzione tocca. Verifica che le assunzioni del documento reggano e raccogli i path e i dettagli concreti che serviranno all'esecutore. Dove la realtà diverge dal documento, adatta di conseguenza il piano del passo successivo.
+4. **Anchor to the real code.** Read the files and the code locations the solution touches. Verify that the assumptions of the document hold and collect the concrete paths and details the executor will need. Where reality diverges from the document, adapt the plan of the next step accordingly.
 
-5. **Costruisci il piano di implementazione**: scomponi la soluzione in task ordinati e verificabili. Ogni task = un passo eseguibile + un **controllo osservabile** che lo dichiara concluso. Se un task ne presuppone un altro, mettilo dopo. **Apri** il piano con un task di ricognizione (verifica sul campo le assunzioni residue) e **chiudilo** con la verifica di chiusura obbligatoria (il controllo più forte mirato al perimetro — import e test del codice toccato — + auto-review contro i criteri di completamento).
+5. **Build the implementation plan**: break the solution into ordered and verifiable tasks. Each task = one executable step + one **observable check** declaring it complete. If one task presupposes another, put it after. **Open** the plan with a reconnaissance task (verify in the field the remaining assumptions of the brief) and **close it** with the mandatory closing verification (the strongest check targeted at the perimeter — imports and tests of the touched code — + self-review against the completion criteria).
 
-6. **Scrivi `2. blueprint.md`** nella cartella di input, con la struttura sotto. Includi la riga di **provenienza** (da quale documento e versione/data nasce il brief). Se esiste già, **non** rieseguire il brief e non scriverne un secondo: segnalalo e chiudi col path esistente (vedi § *Cosa restituisci*). Salva nella codifica del progetto, senza degradare i caratteri non ASCII.
+6. **Write `2. blueprint.md`** in the input folder, with the structure below. Include the **provenance** line (from which document and version/date the brief originates). If it already exists, do **not** rerun the brief and do not write a second one: report it and close with the existing path (see § *What you return*). Save in the project encoding, without degrading non-ASCII characters.
 
-7. **Riepiloga in chat** in poche righe: la soluzione scelta e i task del piano in ordine. Il dettaglio sta nel file.
+7. **Summarise in chat** in a few lines: the chosen solution and the tasks of the plan in order. The detail lives in the file.
 
-8. **Fermati qui.** Non eseguire il piano e non lanciare nessun esecutore: chi ti ha invocato apre `execute` sulla stessa cartella, ed è la fase successiva della sua sequenza, non un comando che qualcuno deve ricordarsi di digitare.
+8. **Stop here.** Do not execute the plan and do not launch any executor: whoever invoked you opens `execute` on the same folder, and it is the next phase of its sequence, not a command somebody must remember to type.
 
-## Struttura del file prodotto (`2. blueprint.md`)
+## Structure of the produced file (`2. blueprint.md`)
 
-Il file è scritto **rivolgendosi all'esecutore** (seconda persona, imperativo operativo).
+The file is written **addressing the executor** (second person, operational imperative).
 
 ```text
-# Esecuzione: <nome della soluzione scelta>
+# Execution: <chosen solution name>
 
-> Origine: <documento, versione/data> · Generato: <data>
+> Source: <document, version/date> · Generated: <date>
 
-## Mandato                          ← istruzioni di autonomia per l'esecutore
-- Esegui questo piano dall'inizio alla fine **in autonomia**.
-- **Non chiedere informazioni all'utente**: ogni specifica è già qui e la
-  scelta è già stata fatta. Se un dettaglio sembra mancare, deducilo da questo
-  brief e dai file di riferimento citati, non interrompere.
-- Fermati e restituisci il blocco **solo** davanti a un vero ostacolo (azione distruttiva o
-  irreversibile non giustificata dal brief, o contraddizione interna insanabile).
-- **Questo file è la fonte di verità.** Se riprendi dopo un'interruzione o una
-  compattazione del contesto, **rileggilo per intero** (stato dei task + Diario)
-  prima di continuare: lo stato del lavoro vive qui, non nella memoria di sessione.
-- Segui i task **nell'ordine** dato. Puoi **adattare il piano** (aggiungere,
-  riordinare o sostituire task) solo quando l'esecuzione fa emergere fatti nuovi
-  che lo rendono necessario: in tal caso aggiorna i task e **scrivi nel Diario
-  perché**. Non saltare l'ordine per comodità.
-- Aggiorna la **Memoria** man mano che procedi: spunta i task, annota decisioni,
-  risultati e problemi.
+## Mandate                          ← autonomy instructions for the executor
+- Execute this plan from start to finish **autonomously**.
+- **Do not ask the user for information**: every specification is already here and the
+  choice has already been made. If a detail seems missing, derive it from this
+  brief and the cited reference files, do not stop.
+- Stop and return the block **only** in front of a true obstacle (destructive or
+  irreversible action not justified by the brief, or unresolvable internal contradiction).
+- **This file is the source of truth.** If you resume after an interruption or a
+  context compaction, **reread it in full** (task state + Journal)
+  before continuing: the state of the work lives here, not in session memory.
+- Follow the tasks **in the given order**. You may **adapt the plan** (add,
+  reorder or replace tasks) only when execution surfaces new facts
+  that make it necessary: in that case update the tasks and **write in the Journal
+  why**. Do not skip the order for convenience.
+- Update the **Memory** as you proceed: tick off tasks, note decisions,
+  results and problems.
 
-## Vincoli e perimetro              ← guardrail per l'esecuzione autonoma
-- Modifiche chirurgiche: tocca solo ciò che serve alla soluzione. Niente
-  refactoring o miglioramenti fuori scope.
-- Rispetta le regole architetturali del progetto (`{instructions_file}` e
+## Constraints and perimeter        ← guardrails for autonomous execution
+- Surgical changes: touch only what the solution needs. No
+  refactoring or improvements out of scope.
+- Respect the project's architectural rules (`{instructions_file}` and
   `.daiku/policies/`).
-- Niente operazioni Git distruttive o remote (no reset --hard non giustificato,
-  no push, no PR) salvo richiesta esplicita nel brief.
-- Non fare (non-goals): <elenca ciò che è esplicitamente fuori da questa soluzione>
+- No destructive or remote Git operations (no unjustified reset --hard,
+  no push, no PR) unless explicitly requested in the brief.
+- Do not do (non-goals): <list what is explicitly out of this solution>
 
-## La soluzione scelta              ← solo l'info necessaria, distillata
-- Cosa va fatto e perché (la decisione e l'opzione scelta)
-- Vincoli e specifiche rilevanti
-- Criteri di completamento / quality gate
-- Assunzioni esplicite (se qualche dettaglio operativo non era nel documento)
-- File di riferimento e punti del codice utili (path nella cartella e nel repo)
+## The chosen solution              ← only the needed info, distilled
+- What to do and why (the decision and the chosen option)
+- Relevant constraints and specifications
+- Completion criteria / quality gate
+- Explicit assumptions (if some operational detail was not in the document)
+- Reference files and useful code locations (paths in the folder and in the repo)
 
-## Memoria — piano e diario di esecuzione   ← piano pre-fatto, da compilare
-   Stato: [ ] da fare · [~] in corso · [x] fatto
+## Memory — plan and journal        ← ready-made plan, to fill in
+   State: [ ] to do · [~] in progress · [x] done
 
-   - [ ] Task 0 — Ricognizione: verifica sul campo le assunzioni residue del
-         brief (file/firme/punto d'innesto esistono come previsto).
-         Verifica: <controllo osservabile; se diverge, adatta il piano e annota>
-         Note:
-   - [ ] Task 1: <passo eseguibile>
-         Verifica: <controllo osservabile: build/test/grep/comando>
-         Note: (compila durante l'esecuzione)
+   - [ ] Task 0 — Reconnaissance: verify in the field the remaining assumptions of the
+         brief (files/signatures/integration point exist as expected).
+         Check: <observable check; if it diverges, adapt the plan and note it>
+         Notes:
+   - [ ] Task 1: <executable step>
+         Check: <observable check: build/test/grep/command>
+         Notes: (fill in during execution)
    - [ ] Task 2: ...
-         Verifica: ...
-         Note:
+         Check: ...
+         Notes:
    ...
-   - [ ] Task N — Verifica di chiusura: il controllo più forte mirato al perimetro
-         (codice: import dei moduli toccati e i soli test che li coprono; altrimenti
-         il controllo concreto equivalente) e auto-review del risultato contro i
-         criteri di completamento. Il gate di pacchetto non va qui: è di `/review`.
-         Verifica: il controllo passa; ogni criterio di completamento soddisfatto.
-         Note:
+   - [ ] Task N — Closing verification: the strongest check targeted at the perimeter
+         (code: imports of the touched modules and only the tests covering them; otherwise
+         the concrete equivalent check) and self-review of the result against the
+         completion criteria. The package gate does not go here: it belongs to `/review`.
+         Check: the check passes; every completion criterion satisfied.
+         Notes:
 
-   ### Diario
-   (Appendi qui, in ordine, cosa hai fatto, le decisioni prese, le deviazioni dal
-   piano e il perché, gli intoppi. Tieni allineato lo stato dei task qui sopra.)
+   ### Journal
+   (Append here, in order, what you did, the decisions taken, the deviations from the
+   plan and why, the hitches. Keep the task state above aligned.)
 ```
 
-Regola di taglio: chi legge `2. blueprint.md` deve poter eseguire l'intera soluzione **senza** aprire altri documenti se non i file di riferimento esplicitamente citati, e **senza** chiedere nulla all'utente.
+Cut rule: whoever reads `2. blueprint.md` must be able to execute the whole solution **without** opening other documents except the explicitly cited reference files, and **without** asking anything of the user.
 
-## Dopo il brief
+## After the brief
 
-Finisci qui: il tuo unico output è `2. blueprint.md` e il blocco di ritorno. Non eseguire il piano nel tuo contesto e non lanciare esecutori. L'esecuzione è `execute`, un passo separato che chi ti ha invocato apre in un **contesto fresco** — mai nel tuo, perché un brief scritto e poi eseguito dallo stesso contesto non è mai stato messo alla prova di essere autosufficiente, che è l'unica proprietà che gli si chiede.
+Finish here: your only output is `2. blueprint.md` and the return block. Do not execute the plan in your context and do not launch executors. Execution is `execute`, a separate step that whoever invoked you opens in a **fresh context** — never in yours, because a brief written and then executed by the same context was never put to the test of being self-sufficient, which is the only property asked of it.
 
-## Cosa restituisci
+## What you return
 
-Riepiloga in chat (Procedura punto 7) e **chiudi con questo blocco — sei la fase Brief di `develop-feature`** — che è il solo formato su cui il chiamante decide se proseguire:
+Summarise in chat (Procedure point 7) and **close with this block — you are the Brief phase of `develop-feature`** — which is the only format on which the caller decides whether to continue:
 
 ```json
-{"ok": true, "brief_path": "<path di 2. blueprint.md>", "detail": "<se ok=false, il motivo esatto>"}
+{"ok": true, "brief_path": "<path of 2. blueprint.md>", "detail": "<if ok=false, the exact reason>"}
 ```
 
-Se `2. blueprint.md` esisteva già, **non** rieseguire il brief: `ok: true` col path esistente.
+If `2. blueprint.md` already existed, do **not** rerun the brief: `ok: true` with the existing path.
 
-Lo schema sta qui, nel file del nodo che lo produce, e chi ti invoca lo cita invece di ricopiarlo (§4.2 di `contracts/orchestration.md`): un blocco riscritto nel chiamante diverge da questo alla prima modifica, e a divergere per prima è sempre la riga che qualcuno ha aggiunto dopo.
+The schema lives here, in the file of the node that produces it, and whoever invokes you cites it instead of copying it (§4.2 of `contracts/orchestration.md`): a block rewritten in the caller diverges from this one at the first modification, and the first to diverge is always the line somebody added afterwards.

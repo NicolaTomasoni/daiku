@@ -1,214 +1,214 @@
 ---
 name: 'new-feature'
-description: 'Apre una feature da una descrizione in linguaggio naturale e la porta fino al commit in un''unica esecuzione: indagine sul codice, studio delle tecnologie che non conosci abbastanza, documento di decisione, decisioni chieste in chat, e da lì la consegna intera delegata a develop-feature'
-argument-hint: '<descrizione della feature o del problema>'
+description: 'Opens a feature from a natural-language description and carries it to the commit in a single run: code investigation, study of the technologies you do not know well enough, decision document, decisions asked in chat, and from there the whole delivery delegated to develop-feature'
+argument-hint: '<feature or problem description>'
 ---
 
-Sei il nodo che **apre** un lavoro e non lo lascia a metà. Ricevi una descrizione in linguaggio naturale, indaghi il codice, ti procuri la conoscenza che ti manca, fai studiare le decisioni, le porti all'owner in chat — e con le sue risposte in mano prosegui fino al commit senza che lui debba rilanciare niente.
+You are the node **opening** a work and not leaving it halfway. You receive a natural-language description, you investigate the code, you procure the missing knowledge, you have the decisions studied, you bring them to the owner in chat — and with their answers in hand you continue to the commit without them having to relaunch anything.
 
-**L'owner interviene una volta sola**, quando risponde alle decisioni. Prima non gli chiedi nulla perché non c'è ancora niente da chiedere; dopo non gli chiedi nulla perché ha già deciso, e una conferma in più è un gesto che gli costa e non aggiunge informazione.
+**The owner intervenes only once**, when answering the decisions. Before that you ask them nothing, because there is still nothing to ask; after that you ask them nothing, because they already decided, and one more confirmation is a step that costs them effort and adds no information.
 
-> **Parametri.** Ogni chiave fra graffe di questo contratto si risolve sui file di parametri del progetto, mai a memoria e mai per assunzione: le regole sono nella §5 di `contracts/project-contract.md`, che dice anche **in quale lingua scrivere** e cosa fare quando una chiave non c'è.
+> **Parameters.** Every key in braces in this contract resolves on the project parameter files, never from memory and never by assumption: the rules are in §5 of `contracts/project-contract.md`, which also says **in which language to write** and what to do when a key is missing.
 
-## Quando usarla, e quando usare le altre
+## When to use it, and when to use the others
 
-| Da dove parti | Cosa lanci |
+| Where you start from | What you launch |
 |---|---|
-| un'idea o un problema, e sul disco non c'è ancora niente | **questa** |
-| una cartella che porta già materiale grezzo scritto a mano (note, requisiti, vincoli) | `decision-doc <cartella>` |
-| una cartella con `1. decision-doc.md` già risolto | `develop-feature <cartella> <soluzione>` |
+| an idea or a problem, and on disk there is still nothing | **this one** |
+| a folder already carrying hand-written raw material (notes, requirements, constraints) | `decision-doc <folder>` |
+| a folder with `1. decision-doc.md` already resolved | `develop-feature <folder> <solution>` |
 
-Le tre non si sovrappongono: questa skill è l'unica che parte dal **codice** invece che da un documento, ed è l'unica che apre la cartella.
+The three do not overlap: this skill is the only one starting from the **code** instead of a document, and it is the only one opening the folder.
 
-## Prima di iniziare
+## Before starting
 
-Leggi `contracts/orchestration.md`: ruoli, host, come si lancia un subagent, come si pone una domanda all'owner, concorrenza. Ogni passo qui sotto dichiara il proprio ruolo (**judge** o **worker**) e tu risolvi il modello con la regola della sua §2 — mai da qui.
+Read `contracts/orchestration.md`: roles, host, how to launch a subagent, how a question is asked of the owner, concurrency. Each step below declares its own role (**judge** or **worker**) and you resolve the model with the rule of its §2 — never from here.
 
 ## Input
 
-Argomenti: `$ARGUMENTS` — la descrizione del lavoro in linguaggio naturale. Può essere una feature da fare, una domanda su come si fa una cosa che il sistema non fa ancora, un gap («manca il cablaggio fra X e Y»), una tensione architetturale («due componenti fanno la stessa cosa»).
+Arguments: `$ARGUMENTS` — the work description in natural language. It can be a feature to make, a question on how to do something the system does not do yet, a gap ("the wiring between X and Y is missing"), an architectural tension ("two components do the same thing").
 
-Se `$ARGUMENTS` è vuoto, **chiedi** cosa si lavora e fermati finché non arriva. È l'unica domanda ammessa prima delle decisioni.
+If `$ARGUMENTS` is empty, **ask** what is worked on and wait until it arrives. It is the only question admitted before the decisions.
 
-## La sequenza
+## The sequence
 
-Le fasi sono ordinate e non saltabili. Ognuna dichiara il proprio ruolo, e ogni passo delegato è **un subagent in contesto fresco** con il prompt che gli dà il contratto da leggere, l'input risolto e il blocco da restituire (§4 di `contracts/orchestration.md`).
+The phases are ordered and not skippable. Each declares its own role, and every delegated step is **one subagent in a fresh context** with the prompt giving it the contract to read, the resolved input and the block to return (§4 of `contracts/orchestration.md`).
 
-Avanzamento e rilievi vanno **in chat**, man mano: una riga quando una fase parte e quando torna, e subito ciò che hai notato e che non entra in nessun blocco. Non tenere un log su file: lo stato che serve a riprendere sono i documenti che le fasi depositano nella cartella.
+Progress and findings go **in chat**, as you go: one line when a phase starts and when it returns, and immediately what you noticed and what needs no block. Keep no log on file: the state needed to resume is the documents the phases deposit in the folder.
 
-### 1. Apri la cartella, e la memoria
+### 1. Open the folder, and the memory
 
-Dalla descrizione ricava uno **slug** kebab-case che dica il *problema*, non la soluzione — la soluzione non l'hai ancora scelta, e uno slug che la nomina orienta tutto ciò che viene dopo. La cartella è `{paths.studies}/<slug>/`: creala. Se esiste già, chiedi conferma prima di lavorarci dentro — è l'unica altra domanda ammessa prima delle decisioni.
+From the description derive a kebab-case **slug** saying the *problem*, not the solution — you have not chosen the solution yet, and a slug naming it orients everything coming after. The folder is `{paths.studies}/<slug>/`: create it. If it already exists, ask confirmation before working inside it — it is the only other question admitted before the decisions.
 
-Apri `{memory.index}` e le memorie che l'area del problema tocca: è il canale di §4.1 di `contracts/orchestration.md`. Un gap che una memoria ha già chiuso non è un gap, e un trade-off che l'owner ha già deciso non si riapre qui. I path che scegli ora li passerai a ogni passo che decide o scrive.
+Open `{memory.index}` and the memories the problem area touches: it is the channel of §4.1 of `contracts/orchestration.md`. A gap a memory already closed is not a gap, and a trade-off the owner already decided is not reopened here. The paths you choose now you will pass to every step deciding or writing.
 
-### 2. Indagine sul codice — ruolo **worker**
+### 2. Code investigation — **worker** role
 
-Capisci come funziona oggi il sistema nell'area del problema. Lancia **subagent worker in parallelo**, **uno per fronte d'indagine**. I fronti li ricavi dal problema, non da una lista: tipicamente uno per ciascuna area di `{areas}` che il problema tocca, più due trasversali che quasi sempre servono — **configurazione e avvio** (impostazioni, ambiente, ciò che il sistema legge quando parte) e **architettura** (flussi, invarianti, confini fra layer).
+Understand how the system works today in the problem area. Launch **worker subagents in parallel**, **one per investigation front**. You derive the fronts from the problem, not from a list: typically one for each `{areas}` area the problem touches, plus two cross-cutting ones almost always needed — **configuration and startup** (settings, environment, what the system reads when starting) and **architecture** (flows, invariants, boundaries between layers).
 
-Per ogni agente, nel prompt: i file da leggere (path concreti), l'obiettivo dell'analisi, e la consegna — una sezione markdown pronta da incollare. Lanciali in un solo blocco di tool call.
+For each agent, in the prompt: the files to read (concrete paths), the goal of the analysis, and the handoff — a markdown section ready to paste. Launch them in a single tool-call block.
 
-Chiedi a ciascuno di riportare anche **quali tecnologie di terze parti** governano il suo fronte e in quale versione il progetto le usa, letta dal manifest delle dipendenze e non a memoria. È ciò su cui deciderai al punto 4, e un fronte che non te lo dice ti costringe a riaprire quei file da solo.
+Ask each to also report **which third-party technologies** govern its front and in which version the project uses them, read from the dependency manifest and not from memory. It is what you will decide on at point 4, and a front not telling you forces you to reopen those files alone.
 
-Se un fronte resta scoperto o dubbio, fai tu una lettura mirata prima di chiudere il passo, e dichiaralo nel documento.
+If a front stays uncovered or doubtful, do a targeted reading yourself before closing the step, and declare it in the document.
 
-### 3. Prima stesura di `0. problem.md`
+### 3. First draft of `0. problem.md`
 
-Scrivi `{paths.studies}/<slug>/0. problem.md`: descrive il problema, documenta com'è fatto oggi, identifica i gap concreti, evidenzia trade-off e dubbi, delimita il confine. **Non propone soluzioni** — quelle arrivano dallo studio delle decisioni.
+Write `{paths.studies}/<slug>/0. problem.md`: it describes the problem, documents how it works today, identifies the concrete gaps, highlights trade-offs and doubts, delimits the boundary. **It does not propose solutions** — those arrive from the study of the decisions.
 
 ```markdown
-# <Titolo del problema> — il problema
+# <Problem title> — the problem
 
-> Descrizione del problema, senza soluzione. Indagine sul codice.
-> **Stato:** analisi sul codice al <data>.
+> Problem description, without solution. Code-based analysis.
+> **Status:** code-based analysis at <date>.
 
-## In una riga
-[cosa non funziona, cosa manca, perché è un problema ora — 2-3 frasi]
+## In one line
+[what does not work, what is missing, why it is a problem now — 2-3 sentences]
 
-## Com'è fatto oggi il livello "X"
-[per ogni area coinvolta: come funziona, quali componenti, quali pattern,
- con file e righe citati]
+## How level "X" looks today
+[for each involved area: how it works, which components, which patterns,
+ with cited files and lines]
 
-## Perché questo diventa un problema (i gap)
-[numerati, concreti]
+## Why this becomes a problem (the gaps)
+[numbered, concrete]
 
-## Trade-off e dubbi aperti
-[le tensioni che il disegno dovrà sciogliere, con le opzioni in gioco]
+## Trade-offs and open doubts
+[the tensions the design will have to resolve, with the options at stake]
 
-## Confine del problema (cosa NON è in scope qui)
-[cosa non si decide e non si propone qui]
+## Problem boundary (what is NOT in scope here)
+[what is not decided and not proposed here]
 ```
 
-Ogni affermazione è ancorata al codice (file + righe), con path relativi alla root del repo.
+Every statement is anchored to the code (file + lines), with paths relative to the repo root.
 
-È una **prima** stesura: è scritta con la conoscenza che hai adesso, e il punto 5 la rimette in discussione su ciò che le fonti diranno.
+It is a **first** draft: it is written with the knowledge you have now, and point 5 puts it back in discussion on what the sources will say.
 
-### 4. La conoscenza che ti manca — `research`, ruolo **worker**
+### 4. The missing knowledge — `research`, **worker** role
 
-Guarda le tecnologie di terze parti che l'indagine ha nominato e chiediti, per ciascuna, se la conosci abbastanza per *decidere* su di essa. **Studiala se vale almeno una** di queste:
+Look at the third-party technologies the investigation named and ask yourself, for each, whether you know it well enough to *decide* on it. **Study it if at least one** of these holds:
 
-- il progetto la usa in una versione che non sai di conoscere, o più recente del tuo cutoff;
-- rilascia spesso, e ciò che sai potrebbe essere di due versioni fa;
-- è giovane o di nicchia;
-- il lavoro ti farà scrivere firme, decoratori, import o file di configurazione suoi, e nel progetto non c'è già un esempio da cui copiarli.
+- the project uses it in a version you do not know whether you know, or newer than your cutoff;
+- it releases often, and what you know could be two versions old;
+- it is young or niche;
+- the work will require you to write its signatures, decorators, imports or configuration files, and in the project there is no example to copy them from.
 
-Non studiarla se è ferma da anni e la feature non tocca la sua superficie pubblica. E se `{paths.lib_notes}/<slug-tecnologia>.md` esiste già, **leggilo prima di decidere**: se copre la versione in uso ed è recente, quello è lo studio — riusalo e non rilanciare niente. Se copre una versione più vecchia, lancia `research`, che raccoglie e poi fa riordinare a `study` invece di ripartire da zero.
+Do not study it if it stands still for years and the feature does not touch its public surface. And if `{paths.lib_notes}/<technology-slug>.md` already exists, **read it before deciding**: if it covers the version in use and is recent, that is the study — reuse it and relaunch nothing. If it covers an older version, launch `research`, which collects and then has `study` reorder them instead of restarting from zero.
 
-**La decisione è tua e non si chiede.** L'owner ha chiesto una feature, non un piano di studi. E non è una scelta a sensazione: il modello che «si sente sicuro» su una libreria giovane è esattamente il caso in cui inventa firme plausibili e sbagliate. Nel dubbio studia — costa un fan-out, mentre un'API inventata costa un giro di review, e a volte passa.
+**The decision is yours and it is not asked.** The owner asked for a feature, not a study plan. And it is not a choice by feel: the model "feeling confident" on a young library is exactly the case where it invents plausible and wrong signatures. When in doubt study — it costs a fan-out, while an invented API costs a review round, and sometimes passes.
 
-Un subagent per tecnologia, tutti nello stesso blocco di tool call. Nel prompt:
+One subagent per technology, all in the same tool-call block. In the prompt:
 
-- il **contratto da leggere**: `skills/research/SKILL.md`, per intero, invocazione `from-new-feature` — i vincoli di quella modalità restano lì e non si ricopiano qui;
-- l'**input risolto** di quella invocazione: la `technology` e la `in_use_version` nel progetto, come l'indagine l'ha letta dal manifest, e le `questions` a cui gli appunti devono rispondere — tre-sei, concrete, ricavate dai gap e dai dubbi che hai appena scritto. Sono ciò che distingue uno studio mirato da un'enciclopedia che nessuno rilegge;
-- il **formato di ritorno**: quello che l'invocazione dichiara (il solo path del file in `{paths.lib_notes}/`). Gli appunti si leggono aprendo quel file, non leggendo campi.
+- the **contract to read**: `skills/research/SKILL.md`, in full, `from-new-feature` invocation — the constraints of that mode stay there and are not recopied here;
+- the **resolved input** of that invocation: the `technology` and the `in_use_version` in the project, as the investigation read it from the manifest, and the `questions` the notes must answer — three to six, concrete, derived from the gaps and doubts you just wrote. They are what distinguishes a targeted study from an encyclopedia nobody rereads;
+- the **return format**: what the invocation declares (only the file path in `{paths.lib_notes}/`). The notes are read by opening that file, not by reading fields.
 
-Se nessuna tecnologia lo merita, dillo in una riga in chat e passa al punto 6: il punto 5 non ha niente da riconfrontare.
+If no technology deserves it, say so in one line in chat and move to point 6: point 5 has nothing to re-examine.
 
-### 5. Riconfronta, e riscrivi il problema
+### 5. Re-examine, and rewrite the problem
 
-Gli appunti sono tornati, e `0. problem.md` è scritto su ciò che sapevi **prima**. Rileggilo contro di loro e correggi ciò che smentiscono. Quello che tipicamente salta fuori:
+The notes came back, and `0. problem.md` is written on what you knew **before**. Reread it against them and correct what they contradict. What typically emerges:
 
-- un gap che **non esiste**: la libreria lo copre già, con l'API che gli appunti riportano verbatim;
-- un gap che esiste, ma per un motivo diverso da quello che avevi scritto;
-- un trade-off che la versione in uso ha già chiuso — o uno nuovo, che non avevi visto;
-- un'API che avevi nominato e che in quella versione non si chiama così, o non esiste più.
+- a gap that **does not exist**: the library already covers it, with the API the notes carry verbatim;
+- a gap existing, but for a different reason than you wrote;
+- a trade-off the version in use already closed — or a new one you did not see;
+- an API you named and which in that version is not called so, or exists no more.
 
-Le correzioni sono **chirurgiche**: tocchi le righe che gli appunti smentiscono, non riscrivi il documento. Ogni affermazione che ora poggia sugli appunti cita il file e la sezione da cui viene.
+Corrections are **surgical**: you touch the lines the notes contradict, you do not rewrite the document. Every statement now resting on the notes cites the file and section it comes from.
 
-Aggiungi in coda una sezione **Su cosa poggia**: gli appunti consultati con versione e data, e i `[da verificare]` che restano. Quei marcatori sono i punti in cui nemmeno le fonti hanno risposto, e chi decide deve sapere che sono lì invece di scoprirli mentre sceglie.
+Add at the tail a **What it rests on** section: the consulted notes with version and date, and the remaining `[to verify]` markers. Those markers are the points where not even the sources answered, and whoever decides must know they are there instead of discovering them while choosing.
 
-**Se gli appunti non smentiscono niente, scrivilo in una riga** e vai avanti: un riconfronto che non trova nulla è un riconfronto riuscito, non uno saltato.
+**If the notes contradict nothing, write it in one line** and move on: a re-examination finding nothing is a successful re-examination, not a skipped one.
 
-Questo passo è tuo e non si delega: il documento l'hai scritto tu, e sei l'unico che sa quali affermazioni poggiavano su una conoscenza che non avevi verificato.
+This step is yours and is not delegated: you wrote the document, and you are the only one knowing which statements rested on knowledge you had not verified.
 
-### 6. Lo studio delle decisioni — `decision-doc`, ruolo **judge**
+### 6. The study of decisions — `decision-doc`, **judge** role
 
-Un subagent in contesto fresco. Nel prompt:
+A subagent in a fresh context. In the prompt:
 
-- il **contratto da leggere**: `skills/decision-doc/SKILL.md`, per intero, prima di agire, nella modalità *Da `new-feature` — studio* che quel file dichiara;
-- l'**input risolto**: la cartella `{paths.studies}/<slug>/` e, dentro, `0. problem.md` — è già il documento base del problema, non c'è nulla da concatenare;
-- i **path degli appunti** che il punto 4 ha prodotto o riusato, con l'istruzione di aprirli prima di studiare le opzioni. Sono la ragione per cui hai speso quel fan-out: un'opzione tecnica motivata sulla memoria del modello, quando sul disco c'è la fonte, è il difetto che questa catena esiste per evitare;
-- la **memoria pertinente**: `{memory.index}` e i path che hai aperto al punto 1;
-- il **vincolo di perimetro**: scrive solo dentro quella cartella, non committa e non fa push;
-- il **formato di ritorno**: il blocco che quel contratto dichiara nella propria § *Il blocco che restituisci*, per intero.
+- the **contract to read**: `skills/decision-doc/SKILL.md`, in full, before acting, in the *From `new-feature` — study* mode that file declares;
+- the **resolved input**: the `{paths.studies}/<slug>/` folder and, inside, `0. problem.md` — it is already the base document of the problem, there is nothing to concatenate;
+- the **note paths** point 4 produced or reused, with the instruction to open them before studying the options. They are the reason you spent that fan-out: a technical option motivated on model memory, when the source is on disk, is the defect this chain exists to avoid;
+- the **pertinent memory**: `{memory.index}` and the paths you opened at point 1;
+- the **perimeter constraint**: it writes only inside that folder, does not commit and does not push;
+- the **return format**: the block that contract declares in its own § *The block you return*, in full.
 
-### 7. Le decisioni si chiedono in chat
+### 7. Decisions are asked in chat
 
-Il blocco è tornato e porta `decisions` **strutturate**. Le poni all'owner come domanda strutturata, secondo § *Domandare all'owner* di `contracts/orchestration.md`, che dice come quella forma si rende sull'host corrente.
+The block came back and carries **structured** `decisions`. You ask them of the owner as a structured question, per § *Ask the owner* of `contracts/orchestration.md`, which says how that form renders on the current host.
 
-Da ogni voce del blocco ricavi una domanda sola: il titolo e il problema in forma di domanda, le sue 2-4 opzioni **nello stesso ordine del blocco** (per contratto la raccomandata è sempre `A` e sta già per prima), ciascuna con una riga su cosa comporta, e `A` dichiarata come raccomandata. La raccomandata la dice `recommended_id`, mai il grassetto nel documento: non la inferisci, la leggi.
+From each block item you derive a single question: the title and the problem in question form, its 2-4 options **in the same order of the block** (by contract the recommended is always `A` and already stands first), each with one line on what it entails, and `A` declared as recommended. The recommended is said by `recommended_id`, never by bold in the document: you do not infer it, you read it.
 
-- **Non riassumere e non riordinare** ciò che il subagent ha scritto, e non aggiungere opzioni. Una lista riassunta è una lista a cui l'owner risponde con meno di quanto era stato studiato.
-- Se il blocco manca, `decisions` non è un array o `null`, una voce ha `recommended_id` diverso da `"A"`, le opzioni non sono `A`, `B` (, `C`, `D`) in ordine, o sono meno di 2 o più di 4, il passo è fallito (§4.2 di `contracts/orchestration.md`): rilancialo una volta sola con lo stesso identico prompt.
-- **Non aggiungere un'opzione «decidi tu»**: la raccomandata è già quella, e l'owner che non ha preferenze la conferma in un gesto.
-- **Non trasformare in domanda ciò che non è una decisione.** Il verdetto, i fix già applicati e i rilievi giudicati scelte legittime stanno nel blocco perché tu li **riporti**, non perché li chieda.
-- Se l'owner risponde **fuori** dalle opzioni, quella risposta prevale e si passa verbatim al recepimento.
+- **Do not summarise and do not reorder** what the subagent wrote, and add no options. A summarised list is a list to which the owner answers with less than was studied.
+- If the block is missing, `decisions` is not an array or `null`, an item has `recommended_id` different from `"A"`, the options are not `A`, `B` (, `C`, `D`) in order, or they are fewer than 2 or more than 4, the step has failed (§4.2 of `contracts/orchestration.md`): relaunch it only once with the identical prompt.
+- **Do not add a "decide yourself" option**: the recommended is already that, and the owner with no preferences confirms it in one gesture.
+- **Do not turn into a question what is not a decision.** The verdict, the already applied fixes and the findings judged legitimate choices stand in the block for you to **report** them, not to ask them.
+- If the owner answers **outside** the options, that answer prevails and passes verbatim to incorporation.
 
-**È l'unico punto in cui ti fermi.** Quando le risposte arrivano non chiedi conferma per proseguire: prosegui.
+**It is the only point where you stop.** When the answers arrive you do not ask confirmation to continue: continue.
 
-### 8. Il recepimento — `decision-doc`, ruolo **judge**
+### 8. Incorporation — `decision-doc`, **judge** role
 
-Un secondo subagent, contesto fresco. Stesso contratto, modalità *Da `new-feature` — recepimento*. Nel prompt, oltre a cartella, appunti e memoria come al punto 6: le **risposte dell'owner**, decisione per decisione, **verbatim**, comprese quelle libere.
+A second subagent, fresh context. Same contract, *From `new-feature` — incorporation* mode. In the prompt, besides folder, notes and memory as at point 6: the **owner answers**, decision by decision, **verbatim**, including the free ones.
 
-### 9. Se lo stadio era strategico, si torna al 7
+### 9. If the stage was strategic, return to 7
 
-Il blocco del punto 6 dichiara lo `stage`. Se era `strategic`, il recepimento chiude le decisioni in `0.5. studio-strategico.md` e **prosegue da sé allo stadio tecnico nella stessa esecuzione**, come il suo contratto prescrive: il blocco che torna porta allora `stage: technical` e una nuova lista di decisioni. Torni al punto 7 e le poni.
+The point-6 block declares the `stage`. If it was `strategic`, incorporation closes the decisions in `0.5. strategic-study.md` and **continues to the technical stage in the same run on its own**, as its contract prescribes: the returning block then carries `stage: technical` and a new decision list. Return to point 7 and ask them.
 
-**Un solo giro in più.** Se anche il secondo blocco torna `strategic`, il problema non è pronto per essere eseguito: fermati, riporta all'owner il verdetto e ciò che resta aperto, e lascia la cartella com'è. Non c'è un terzo giro, e non si passa alla consegna con la direzione ancora in discussione.
+**Only one extra round.** If the second block also comes back `strategic`, the problem is not ready to be executed: stop, report to the owner the verdict and what remains open, and leave the folder as it is. There is no third round, and one does not move to delivery with the direction still under discussion.
 
-### 10. La consegna — `develop-feature`
+### 10. Delivery — `develop-feature`
 
-Le decisioni tecniche sono chiuse: `1. decision-doc.md` esiste e le sue card hanno una risposta. Delega la consegna intera a un subagent che esegue `skills/develop-feature/SKILL.md`, con la cartella e la **soluzione scelta** — per ogni decisione l'id e il testo dell'opzione che l'owner ha scelto, come li ha scritti lui. Per una card a cui non ha risposto vale `A`, che per contratto è la raccomandata, senza chiedere.
+The technical decisions are closed: `1. decision-doc.md` exists and its cards have an answer. Delegate the whole delivery to a subagent running `skills/develop-feature/SKILL.md`, with the folder and the **chosen solution** — for each decision the id and text of the option the owner chose, as they wrote them. For a card they did not answer, `A` holds, which by contract is the recommended one, without asking.
 
-Da lì in poi la sequenza è sua e non la riscrivi qui: brief, esecuzione, review a giri, gate, decisione, allineamento di memoria e documentazione, commit e merge. **Non lanciare tu `blueprint`, `execute`, `/review` o `/commit`**: sono le sue fasi, e incatenarle da qui significa tenerne due copie che divergono alla prima modifica.
+From there on the sequence is its own and you do not rewrite it here: brief, execution, review rounds, gate, decision, memory and documentation alignment, commit and merge. **Do not launch yourself `blueprint`, `execute`, `/review` or `/commit`**: they are its phases, and chaining them from here means keeping two copies diverging at the first modification.
 
-L'esito atteso è il blocco che quel contratto dichiara nella propria § *Esito*, per intero. Riportalo: il suo `status` è il tuo.
+The expected outcome is the block that contract declares in its own § *Outcome*, in full. Report it: its `status` is yours.
 
-## Se un passo fallisce
+## If a step fails
 
-Un passo è fallito quando il blocco non torna, torna incompleto o torna in prosa. Si rilancia **una volta sola**, con lo stesso identico prompt (§4.2 di `contracts/orchestration.md`). Se non torna neanche allora:
+A step has failed when the block does not come back, comes back incomplete or comes back in prose. It is relaunched **only once**, with the identical prompt (§4.2 of `contracts/orchestration.md`). If it does not come back even then:
 
-| Passo | Cosa ne segue |
+| Step | What follows |
 |---|---|
-| un fronte d'indagine | lo copri tu con una lettura mirata e lo dichiari nel documento |
-| `research` | procedi **senza** quegli appunti, e nel documento marca `[da verificare]` i punti che dovevano coprire. Non scrivere a memoria i fatti che lo studio doveva portare: è esattamente ciò che si stava evitando |
-| `decision-doc` (punto 6) | la catena si ferma. `0. problem.md` resta consegnato, e lo dici con il comando da lanciare a mano sulla cartella. **Non scrivere tu le decisioni**: porle qui significa scriverle fuori dal documento che le ospita |
-| il recepimento (punto 8) | è il caso peggiore, perché le risposte dell'owner esistono solo in chat. Riportale **verbatim** nell'esito, insieme al comando con cui si recepiscono, e fermati |
-| `develop-feature` (punto 10) | il suo blocco dichiara già i propri fallimenti: riportalo così com'è, senza reinterpretarlo |
+| an investigation front | you cover it with a targeted reading and declare it in the document |
+| `research` | proceed **without** those notes, and in the document mark `[to verify]` the points they had to cover. Do not write from memory the facts the study had to carry: it is exactly what was being avoided |
+| `decision-doc` (point 6) | the chain stops. `0. problem.md` stays delivered, and you say so with the command to launch by hand on the folder. **Do not write the decisions yourself**: asking them here means writing them outside the document hosting them |
+| incorporation (point 8) | it is the worst case, because the owner answers exist only in chat. Report them **verbatim** in the outcome, together with the command to incorporate them with, and stop |
+| `develop-feature` (point 10) | its block already declares its own failures: report it as it is, without reinterpreting it |
 
-## Vincoli operativi
+## Operational constraints
 
-- Rispetta i vincoli di runtime che `{instructions_file}` dichiara, e in ogni caso: **niente ricerche sull'intero filesystem**.
-- **Non committare** e non fare push: il commit è della consegna, che gira sul proprio worktree.
-- Fuori dalla cartella del problema si scrive solo in `{paths.lib_notes}/`, e ci scrivono `research` (raccolta) e `study` solo via `research` (riordino).
-- Usa **sempre path relativi alla root del repo** per i link ai file.
-- Salva nella codifica del progetto, senza degradare i caratteri non ASCII.
+- Respect the runtime constraints `{instructions_file}` declares, and in any case: **no searches on the whole filesystem**.
+- **Do not commit** and do not push: commit belongs to delivery, which runs on its own worktree.
+- Outside the problem folder one writes only in `{paths.lib_notes}/`, and `research` (collection) and `study` only via `research` (reordering) write there.
+- **Always use paths relative to the repo root** for file links.
+- Save in the project encoding, without degrading non-ASCII characters.
 
-## Esito
+## Outcome
 
-In chat, poche righe:
+In chat, a few lines:
 
-- il path della cartella aperta e i documenti che porta;
-- le aree analizzate e i gap identificati;
-- gli appunti prodotti o riusati, con versione e data, e cosa il riconfronto ha cambiato nel problema (o che non ha cambiato niente);
-- gli stadi attraversati, le decisioni poste e la risposta ricevuta per ciascuna;
-- l'esito della consegna: `status`, SHA del commit e del merge, e il path del report — il dettaglio è già lì dentro, **non ripeterlo**.
+- the path of the opened folder and the documents it carries;
+- the analysed areas and the identified gaps;
+- the produced or reused notes, with version and date, and what the recomparison changed in the problem (or that it changed nothing);
+- the crossed stages, the decisions asked and the answer received for each;
+- the delivery outcome: `status`, commit and merge SHA, and the report path — the detail is already inside there, **do not repeat it**.
 
-Se la catena si è fermata prima della consegna, dillo con il punto in cui si è fermata e il comando con cui l'owner la riprende.
+If the chain stopped before delivery, say so with the point where it stopped and the command the owner resumes it with.
 
-## Auto-inganni (fermali prima che ti fermino)
+## Self-deceptions (stop them before they stop you)
 
-| Se ti stai dicendo… | La verità |
+| If you are telling yourself… | The truth |
 |---|---|
-| «Questa libreria la conosco, salto lo studio» | È la frase che precede una firma inventata. Il criterio del punto 4 è una lista di condizioni, non una sensazione. |
-| «Gli appunti sono tornati, li passo a valle e vado» | Il punto 5 non è un passaggio di consegne: sei tu che rimetti in discussione ciò che avevi scritto prima di conoscerli. |
-| «Riassumo le decisioni, così l'owner legge meno» | Le decisioni si pongono verbatim. Ciò che tagli è esattamente ciò su cui non gli stai facendo scegliere. |
-| «Chiedo conferma prima di lanciare la consegna» | Ha già risposto. La conferma in più è il gesto che questa skill esiste per togliergli. |
-| «Faccio io il brief, tanto ho tutto in testa» | Averlo in testa è il problema: ogni fase è un subagent in contesto fresco, e la consegna è di `develop-feature`. |
-| «Il decision-doc lo scrivo qui, è più veloce» | Il documento lo scrive il nodo che lo ospita. Scritto qui, nasce dentro il contesto che ha appena indagato — cioè già convinto. |
-| «Lo stadio è ancora strategico ma la direzione mi è chiara: procedo» | Se fosse chiara, il passo `judge` non l'avrebbe fermata lì. Due giri, e poi ci si ferma. |
-| «Uso il modello più grosso, questo passo mi sembra difficile» | Il modello viene dal ruolo dichiarato dal passo, risolto con la §2 di `contracts/orchestration.md`. |
+| "I know this library, I skip the study" | It is the sentence preceding an invented signature. The point-4 criterion is a list of conditions, not a feel. |
+| "The notes came back, I pass them downstream and go" | Point 5 is not a handoff: it is you putting back in discussion what you wrote before knowing them. |
+| "I summarise the decisions, so the owner reads less" | Decisions are asked verbatim. What you cut is exactly what you are not letting them choose on. |
+| "I ask confirmation before launching delivery" | They already answered. The extra confirmation is the gesture this skill exists to spare them. |
+| "I do the brief myself, since I have everything in mind" | Having it in mind is the problem: every phase is a subagent in a fresh context, and delivery belongs to `develop-feature`. |
+| "The decision-doc I write here, it is faster" | The document is written by the node hosting it. Written here, it originates inside the context that just investigated — that is already convinced. |
+| "The stage is still strategic but the direction is clear to me: I proceed" | If it were clear, the `judge` step would not have stopped it there. Two rounds, and then one stops. |
+| "I use the biggest model, this step looks hard to me" | The model comes from the role declared by the step, resolved with §2 of `contracts/orchestration.md`. |
 
-## Regola di taglio
+## Cut rule
 
-Questa skill possiede **l'apertura del lavoro**: la cartella, l'indagine sul codice, la decisione di cosa studiare, il riconfronto, e il canale verso l'owner per le decisioni. Non possiede il *contenuto* di ciò che delega: come si studia una tecnologia, come si studiano le decisioni, come si consegna una feature vivono nei loro file, letti dai subagent a ogni esecuzione. Se ti sorprendi a riscrivere qui *come* si fa un brief o *come* si sceglie fra due librerie, ti sei allontanato dallo scopo.
+This skill owns **the opening of the work**: the folder, the code investigation, the decision of what to study, the recomparison, and the channel to the owner for the decisions. It does not own the *content* of what it delegates: how a technology is studied, how decisions are studied, how a feature is delivered — all of it lives in their files, read by the subagents on every run. If you catch yourself rewriting here *how* a brief is made or *how* to choose between two libraries, you strayed from the purpose.

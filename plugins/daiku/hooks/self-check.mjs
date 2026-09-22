@@ -1,19 +1,19 @@
 #!/usr/bin/env node
 /**
- * I banchi di prova dei tre hook, in un colpo solo.
+ * The test benches of the three hooks, in a single shot.
  *
- * `node hooks/self-check.mjs` dalla radice del pacchetto. Esce `0` se tutti i casi sono
- * verdi, `1` al primo rosso, e stampa il totale **contato** — la somma di quelli che i tre
- * banchi hanno davvero eseguito, non un numero scritto qui.
+ * `node hooks/self-check.mjs` from the package root. Exits `0` if every case is
+ * green, `1` on the first red, and prints the **counted** total — the sum of what the three
+ * benches really ran, not a number written here.
  *
- * Esiste perché tre hook fail-open sono tre modi di tacere, e un guasto in uno dei tre è
- * indistinguibile dal silenzio finché qualcuno non lancia il suo banco. Un comando solo
- * rende quel gesto ripetibile prima di un rilascio, in una CI, o dopo aver toccato un file
- * che tutti e tre importano.
+ * It exists because three fail-open hooks are three ways of staying silent, and a fault in
+ * one of the three is indistinguishable from silence until somebody runs its bench. A single
+ * command makes that move repeatable before a release, in a CI, or after touching a file
+ * that all three import.
  *
- * Non è un hook e non viene mai installato in un progetto: `sync-host` copia il contenuto di
- * `hooks/lib/`, e questo file sta un livello sopra. Chi prova un hook già installato lancia
- * il suo `--self-check`, che è quello che il referto del post-edit gli ricorda.
+ * It is not a hook and is never installed into a project: `sync-host` copies the contents of
+ * `hooks/lib/`, and this file sits one level above. Whoever tests an installed hook runs
+ * its `--self-check`, which is what the post-edit report reminds them of.
  */
 
 import { spawnSync } from 'node:child_process';
@@ -23,65 +23,65 @@ import { fileURLToPath } from 'node:url';
 
 const LIB = join(dirname(fileURLToPath(import.meta.url)), 'lib');
 
-/** Un `.mjs` di `lib/` è un hook se il suo banco risponde: gli altri moduli non ne hanno. */
-function moduli() {
+/** A `lib/` `.mjs` is a hook if its bench answers: the other modules have none. */
+function modules() {
   try {
     return readdirSync(LIB)
-      .filter((nome) => nome.endsWith('.mjs'))
+      .filter((name) => name.endsWith('.mjs'))
       .sort();
-  } catch (errore) {
-    process.stderr.write(`impossibile leggere ${LIB}: ${errore.message}\n`);
+  } catch (error) {
+    process.stderr.write(`cannot read ${LIB}: ${error.message}\n`);
     return [];
   }
 }
 
-function provaUno(nome) {
-  const esito = spawnSync(process.execPath, [join(LIB, nome), '--self-check'], {
+function tryOne(name) {
+  const outcome = spawnSync(process.execPath, [join(LIB, name), '--self-check'], {
     encoding: 'utf-8',
     timeout: 60000,
   });
 
-  if (esito.error) return { nome, stato: 'non parte', dettaglio: esito.error.message };
-  if (!esito.stdout || !esito.stdout.trim()) {
-    // Nessuna uscita: o il modulo non ha un banco — ed è il caso di `project-root.mjs` e
-    // `daiku-config.mjs`, che sono importati dagli hook e provati dai loro banchi — oppure
-    // è uscito male, e allora il codice di uscita lo dice.
-    return { nome, stato: esito.status === 0 ? 'senza banco' : 'muto', dettaglio: (esito.stderr || '').trim() };
+  if (outcome.error) return { name, status: 'does not start', detail: outcome.error.message };
+  if (!outcome.stdout || !outcome.stdout.trim()) {
+    // No output: either the module has no bench — the case of `project-root.mjs` and
+    // `daiku-config.mjs`, which are imported by the hooks and tested by their benches — or
+    // it exited badly, and then the exit code says so.
+    return { name, status: outcome.status === 0 ? 'no bench' : 'silent', detail: (outcome.stderr || '').trim() };
   }
 
-  let referto;
+  let report;
   try {
-    referto = JSON.parse(esito.stdout);
+    report = JSON.parse(outcome.stdout);
   } catch {
-    return { nome, stato: 'illeggibile', dettaglio: esito.stdout.slice(0, 200) };
+    return { name, status: 'unreadable', detail: outcome.stdout.slice(0, 200) };
   }
   return {
-    nome,
-    stato: (referto.falliti || []).length ? 'rosso' : 'verde',
-    controlli: referto.controlli || 0,
-    falliti: referto.falliti || [],
+    name,
+    status: (report.failed || []).length ? 'red' : 'green',
+    checks: report.checks || 0,
+    failed: report.failed || [],
   };
 }
 
-const esiti = moduli().map(provaUno);
-const provati = esiti.filter((e) => e.stato === 'verde' || e.stato === 'rosso');
-const totale = provati.reduce((somma, e) => somma + e.controlli, 0);
-const rossi = esiti.filter((e) => e.stato !== 'verde' && e.stato !== 'senza banco');
+const outcomes = modules().map(tryOne);
+const tested = outcomes.filter((e) => e.status === 'green' || e.status === 'red');
+const total = tested.reduce((sum, e) => sum + e.checks, 0);
+const red = outcomes.filter((e) => e.status !== 'green' && e.status !== 'no bench');
 
-for (const esito of esiti) {
-  if (esito.stato === 'verde') {
-    process.stdout.write(`  ok    ${esito.nome} — ${esito.controlli} controlli\n`);
-  } else if (esito.stato === 'senza banco') {
-    process.stdout.write(`  —     ${esito.nome} — nessun banco: è un modulo importato, non un hook\n`);
-  } else if (esito.stato === 'rosso') {
-    process.stdout.write(`  ROSSO ${esito.nome} — ${esito.falliti.length} casi su ${esito.controlli}\n`);
-    for (const caso of esito.falliti) process.stdout.write(`        - ${caso}\n`);
+for (const outcome of outcomes) {
+  if (outcome.status === 'green') {
+    process.stdout.write(`  ok    ${outcome.name} — ${outcome.checks} checks\n`);
+  } else if (outcome.status === 'no bench') {
+    process.stdout.write(`  —     ${outcome.name} — no bench: it is an imported module, not a hook\n`);
+  } else if (outcome.status === 'red') {
+    process.stdout.write(`  RED   ${outcome.name} — ${outcome.failed.length} cases out of ${outcome.checks}\n`);
+    for (const failure of outcome.failed) process.stdout.write(`        - ${failure}\n`);
   } else {
-    process.stdout.write(`  ROSSO ${esito.nome} — ${esito.stato}: ${esito.dettaglio}\n`);
+    process.stdout.write(`  RED   ${outcome.name} — ${outcome.status}: ${outcome.detail}\n`);
   }
 }
 
 process.stdout.write(
-  `\n${provati.length} banchi, ${totale} controlli, ${rossi.length ? `${rossi.length} in rosso` : 'tutti verdi'}\n`
+  `\n${tested.length} benches, ${total} checks, ${red.length ? `${red.length} red` : 'all green'}\n`
 );
-process.exit(rossi.length ? 1 : 0);
+process.exit(red.length ? 1 : 0);

@@ -1,5 +1,5 @@
 interface:
   display_name: "Decision Doc"
-  short_description: "Contratto interno aperto da new-feature"
+  short_description: "Internal contract, opened by new-feature"
 policy:
   allow_implicit_invocation: false

@@ -17,7 +17,7 @@
         "judge": "<alias of the model the judge role runs on>",
         "worker": "<alias of the model the worker role runs on>"
       },
-      "enforcement": "prosa",
+      "enforcement": "prose",
       "settings_file": "~/.codex/config.toml",
       "native_backend": "codex"
     }

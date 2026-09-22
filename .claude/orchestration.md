@@ -248,7 +248,7 @@ rifiutare i campi di manifest non ammessi, ed è quello di Claude Code a segnala
 caricherebbero con i metadati vuoti.
 
 I tre `--self-check` sono banchi di prova a **totale contato**: escono con un JSON che porta
-`controlli`, `passati` e `falliti`. **Si riporta il numero di `controlli`, non solo il verde**: un
+`checks`, `passed` e `failed`. **Si riporta il numero di `checks`, non solo il verde**: un
 totale che cala mentre i controlli crescono è un banco che ha smesso di girare, e il verde da solo
 non lo mostra.
 

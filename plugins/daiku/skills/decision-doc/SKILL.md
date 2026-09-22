@@ -1,268 +1,268 @@
 ---
 name: 'decision-doc'
-description: 'Contratto interno di /new-feature — studia un problema, valuta se serve ancora pensiero strategico ad alto livello o solo chiudere i dettagli tecnici, produce o aggiorna 0.5. studio-strategico.md oppure 1. decision-doc.md rifinendo 0. problem.md, e restituisce le decisioni a chi lo ha invocato. Non chiede all''owner e non delega la consegna.'
+description: 'Internal /new-feature contract — studies a problem, evaluates whether high-level strategic thinking is still needed or only closing the technical details, produces or updates 0.5. strategic-study.md or 1. decision-doc.md refining 0. problem.md, and returns the decisions to whoever invoked it. It does not ask the owner and does not delegate delivery.'
 user-invocable: false
 ---
 
-Ricevi una cartella che contiene il materiale di un problema (note, documenti, codice, requisiti, vincoli, ed eventualmente `0. problem.md` e/o `1. decision-doc.md` da run precedenti). Il tuo compito è triplice:
+You receive a folder containing the material of a problem (notes, documents, code, requirements, constraints, and possibly `0. problem.md` and/or `1. decision-doc.md` from previous runs). Your task is threefold:
 
-1. **Capire a che stadio di maturità è il problema** — mancano ancora decisioni strategiche ad alto livello (cosa fare, per chi, con quale perimetro), o la strategia è chiara e restano solo i dettagli tecnici da chiudere prima di eseguire?
-2. **Agire di conseguenza** — o rifinisci `0. problem.md` con una revisione scettica e deponi le decisioni strategiche numerate in `0.5. studio-strategico.md`, o produci/aggiorni `1. decision-doc.md` con le decision card tecniche pronte per l'esecuzione.
-3. **Consegnare le decisioni a chi le porterà all'owner** — le restituisci nel tuo blocco, numerate e per esteso, e quando le risposte tornano le recepisci nel documento che le ospita. Non le poni tu: non hai un canale verso l'owner, e § *Modalità di invocazione* dice di chi è quel compito.
+1. **Understand at which maturity stage the problem is** — are high-level strategic decisions still missing (what to do, for whom, with which perimeter), or is the strategy clear and only the technical details remain to be closed before executing?
+2. **Act accordingly** — either refine `0. problem.md` with a sceptical revision and lay the numbered strategic decisions in `0.5. strategic-study.md`, or produce/update `1. decision-doc.md` with technical decision cards ready for execution.
+3. **Deliver the decisions to whoever will bring them to the owner** — you return them in your block, numbered and in full, and when the answers come back you incorporate them in the document hosting them. You do not ask them yourself: you have no channel to the owner, and § *Invocation modes* says whose task that is.
 
-**Ogni stadio lascia un documento.** Uno studio che si ferma alla direzione non è uno studio a metà: è il lavoro di quel livello, e vale quanto quello tecnico. Finché viveva solo in chat moriva con la sessione, e la cartella restava senza traccia del giudizio che l'aveva fermata lì.
+**Every stage leaves a document.** A study stopping at direction is not a half study: it is the work of that level, and it is worth as much as the technical one. As long as it lived only in chat it died with the session, and the folder was left with no trace of the judgement that had stopped it there.
 
-Il senso della skill: tu ragioni come un senior engineer scettico ed esaustivo; l'utente legge in cima decisioni astratte con pro e contro (a qualunque stadio) e decide senza dover entrare nei dettagli.
+The sense of the skill: you reason like an exhaustive and sceptical senior engineer; the user reads at the top abstract decisions with pros and cons (at whatever stage) and decides without having to enter the details.
 
-> **Parametri.** Ogni chiave fra graffe di questo contratto si risolve sui file di parametri del progetto, mai a memoria e mai per assunzione: le regole sono nella §5 di `contracts/project-contract.md`, che dice anche **in quale lingua scrivere** e cosa fare quando una chiave non c'è.
+> **Parameters.** Every key in braces in this contract resolves on the project parameter files, never from memory and never by assumption: the rules are in §5 of `contracts/project-contract.md`, which also says **in which language to write** and what to do when a key is missing.
 
-## Modalità di invocazione
+## Invocation modes
 
-**Sei sempre un subagent: questo contratto non si lancia a mano.** Lo apre `new-feature`, in due momenti diversi, e la differenza fra i due è tutta qui sotto. Chi ti invoca **sceglie** la modalità; i vincoli restano scritti qui, e non si riscrivono nel prompt di chi chiama.
+**You are always a subagent: this contract is not launched by hand.** `new-feature` opens it, at two different moments, and the difference between the two is all below. Whoever invokes you **chooses** the mode; the constraints stay written here, and they are not rewritten in the caller prompt.
 
-Quello che vale in entrambe, e che non si deroga:
+What holds in both, and is not derogated:
 
-- **Non chiedi niente all'owner**, in nessun caso. Non hai un canale verso di lui: una domanda posta qui dentro diventa un'assunzione presa in silenzio o un passo che resta appeso (§ *Domandare all'owner* di `contracts/orchestration.md`). Una scelta vera la **restituisci** nel tuo blocco, e la porta in chat chi ti ha chiamato.
-- **Scrivi solo dentro la cartella del problema** che hai ricevuto. Non committi, non fai push.
-- **Non deleghi la consegna**, e non lanci `blueprint`, `execute`, `review` o `commit`: la catena da lì in avanti è di `new-feature`, che apre `develop-feature` con la soluzione scelta.
-- **Chiudi sempre con il blocco** di § *Il blocco che restituisci*, per intero.
+- **You ask nothing of the owner**, in no case. You have no channel to them: a question asked in here becomes an assumption silently taken or a step left hanging (§ *Ask the owner* of `contracts/orchestration.md`). A true choice you **return** in your block, and whoever called you carries it into chat.
+- **Write only inside the problem folder** you received. You do not commit, you do not push.
+- **You do not delegate delivery**, and you do not launch `blueprint`, `execute`, `review` or `commit`: the chain from there on belongs to `new-feature`, which opens `develop-feature` with the chosen solution.
+- **Always close with the block** of § *The block you return*, in full.
 
-### Da `new-feature` — studio
+### From `new-feature` — study
 
-Sei un subagent in contesto fresco, lanciato quando `0. problem.md` è appena stato scritto sul codice e riconfrontato con gli appunti delle tecnologie coinvolte. Valgono quattro differenze, e nient'altro cambia:
+You are a subagent in a fresh context, launched when `0. problem.md` has just been written based on the code and recompared with the notes of the involved technologies. Four differences hold, and nothing else changes:
 
-- **L'input arriva risolto** — cartella, `0. problem.md`, path degli appunti di `research` e path delle memorie pertinenti stanno nel prompt. Il punto 2 della procedura non ha quasi nulla da fare: la cartella porta un solo documento, già nella forma giusta; se ne porta altri, li unisci come sempre. Non chiedere niente e non fermarti in attesa, perché non c'è nessuno che risponda.
-- **Gli appunti si aprono prima di studiare le opzioni.** Sono fatti verificati sulle fonti, con versione e data: un'opzione tecnica motivata sulla memoria del modello, quando sul disco c'è la fonte, è il difetto che quel fan-out è stato speso per evitare. Cita il file e la sezione quando un'opzione poggia su di loro.
-- **La Fase 4 non gira qui.** Ti fermi alla lista di decisioni della Fase 3 e la restituisci: il recepimento è interattivo, e arriva come invocazione separata con le risposte già in mano. Fasi 1, 2 e 3 girano per intero: lo stadio tecnico produce `1. decision-doc.md`, quello strategico `0.5. studio-strategico.md`. Fermarsi alla direzione non ti esonera dallo scrivere — è l'unico modo perché il tuo giudizio arrivi a chi decide.
-### Da `new-feature` — recepimento
+- **The input arrives resolved** — folder, `0. problem.md`, paths of the `research` notes and paths of the pertinent memories stand in the prompt. Point 2 of the procedure has almost nothing to do: the folder carries a single document, already in the right form; if it carries others, you merge them as always. Do not ask anything and do not stop waiting, because there is nobody answering.
+- **The notes open before studying the options.** They are verified facts on the sources, with version and date: a technical option motivated on model memory, when the source is on disk, is the defect that fan-out was spent to avoid. Cite the file and the section when an option rests on them.
+- **Phase 4 does not run here.** You stop at the decision list of Phase 3 and return it: incorporation is interactive, and it arrives as a separate invocation with the answers already in hand. Phases 1, 2 and 3 run in full: the technical stage produces `1. decision-doc.md`, the strategic one `0.5. strategic-study.md`. Stopping at direction does not exempt you from writing — it is the only way for your judgement to reach whoever decides.
+### From `new-feature` — incorporation
 
-Sei un secondo subagent, contesto fresco, e nel prompt ci sono le **risposte dell'owner**, decisione per decisione, verbatim. Recepiscile nel documento che le ospita: non ri-analizzare il problema e non rimettere in discussione le decisioni già chiuse.
+You are a second subagent, fresh context, and in the prompt there are the **owner answers**, decision by decision, verbatim. Incorporate them in the document hosting them: do not re-analyse the problem and do not reopen the already closed decisions.
 
-**Quale gesto sia, dipende dallo stadio del documento**, e sono due gesti diversi:
+**Which gesture it is, depends on the stage of the document**, and they are two different gestures:
 
-- **documento strategico** (`0.5. studio-strategico.md`) → la **Fase 4**, che chiude ogni decisione con la scelta dell'owner e rifinisce `0. problem.md` di conseguenza;
-- **documento tecnico** (`1. decision-doc.md`) → il **punto 6 della Procedura tecnica**, che scrive la scelta in coda alla decision card che la ospita.
+- **strategic document** (`0.5. strategic-study.md`) → **Phase 4**, which closes every decision with the owner choice and refines `0. problem.md` accordingly;
+- **technical document** (`1. decision-doc.md`) → **point 6 of the technical Procedure**, which writes the choice at the tail of the decision card hosting it.
 
-**Se dopo il recepimento la direzione è chiusa, prosegui allo stadio tecnico qui e ora**: produci `1. decision-doc.md` e restituisci la nuova lista di decisioni nel tuo blocco, con `stage` `technical`. È l'unico caso in cui una sola invocazione attraversa i due stadi.
+**If after incorporation the direction is closed, continue to the technical stage here and now**: produce `1. decision-doc.md` and return the new decision list in your block, with `stage` `technical`. It is the only case where a single invocation crosses the two stages.
 
-## Il blocco che restituisci
+## The block you return
 
-**Chiudi sempre con questo blocco**, in entrambe le modalità, così chi ti ha invocato lo legge senza interpretare la prosa. Nessun campo si omette: a zero voci si scrive `[]`, e ciò che non si applica è `null`.
+**Always close with this block**, in both modes, so whoever invoked you reads it without interpreting the prose. No field is omitted: with zero items write `[]`, and what does not apply is `null`.
 
 ```json
 {
   "stage": "strategic|technical",
-  "stage_why": "<una frase sul perché quello stadio e non l'altro>",
-  "file": "<path del documento prodotto o aggiornato>",
-  "verdict": "<la sintesi di apertura della revisione scettica, o null allo stadio tecnico>",
-  "applied_fixes": ["<file e cosa hai corretto, uno per fix della Fase 2>"],
+  "stage_why": "<a sentence on why this stage and not the other>",
+  "file": "<path of the produced or updated document>",
+  "verdict": "<the opening synthesis of the sceptical revision, or null at the technical stage>",
+  "applied_fixes": ["<file and what you fixed, one per Phase 2 fix>"],
   "decisions": [
     {
       "n": 1,
-      "title": "<titolo breve della decisione>",
-      "problem": "<una riga>",
-      "classification": "<bloccante|rischio serio|punto debole|miglioria allo stadio strategico, null a quello tecnico>",
+      "title": "<short decision title>",
+      "problem": "<one line>",
+      "classification": "<blocker|serious risk|weakness|improvement, null at technical stage>",
       "options": [
-        {"id": "A", "text": "<opzione in una riga: cosa si fa e cosa costa>"},
-        {"id": "B", "text": "<opzione in una riga>"}
+        {"id": "A", "text": "<option in one line: what is done and what it costs>"},
+        {"id": "B", "text": "<option in one line>"}
       ],
       "recommended_id": "A",
-      "recommended_why": "<perché la raccomandata, in una frase>"
+      "recommended_why": "<why the recommended one, in one sentence>"
     }
   ],
-  "incorporated": ["<solo al recepimento: numero, scelta, e dove l'hai recepita>"],
-  "open_items": ["<cosa resta da decidere, o quale dato mancava per decidere davvero>"]
+  "incorporated": ["<only at incorporation: number, choice, and where you incorporated it>"],
+  "open_items": ["<what remains to be decided, or which datum was missing to truly decide>"]
 }
 ```
 
-Le `decisions` tornano **strutturate**, non in prosa: chi ti ha chiamato le pone all'owner senza riscriverle e senza dover indovinare quale sia la raccomandata, e una lista riassunta è una lista a cui l'owner risponde con meno di quanto hai scritto. Regole del campo, uguali in entrambi gli stadi (`null` se non resta nessuna decisione da porre):
+The `decisions` come back **structured**, not in prose: whoever called you asks them of the owner without rewriting them and without having to guess which is the recommended one, and a summarised list is a list to which the owner answers with less than you wrote. Field rules, equal in both stages (`null` if no decision remains to be asked):
 
-- una voce per decisione, con titolo breve, problema in una riga, 2-4 opzioni mutuamente esclusive e autosufficienti;
-- le opzioni hanno `id` stabile `A`, `B` (`C`, `D`) in quest'ordine, senza saltare lettere;
-- la raccomandata è **sempre `A`**: `recommended_id` vale `"A"`, ed `options[0]` è lei;
-- ogni voce del blocco corrisponde a una decisione nel documento, con stesso titolo, stesse opzioni nello stesso ordine e stessa raccomandata — il documento è la versione leggibile, il blocco quella leggibile dalla macchina, e dicono la stessa cosa.
+- one item per decision, with short title, problem in one line, 2-4 mutually exclusive and self-sufficient options;
+- options have stable `id` `A`, `B` (`C`, `D`) in this order, without skipping letters;
+- the recommended is **always `A`**: `recommended_id` is `"A"`, and `options[0]` is it;
+- every item of the block corresponds to a decision in the document, with same title, same options in the same order and same recommended — the document is the readable version, the block the machine-readable one, and they say the same thing.
 
-Una voce scritta fuori da quella forma rende il blocco fallito, non interpretabile: è lì che una decisione perde per strada l'opzione che nessuno ha più letto.
+An item written outside that form makes the block failed, not interpretable: it is there that a decision loses along the way the option nobody ever read again.
 
-## Input: la cartella del problema
+## Input: the problem folder
 
-Tutto arriva dal prompt di chi ti ha invocato, già risolto: **una sola cartella**, come path relativo dalla root del repo o assoluto, ed eventualmente una clausola «analizza solo <sottoinsieme>».
+Everything arrives from the prompt of whoever invoked you, already resolved: **a single folder**, as a relative path from the repo root or absolute, and possibly a clause "analyse only <subset>".
 
-- Se la cartella non ti è stata passata, o non esiste, **fermati e dillo nel tuo blocco**. Non chiederla: non c'è nessuno che risponda, e una cartella indovinata è un documento scritto nel posto sbagliato.
-- Se compare «analizza solo <sottoinsieme>», **leggi integralmente tutto** per contesto ma **produci rilievi/decisioni solo** sul sottoinsieme indicato. Senza clausola, l'analisi copre tutto.
-- **Unisci prima, leggi dopo.** I file di riferimento nella cartella vanno prima concatenati in un unico file di descrizione del problema (vedi procedura, punto 2), poi letti da lì. Sono il materiale del problema, non un contesto opzionale: non saltare nulla in silenzio.
-- **Lettura integrale, mai a campione**: ogni file va letto per intero prima di scrivere un solo rilievo o una sola decisione.
-- Se un documento dichiara i propri fatti «verificati contro» una fonte presente nel repo (appunti, adapter, codice), **verifica a campione i claim portanti** contro quella fonte — un claim portante senza riscontro è un rilievo, non una nota.
-- Apri `{memory.index}` e le memorie che l'area del problema tocca prima di analizzare: è il canale di §4.1 di `contracts/orchestration.md`. Se il chiamante non te li passa, apri l'indice e scegli tu — sei il nodo che apre la catena, quindi quei path non te li passa nessuno, e una decisione già chiusa che non hai letto la riapri senza accorgertene.
-- Rispetta i punti che documenti o memoria dichiarano **già decisi/accertati/da assumere veri**: non risollevarli; segnalali **solo** se trovi un passaggio che li contraddice.
+- If the folder was not passed to you, or does not exist, **stop and say so in your block**. Do not ask for it: there is nobody answering, and a guessed folder is a document written in the wrong place.
+- If "analyse only <subset>" appears, **read everything in full** for context but **produce findings/decisions only** on the indicated subset. Without a clause, the analysis covers everything.
+- **Merge first, read after.** The reference files in the folder must first be concatenated into a single problem description file (see procedure, point 2), then read from there. They are the problem material, not an optional context: skip nothing in silence.
+- **Full reading, never sampled**: every file must be read in full before writing a single finding or a single decision.
+- If a document declares its own facts "verified against" a source present in the repo (notes, adapter, code), **verify the load-bearing claims by sampling** against that source — a load-bearing claim without corroboration is a finding, not a note.
+- Open `{memory.index}` and the memories the problem area touches before analysing: it is the channel of §4.1 of `contracts/orchestration.md`. If the caller does not pass them to you, open the index and choose yourself — you are the node opening the chain, so nobody passes those paths to you, and a decision already closed that you did not read you reopen without noticing.
+- Respect the points documents or memory declare **already decided/ascertained/to assume true**: do not raise them again; report them **only** if you find a passage contradicting them.
 
-## I due stadi
+## The two stages
 
-- **Stadio strategico** (`0. problem.md`): il problema stesso non è ancora ben definito — mancano decisioni su cosa fare, per chi, con quale perimetro, o esistono contraddizioni/vuoti che nessuna quantità di dettaglio tecnico risolverebbe da sola. Qui si applica la **modalità revisione scettica**: rilievi citati, fix automatici dei banali, lista di decisioni strategiche numerate.
-- **Stadio tecnico** (`1. decision-doc.md`): la strategia è chiara; restano da chiudere le decisioni di implementazione (tecnologie, approcci, trade-off). Qui si applica la **modalità studio approfondito**: nodo per nodo, opzioni motivate, raccomandazione, distillate in decision card leggibili in cima.
+- **Strategic stage** (`0. problem.md`): the problem itself is not yet well defined — decisions are missing on what to do, for whom, with which perimeter, or contradictions/gaps exist that no amount of technical detail would resolve alone. Here the **sceptical revision mode** applies: cited findings, automatic fixes of the trivial, numbered list of strategic decisions.
+- **Technical stage** (`1. decision-doc.md`): the strategy is clear; implementation decisions remain to be closed (technologies, approaches, trade-offs). Here the **in-depth study mode** applies: node by node, motivated options, recommendation, distilled into decision cards readable at the top.
 
-**Come si sceglie lo stadio:** leggi tutto il materiale disponibile nella cartella (`0. problem.md` se esiste, `1. decision-doc.md` se esiste, i file di riferimento) e valuta se le domande aperte sono di natura strategica (direzione, perimetro, se farlo o no) o tecnica (come farlo). Se convivono entrambe, tratta prima le strategiche: non ha senso motivare trade-off tecnici su un problema ancora mal definito — resta allo stadio strategico e fermati lì, senza produrre ancora `1. decision-doc.md`. **Dichiara sempre nel tuo blocco quale stadio hai scelto e perché**, nel campo che lo porta: non è una scelta silenziosa, ed è la prima cosa che chi ti ha chiamato legge per sapere a che punto è il problema.
+**How the stage is chosen:** read all the available material in the folder (`0. problem.md` if it exists, `1. decision-doc.md` if it exists, the reference files) and evaluate whether the open questions are strategic in nature (direction, perimeter, whether to do it or not) or technical (how to do it). If both coexist, treat the strategic ones first: there is no sense in motivating technical trade-offs on a still ill-defined problem — stay at the strategic stage and stop there, without yet producing `1. decision-doc.md`. **Always declare in your block which stage you chose and why**, in the dedicated field: it is not a silent choice, and it is the first thing whoever called you reads to know where the problem stands.
 
-## Procedura
+## Procedure
 
-1. **Risolvi la cartella** che il prompt ti ha passato e verifica che esista. Elenca i file che contiene.
+1. **Resolve the folder** the prompt passed you and verify it exists. List the files it contains.
 
-2. **Unisci i file di riferimento nel problema base** (solo se non già fatto). Concatena in ordine tutti i file preesistenti nella cartella — **sola concatenazione**, senza riscrivere o riassumere il contenuto — in un unico file `0. problem.md`, ed elimina gli originali che hai accorpato (escludi dall'operazione gli artefatti di una run precedente — `0.5. studio-strategico.md` e `1. decision-doc.md` — e lo stesso `0. problem.md` se già esiste). Se nella cartella c'è un solo file di riferimento, limitati a rinominarlo `0. problem.md`.
+2. **Merge the reference files into the base problem** (only if not already done). Concatenate in order all pre-existing files in the folder — **mere concatenation**, without rewriting or summarising the content — into a single `0. problem.md` file, and delete the originals you merged (exclude from the operation the artefacts of a previous run — `0.5. strategic-study.md` and `1. decision-doc.md` — and `0. problem.md` itself if it already exists). If in the folder there is a single reference file, just rename it `0. problem.md`.
 
-3. **Leggi tutto**: `0. problem.md`, `1. decision-doc.md` se esiste, eventuali altri file rimasti.
+3. **Read everything**: `0. problem.md`, `1. decision-doc.md` if it exists, any other remaining files.
 
-4. **Valuta lo stadio** (vedi sopra) e dichiaralo nel blocco che restituirai.
+4. **Evaluate the stage** (see above) and declare it in the block you will return.
 
-5. **Applica la modalità corrispondente allo stadio** (dettagli sotto):
-   - stadio strategico → **Modalità revisione scettica** su `0. problem.md`;
-   - stadio tecnico → **Modalità studio approfondito**, producendo/aggiornando `1. decision-doc.md`.
+5. **Apply the mode corresponding to the stage** (details below):
+   - strategic stage → **sceptical revision mode** on `0. problem.md`;
+   - technical stage → **in-depth study mode**, producing/updating `1. decision-doc.md`.
 
-6. **Restituisci il blocco e fermati lì.** In modalità *studio* porta la lista di decisioni che hai appena scritto; in *recepimento*, ciò che le risposte hanno chiuso e la lista nuova se hai proseguito allo stadio tecnico. Chi ti ha chiamato le porta all'owner e apre la consegna: quella parte non è tua.
+6. **Return the block and stop there.** In *study* mode carry the decision list you just wrote; in *incorporation*, what the answers closed and the new list if you continued to the technical stage. Whoever called you brings them to the owner and opens the handoff: that part is not yours.
 
 ---
 
-## Modalità revisione scettica (stadio strategico)
+## Sceptical revision mode (strategic stage)
 
-Analizza `0. problem.md` (e `1. decision-doc.md` se esiste e le contraddizioni lo coinvolgono) come farebbe un **senior scettico che deve firmare la direzione prima che si passi al dettaglio tecnico**.
+Analyse `0. problem.md` (and `1. decision-doc.md` if it exists and the contradictions involve it) as a **sceptical senior who must sign the direction before moving to technical detail would**.
 
-### Fase 1 — Analisi
+### Phase 1 — Analysis
 
-Per ogni rilievo:
-- cita il **passaggio esatto** (file + frase/§) da cui nasce;
-- classifica: **[bloccante | rischio serio | punto debole | miglioria]**;
-- distingui se è un problema **REALE** o solo una **scelta che non condividi**.
+For each finding:
+- cite the **exact passage** (file + sentence/§) it comes from;
+- classify: **[blocker | serious risk | weakness | improvement]**;
+- distinguish whether it is a **REAL** problem or only a **choice you do not share**.
 
-Copri in quest'ordine di priorità:
-1. **Contraddizioni** (incoerenze, decisioni che si escludono, numeri o assunzioni divergenti, stato deciso/aperto dichiarato diversamente in punti diversi).
-2. **Assunzioni non dimostrate** su cui poggia il resto. Per ognuna dì se è **verificabile dai documenti** (o dalle fonti nel repo) o se resta un **atto di fede**.
-3. **Cosa MANCA**: decisioni strategiche mai prese, casi non coperti, punti aperti lasciati impliciti. Distingui il fuori-scope dichiarato (non è un rilievo) dal non-trattato.
-4. **Punti deboli e migliorie** sul già scritto (numeri che non tornano, link rotti, numerazione, prescrizioni non eseguibili).
+Cover in this priority order:
+1. **Contradictions** (incoherences, mutually excluding decisions, divergent numbers or assumptions, decided/open state declared differently in different points).
+2. **Unproven assumptions** on which the rest rests. For each say whether it is **verifiable from the documents** (or from the sources in the repo) or remains an **act of faith**.
+3. **What is MISSING**: strategic decisions never taken, uncovered cases, implicitly left open points. Distinguish declared out-of-scope (not a finding) from untreated.
+4. **Weaknesses and improvements** on the already written (numbers not adding up, broken links, numbering, non-executable prescriptions).
 
-Non inventare: se un'area è fuori scope, dillo invece di riempirla. Apri il report con un **verdetto di sintesi** (pronto per lo studio tecnico / pronto con correzioni / ancora da pensare, e perché in due frasi).
+Do not invent: if an area is out of scope, say so instead of filling it. Open the report with a **summary verdict** (ready for technical study / ready with corrections / still to think through, and why in two sentences).
 
-### Fase 2 — Fix automatici (solo banali e di puro allineamento)
+### Phase 2 — Automatic fixes (only trivial and pure-alignment ones)
 
-Applica **subito**, con modifiche chirurgiche, i rilievi che non richiedono alcuna scelta di disegno: link e riferimenti rotti, numerazione, conteggi smentiti dai documenti stessi, allineamento di stato quando è chiaro quale versione è quella deliberata, note di raccordo di una frase. **Mai** in questa fase nulla che cambi una decisione o introduca disegno nuovo — nel dubbio, va in Fase 3. Riepiloga ogni fix applicato (file + cosa).
+Apply **immediately**, with surgical modifications, the findings requiring no design choice: broken links and references, numbering, counts belied by the documents themselves, state alignment when it is clear which version is the deliberate one, one-sentence bridging notes. **Never** in this phase anything changing a decision or introducing new design — when in doubt, it goes to Phase 3. Summarise each applied fix (file + what).
 
-### Fase 3 — Lista di decisione, e il documento che la porta
+### Phase 3 — Decision list, and the document carrying it
 
-Tutto ciò che resta diventa una lista numerata, e ogni voce nasce già nella forma in cui verrà posta: un titolo breve, il problema in una riga, 2-4 opzioni fra cui scegliere.
+Everything remaining becomes a numbered list, and each item already comes in the form in which it will be asked: a short title, the problem in one line, 2-4 options to choose from.
 
-**La lista si scrive in `0.5. studio-strategico.md`, nella cartella del problema, e non solo nel blocco.** Il blocco la porta a chi deve chiederla; il documento porta tutto — è lui che sopravvive alla sessione e che l'owner rilegge quando torna a decidere. Struttura in § *Struttura dei documenti prodotti*. Se il file esiste già da una run precedente, aggiornalo in place: le decisioni già chiuse restano con la loro risposta, quelle nuove si accodano con la numerazione che continua, e una decisione decaduta non si cancella — si marca decaduta col perché.
+**The list is written in `0.5. strategic-study.md`, in the problem folder, and not only in the block.** The block carries it to whoever must ask it; the document carries everything — it is what survives the session and what the owner rereads when returning to decide. Structure in § *Structure of the produced documents*. If the file already exists from a previous run, update it in place: already closed decisions stay with their answer, new ones append with continuing numbering, and a lapsed decision is not deleted — it is marked lapsed with the why.
 
-Formato **esatto** di ogni voce, ben indentato, raccomandata **sempre A, per prima e in grassetto**:
+**Exact** format of each item, well indented, the recommended option is **always A, first and in bold**:
 
 ```markdown
-# Decisioni strategiche rimaste
+# Remaining strategic decisions
 
-**1. <Titolo breve della decisione>** — [classificazione]
-   - Problema: <una riga, con la citazione (file §x) da cui nasce>
-   - Opzioni:
-     - **A — <opzione in una riga> ← raccomandata: <perché, in una frase>**
-     - B — <opzione in una riga>
-     - C — <opzione in una riga>
+**1. <short decision title>** — [classification]
+   - Problem: <one line, with the citation (file §x) it comes from>
+   - Options:
+     - **A — <option in one line> ← recommended: <why, in one sentence>**
+     - B — <option in one line>
+     - C — <option in one line>
 ```
 
-Regole: 2–4 opzioni per decisione, **mutuamente esclusive**, ciascuna autosufficiente in una riga (status quo alla pari quando legittimo); **la raccomandata è sempre A**, prima e unica in grassetto con `← raccomandata:`; ordina per gravità (prima i bloccanti/rischi seri). La voce del blocco (§ *Il blocco che restituisci*) dice la stessa cosa in JSON, con `recommended_id: "A"`. La forma in cui poi si pongono all'owner è quella di § *Domandare all'owner* di `contracts/orchestration.md`, e a porle è chi ti ha invocato: tu le scrivi già in quella forma, così che possa passarle senza riscriverle né riordinarle. Una risposta libera, fuori dalle opzioni, **prevale** su di esse.
+Rules: 2–4 options per decision, **mutually exclusive**, each self-sufficient in one line (status quo on equal footing when legitimate); **the recommended option is always A**, first and only in bold with `← recommended:`; order by gravity (first blockers/serious risks). The block item (§ *The block you return*) says the same thing in JSON, with `recommended_id: "A"`. The form in which they are then asked of the owner is that of § *Ask the owner* of `contracts/orchestration.md`, and whoever invoked you asks them: you write them already in that form, so it can pass them without rewriting or reordering them. A free answer, outside the options, **prevails** over them.
 
-### Fase 4 — Recepimento
+### Phase 4 — Incorporation
 
-Quando le risposte arrivano — dal prompt, nella modalità *recepimento* —:
-- recepisci **ogni** decisione in `0. problem.md` con modifiche chirurgiche, propagando la coerenza (se una decisione ribalta un'affermazione ripetuta altrove, correggi **tutte** le occorrenze);
-- **chiudi ogni decisione in `0.5. studio-strategico.md`**, dove è scritta: l'opzione scelta, la data, e dove è stata recepita. Le opzioni scartate restano — servono a chi un domani chiede perché non si è fatto altrimenti. Se il documento non esiste perché la lista è nata prima di questo contratto, scrivilo ora con le decisioni e le risposte insieme;
-- se una risposta è una direttiva libera, prevale sulle opzioni: applicala;
-- se l'utente dichiara un'assunzione «vera, fidati» → non toccare il documento; portala in memoria **solo attraverso il flusso che il contratto della memoria autorizza** — `.daiku/domain/memory-contract.md`, o `{instructions_file}` se quel file non esiste — che è anche ciò che le dà la forma giusta e la riga in `{memory.index}`; nel riepilogo dichiara l'assunzione come punto da non risollevare;
-- chiudi con un riepilogo per numero: decisione → cosa hai scritto e dove, più l'elenco di ciò che eventualmente resta aperto.
+When the answers arrive — from the prompt, in *incorporation* mode —:
+- incorporate **every** decision in `0. problem.md` with surgical modifications, propagating coherence (if a decision overturns a statement repeated elsewhere, correct **all** occurrences);
+- **close every decision in `0.5. strategic-study.md`**, where it is written: the chosen option, the date, and where it was incorporated. The discarded options stay — they serve whoever one day asks why it was not done otherwise. If the document does not exist because the list predates this contract, write it now with the decisions and answers together;
+- if an answer is a free directive, it prevails over the options: apply it;
+- if the user declares an assumption "true, trust me" → do not touch the document; carry it into memory **only through the flow the memory contract authorises** — `.daiku/domain/memory-contract.md`, or `{instructions_file}` if that file does not exist — which is also what gives it the right form and the line in `{memory.index}`; in the summary declare the assumption as a point not to raise again;
+- close with a summary by number: decision → what you wrote and where, plus the list of what possibly remains open.
 
-Se dopo il recepimento il problema è ormai ben definito (nessuna decisione strategica resta aperta), passa direttamente alla **Modalità studio approfondito** nella stessa run.
+If after incorporation the problem is now well defined (no strategic decision remains open), move directly to **in-depth study mode** in the same run.
 
 ---
 
-## Modalità studio approfondito (stadio tecnico)
+## In-depth study mode (technical stage)
 
-### Principi (non negoziabili)
+### Principles (non-negotiable)
 
-1. **Prima pensa, poi scrivi.** Identifica il problema reale e il bisogno effettivo. Se restano interpretazioni multiple, portale in superficie invece di sceglierne una in silenzio.
-2. **Ancora tutto agli input.** Ogni affermazione su requisiti, vincoli o stato attuale deve poggiare sui file letti o su conoscenza tecnica verificabile. Non inventare requisiti, numeri, vincoli o fatti. Quando un'informazione manca per decidere, **dichiara l'assunzione** o segnala il dato mancante.
-3. **Profondità nel corpo, semplicità in cima.** Il corpo è tecnico ed esaustivo: tecnologie candidate, motivazioni, pro e contro, costi, rischi. La sezione in cima è ad alta astrazione: niente nomi di librerie buttati lì senza spiegazione, solo la scelta, cosa comporta, e perché.
-4. **Trade-off onesti.** Per ogni decisione mostra il prezzo della scelta consigliata, non solo i vantaggi. Una decisione senza contro elencati è sospetta: o è davvero banale (dillo) o non l'hai approfondita abbastanza.
-5. **Una raccomandazione chiara e stabile.** Per ogni decisione la raccomandata è **sempre A**: la scrivi per prima, la marchi come consigliata e in una frase dici il perché. L'utente deve poter decidere leggendo solo la cima, e chi pone la domanda non deve dover capire quale opzione fosse la raccomandata — lo dice `recommended_id` nel blocco.
-6. **Solo le decisioni che contano, status quo incluso.** Porta in cima **solo** le decisioni che richiedono un vero giudizio umano. Le scelte forzate (senza alternativa reale) non diventano card: citale nell'approfondimento e basta. Non frammentare in micro-decisioni. Quando tenere la situazione attuale è legittimo, mettila tra le opzioni alla pari.
+1. **First think, then write.** Identify the real problem and the effective need. If multiple interpretations remain, bring them to the surface instead of silently choosing one.
+2. **Anchor everything to the inputs.** Every statement on requirements, constraints or current state must rest on the read files or on verifiable technical knowledge. Do not invent requirements, numbers, constraints or facts. When information is missing to decide, **declare the assumption** or report the missing datum.
+3. **Depth in the body, simplicity at the top.** The body is technical and exhaustive: candidate technologies, motivations, pros and cons, costs, risks. The section at the top is highly abstract: no library names thrown in without explanation, only the choice, what it entails, and why.
+4. **Honest trade-offs.** For each decision show the price of the recommended choice, not only the advantages. A decision without listed cons is suspect: either it is truly trivial (say so) or you did not go deep enough.
+5. **A clear and stable recommendation.** For each decision the recommended is **always A**: you write it first, you mark it as recommended and in one sentence you say why. The user must be able to decide by reading only the top, and whoever asks the question must not have to understand which option was the recommended — `recommended_id` in the block says so.
+6. **Only the decisions that matter, status quo included.** Bring to the top **only** the decisions requiring a true human judgement. Forced choices (with no real alternative) do not become cards: cite them in the in-depth part and that is enough. Do not fragment into micro-decisions. When keeping the current situation is legitimate, put it among the options on equal footing.
 
-### Procedura
+### Procedure
 
-1. **Se `0. problem.md` non è ancora stato letto**, leggilo ed estrai: qual è il problema, il bisogno reale, quali vincoli emergono, cosa esiste già. Se `1. decision-doc.md` esiste già da una run precedente, leggilo e usalo come base da aggiornare, non riscrivere da zero ciò che resta valido.
+1. **If `0. problem.md` has not been read yet**, read it and extract: what the problem is, the real need, which constraints emerge, what already exists. If `1. decision-doc.md` already exists from a previous run, read it and use it as the base to update, do not rewrite from scratch what stays valid.
 
-2. **Studia il problema in profondità.** Per ogni nodo decisionale tecnico che il problema impone:
-   - identifica le opzioni tecniche reali (tecnologie, approcci, architetture), inclusa — quando è legittima — l'opzione **non cambiare / status quo**;
-   - per ciascuna, motiva: perché potrebbe andare bene, cosa costa, quali rischi e quali vincoli introduce;
-   - confronta le opzioni su criteri concreti (adeguatezza al bisogno, complessità, costo, maturità, manutenibilità, lock-in, impatto sull'esistente);
-   - scegli quella che consigli e giustifica la scelta rispetto alle altre. Se il problema impone più decisioni indipendenti, trattale separatamente; ma accorpa quelle che si decidono insieme e tieni fuori dalle card quelle forzate (solo nell'approfondimento).
+2. **Study the problem in depth.** For each technical decision node the problem imposes:
+   - identify the real technical options (technologies, approaches, architectures), including — when legitimate — the **do not change / status quo** option;
+   - for each, motivate: why it could work, what it costs, which risks and which constraints it introduces;
+   - compare the options on concrete criteria (fitness to need, complexity, cost, maturity, maintainability, lock-in, impact on the existing);
+   - choose the one you recommend and justify the choice against the others. If the problem imposes several independent decisions, treat them separately; but merge those decided together and keep the forced ones out of the cards (only in the in-depth part).
 
-3. **Se il materiale è insufficiente per decidere davvero** (manca il problema, i vincoli o il contesto necessario a confrontare le opzioni), **non** produrre un documento sicuro ma senza base: fermati, dichiara cosa manca ed elenca le informazioni o i file che servirebbero.
+3. **If the material is insufficient to truly decide** (the problem, constraints or context needed to compare the options is missing), do **not** produce a confident document but without basis: stop, declare what is missing and list the information or files that would be needed.
 
-4. **Scrivi il documento** (vedi struttura sotto). Scrivi **prima il corpo tecnico** (è lì che ragioni), **poi distilla la sezione in cima** a partire dal corpo. La cima è un riassunto decisionale del corpo, non un testo scollegato.
+4. **Write the document** (see structure below). Write **first the technical body** (it is there that you reason), **then distill the top section** starting from the body. The top is a decision summary of the body, not a disconnected text.
 
-5. **Salva** il documento come `1. decision-doc.md` nella cartella di input. Se esiste già, aggiornalo in place (non sovrascrivere in silenzio ciò che l'utente ha già editato manualmente: se noti modifiche manuali incompatibili con quanto stai per scrivere, segnalale). Salva nella codifica del progetto, senza degradare i caratteri non ASCII.
+5. **Save** the document as `1. decision-doc.md` in the input folder. If it already exists, update it in place (do not silently overwrite what the user already edited by hand: if you notice manual modifications incompatible with what you are about to write, report them). Save in the project encoding, without degrading non-ASCII characters.
 
-6. **Le decision card non le poni tu, le restituisci.** Non hai un canale verso l'owner — § *Modalità di invocazione* — quindi le porti nel blocco e le pone chi ti ha invocato. Quando la risposta arriva in modalità *recepimento*, ogni card la porta in coda come **Scelta: \<id\> — \<testo\> (\<data\>)**, con l'id stabile del blocco (per contratto la raccomandata è `A`). Una scelta che vive solo in chat è una scelta che il brief non trova: chi legge il documento fra un mese deve vedere *cosa* è stato scelto accanto al perché c'erano alternative.
+6. **You do not ask the decision cards, you return them.** You have no channel to the owner — § *Invocation modes* — so you carry them in the block and whoever invoked you asks them. When the answer arrives in *incorporation* mode, each card carries it at the tail as **Choice: \<id\> — \<text\> (\<date\>)**, with the stable id of the block (by contract the recommended is `A`). A choice living only in chat is a choice the brief does not find: whoever reads the document in a month must see *what* was chosen next to why there were alternatives.
 
-## Struttura dei documenti prodotti
+## Structure of the produced documents
 
-`0. problem.md` è la concatenazione dei file di riferimento, eventualmente aggiornata dalla Fase 4 della modalità scettica con le decisioni strategiche recepite — non ha una struttura fissa oltre a questa.
+`0. problem.md` is the concatenation of the reference files, possibly updated by Phase 4 of the sceptical mode with the incorporated strategic decisions — it has no fixed structure beyond this.
 
-`0.5. studio-strategico.md` (stadio strategico). Sta fra i due numeri perché è ciò che si legge **dopo** aver visto il problema e **prima** che esista uno studio tecnico — e perché una cartella può arrivarci dopo un `1. decision-doc.md`, quando una domanda di direzione si riapre:
+`0.5. strategic-study.md` (strategic stage). It stands between the two numbers because it is what is read **after** seeing the problem and **before** a technical study exists — and because a folder can arrive there after a `1. decision-doc.md`, when a direction question reopens:
 
 ```text
-# <Titolo del problema> — studio strategico
+# <problem title> — strategic study
 
-> Stato, data, e in una riga perché lo stadio è strategico e non tecnico.
+> Status, date, and in one line why the stage is strategic and not technical.
 
-## Verdetto
-   La sintesi di apertura della Fase 1: pronto per lo studio tecnico /
-   pronto con correzioni / ancora da pensare, e perché in due frasi.
+## Verdict
+   The opening synthesis of Phase 1: ready for technical study /
+   ready with corrections / still to think through, and why in two sentences.
 
-## Decisioni strategiche rimaste     ← il formato esatto della Fase 3
-   Per ognuna: classificazione, problema con la citazione da cui nasce,
-   2-4 opzioni mutuamente esclusive con id A, B (, C, D), raccomandata sempre A e per prima.
-   Quando l'owner ha risposto, ogni voce porta in coda la riga
-   **Scelta: <id> — <testo> (<data>)** — e dove è stata recepita.
+## Remaining strategic decisions     ← the exact format of Phase 3
+   For each: classification, problem with the citation it comes from,
+   2-4 mutually exclusive options with id A, B (, C, D), the recommended option is always A and comes first.
+   When the owner has answered, each entry carries at the tail the line
+   **Choice: <id> — <text> (<date>)** — and where it was incorporated.
 
-## Rilievi che non sono diventati decisioni
-   I fix applicati in Fase 2 (file + cosa), e i rilievi giudicati scelte
-   legittime di chi ha scritto: si dichiarano per non farli risollevare.
+## Findings that did not become decisions
+   The fixes applied in Phase 2 (file + what), and the findings judged
+   legitimate choices of whoever wrote: they are declared so they are not raised again.
 
-## Cosa resta fuori
-   Le domande che questo stadio non ha potuto chiudere, e quale dato
-   mancava per chiuderle.
+## What stays out
+   The questions this stage could not close, and which datum
+   was missing to close them.
 ```
 
-Una decisione decaduta non si cancella: resta con la riga **Decaduta: \<perché\>**, perché la cartella racconti anche le strade che il tempo ha chiuso.
+A lapsed decision is not deleted: it stays with the line **Lapsed: \<why\>**, so the folder also tells the options time closed.
 
 `1. decision-doc.md`:
 
 ```text
-# <Titolo del problema>
+# <problem title>
 
-## Decisioni da prendere            ← IN CIMA, alto livello, niente tecnicismi
-   Per ogni decisione, una "decision card":
-   - Decisione: la domanda in una frase, in linguaggio comprensibile
-   - Opzioni: A / B (/ C), descritte per cosa significano, non per come sono fatte,
-     con A per prima perché è la raccomandata
-   - Pro e contro: in parole semplici, il prezzo di ciascuna opzione
-   - Consigliato: sempre A + una frase di perché
-   (Ripeti per ogni decisione indipendente.)
+## Decisions to take            ← AT THE TOP, high level, no technicalities
+   For each decision, a "decision card":
+   - Decision: the question in one sentence, in understandable language
+   - Options: A / B (/ C), described by what they mean, not by how they are made,
+     with A first because it is the recommended one
+   - Pros and cons: in simple words, the price of each option
+   - Recommended: always A + one sentence of why
+   (Repeat for each independent decision.)
 
 ---
 
-## Approfondimento tecnico          ← SOTTO, denso e motivato
-   - Il problema e il bisogno reale (cosa serve davvero, dedotto dagli input)
-   - Vincoli ed evidenze raccolte dai file di riferimento
-   - Per ogni decisione: opzioni candidate, motivazioni tecniche,
-     pro/contro dettagliati, costi, rischi, confronto su criteri, scelta motivata
-   - Assunzioni dichiarate e dati mancanti
+## In-depth technical analysis          ← BELOW, dense and motivated
+   - The problem and the real need (what is truly needed, deduced from the inputs)
+   - Constraints and evidence gathered from the reference files
+   - For each decision: candidate options, technical motivations,
+     detailed pros/cons, costs, risks, comparison on criteria, motivated choice
+   - Declared assumptions and missing data
 ```
 
-Regola di taglio: la sezione **Decisioni da prendere** deve essere leggibile e sufficiente per decidere **senza** scorrere l'approfondimento. L'approfondimento esiste per chi vuole verificare il *perché*.
+Cut rule: the **Decisions to take** section must be readable and sufficient to decide **without** scrolling through the in-depth part. The in-depth part exists for whoever wants to verify the *why*.
 
-Salva sempre nella codifica del progetto, senza degradare i caratteri non ASCII. Ogni riga modificata deve ricondursi a un rilievo o a una decisione: niente riscritture di stile fuori scope.
+Always save in the project encoding, without degrading non-ASCII characters. Every modified line must trace back to a finding or a decision: no out-of-scope style rewrites.

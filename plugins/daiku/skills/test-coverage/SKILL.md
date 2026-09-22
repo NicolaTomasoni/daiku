@@ -1,137 +1,137 @@
 ---
 name: 'test-coverage'
-description: 'Default misura la copertura per macrocategorie del progetto e aspetta categoria + % target; in modalità --auto decide da sé se il diff introduce logica scoperta e scrive i test sul diff senza chiedere. Test di qualità nel layer corretto'
+description: 'Default measures coverage by project macro-categories and waits for category + % target; in --auto mode it decides itself whether the diff introduces uncovered logic and writes tests on the diff without asking. Quality tests in the correct layer'
 user-invocable: false
 ---
 
-Skill per **creare test unitari** con un flusso a due tempi: prima misura e mostra la copertura per macrocategoria, **si ferma** e aspetta che tu scelga su cosa lavorare e con quale % target; poi scrive i test rispettando le convenzioni e le regole di qualità del progetto.
+Skill for **creating unit tests** with a two-phase flow: first it measures and shows coverage by macro-category, **stops** and waits for you to choose what to work on and with which % target; then it writes the tests respecting the project conventions and quality rules.
 
-Le regole architetturali restano quelle del progetto — gli invarianti di `{instructions_file}` e le rule di area in `.daiku/policies/`: questa skill non le sostituisce, le applica anche ai test.
+The architectural rules stay those of the project — the invariants of `{instructions_file}` and the area rules in `.daiku/policies/`: this skill does not replace them, it also applies them to tests.
 
-> **Parametri.** Ogni chiave fra graffe di questo contratto si risolve sui file di parametri del progetto, mai a memoria e mai per assunzione: le regole sono nella §5 di `contracts/project-contract.md`, che dice anche **in quale lingua scrivere** e cosa fare quando una chiave non c'è.
+> **Parameters.** Every key in braces in this contract resolves on the project parameter files, never from memory and never by assumption: the rules are in §5 of `contracts/project-contract.md`, which also says **in which language to write** and what to do when a key is missing.
 
-## Contesto di dominio
+## Domain context
 
-Leggi `.daiku/domain/test-strategy.md`: porta le macrocategorie di questo progetto, come si legge l'output dei suoi comandi di misura e quali artefatti quella misura lascia da rimuovere, quale perimetro copre davvero il runner di ciascuna area, quali convenzioni seguono i test già scritti e da quale punto di forza si testa ciascun layer. Se non esiste, riporta la copertura per area senza suddividerla in macrocategorie e scrivi i test rispecchiando un test fratello dello stesso layer, e dichiaralo nell'esito.
+Read `.daiku/domain/test-strategy.md`: it carries the macro-categories of this project, how the output of its measurement commands is read and which artefacts that measurement leaves to remove, which perimeter the runner of each area truly covers, which conventions the already written tests follow and from which strength point each layer is tested. If it does not exist, report coverage by area without splitting it into macro-categories and write the tests mirroring a sibling test of the same layer, and declare it in the outcome.
 
-## Due modalità
+## Two modes
 
-- **Default (interattiva).** Il flusso a due tempi descritto sotto: misura → STOP → scelta categoria + % target → scrive. È il comportamento per l'invocazione manuale.
-- **`--auto` (invocata da `/review`).** Scope = il diff, non una macrocategoria. **Niente Fase 1 e niente STOP**: non misuri la copertura globale né chiedi target, scrivi direttamente i test per la logica introdotta dal diff. Vedi *Modalità automatica* in fondo. Le regole di qualità della **Fase 3** (convenzioni, strategia per layer, cosa rende un test di qualità) valgono identiche.
+- **Default (interactive).** The two-phase flow described below: measure → STOP → category + % target choice → write. It is the behaviour for manual invocation.
+- **`--auto` (invoked by `/review`).** Scope = the diff, not a macro-category. **No Phase 1 and no STOP**: you neither measure global coverage nor ask for a target, you directly write the tests for the logic introduced by the diff. See *Automatic mode* at the bottom. The quality rules of **Phase 3** (conventions, per-layer strategy, what makes a quality test) hold identical.
 
-## Argomento
+## Argument
 
-`$ARGUMENTS` è opzionale ed è solo un **suggerimento** di categoria su cui concentrare la tabella. Anche se presente, la Fase 1 mostra comunque la tabella completa e la Fase 2 **aspetta la conferma**: non partire mai a scrivere test senza input esplicito su categoria **e** % target.
+`$ARGUMENTS` is optional and is only a **suggestion** of a category to focus the table on. Even if present, Phase 1 still shows the complete table and Phase 2 **awaits confirmation**: never start writing tests without explicit input on category **and** % target.
 
 ---
 
-## Fase 1 — Mappa di copertura per macrocategoria
+## Phase 1 — Coverage map by macro-category
 
-Obiettivo: una tabella onesta che dica dove siamo, non un numero unico.
+Goal: an honest table saying where we are, not a single number.
 
-### 1.1 Misura ogni area
+### 1.1 Measure each area
 
-Per ogni area dichiarata in `{areas}` che ha `{areas.<area>.coverage}`, esegui quelle righe in ordine dalla cwd dichiarata. Una riga si esegue **così com'è**: non sostituirla con un equivalente che credi migliore, non installare nulla per farla girare. Se fallisce perché l'ambiente non c'è, **fermati e segnalalo** — è un esito reale, non una scorciatoia da cercare altrove.
+For each area declared in `{areas}` having `{areas.<area>.coverage}`, run those lines in order from the declared cwd. One line runs **as it is**: do not replace it with an equivalent you believe better, install nothing to make it run. If it fails because the environment is missing, **stop and report it** — it is a real outcome, not a shortcut to look for elsewhere.
 
-Leggi il risultato che quei comandi producono e aggrega **sommando statement coperti e totali** per macrocategoria (media pesata sugli statement, non media delle percentuali per-file — altrimenti i file piccoli falsano il dato).
+Read the result those commands produce and aggregate **by summing covered and total statements** per macro-category (weighted average on statements, not average of per-file percentages — otherwise small files skew the data).
 
-### 1.2 Macrocategorie (dai layer del progetto)
+### 1.2 Macro-categories (from the project layers)
 
-Mappa ogni file misurato al suo layer per path, secondo la tassonomia di `.daiku/domain/test-strategy.md`; i file che nessuna voce cattura finiscono nella macrocategoria residuale che quella tassonomia dichiara.
+Map each measured file to its layer by path, per the taxonomy of `.daiku/domain/test-strategy.md`; the files no entry captures end up in the residual macro-category that taxonomy declares.
 
-### 1.3 Il perimetro che la misura copre davvero
+### 1.3 The perimeter the measurement truly covers
 
-Il comando di un'area può coprire meno dell'area che lo dichiara: un runner esclude per configurazione ciò che non sa eseguire. La riga di quell'area riporta **la copertura del perimetro realmente misurato**, non quella dell'intera area; ciò che resta fuori dal runner si dichiara tale, non si conta come scoperto e non si aggira. Non installare nulla e non proporre scaffolding: il tooling è quello che il comando dichiarato usa.
+The command of an area can cover less than the area declaring it: a runner excludes by configuration what it does not know how to run. The line of that area carries **the coverage of the truly measured perimeter**, not that of the whole area; what stays outside the runner is declared such, not counted as uncovered and not bypassed. Install nothing and propose no scaffolding: the tooling is what the declared command uses.
 
-### 1.4 Mostra la tabella e fermati
+### 1.4 Show the table and stop
 
-Presenta:
+Present:
 
 ```
-| Macrocategoria       | Coverage | Stmt coperti/totali | Peggiori file (miss) |
+| Macro-category       | Coverage | Covered/total stmts | Worst files (miss) |
 |----------------------|----------|---------------------|----------------------|
-| <macrocategoria>     |  ...%    |  .../...            | file — N righe scoperte |
+| <macro-category>     |  ...%    |  .../...            | file — N uncovered lines |
 | ...                  |          |                     |                      |
-| TOTALE <area>        |  ...%    |  .../...            | perimetro misurato — cosa resta fuori dal runner |
+| TOTAL <area>         |  ...%    |  .../...            | measured perimeter — what stays outside the runner |
 ```
 
-Una riga di totale per ogni area misurata. Per ogni categoria elenca i **2–3 file peggiori** per righe scoperte (statement totali meno coperti), non per percentuale: sono i candidati ad alto ritorno. Aggiungi una riga sintetica "quick win" con le macrocategorie che `.daiku/domain/test-strategy.md` indica a ritorno più alto, se hanno righe scoperte (vedi Fase 3).
+One total line for each measured area. For each category list the **2–3 worst files** by uncovered lines (total minus covered statements), not by percentage: they are the high-return candidates. Add a summary "quick win" line with the macro-categories `.daiku/domain/test-strategy.md` indicates at highest return, if they have uncovered lines (see Phase 3).
 
-Poi **STOP**. Chiudi con una domanda esplicita:
+Then **STOP**. Close with an explicit question:
 
-> Su quale macrocategoria (o file specifico) vuoi lavorare, e con quale **% target**?
+> On which macro-category (or specific file) do you want to work, and with which **% target**?
 
-Non proseguire finché non arriva la risposta. Pulisci gli artefatti che la misura ha lasciato nella cwd dei suoi comandi prima di passare oltre o a fine skill — non vanno committati.
-
----
-
-## Fase 2 — Attendi la scelta
-
-L'utente indica **categoria/file** e **% target** (es. "<macrocategoria> al 95%", "<file> oltre il 90%", "i file più scoperti di <macrocategoria> al 70%").
-
-Se la richiesta è ambigua (categoria senza target, o "alza la coverage" senza scope), **chiedi**: un target verificabile è ciò che rende la Fase 3 autonoma (criteri di successo solidi, non "fai funzionare").
-
-Traduci subito la scelta in un obiettivo verificabile, es.: `copertura di <path della categoria> da X% a ≥95%, rimisurata con lo stesso comando della Fase 1`.
+Do not continue until the answer arrives. Clean the artefacts the measurement left in the cwd of its commands before moving on or at skill end — they must not be committed.
 
 ---
 
-## Fase 3 — Scrivi i test (qualità del progetto)
+## Phase 2 — Await the choice
 
-### 3.1 Prima di scrivere
+The user indicates **category/file** and **% target** (e.g. "<macro-category> at 95%", "<file> above 90%", "the most uncovered files of <macro-category> at 70%").
 
-1. Dal risultato della misura ricava le **righe scoperte** dei file bersaglio. Quelle righe sono quasi sempre **rami di errore, branch vuoti, edge case**: sono lì il valore, non nell'happy path già coperto.
-2. **Leggi il sorgente** dei file bersaglio e **almeno un test fratello esistente** dello stesso layer, per rispecchiarne stile, fixture e fake. Non inventare un pattern nuovo dove ne esiste già uno che quel layer segue.
-3. Ordina il lavoro per **rischio × righe scoperte**, non per comodità.
+If the request is ambiguous (category without target, or "raise coverage" without scope), **ask**: a verifiable target is what makes Phase 3 autonomous (solid success criteria, not "make it work").
 
-### 3.2 Convenzioni del progetto (non negoziabili)
-
-Le convenzioni concrete — framework e stile di test, forma dei doppi, lingua dei commenti, dove vivono le fixture, come si isola il filesystem — stanno in `.daiku/domain/test-strategy.md` e si rispecchiano alla lettera: sono quelle che i file fratelli già seguono. Sopra di esse valgono comunque:
-
-- **Doppi espliciti, non mock opachi**: per ogni sistema esterno inietta un doppio, nella forma che il fratello usa, che **scripta gli output** e **registra le chiamate**. Un doppio esplicito dice cosa succede in modo leggibile; un mock generico nasconde il contratto.
-- **Filesystem solo dal punto d'accesso** che le regole del progetto dichiarano — `{instructions_file}` e `.daiku/policies/` — puntato a una directory temporanea; se non ne dichiarano uno, isola comunque in temporanea. **Mai** dati, sandbox o artefatti reali: nessun test scrive nel repo dell'utente né nelle directory runtime dell'applicazione.
-- **Golden fixture** per parsing/mapping: output reale del tool esterno salvato come file di fixture e letto dal test. Se serve una fixture nuova, cattura output realistico e mettila dove vivono le altre, non stringhe inline gigantesche.
-- **Determinismo totale**: niente rete, niente subprocess reali, niente tempo reale o random. Se il codice accetta già l'istante come argomento, passaglielo invece di mockare l'orologio.
-
-### 3.3 Strategia per layer
-
-Ogni layer si testa dal suo punto di forza architetturale: quale sia — cosa asserire, cosa fingere, cosa non va mai chiamato davvero, e quali layer rendono di più per riga scritta — lo dice `.daiku/domain/test-strategy.md`. Non dedurlo dal nome della cartella: i confini fra layer sono quelli del `{instructions_file}` e delle rule di area in `.daiku/policies/`.
-
-### 3.4 Cosa rende un test "di qualità" qui
-
-- **Testa comportamento/contratto, non implementazione.** Asserisci su ciò che il codice produce e persiste, non sul fatto che un mock sia stato chiamato con l'argomento che gli hai dato tu (quello testa il test).
-- **Un test deve poter fallire.** Prima di tenerlo, chiediti: se il comportamento fosse rotto, questo test diventerebbe rosso? Se passa comunque, non vale. Mentalità mutation-testing sui rami scoperti.
-- **Un concetto per test**, con un nome descrittivo e parlante che dica *quale comportamento* in *quale condizione* ("mappa 1:1 le issue reali", "marca la run failed quando il doppio solleva"), nella convenzione di naming del file fratello.
-- **Punta agli unhappy path** che il buco di coverage nasconde: errore, vuoto, edge, output esterno malformato, cancellazione. Non gonfiare l'happy path già coperto per far salire il numero.
-- **Non inseguire il 100%.** Salta il boilerplate (costruttori vuoti, DTO puri, entry point del processo). Se lasci scoperto qualcosa di proposito, **dillo** e spiega perché (regola: nessun cap silenzioso).
-- Rispetta **anche nei test** gli invarianti del progetto: filesystem solo dal punto d'accesso dichiarato, nessuna chiamata esterna reale, fixture e dati di prova isolati.
-
-### 3.5 Colloca e verifica
-
-1. Aggiungi i test nel file di test esistente del modulo; creane uno nuovo solo se il modulo non ne ha, con nome e posizione che `.daiku/domain/test-strategy.md` dichiara per quel layer. Fixture nuove dove vivono le altre.
-2. Esegui il **solo** file mirato con `{areas.<area>.test_targeted}` dell'area a cui appartiene, sostituendo a `<FILES>` il file che hai scritto. La suite completa **non si lancia qui**: è il gate di `/review`, che gira subito dopo.
-3. **Ri-misura** la coverage della categoria con `{areas.<area>.coverage}`, lo stesso comando della Fase 1, e confronta con il target. Itera sui rami ancora scoperti finché raggiungi il target o il ritorno diventa marginale.
-4. Pulisci gli artefatti che la misura ha lasciato.
-5. **Riporta onestamente**: coverage prima → dopo per la categoria, quanti test aggiunti, cosa resta scoperto di proposito e perché. Se non raggiungi il target, dillo con i numeri, non dichiarare fatto.
+Immediately translate the choice into a verifiable goal, e.g. `coverage of <category path> from X% to ≥95%, remeasured with the same Phase 1 command`.
 
 ---
 
-## Modalità automatica (`--auto`)
+## Phase 3 — Write the tests (project quality)
 
-Attiva quando `/review` ti invoca, all'uscita del suo ciclo, sul diff finale sotto `{code_root}`. **Salti la Fase 1 e la Fase 2**: niente tabella globale, niente STOP, niente domanda su categoria/%. Lo scope non è una macrocategoria ma **il diff della feature** che il chiamante ti passa.
+### 3.1 Before writing
 
-Il chiamante ti passa anche `{memory.index}` e i **path** delle memorie che il diff tocca, da aprire prima di scrivere: è il canale di §4.1 di `contracts/orchestration.md`. Se non te li passa, apri l'indice e scegli tu — un test che cristallizza un comportamento che una memoria dichiara sbagliato è un test che nessun giro rivedrà.
+1. From the measurement result derive the **uncovered lines** of the target files. Those lines are almost always **error branches, empty branches, edge cases**: the value is there, not in the already covered happy path.
+2. **Read the source** of the target files and **at least one existing sibling test** of the same layer, to mirror its style, fixtures and fakes. Do not invent a new pattern where one already exists that layer follows.
+3. Order the work by **risk × uncovered lines**, not by comfort.
 
-**Decidi tu** se il diff introduce logica nuova non coperta da test: se no, torni senza scrivere nulla e lo dichiari nel blocco di ritorno (`skipped: true` col perché). Se il chiamante ha passato `--with test-coverage`, perdi la facoltà di saltare: scrivi per ogni ramo nuovo testabile.
+### 3.2 Project conventions (non-negotiable)
 
-Obiettivo: coprire con test **la logica introdotta o cambiata dal diff**, non alzare un numero.
+The concrete conventions — test framework and style, double form, comment language, where fixtures live, how the filesystem is isolated — stand in `.daiku/domain/test-strategy.md` and are mirrored to the letter: they are what the sibling files already follow. Above them still hold:
 
-- **Scope = i file del diff** nei layer che `.daiku/domain/test-strategy.md` dichiara testabili, in ogni area di `{areas}` che il diff tocca. Fuori restano il boilerplate (DTO puri, costruttori vuoti) e ciò che il runner di un'area non copre (§1.3). Per ogni funzione/ramo nuovo o modificato, chiediti: *se questo comportamento si rompesse, un test lo becca?* Se no, è un candidato.
-- **Scrivi i test per ciò che puoi asserire con certezza** dal contratto e dal codice: happy path del nuovo comportamento, rami d'errore, edge/vuoti, output esterno malformato. Qui la "confidenza medio-alta" significa: *so qual è il comportamento atteso corretto*.
-- **Segnala, non fabbricare.** Dove il comportamento atteso è **ambiguo** (non è chiaro dal contratto se il codice attuale sia giusto), **non** scrivere un'asserzione che cristallizzerebbe un eventuale bug: annotalo come *Da confermare* con il caso concreto scoperto. Un test che asserisce «fa quello che fa oggi» senza sapere se è giusto è un test che non può fallire — vietato (§3.4). Segna `blocking: true` quando l'ambiguità mette in dubbio la correttezza del codice consegnato (non è chiaro se il comportamento attuale sia giusto), `false` quando il codice resta corretto qualunque sia la risposta — stessa regola dell'applicatore di `/review`.
-- **Qualità Fase 3 invariata**: convenzioni di §3.2, strategia per layer di §3.3 e criteri di §3.4, tutti come `.daiku/domain/test-strategy.md` li declina per questo progetto. Estendi il file di test esistente accanto al modulo, non crearne di paralleli.
-- **Verifica**: esegui il **solo** file mirato con `{areas.<area>.test_targeted}` dell'area a cui appartiene, `<FILES>` sostituito dal file scritto; i test devono passare. La suite completa è il gate di `/review`, che gira subito dopo di te: non lanciarla. Non misuri la coverage globale (non è il compito in questa modalità); pulisci comunque eventuali artefatti di misura.
-- **Nessuno stop, nessun output tabellare.** Il ritorno è **un blocco JSON a contratto** che `/review` legge senza interpretare la prosa:
+- **Explicit doubles, not opaque mocks**: for each external system inject a double, in the form the sibling uses, **scripting the outputs** and **recording the calls**. An explicit double says what happens readably; a generic mock hides the contract.
+- **Filesystem only from the access point** the project rules declare — `{instructions_file}` and `.daiku/policies/` — pointed at a temporary directory; if they declare none, still isolate in temporary. **Never** real data, sandboxes or artefacts: no test writes in the user repo nor in the application runtime directories.
+- **Golden fixtures** for parsing/mapping: real output of the external tool saved as a fixture file and read by the test. If a new fixture is needed, capture realistic output and put it where the others live, not giant inline strings.
+- **Total determinism**: no network, no real subprocesses, no real time or random. If the code already accepts the instant as an argument, pass it instead of mocking the clock.
+
+### 3.3 Per-layer strategy
+
+Each layer is tested from its architectural strength point: which it is — what to assert, what to fake, what must never be truly called, and which layers return most per written line — `.daiku/domain/test-strategy.md` says. Do not deduce it from the folder name: the boundaries between layers are those of `{instructions_file}` and of the area rules in `.daiku/policies/`.
+
+### 3.4 What makes a test "quality" here
+
+- **Test behaviour/contract, not implementation.** Assert on what the code produces and persists, not on the fact that a mock was called with the argument you gave it (that tests the test).
+- **A test must be able to fail.** Before keeping it, ask yourself: if the behaviour were broken, would this test turn red? If it passes anyway, it is not worth it. Mutation-testing mentality on the uncovered branches.
+- **One concept per test**, with a descriptive and speaking name saying *which behaviour* in *which condition* ("maps 1:1 the real issues", "marks the run failed when the double raises"), in the naming convention of the sibling file.
+- **Aim at the unhappy paths** the coverage hole hides: error, empty, edge, malformed external output, deletion. Do not inflate the already covered happy path to raise the number.
+- **Do not chase 100%.** Skip the boilerplate (empty constructors, pure DTOs, process entry points). If you deliberately leave something uncovered, **say so** and explain why (rule: no silent cap).
+- Also in tests respect the project **invariants**: filesystem only from the declared access point, no real external calls, isolated fixtures and test data.
+
+### 3.5 Place and verify
+
+1. Add the tests in the existing test file of the module; create a new one only if the module has none, with the name and position `.daiku/domain/test-strategy.md` declares for that layer. New fixtures where the others live.
+2. Run **only** the targeted file with `{areas.<area>.test_targeted}` of the area it belongs to, replacing `<FILES>` with the file you wrote. The full suite **is not launched here**: it is the `/review` gate, running right after.
+3. **Re-measure** the category coverage with `{areas.<area>.coverage}`, the same command of Phase 1, and compare with the target. Iterate on the still uncovered branches until you reach the target or the return turns marginal.
+4. Clean the artefacts the measurement left.
+5. **Report honestly**: coverage before → after for the category, how many tests added, what deliberately remains uncovered and why. If you do not reach the target, say so with the numbers, do not declare done.
+
+---
+
+## Automatic mode (`--auto`)
+
+Active when `/review` invokes you, on exit of its cycle, on the final diff under `{code_root}`. **You skip Phase 1 and Phase 2**: no global table, no STOP, no question on category/%. The scope is not a macro-category but the **feature diff** the caller passes you.
+
+The caller also passes you `{memory.index}` and the **paths** of the memories the diff touches, to open before writing: it is the channel of §4.1 of `contracts/orchestration.md`. If it does not pass them, open the index and choose yourself — a test crystallising a behaviour a memory declares wrong is a test no round will ever review again.
+
+**You decide** whether the diff introduces new logic uncovered by tests: if not, you come back without writing anything and declare it in the return block (`skipped: true` with why). If the caller passed `--with test-coverage`, you lose the faculty of skipping: write for each new testable branch.
+
+Goal: cover with tests **the logic introduced or changed by the diff**, not raising a number.
+
+- **Scope = the diff files** in the layers `.daiku/domain/test-strategy.md` declares testable, in every `{areas}` area the diff touches. Outside stay the boilerplate (pure DTOs, empty constructors) and what the runner of an area does not cover (§1.3). For each new or modified function/branch, ask yourself: *if this behaviour broke, would a test catch it?* If not, it is a candidate.
+- **Write the tests for what you can assert with certainty** from the contract and the code: happy path of the new behaviour, error branches, edge/empty, malformed external output. Here "medium-high confidence" means: *I know what the correct expected behaviour is*.
+- **Report, do not fabricate.** Where the expected behaviour is **ambiguous** (unclear from the contract whether the current code is right), do **not** write an assertion that would crystallise a possible bug: annotate it as *To confirm* with the concrete uncovered case. A test asserting "it does what it does today" without knowing whether it is right is a test that cannot fail — forbidden (§3.4). Mark `blocking: true` when the ambiguity casts doubt on the correctness of the delivered code (unclear whether the current behaviour is right), `false` when the code stays correct whatever the answer — same rule as the `/review` applier.
+- **Unchanged Phase-3 quality**: §3.2 conventions, §3.3 per-layer strategy and §3.4 criteria, all as `.daiku/domain/test-strategy.md` lays them out for this project. Extend the existing test file next to the module, do not create parallel ones.
+- **Verify**: run **only** the targeted file with `{areas.<area>.test_targeted}` of the area it belongs to, `<FILES>` replaced by the written file; the tests must pass. The full suite is the `/review` gate, running right after you: do not launch it. You do not measure global coverage (not the task in this mode); still clean any measurement artefacts.
+- **No stop, no tabular output.** The return is **a contract JSON block** `/review` reads without interpreting the prose:
   ```json
-  {"written_tests": [{"file": "<path>", "covers": "<cosa copre, una riga>"}], "to_confirm": [{"file": "<path>", "line": 0, "scenario": "<il bivio in parole semplici: cosa è in gioco, le strade, cosa cambia>", "class": "test-coverage", "blocking": true}], "skipped": false, "why": "<se saltata: perché non c'è logica nuova scoperta; altrimenti vuoto>"}
+  {"written_tests": [{"file": "<path>", "covers": "<what it covers, one line>"}], "to_confirm": [{"file": "<path>", "line": 0, "scenario": "<the fork in simple words: what is at stake, the roads, what changes>", "class": "test-coverage", "blocking": true}], "skipped": false, "why": "<if skipped: why there is no new uncovered logic; otherwise empty>"}
   ```
-Nessun campo si omette: a zero voci si scrive `[]`. La suite la esegue il Gate di `/review` subito dopo.
+No field is omitted: with zero items write `[]`. The suite is run by the `/review` Gate right after.

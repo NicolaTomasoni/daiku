@@ -1,64 +1,64 @@
-# I tre guardrail
+# The three guardrails
 
-Daiku porta tre hook. Fanno due mestieri diversi: uno **ferma un gesto** prima che accada, gli
-altri due non fermano mai niente e si limitano a dire quello che sanno.
+Daiku ships three hooks. They do two different jobs: one **stops a gesture** before it happens, the
+other two never stop anything and only say what they know.
 
-| Hook | Evento | Cosa fa |
+| Hook | Event | What it does |
 |---|---|---|
-| `lib/command-guard.mjs` | `PreToolUse` su `Bash`/`PowerShell` | nega cinque gesti distruttivi: quattro sempre, uno solo dove il progetto lo dichiara |
-| `lib/contracts-post-edit.mjs` | `PostToolUse` su `Edit`/`Write` | dopo una scrittura sul corpus, segnala i guasti che non fallirebbero da soli |
-| `lib/session-advice.mjs` | `SessionStart` | all'avvio, dice se Daiku è aperto a metà e se un lavoro è rimasto in volo |
+| `lib/command-guard.mjs` | `PreToolUse` on `Bash`/`PowerShell` | denies five destructive gestures: four always, one only where the project declares it |
+| `lib/contracts-post-edit.mjs` | `PostToolUse` on `Edit`/`Write` | after a write to the corpus, reports faults that would not fail on their own |
+| `lib/session-advice.mjs` | `SessionStart` | at startup, says whether Daiku is halfway opened and whether work was left in flight |
 
-Accanto stanno due moduli che hook non sono: `lib/project-root.mjs` trova la radice del
-progetto sui due host, `lib/daiku-config.mjs` legge `.daiku/project.json`. Non hanno un banco
-proprio: sono provati dai banchi dei tre che li importano.
+Next to them stand two modules that are not hooks: `lib/project-root.mjs` finds the project
+root on both hosts, `lib/daiku-config.mjs` reads `.daiku/project.json`. They have no bench of
+their own: the benches of the three importing them test them.
 
-## Non sono una barriera di sicurezza
+## Not a security barrier
 
-La policy che un agente non può togliersi vive nei **managed settings** dell'host: stanno sopra
-ogni altra sorgente, e un processo non elevato non li scrive. Un hook non li scavalca — la
-documentazione lo dice esplicitamente: la decisione di un hook non annulla una permission rule.
+The policy an agent cannot remove lives in the host's **managed settings**: above
+every other source, and unwritable by an unelevated process. A hook does not override them — the
+documentation says so explicitly: a hook's decision does not override a permission rule.
 
-Questi tre stanno sotto quella linea e coprono un'altra cosa: la **distrazione**. I gesti che
-costano lavoro perso e che nessuna regola per prefisso sa riconoscere, perché quella regola
-combacia sull'inizio di una riga e non entra dentro `sh -c`.
+These three sit below that line and cover something else: **distraction**. Gestures that
+cost lost work and that no prefix rule can recognise, because that rule
+matches the start of a line and does not enter `sh -c`.
 
-La divisione va tenuta: **i permessi stanno nei managed settings, i guardrail di dominio stanno
-qui.** Che questi file restino scrivibili non toglie niente alla policy.
+The split must be kept: **permissions live in managed settings, domain guardrails live
+here.** That these files stay writable takes nothing away from the policy.
 
-## Niente si accende da solo
+## Nothing switches itself on
 
-Un pacchetto si installa una volta ed è attivo su **ogni** repository che l'host apre, compresi
-quelli che Daiku non l'hanno mai visto. Perciò la prima domanda di `command-guard` non è «questo
-comando è pericoloso?» ma «questo progetto mi ha chiesto qualcosa?».
+A package installs once and is active on **every** repository the host opens, including
+ones that never saw Daiku. So `command-guard`'s first question is not "is this
+command dangerous?" but "did this project ask for anything?".
 
-1. **Senza `.daiku/project.json` non nega niente**, mai, senza nemmeno leggere la riga.
-2. **Un solo ramo ha il proprio interruttore**: `{worktree.pool}`. Gli altri quattro negano
-   sempre — a un agente non si lascia mai la libertà di pushare, di saltare gli hook di
-   commit o di committare `.daiku/`: mai fidarsi di un LLM.
+1. **Without `.daiku/project.json` it denies nothing**, ever, without even reading the line.
+2. **Only one branch has its own switch**: `{worktree.pool}`. The other four deny
+   always — an agent is never left free to push, to skip commit
+   hooks, or to commit `.daiku/`: never trust an LLM.
 
-| Ramo | Acceso da | Cosa nega |
+| Branch | Switched on by | What it denies |
 |---|---|---|
-| link di Windows | *nessun interruttore*: basta `.daiku/` | una rimozione ricorsiva che attraversa una junction e svuota la directory reale dall'altra parte |
-| commit di `.daiku/` | *nessun interruttore*: basta `.daiku/project.json` | ogni commit che contiene `.daiku/` — pathspec esplicito in `add`/`commit`, o già in stage (letto con `git status` in sola lettura, che se fallisce degrada a permesso) |
-| pool di worktree | `worktree.pool` | rimozioni dentro un worktree del pool, e `pnpm install` lanciato da lì |
-| `--no-verify` | *nessun interruttore*: basta `.daiku/project.json` | `git commit` con `-n` o `--no-verify`, in qualunque posizione stia il flag |
-| push | *nessun interruttore*: basta `.daiku/project.json` | `git push`, anche dentro un wrapper o in coda a un altro comando; `--dry-run` no |
+| Windows links | *no switch*: `.daiku/` is enough | a recursive removal crossing a junction and emptying the real directory on the other side |
+| `.daiku/` commits | *no switch*: `.daiku/project.json` is enough | every commit containing `.daiku/` — an explicit pathspec in `add`/`commit`, or already in the stage (read with a read-only `git status`, degrading to allowed when it fails) |
+| worktree pool | `worktree.pool` | removals inside a pool worktree, and `pnpm install` run from one |
+| `--no-verify` | *no switch*: `.daiku/project.json` is enough | `git commit` with `-n` or `--no-verify`, wherever the flag stands |
+| push | *no switch*: `.daiku/project.json` is enough | `git push`, even inside a wrapper or queued after another command; `--dry-run` no |
 
-Il primo ramo non ha interruttore perché non è una policy: che `rm -rf` entri in una junction e
-distrugga quello che sta dall'altra parte è un fatto del sistema operativo, vero in ogni
-progetto, e una junction non si vede leggendo la riga di comando. Il secondo non ne ha per
-decisione dell'owner e non per fatto del sistema: il repository è del cliente, Daiku è segreto,
-e il divieto vale in qualunque caso — per questo non si dichiara. Lo stesso vale per
-`--no-verify` e push, per decisione dell'owner: a un agente non si lascia mai nessuna delle due
-libertà. Dove un divieto può avere una sede deterministica, ce l'ha sempre — mai fidarsi di un
+The first branch has no switch because it is not a policy: `rm -rf` entering a junction and
+destroying what sits on the other side is an operating-system fact, true in every
+project, and a junction cannot be seen by reading the command line. The second has none by
+owner decision, not by system fact: the repository belongs to the client, Daiku is secret,
+and the ban holds in any case — which is why it is not declared. Same for
+`--no-verify` and push, by owner decision: an agent is never left either
+freedom. Wherever a ban can have a deterministic seat, it always has one — never trust an
 LLM.
 
-Gli altri tre sono decisioni di chi tiene il repository, e Daiku non le presume. È la §6 di
-`contracts/project-contract.md` — *ciò che il JSON non dichiara non esiste* — applicata a un
-hook invece che a una skill.
+The other three are decisions of whoever keeps the repository, and Daiku does not presume them. It is §6 of
+`contracts/project-contract.md` — *what the JSON does not declare does not exist* — applied to a
+hook instead of a skill.
 
-Un esempio completo, in `.daiku/project.json`:
+A complete example, in `.daiku/project.json`:
 
 ```json
 {
@@ -66,58 +66,58 @@ Un esempio completo, in `.daiku/project.json`:
 }
 ```
 
-`session-advice` segue la stessa regola: cerca i lavori lasciati a metà solo dentro la cartella
-che `paths.studies` dichiara. Nessuna dichiarazione, nessun avviso.
+`session-advice` follows the same rule: it looks for work left halfway only inside the folder
+`paths.studies` declares. No declaration, no notice.
 
-`contracts-post-edit` no, e la differenza è voluta: quell'hook **non nega niente a nessuno**, e
-un frontmatter YAML che si svuota in silenzio è un guasto anche per chi Daiku non ce l'ha.
+`contracts-post-edit` does not, and the difference is deliberate: that hook **denies nothing to anybody**, and
+a YAML frontmatter silently emptying is a fault even for whoever does not have Daiku.
 
-## Degradano aperto, e per questo hanno un banco
+## They degrade open, and that is why they have a bench
 
-Tutti e tre **fail-open**: stdin malformato, file sparito, disco irraggiungibile, eccezione →
-tacciono ed escono `0`. Una guardia che rompe il turno costa più di quanto protegga.
+All three are **fail-open**: malformed stdin, missing file, unreachable disk, exception →
+silent and exit `0`. A guard breaking the turn costs more than it protects.
 
-Il prezzo è dichiarato: **un hook guasto è indistinguibile da uno che non ha niente da dire.**
-Per questo ciascuno porta un banco di prova che gira su un filesystem simulato, non tocca
-niente, e stampa un totale contato:
+The price is declared: **a broken hook is indistinguishable from one with nothing to say.**
+That is why each carries a test bench running on a simulated filesystem, touching
+nothing, and printing a counted total:
 
 ```bash
-node hooks/self-check.mjs          # i tre banchi in un colpo, col totale sommato
-node hooks/lib/command-guard.mjs --self-check   # uno solo, come lo lancia sync-host
+node hooks/self-check.mjs          # all three benches at once, with the summed total
+node hooks/lib/command-guard.mjs --self-check   # one only, as sync-host runs it
 ```
 
-Il primo esce `1` al primo rosso: è il comando da mettere in una CI e da lanciare prima di un
-rilascio, accanto ai due validatori di pacchetto.
+The first exits `1` on the first red: the command for a CI and to run before a
+release, next to the two package validators.
 
-## Cosa non fanno
+## What they do not do
 
-- **Non eseguono niente che non fosse già in esecuzione.** In particolare `contracts-post-edit`
-  *ricorda* di lanciare il banco di una guardia riscritta, e non lo lancia: far partire un file
-  perché è appena comparso significherebbe eseguire codice che nessuno ha ancora guardato,
-  scavalcando sia la conferma che l'host chiede per un comando, sia l'approvazione per hash che
-  Codex pretende proprio per gli hook.
-- **Non scrivono mai sul disco.** Leggono, e rispondono all'host.
-- **Non parlano per dire che va tutto bene.** Un avviso che arriva sempre smette di essere letto.
+- **They do not run anything not already running.** In particular `contracts-post-edit`
+  *reminds* to run a rewritten guard's bench, and does not run it: starting a file
+  because it just appeared would mean running code nobody reviewed yet,
+  bypassing both the confirmation the host asks for a command and the hash approval
+  Codex demands precisely for hooks.
+- **They never write to disk.** They read, and answer the host.
+- **They do not speak just to say everything is fine.** A notice that arrives every time stops being read.
 
-## Servono Node e nient'altro
+## Node and nothing else
 
-I tre hook sono `.mjs` lanciati con `node`, senza dipendenze: nessun `package.json`, nessun
-modulo da installare. Su un progetto dove `node` non è nel `PATH` non partono — e siccome
-l'host non ferma un turno per un hook che fallisce, il risultato è che tacciono. Se un progetto
-non ha Node, questi guardrail non ci sono: è un requisito, non una degradazione elegante.
+The three hooks are `.mjs` files run with `node`, dependency-free: no `package.json`, no
+module to install. On a project where `node` is not on the `PATH` they do not start — and since
+the host does not stop a turn for a failing hook, the result is silence. When a project
+has no Node, these guardrails are absent: a requirement, not a graceful degradation.
 
-## Sui due host non arrivano per la stessa strada
+## They do not reach both hosts the same way
 
-Su **Claude Code** li porta il pacchetto: `plugin.json` dichiara `hooks`, e `hooks/hooks.json`
-li aggancia con `${CLAUDE_PLUGIN_ROOT}`. Si aggiornano quando si aggiorna il pacchetto, e nel
-progetto non compare niente.
+On **Claude Code** the package carries them: `plugin.json` declares `hooks`, and `hooks/hooks.json`
+hooks them up with `${CLAUDE_PLUGIN_ROOT}`. They update when the package updates, and nothing
+appears in the project.
 
-Su **Codex** no: `plugin_hooks` è una feature **rimossa** e il validatore rifiuta la chiave
-`hooks` nel manifest. Lì gli hook vivono in `<repo>/.codex/hooks.json`, fuori dal pacchetto, e
-ce li porta `/sync-host` copiando `lib/` in `.codex/hooks/` e scrivendo il manifesto dal modello
-in `templates/codex/hooks.json`. I path lì dentro sono **assoluti**, perché un hook di Codex non
-riceve nessuna variabile che punti al progetto; vanno riscritti se il repository si sposta, e si
-riscrivono rilanciando `/sync-host`.
+On **Codex** no: `plugin_hooks` is a **removed** feature and the validator rejects the
+`hooks` key in the manifest. There the hooks live in `<repo>/.codex/hooks.json`, outside the package, and
+`/sync-host` carries them there by copying `lib/` into `.codex/hooks/` and writing the manifest from the template
+in `templates/codex/hooks.json`. The paths inside are **absolute**, because a Codex hook gets
+no variable pointing at the project; they must be rewritten when the repository moves, and
+re-running `/sync-host` rewrites them.
 
-Dopo ogni aggiornamento, su Codex, gli hook cambiati tornano a chiedere l'approvazione con
-`/hooks`: la fiducia è registrata sull'hash del file, e finché non la dai vengono saltati.
+After every update, on Codex, changed hooks ask for approval again with
+`/hooks`: trust is recorded on the file hash, and until granted they are skipped.

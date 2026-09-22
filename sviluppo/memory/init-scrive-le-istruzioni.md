@@ -39,6 +39,7 @@ Nella stessa giornata è caduta anche la variante di lingua degli scheletri: **t
 deposita è in inglese**, e le due chiavi `language.chat` e `language.commit` riguardano solo come
 le skill parlano all'utente e cosa lasciano nei commit. Le cartelle `templates/project/domain/it/`
 e `policies/it/` non esistono più, i loro gemelli `en/` sono stati appiattiti di un livello. La
-sede della regola è la §5.6 di `contracts/project-contract.md`. Se le skill stesse debbano passare
-all'inglese è un punto aperto, non una dimenticanza. Vedi [[tre-livelli-di-parametro]] e
+sede della regola è la §5.6 di `contracts/project-contract.md`. Il 22 settembre 2026 anche le skill, i contratti
+e gli hook sono passati all'inglese: il pacchetto è tutto in una lingua, e il confine con
+l'italiano coincide con quello fra `plugins/daiku/` e il corpus di sviluppo. Vedi [[tre-livelli-di-parametro]] e
 [[alberatura-pacchetto]].

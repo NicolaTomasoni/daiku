@@ -1,53 +1,53 @@
 #!/usr/bin/env node
 /**
- * Avviso di inizio sessione — SessionStart.
+ * Session-start notice — SessionStart.
  *
- * Dice all'avvio le due cose che chi apre una sessione **non puo' vedere da solo**, e che
- * scoprirebbe tardi e male:
+ * It says at startup the two things whoever opens a session **cannot see alone**, and
+ * would discover late and badly:
  *
- *  1. **Daiku non e' aperto su questo progetto, o e' aperto a meta'.** Senza `.daiku/` ogni
- *     contratto gira senza i valori di progetto: non fallisce, *indovina*. E se
- *     `project.json` c'e' ma non e' JSON valido e' peggio ancora, perche' ogni contratto lo
- *     apre prima di agire e si ferma li', uno dopo l'altro, senza che il motivo sia mai
- *     detto in chiaro.
- *  2. **C'e' un lavoro lasciato a meta'.** Una cartella di lavoro che ha gia' il blueprint ma
- *     non le note di review e' un lavoro in volo: chi apre una sessione nuova e ricomincia da
- *     capo perde il brief gia' scritto, e quasi sempre non sa che esisteva.
+ *  1. **Daiku is not opened on this project, or is halfway opened.** Without `.daiku/` every
+ *     contract runs without project values: it does not fail, it *guesses*. And when
+ *     `project.json` exists but is not valid JSON it is even worse, because every contract
+ *     opens it before acting and stops there, one after another, without the reason ever
+ *     being stated plainly.
+ *  2. **There is work left halfway.** A working folder that already has the blueprint but
+ *     not the review notes is work in flight: whoever opens a new session and restarts from
+ *     scratch loses the brief already written, and almost always does not know it existed.
  *
- * **Dove stiano le cartelle di lavoro lo dice il progetto**, con `{paths.studies}` in
- * `.daiku/project.json`: e' un parametro, non una convenzione da indovinare, ed e' la stessa
- * chiave che le skill del metodo leggono per sapere dove depositare i file numerati. Se non
- * e' dichiarata, questo avviso non c'e' — §6 di `contracts/project-contract.md`, *cio' che il
- * JSON non dichiara non esiste*. Meglio tacere che frugare in due cartelle scelte a memoria e
- * dire a ogni avvio che non si e' trovato niente.
+ * **The project says where the working folders live**, via `{paths.studies}` in
+ * `.daiku/project.json`: it is a parameter, not a convention to guess, and it is the same
+ * key the method skills read to know where to deposit the numbered files. When it is not
+ * declared, this notice does not exist — §6 of `contracts/project-contract.md`, *what the
+ * JSON does not declare does not exist*. Better to stay silent than to rummage through two
+ * folders picked from memory and report at every startup that nothing was found.
  *
- * I **nomi** dei file numerati restano cablati qui, e non e' una svista: quelli sono il
- * metodo, identici in ogni progetto, e un progetto che li rinominasse avrebbe gia' rotto le
- * skill che li scrivono.
+ * The **names** of the numbered files stay hard-coded here, and that is no oversight: they are
+ * the method, identical in every project, and a project renaming them would already have broken
+ * the skills that write them.
  *
- * Contratto: **fail-open e silenzioso**. Niente da dire, file illeggibile, cartella assente,
- * qualunque errore → non stampa ed esce 0. Non blocca mai una sessione, e non parla mai per
- * dire che va tutto bene: un avviso che arriva sempre smette di essere letto.
+ * Contract: **fail-open and silent**. Nothing to say, unreadable file, missing folder,
+ * any error → prints nothing and exits 0. It never blocks a session, and never speaks just
+ * to say everything is fine: a notice that arrives every time stops being read.
  *
- * Banco di prova: `node session-advice.mjs --self-check`. Gira su un filesystem simulato e non
- * tocca niente; il totale e' **contato**, non cablato. Un hook fail-open guasto e'
- * indistinguibile da uno che non ha niente da dire: senza banco, un rename o un layout
- * cambiato lo spegnerebbe in silenzio.
+ * Test bench: `node session-advice.mjs --self-check`. It runs on a simulated filesystem and
+ * touches nothing; the total is **counted**, not hard-coded. A broken fail-open hook is
+ * indistinguishable from one with nothing to say: without a bench, a rename or a changed
+ * layout would switch it off in silence.
  */
 
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { invocatoDirettamente, radiceProgetto } from './project-root.mjs';
-import { AMBIENTE_REALE as LETTURE, contesto, contestoFinto } from './daiku-config.mjs';
+import { invokedDirectly, projectRoot } from './project-root.mjs';
+import { REAL_READS, loadContext, fakeContext } from './daiku-config.mjs';
 
-const RADICE = radiceProgetto();
+const ROOT = projectRoot();
 
-const AMBIENTE_REALE = {
-  esiste: (percorso) => existsSync(percorso),
-  leggi: (percorso) => readFileSync(percorso, 'utf-8'),
-  elenca: (percorso) => {
+const REAL_ENV = {
+  exists: (path) => existsSync(path),
+  read: (path) => readFileSync(path, 'utf-8'),
+  list: (path) => {
     try {
-      return readdirSync(percorso, { withFileTypes: true })
+      return readdirSync(path, { withFileTypes: true })
         .filter((v) => v.isDirectory())
         .map((v) => v.name);
     } catch {
@@ -56,212 +56,212 @@ const AMBIENTE_REALE = {
   },
 };
 
-/** Il file che dice «il brief c'e'» e quello che dice «la review e' atterrata». */
+/** The file saying "the brief is here" and the one saying "the review landed". */
 const BLUEPRINT = '2. blueprint.md';
 const REVIEW = '4. review-notes.md';
 
-/** Daiku e' aperto su questo progetto? E i suoi parametri si leggono? */
-export function avvisoInstallazione(radice, amb) {
-  const cartella = join(radice, '.daiku');
-  if (!amb.esiste(cartella)) return null;
+/** Is Daiku opened on this project? And do its parameters read? */
+export function installWarning(root, env) {
+  const folder = join(root, '.daiku');
+  if (!env.exists(folder)) return null;
 
-  const parametri = join(radice, '.daiku', 'project.json');
-  if (!amb.esiste(parametri)) {
+  const params = join(root, '.daiku', 'project.json');
+  if (!env.exists(params)) {
     return (
-      '`.daiku/` esiste ma **manca `project.json`**. Ogni contratto lo apre prima di agire: ' +
-      'senza, i valori di questo progetto non vengono letti e vengono indovinati. ' +
-      'Chiudi l\'installazione con `/init`.'
+      '`.daiku/` exists but **`project.json` is missing**. Every contract opens it before acting: ' +
+      'without it, this project\'s values are not read — they are guessed. ' +
+      'Complete the installation with `/init`.'
     );
   }
 
   try {
-    JSON.parse(amb.leggi(parametri));
-  } catch (errore) {
+    JSON.parse(env.read(params));
+  } catch (error) {
     return (
-      '**`.daiku/project.json` non e\' JSON valido** — ' +
-      `\`${errore.message}\`. Ogni contratto lo apre prima di agire e si ferma li'. ` +
-      'Sistemalo prima di lanciare qualunque altra cosa.'
+      '**`.daiku/project.json` is not valid JSON** — ' +
+      `\`${error.message}\`. Every contract opens it before acting and stops there. ` +
+      'Fix it before running anything else.'
     );
   }
 
   return null;
 }
 
-/** I lavori lasciati a meta': blueprint scritto, review mai atterrata. */
-export function avvisoLavoriAperti(radice, amb, ctx) {
-  const aperti = [];
-  const sedi = (ctx && ctx.presente && ctx.studi) || [];
+/** Works left halfway: blueprint written, review never landed. */
+export function openWorksWarning(root, env, ctx) {
+  const pending = [];
+  const sites = (ctx && ctx.present && ctx.studies) || [];
 
-  for (const sede of sedi) {
-    const base = join(radice, sede);
-    if (!amb.esiste(base)) continue;
-    for (const slug of amb.elenca(base)) {
-      const ha = (file) => amb.esiste(join(base, slug, file));
-      if (ha(BLUEPRINT) && !ha(REVIEW)) aperti.push(`${sede}/${slug}`);
+  for (const site of sites) {
+    const base = join(root, site);
+    if (!env.exists(base)) continue;
+    for (const slug of env.list(base)) {
+      const has = (file) => env.exists(join(base, slug, file));
+      if (has(BLUEPRINT) && !has(REVIEW)) pending.push(`${site}/${slug}`);
     }
   }
 
-  if (!aperti.length) return null;
+  if (!pending.length) return null;
 
-  const elenco = aperti.map((p) => `- \`${p}\``).join('\n');
-  const uno = aperti.length === 1;
+  const listing = pending.map((p) => `- \`${p}\``).join('\n');
+  const single = pending.length === 1;
   return (
-    `${uno ? 'Un lavoro e\' rimasto' : `${aperti.length} lavori sono rimasti`} a meta': il ` +
-    `brief c'e', le note di review no.\n\n${elenco}\n\n` +
-    `**Riprendi da li', non da capo.** Il blueprint porta il piano a task, la Memoria e il ` +
-    `Diario di quello che e' gia' stato fatto: ricominciare lo butta via e rifa' scelte ` +
-    `gia' prese. Se invece il lavoro e' morto, togli la cartella — finche' resta, questo ` +
-    `avviso torna a ogni avvio.`
+    `${single ? 'One work item is left' : `${pending.length} work items are left`} halfway: the ` +
+    `brief is here, the review notes are not.\n\n${listing}\n\n` +
+    `**Resume from there, not from scratch.** The blueprint carries the task plan, the Memory and the ` +
+    `Journal of what was already done: restarting throws them away and remakes choices ` +
+    `already made. If the work is dead instead, remove the folder — while it stays, this ` +
+    `warning returns at every startup.`
   );
 }
 
-export function avvisi(radice, amb, ctx) {
-  return [avvisoInstallazione(radice, amb), avvisoLavoriAperti(radice, amb, ctx)].filter(Boolean);
+export function warnings(root, env, ctx) {
+  return [installWarning(root, env), openWorksWarning(root, env, ctx)].filter(Boolean);
 }
 
-// --- banco di prova -----------------------------------------------------------
+// --- test bench -----------------------------------------------------------
 
-/** Un ambiente simulato: una mappa path → contenuto. Le directory si deducono dai path. */
-function ambienteFinto(file) {
-  const chiave = (p) => String(p).replace(/\\/g, '/').replace(/\/+$/, '').toLowerCase();
-  const mappa = new Map(Object.entries(file).map(([k, v]) => [chiave(k), v]));
-  const cartelle = new Set();
-  for (const percorso of mappa.keys()) {
-    const pezzi = percorso.split('/');
-    for (let i = 1; i < pezzi.length; i += 1) cartelle.add(pezzi.slice(0, i).join('/'));
+/** A simulated environment: a path → content map. Directories are inferred from paths. */
+function fakeEnv(files) {
+  const key = (p) => String(p).replace(/\\/g, '/').replace(/\/+$/, '').toLowerCase();
+  const map = new Map(Object.entries(files).map(([k, v]) => [key(k), v]));
+  const folders = new Set();
+  for (const path of map.keys()) {
+    const parts = path.split('/');
+    for (let i = 1; i < parts.length; i += 1) folders.add(parts.slice(0, i).join('/'));
   }
   return {
-    esiste: (p) => mappa.has(chiave(p)) || cartelle.has(chiave(p)),
-    leggi: (p) => {
-      if (!mappa.has(chiave(p))) throw new Error(`ENOENT ${p}`);
-      return mappa.get(chiave(p));
+    exists: (p) => map.has(key(p)) || folders.has(key(p)),
+    read: (p) => {
+      if (!map.has(key(p))) throw new Error(`ENOENT ${p}`);
+      return map.get(key(p));
     },
-    elenca: (p) => {
-      const base = chiave(p) + '/';
-      const figli = new Set();
-      for (const percorso of [...mappa.keys(), ...cartelle]) {
-        if (!percorso.startsWith(base)) continue;
-        const resto = percorso.slice(base.length).split('/')[0];
-        if (resto && cartelle.has(base + resto)) figli.add(resto);
+    list: (p) => {
+      const base = key(p) + '/';
+      const children = new Set();
+      for (const path of [...map.keys(), ...folders]) {
+        if (!path.startsWith(base)) continue;
+        const rest = path.slice(base.length).split('/')[0];
+        if (rest && folders.has(base + rest)) children.add(rest);
       }
-      return [...figli];
+      return [...children];
     },
   };
 }
 
-const R = 'C:/dev/progetto';
+const R = 'C:/dev/project';
 
 function selfCheck() {
-  const falliti = [];
-  let eseguiti = 0;
-  const verifica = (nome, condizione) => {
-    eseguiti += 1;
-    if (!condizione) falliti.push(nome);
+  const failed = [];
+  let ran = 0;
+  const check = (name, condition) => {
+    ran += 1;
+    if (!condition) failed.push(name);
   };
 
-  // --- l'installazione --------------------------------------------------------
-  verifica('nessun .daiku/: nessun avviso, non e\' un progetto Daiku', avvisoInstallazione(R, ambienteFinto({})) === null);
+  // --- installation --------------------------------------------------------
+  check('no .daiku/: no warning, not a Daiku project', installWarning(R, fakeEnv({})) === null);
 
-  const sano = { [`${R}/.daiku/project.json`]: '{"contract": 1, "name": "x"}' };
-  verifica('installazione sana: nessun avviso', avvisoInstallazione(R, ambienteFinto(sano)) === null);
+  const healthy = { [`${R}/.daiku/project.json`]: '{"contract": 1, "name": "x"}' };
+  check('healthy installation: no warning', installWarning(R, fakeEnv(healthy)) === null);
 
-  const senzaParametri = { [`${R}/.daiku/environment.json`]: '{}' };
-  const testoSenza = avvisoInstallazione(R, ambienteFinto(senzaParametri));
-  verifica('.daiku/ senza project.json: avviso', !!testoSenza && testoSenza.includes('manca `project.json`'));
-  verifica('l\'avviso indica come chiudere l\'installazione', !!testoSenza && testoSenza.includes('/init'));
+  const missingProject = { [`${R}/.daiku/environment.json`]: '{}' };
+  const textMissing = installWarning(R, fakeEnv(missingProject));
+  check('.daiku/ without project.json: warning', !!textMissing && textMissing.includes('`project.json` is missing'));
+  check('the warning tells how to complete the installation', !!textMissing && textMissing.includes('/init'));
 
-  const rotto = { [`${R}/.daiku/project.json`]: '{"contract": 1,}' };
-  const testoRotto = avvisoInstallazione(R, ambienteFinto(rotto));
-  verifica('project.json non parsabile: avviso', !!testoRotto && testoRotto.includes('non e\' JSON valido'));
-  verifica('l\'avviso porta il messaggio del parser', !!testoRotto && testoRotto.length > 80);
+  const broken = { [`${R}/.daiku/project.json`]: '{"contract": 1,}' };
+  const textBroken = installWarning(R, fakeEnv(broken));
+  check('unparsable project.json: warning', !!textBroken && textBroken.includes('is not valid JSON'));
+  check('the warning carries the parser message', !!textBroken && textBroken.length > 80);
 
-  // --- i lavori a meta' -------------------------------------------------------
+  // --- works left halfway -------------------------------------------------------
   //
-  // La sede la porta il contesto, non il codice: i tre contesti qui sotto sono i tre stati
-  // in cui un progetto puo' trovarsi, e il primo caso di ciascun gruppo prova che senza
-  // dichiarazione non si va a cercare da nessuna parte.
-  const CTX = contestoFinto({ studi: ['docs/nuovi-sviluppi'] });
-  const CTX_DUE = contestoFinto({ studi: ['docs/nuovi-sviluppi', 'sviluppo/nuovi-sviluppi'] });
-  const CTX_SENZA_SEDE = contestoFinto({});
-  const CTX_SENZA_DAIKU = contestoFinto({ presente: false });
+  // The location comes from the context, not the code: the three contexts below are the three
+  // states a project can be in, and the first case of each group proves that without a
+  // declaration nothing is searched anywhere.
+  const CTX = fakeContext({ studies: ['docs/new-developments'] });
+  const CTX_TWO = fakeContext({ studies: ['docs/new-developments', 'dev/new-developments'] });
+  const CTX_NO_SITE = fakeContext({});
+  const CTX_NO_DAIKU = fakeContext({ present: false });
 
-  const aperto = { [`${R}/docs/nuovi-sviluppi/gamma/2. blueprint.md`]: 'x' };
-  verifica('nessuna sede dichiarata: non si cerca', avvisoLavoriAperti(R, ambienteFinto(aperto), CTX_SENZA_SEDE) === null);
-  verifica('progetto senza Daiku: non si cerca', avvisoLavoriAperti(R, ambienteFinto(aperto), CTX_SENZA_DAIKU) === null);
-  verifica('contesto assente del tutto: non si cerca', avvisoLavoriAperti(R, ambienteFinto(aperto), undefined) === null);
-  verifica('sede dichiarata ma vuota: nessun avviso', avvisoLavoriAperti(R, ambienteFinto({}), CTX) === null);
+  const open = { [`${R}/docs/new-developments/gamma/2. blueprint.md`]: 'x' };
+  check('no declared location: no search', openWorksWarning(R, fakeEnv(open), CTX_NO_SITE) === null);
+  check('project without Daiku: no search', openWorksWarning(R, fakeEnv(open), CTX_NO_DAIKU) === null);
+  check('context missing entirely: no search', openWorksWarning(R, fakeEnv(open), undefined) === null);
+  check('declared but empty location: no warning', openWorksWarning(R, fakeEnv({}), CTX) === null);
 
-  const chiuso = {
-    [`${R}/docs/nuovi-sviluppi/alfa/2. blueprint.md`]: 'x',
-    [`${R}/docs/nuovi-sviluppi/alfa/4. review-notes.md`]: 'x',
+  const closed = {
+    [`${R}/docs/new-developments/alfa/2. blueprint.md`]: 'x',
+    [`${R}/docs/new-developments/alfa/4. review-notes.md`]: 'x',
   };
-  verifica('lavoro chiuso: nessun avviso', avvisoLavoriAperti(R, ambienteFinto(chiuso), CTX) === null);
+  check('closed work: no warning', openWorksWarning(R, fakeEnv(closed), CTX) === null);
 
-  const soloProblema = { [`${R}/docs/nuovi-sviluppi/beta/0. problem.md`]: 'x' };
-  verifica('studio senza blueprint: non e\' un lavoro in volo', avvisoLavoriAperti(R, ambienteFinto(soloProblema), CTX) === null);
+  const problemOnly = { [`${R}/docs/new-developments/beta/0. problem.md`]: 'x' };
+  check('study without blueprint: not an open work', openWorksWarning(R, fakeEnv(problemOnly), CTX) === null);
 
-  const testoAperto = avvisoLavoriAperti(R, ambienteFinto(aperto), CTX);
-  verifica('blueprint senza review: avviso', !!testoAperto && testoAperto.includes('gamma'));
-  verifica('l\'avviso dice di riprendere, non di ricominciare', !!testoAperto && testoAperto.includes('non da capo'));
-  verifica('l\'avviso dice come farlo smettere', !!testoAperto && testoAperto.includes('togli la cartella'));
-  verifica('un solo lavoro si accorda al singolare', !!testoAperto && testoAperto.includes('e\' rimasto'));
+  const textOpen = openWorksWarning(R, fakeEnv(open), CTX);
+  check('blueprint without review: warning', !!textOpen && textOpen.includes('gamma'));
+  check('the warning says to resume, not to restart', !!textOpen && textOpen.includes('not from scratch'));
+  check('the warning says how to stop it', !!textOpen && textOpen.includes('remove the folder'));
+  check('a single work agrees in the singular', !!textOpen && textOpen.includes('One work item is left'));
 
-  const altraSede = { [`${R}/sviluppo/nuovi-sviluppi/delta/2. blueprint.md`]: 'x' };
-  verifica('la seconda sede dichiarata e\' guardata', (avvisoLavoriAperti(R, ambienteFinto(altraSede), CTX_DUE) || '').includes('delta'));
-  verifica('una sede non dichiarata non e\' guardata', avvisoLavoriAperti(R, ambienteFinto(altraSede), CTX) === null);
+  const otherSite = { [`${R}/dev/new-developments/delta/2. blueprint.md`]: 'x' };
+  check('the second declared location is watched', (openWorksWarning(R, fakeEnv(otherSite), CTX_TWO) || '').includes('delta'));
+  check('an undeclared location is not watched', openWorksWarning(R, fakeEnv(otherSite), CTX) === null);
 
-  const due = {
-    [`${R}/docs/nuovi-sviluppi/gamma/2. blueprint.md`]: 'x',
-    [`${R}/sviluppo/nuovi-sviluppi/delta/2. blueprint.md`]: 'x',
+  const two = {
+    [`${R}/docs/new-developments/gamma/2. blueprint.md`]: 'x',
+    [`${R}/dev/new-developments/delta/2. blueprint.md`]: 'x',
   };
-  const testoDue = avvisoLavoriAperti(R, ambienteFinto(due), CTX_DUE);
-  verifica('due lavori: entrambi elencati', !!testoDue && testoDue.includes('gamma') && testoDue.includes('delta'));
-  verifica('due lavori si accordano al plurale', !!testoDue && testoDue.includes('2 lavori sono rimasti'));
+  const textTwo = openWorksWarning(R, fakeEnv(two), CTX_TWO);
+  check('two works: both listed', !!textTwo && textTwo.includes('gamma') && textTwo.includes('delta'));
+  check('two works agree in the plural', !!textTwo && textTwo.includes('2 work items are left'));
 
-  const fuoriSede = { [`${R}/altrove/epsilon/2. blueprint.md`]: 'x' };
-  verifica('fuori dalle sedi dichiarate: silenzio', avvisoLavoriAperti(R, ambienteFinto(fuoriSede), CTX) === null);
+  const outsideSite = { [`${R}/elsewhere/epsilon/2. blueprint.md`]: 'x' };
+  check('outside the declared locations: silence', openWorksWarning(R, fakeEnv(outsideSite), CTX) === null);
 
-  // --- la sede letta da un project.json vero ----------------------------------
-  const conSede = {
-    esiste: (p) => String(p).replace(/\\/g, '/').endsWith('.daiku/project.json'),
-    leggi: () => '{"contract": 2, "paths": {"studies": "documentazione/lavori"}}',
+  // --- the location read from a real project.json ----------------------------------
+  const withSite = {
+    exists: (p) => String(p).replace(/\\/g, '/').endsWith('.daiku/project.json'),
+    read: () => '{"contract": 2, "paths": {"studies": "documentation/works"}}',
   };
-  verifica('paths.studies arriva dal JSON', contesto(R, conSede).studi[0] === 'documentazione/lavori');
-  const senzaSede = {
-    esiste: (p) => String(p).replace(/\\/g, '/').endsWith('.daiku/project.json'),
-    leggi: () => '{"contract": 2}',
+  check('paths.studies comes from the JSON', loadContext(R, withSite).studies[0] === 'documentation/works');
+  const withoutSite = {
+    exists: (p) => String(p).replace(/\\/g, '/').endsWith('.daiku/project.json'),
+    read: () => '{"contract": 2}',
   };
-  verifica('paths.studies assente: nessuna sede', contesto(R, senzaSede).studi.length === 0);
+  check('paths.studies missing: no location', loadContext(R, withoutSite).studies.length === 0);
 
-  // --- l'insieme --------------------------------------------------------------
-  verifica('progetto pulito: nessun avviso', avvisi(R, ambienteFinto(sano), CTX).length === 0);
-  verifica('due problemi distinti: due avvisi', avvisi(R, ambienteFinto({ ...rotto, ...aperto }), CTX).length === 2);
-  verifica('progetto vergine: nessun avviso', avvisi(R, ambienteFinto({}), CTX_SENZA_DAIKU).length === 0);
+  // --- the combined set --------------------------------------------------------------
+  check('clean project: no warnings', warnings(R, fakeEnv(healthy), CTX).length === 0);
+  check('two distinct problems: two warnings', warnings(R, fakeEnv({ ...broken, ...open }), CTX).length === 2);
+  check('fresh project: no warnings', warnings(R, fakeEnv({}), CTX_NO_DAIKU).length === 0);
 
   process.stdout.write(
-    JSON.stringify({ controlli: eseguiti, passati: eseguiti - falliti.length, falliti }, null, 2) + '\n'
+    JSON.stringify({ checks: ran, passed: ran - failed.length, failed }, null, 2) + '\n'
   );
-  return falliti.length ? 1 : 0;
+  return failed.length ? 1 : 0;
 }
 
 function main() {
-  const testi = avvisi(RADICE, AMBIENTE_REALE, contesto(RADICE, LETTURE));
-  if (!testi.length) return;
+  const notices = warnings(ROOT, REAL_ENV, loadContext(ROOT, REAL_READS));
+  if (!notices.length) return;
   process.stdout.write(
     JSON.stringify({
-      hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: testi.join('\n\n---\n\n') },
+      hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: notices.join('\n\n---\n\n') },
     })
   );
 }
 
-if (invocatoDirettamente(import.meta.url)) {
+if (invokedDirectly(import.meta.url)) {
   if (process.argv.includes('--self-check')) {
     process.exit(selfCheck());
   }
   try {
     main();
   } catch {
-    /* fail-open: non si blocca mai una sessione */
+    /* fail-open: never block a session */
   }
   process.exit(0);
 }

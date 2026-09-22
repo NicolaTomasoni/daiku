@@ -1,119 +1,119 @@
 ---
 name: 'execute'
-description: 'Contratto interno di develop-feature — esegue in autonomia il brief prodotto da blueprint, seguendo il piano a task e aggiornando Memoria e Diario dentro il file; a fine lavoro deposita "4. review-notes.md" per /review.'
+description: 'Internal develop-feature contract — autonomously executes the brief produced by blueprint, following the task plan and updating Memory and Journal inside the file; at the end it deposits "4. review-notes.md" for /review.'
 user-invocable: false
 ---
 
-È il passo a valle di `blueprint`. Ricevi la cartella che contiene il brief di esecuzione (`2. blueprint.md`) e lo **porti a termine dall'inizio alla fine in autonomia**. A differenza di `decision-doc` e `blueprint`, qui **esegui davvero**: modifichi il codice del progetto per realizzare la soluzione già decisa.
+It is the step downstream of `blueprint`. You receive the folder containing the execution brief (`2. blueprint.md`) and you **carry it through from start to finish autonomously**. Unlike `decision-doc` and `blueprint`, here you **truly execute**: you modify the project code to implement the already decided solution.
 
-Il brief è già la tua consegna completa: la sezione **Mandato** ti dice come comportarti, **La soluzione scelta** cosa fare, la **Memoria** il piano a task da seguire. Questa skill non ti dà nuove istruzioni di merito — ti innesca sul file giusto e blinda le due discipline che un esecutore tradisce più spesso: **aggiornare il file mentre lavori** e **fidarti della verifica osservabile invece di autodichiararti a posto**.
+The brief is already your complete handoff: the **Mandate** section tells you how to behave, **The chosen solution** what to do, the **Memory** the task plan to follow. This skill gives you no new instructions on the merits — it points you at the right file and locks the two disciplines an executor betrays most often: **updating the file while working** and **trusting observable verification instead of declaring yourself done**.
 
-> **Parametri.** Ogni chiave fra graffe di questo contratto si risolve sui file di parametri del progetto, mai a memoria e mai per assunzione: le regole sono nella §5 di `contracts/project-contract.md`, che dice anche **in quale lingua scrivere** e cosa fare quando una chiave non c'è.
+> **Parameters.** Every key in braces in this contract resolves on the project parameter files, never from memory and never by assumption: the rules are in §5 of `contracts/project-contract.md`, which also says **in which language to write** and what to do when a key is missing.
 
-## Input: la cartella del brief
+## Input: the brief folder
 
-Argomenti: `$ARGUMENTS`
+Arguments: `$ARGUMENTS`
 
-L'argomento è **una sola cartella**, come path relativo dalla root del repo o assoluto.
+The argument is **a single folder**, as a relative path from the repo root or absolute.
 
-- La cartella te la passa chi ti invoca, e questo contratto non si lancia a mano: se non è arrivata, **fermati e dillo nel blocco**. Non procedere a vuoto e non sceglierla tu.
-- Se la cartella non esiste, segnalalo e fermati.
-- Cerca il brief nella cartella: `2. blueprint.md`. Se non c'è con quel nome, cerca un file di blueprint equivalente (per esempio `BLUEPRINT.md`); se ne trovi più d'uno o nessuno, **fermati e dichiara nel blocco cosa hai trovato**, senza sceglierne uno. È l'unico caso, insieme alla cartella mancante, in cui non parti: da lì in poi l'esecuzione è autonoma.
+- The folder is passed to you by whoever invokes you, and this contract is not launched by hand: if it did not arrive, **stop and say so in the block**. Do not proceed blindly and do not choose it yourself.
+- If the folder does not exist, report it and stop.
+- Look for the brief in the folder: `2. blueprint.md`. If it is not there under that name, look for an equivalent blueprint file (for example `BLUEPRINT.md`); if you find more than one or none, **stop and declare in the block what you found**, without choosing one. It is the only case, together with the missing folder, where you do not start: from there on execution is autonomous.
 
-Con la cartella ricevi anche `{memory.index}` e i **path** delle memorie che il perimetro tocca, da aprire prima di scrivere: è il canale di §4.1 di `contracts/orchestration.md`. Se il chiamante non te li passa, apri l'indice e scegli tu — i vincoli e le decisioni non deducibili dal codice stanno lì, e riscoprirli a proprie spese costa un giro di review.
+With the folder you also receive `{memory.index}` and the **paths** of the memories the perimeter touches, to open before writing: it is the channel of §4.1 of `contracts/orchestration.md`. If the caller does not pass them to you, open the index and choose yourself — the constraints and decisions not deducible from the code stand there, and rediscovering them at your own expense costs a review round.
 
-## Principi
+## Principles
 
-1. **Il brief è la fonte di verità, e comanda lui.** Leggi `2. blueprint.md` **per intero** prima di toccare qualsiasi cosa: Mandato, Vincoli, La soluzione scelta, tutti i task, il Diario. Il Mandato scritto nel file prevale su qualsiasi tua inclinazione. Se riprendi dopo un'interruzione o una compattazione del contesto, **rileggi il file da capo**: lo stato del lavoro vive lì (task spuntati + Diario), non nella memoria di sessione.
-2. **Autonomia reale.** Esegui tutti i task **nell'ordine** dato, senza chiedere niente a nessuno: ogni specifica è già nel brief e la scelta è già stata fatta, e comunque non hai un canale verso l'owner. Se un dettaglio sembra mancare, deducilo dal brief e dai file di riferimento che cita — non interrompere. Fermati e restituisci il blocco **solo** davanti a un vero ostacolo: un'azione distruttiva o irreversibile non giustificata dal brief, o una contraddizione interna insanabile.
-3. **Rispetta il perimetro.** Applica i Vincoli e i non-goals del brief alla lettera, e le regole architetturali del progetto (`{instructions_file}`): caricalo e tienilo presente. Modifiche chirurgiche, niente refactoring fuori scope, nessuna operazione Git distruttiva o remota salvo richiesta esplicita nel brief.
-4. **La verifica è del controllo, non tua.** Ogni task porta un criterio di verifica **eseguibile** e *mirato al task*: i soli test che coprono ciò che hai appena cambiato, l'import del modulo toccato, un `grep`, un comando. Mai la suite intera, mai il gate di pacchetto — sono di `/review`, che li esegue sempre sul tuo diff. **Eseguila davvero** e considera il task concluso solo se il controllo passa. Mai "fatto quando sembra fatto": se la verifica fallisce, il task non è finito — correggi e riprova. Riporta l'output reale, non un riassunto ottimistico.
-5. **Aggiorna il file mentre lavori, non alla fine.** Man mano che procedi, dentro `2. blueprint.md`: spunta i task (`[ ]` → `[~]` → `[x]`) e **appendi al Diario** cosa hai fatto, le decisioni prese, gli intoppi. Se l'esecuzione fa emergere fatti nuovi che rendono necessario adattare il piano (aggiungere, riordinare o sostituire task), fallo — ma **scrivi nel Diario perché**. Non saltare l'ordine per comodità. Il file deve poter far riprendere il lavoro a un altro esecutore in qualsiasi momento.
-6. **La verifica di chiusura è obbligatoria, il gate non è tuo.** L'ultimo task è sempre l'auto-review del risultato contro i criteri di completamento del brief, più la prova osservabile che ciò che hai scritto si accende: importa i moduli toccati per intercettare errori a load-time, esegui i test del perimetro che hai cambiato. **Non lanciare la suite completa né il gate di pacchetto**: li esegue `/review` subito dopo di te, e ripeterli qui costa minuti e non aggiunge nulla. Non dichiarare completato il lavoro finché ogni criterio non è soddisfatto.
-7. **Consegna la passata di review.** A lavoro finito, prima di chiudere, deposita nella cartella del brief il file `4. review-notes.md`: è il ponte verso `/review`, che l'utente lancerà a mano puntandolo a quel file. Non è un riassunto per l'utente — è un input operativo per chi eseguirà la review: gli dai il base-ref e ciò che hai notato, **non** l'elenco delle skill da lanciare (quello lo decide `/review` dal diff). Vedi *Il file di consegna* sotto. Non esegui tu `/review`: prepari solo la sua consegna.
+1. **The brief is the source of truth, and it commands.** Read `2. blueprint.md` **in full** before touching anything: Mandate, Constraints, The chosen solution, all the tasks, the Journal. The Mandate written in the file prevails over any inclination of yours. If you resume after an interruption or a context compaction, **reread the file from the top**: the work state lives there (checked tasks + Journal), not in session memory.
+2. **Real autonomy.** Run all tasks **in the given order**, without asking anything of anybody: every specification is already in the brief and the choice has already been made, and anyway you have no channel to the owner. If a detail seems missing, deduce it from the brief and the reference files it cites — do not interrupt. Stop and return the block **only** before a true obstacle: a destructive or irreversible action unjustified by the brief, or an irreconcilable internal contradiction.
+3. **Respect the perimeter.** Apply the Constraints and non-goals of the brief to the letter, and the architectural rules of the project (`{instructions_file}`): load it and keep it in mind. Surgical modifications, no out-of-scope refactoring, no destructive or remote Git operations except on explicit request in the brief.
+4. **Verification belongs to the check, not to you.** Every task carries an **executable** verification criterion *targeted at the task*: only the tests covering what you just changed, the import of the touched module, a `grep`, a command. Never the whole suite, never the package gate — they belong to `/review`, which always runs them on your diff. **Truly run it** and consider the task complete only if the check passes. Never "done when it looks done": if verification fails, the task is not finished — correct and retry. Report the real output, not an optimistic summary.
+5. **Update the file while working, not at the end.** As you proceed, inside `2. blueprint.md`: check the tasks (`[ ]` → `[~]` → `[x]`) and **append to the Journal** what you did, the decisions taken, the hitches. If execution brings up new facts making it necessary to adapt the plan (adding, reordering or replacing tasks), do so — but **write in the Journal why**. Do not skip the order for comfort. The file must let another executor resume the work at any moment.
+6. **The closing verification is mandatory, the gate is not yours.** The last task is always the self-review of the result against the completion criteria of the brief, plus the observable check that what you wrote runs: import the touched modules to catch load-time errors, run the tests of the perimeter you changed. **Do not launch the full suite nor the package gate**: `/review` runs them right after you, and repeating them here costs minutes and adds nothing. Do not declare the work complete until every criterion is satisfied.
+7. **Deliver the review pass.** When finished, before closing, deposit in the brief folder the file `4. review-notes.md`: it is the bridge to `/review`, which the user will launch by hand pointing it at that file. It is not a summary for the user — it is an operational input for whoever will run the review: you give it the base-ref and what you noticed, **not** the list of skills to launch (that is decided by `/review` from the diff). See *The handoff file* below. You do not run `/review` yourself: you only prepare its handoff.
 
-## Auto-inganni (fermali prima che ti fermino)
+## Self-deceptions (stop them before they stop you)
 
-Sei un esecutore autonomo: nessuno ti controlla mentre lavori, quindi l'unico modo di sbagliare è **assolverti da solo**. Se ti sorprendi a pensare una di queste frasi, la colonna a destra è la verità.
+You are an autonomous executor: nobody checks you while working, so the only way to err is **absolving yourself**. If you catch yourself thinking one of these sentences, the right column is the truth.
 
-| Se ti stai dicendo… | La verità |
+| If you are telling yourself… | The truth |
 |---|---|
-| «La verifica fallisce ma il codice è giusto, vado avanti» | Il task **non è finito**. Il verdetto è del controllo, non tuo (principio 4). Correggi e riesegui. |
-| «Rileggere il brief da capo dopo l'interruzione è uno spreco» | Dopo una compattazione lo stato vive **solo** nel file (task + Diario), non nella tua memoria di sessione. Rileggilo per intero. |
-| «Questo dettaglio manca, chiedo all'utente» | Deducilo dal brief e dai file che cita. Si chiede **solo** davanti a un blocco reale (azione distruttiva o contraddizione insanabile). |
-| «Già che ci sono sistemo questo codice adiacente» | Fuori perimetro. Ogni riga che tocchi deve ricondursi a un task del brief (Vincoli, principio 3). |
-| «Salto questo task, lo faccio dopo, è più comodo» | Segui l'ordine dato. Adattarlo è lecito solo se emergono fatti nuovi, e va motivato nel Diario (principio 5). |
-| «La verifica la salto, ho già visto che funziona» | «Ho visto» non è evidenza osservabile: la verifica di chiusura è obbligatoria (principio 6). |
-| «Lancio la suite completa, così sono sicuro» | Non è tua: `/review` la esegue sempre sul tuo diff, subito dopo. Qui verifichi il perimetro che hai toccato, non il repository. |
-| «Aggiorno il Diario alla fine, ora corro» | Se ti interrompi ora, il lavoro riparte da zero. Aggiorna il file **mentre** lavori. |
+| "Verification fails but the code is right, I move on" | The task is **not finished**. The verdict belongs to the check, not to you (principle 4). Correct and rerun. |
+| "Rereading the brief from the top after the interruption is a waste" | After a compaction the state lives **only** in the file (tasks + Journal), not in your session memory. Reread it in full. |
+| "This detail is missing, I ask the user" | Deduce it from the brief and the files it cites. One asks **only** before a real block (destructive action or irreconcilable contradiction). |
+| "While I am here I fix this adjacent code" | Out of perimeter. Every line you touch must trace back to a brief task (Constraints, principle 3). |
+| "I skip this task, I do it later, it is more comfortable" | Follow the given order. Adapting it is allowed only if new facts emerge, and it must be explained in the Journal (principle 5). |
+| "I skip verification, I already saw it works" | "I saw" is not observable evidence: the closing verification is mandatory (principle 6). |
+| "I launch the full suite, so I am sure" | It is not yours: `/review` always runs it on your diff, right after. Here you verify the perimeter you touched, not the repository. |
+| "I update the Journal at the end, now I run" | If you interrupt now, the work restarts from zero. Update the file **while** working. |
 
-## Segnali di allarme (red flags)
+## Alarm signals (red flags)
 
-Se noti uno di questi mentre esegui, ti sei già incamminato nella direzione sbagliata — fermati e correggi la rotta:
+If you notice one of these while running, you have already headed in the wrong direction — stop and correct course:
 
-- Stai modificando un file che **nessun task** del brief menziona.
-- Sei a metà lavoro e il **Diario è ancora vuoto** o fermo al primo task.
-- Hai segnato un task `[x]` **senza** aver eseguito il suo controllo di verifica.
-- Stai per dichiarare il lavoro finito **senza** aver eseguito le prove mirate del perimetro che hai toccato (import dei moduli, i soli test che coprono ciò che è cambiato).
-- Ti stai preparando a `git commit`/`git push` (non è compito tuo: il commit è un gesto dell'utente dopo la review).
-- Stai riscrivendo o riassumendo la decisione invece di **eseguirla** (il brief ha già scelto).
+- You are modifying a file **no task** of the brief mentions.
+- You are halfway through and the **Journal is still empty** or stuck at the first task.
+- You marked a task `[x]` **without** having run its verification check.
+- You are about to declare the work finished **without** having run the targeted checks of the perimeter you touched (imports of the modules, only the tests covering what changed).
+- You are preparing to `git commit`/`git push` (not your task: commit is a user step after review).
+- You are rewriting or summarising the decision instead of **executing** it (the brief already chose).
 
-## Procedura
+## Procedure
 
-1. **Risolvi la cartella** da `$ARGUMENTS` e trova il brief (`2. blueprint.md`, vedi *Input*).
+1. **Resolve the folder** from `$ARGUMENTS` and find the brief (`2. blueprint.md`, see *Input*).
 
-2. **Leggi il brief per intero** e carica `{instructions_file}`. Ricostruisci: qual è la soluzione da realizzare, i vincoli e i non-goals, i criteri di completamento, e lo **stato corrente dei task** (se alcuni sono già `[x]`, riparti dal primo non fatto — non rifare lavoro già verificato).
+2. **Read the brief in full** and load `{instructions_file}`. Reconstruct: what the solution to implement is, the constraints and non-goals, the completion criteria, and the **current task state** (if some are already `[x]`, restart from the first undone — do not redo already verified work).
 
-3. **Esegui i task in ordine.** Per ciascuno: fai il passo, poi **esegui il controllo di verifica**. Verde → segna `[x]` e annota nel Diario. Rosso → resta sul task, correggi, riesegui; se emerge un fatto che impone di adattare il piano, aggiorna i task e motiva nel Diario. Non passare al task successivo con la verifica del precedente ancora rossa.
+3. **Run the tasks in order.** For each: do the step, then **run the verification check**. Green → mark `[x]` and annotate in the Journal. Red → stay on the task, correct, rerun; if a fact emerges imposing adaptation of the plan, update the tasks and explain why in the Journal. Do not move to the next task with the previous verification still red.
 
-4. **Chiudi con la verifica di chiusura.** Auto-review contro i criteri di completamento del brief, più la prova osservabile del perimetro toccato (import dei moduli, test di quel perimetro). Il gate di build e test lo esegue `/review`: non lanciarlo qui. Se qualcosa non torna, torna indietro e sistema prima di dichiarare fatto.
+4. **Close with the closing verification.** Self-review against the completion criteria of the brief, plus the observable proof of the touched perimeter (imports of the modules, tests of that perimeter). The build and test gate is run by `/review`: do not launch it here. If something does not add up, go back and fix before declaring done.
 
-5. **Deposita `4. review-notes.md`** nella cartella del brief (vedi *Il file di consegna*).
+5. **Deposit `4. review-notes.md`** in the brief folder (see *The handoff file*).
 
-6. **Riepiloga in chat** in poche righe: cosa hai realizzato, l'esito dei controlli (con il loro output reale), le eventuali deviazioni dal piano e il perché, e che hai lasciato `4. review-notes.md` per la review. Il dettaglio resta nel Diario del file.
+6. **Summarise in chat** in a few lines: what you implemented, the outcome of the checks (with their real output), any deviations from the plan and why, and that you left `4. review-notes.md` for review. The detail stays in the Journal of the file.
 
-## Evidenze richieste per dire «fatto»
+## Evidence required to say "done"
 
-Non dichiarare il lavoro completato finché non puoi **esibire** — nel riepilogo e nel Diario — tutte queste evidenze concrete. È ciò che distingue «fatto» da «sembra fatto»:
+Do not declare the work completed until you can **exhibit** — in the summary and in the Journal — all this concrete evidence. It is what distinguishes "done" from "looks done":
 
-- **Ogni task `[x]`** ha accanto, nel Diario, l'esito reale del suo controllo di verifica (non «ok», ma cosa hai eseguito e cosa è tornato).
-- **Verifica di chiusura**: l'output reale delle prove mirate che hai eseguito sul perimetro toccato (import dei moduli, test di quel perimetro). Se non hai potuto eseguirle, dichiaralo come limite esplicito. Il gate di pacchetto — `{areas.<area>.gate}` delle aree toccate — **non si esegue qui**: è di `/review`.
-- **Auto-review** contro i criteri di completamento del brief: ognuno spuntato, con la riga di codice/comportamento che lo soddisfa.
-- **`4. review-notes.md` depositato** con base-ref reale da Git.
+- **Every `[x]` task** has next to it, in the Journal, the real outcome of its verification check (not "ok", but what you ran and what came back).
+- **Closing verification**: the real output of the targeted checks you ran on the touched perimeter (imports of the modules, tests of that perimeter). If you could not run them, declare it as an explicit limit. The package gate — `{areas.<area>.gate}` of the touched areas — **is not run here**: it belongs to `/review`.
+- **Self-review** against the completion criteria of the brief: each checked, with the code/behaviour line satisfying it.
+- **`4. review-notes.md` deposited** with a real base-ref from Git.
 
-Se una di queste manca, il lavoro non è finito: torna indietro e completala prima di chiudere.
+If one of these is missing, the work is not finished: go back and complete it before closing.
 
-## Il file di consegna (`4. review-notes.md`)
+## The handoff file (`4. review-notes.md`)
 
-L'ultimo gesto a lavoro finito. Scritto **rivolgendosi a chi eseguirà `/review`**, non all'utente. Serve a dargli il **punto da cui calcolare il diff** e a **segnalargli cosa guardare con attenzione**. Non decidi tu quali skill lancerà: `/review` stabilisce da sé le proprie fasi ispezionando il diff. Il tuo compito è fornirgli il base-ref e il contesto; lui se ne fida ma verifica. Se esiste già (ri-esecuzione), sovrascrivilo con lo stato aggiornato.
+The last step when finished. Written **addressing whoever will run `/review`**, not the user. It serves to give it the **point from which to compute the diff** and to **flag what to watch with care**. You do not decide which skills it will launch: `/review` establishes its own phases by inspecting the diff. Your task is to provide the base-ref and the context; it trusts but verifies. If it already exists (re-run), overwrite it with the updated state.
 
-Contenuto:
+Content:
 
-- **Base-ref**: il commit/ref baseline contro cui hai lavorato, così la review calcola l'esatto diff della feature senza indovinare (es. il commit da cui è partito il branch, o `HEAD` d'inizio lavoro). Riporta il valore reale da Git, non a memoria.
-- **Considerazioni**: ciò che hai *notato ma non era tuo compito risolvere* — punti perf-sensibili toccati, zone dove il comportamento atteso era ambiguo, gap di copertura, decisioni prese sotto incertezza. È il materiale che orienta le fasi di review; ancoralo ai file (`path:riga`), non generico. Descrivi *cosa hai toccato e dove* (es. "toccato il polling in `X:42`", "nuovo ramo non coperto in `Y:88`"), non *quale skill deve girare*: la scelta delle fasi è di `/review`.
+- **Base-ref**: the baseline commit/ref you worked against, so review computes the exact diff of the feature without guessing (e.g. the commit the branch started from, or the `HEAD` of work start). Report the real value from Git, not from memory.
+- **Considerations**: what you *noticed but it was not your task to resolve* — perf-sensitive points touched, zones where the expected behaviour was ambiguous, coverage gaps, decisions taken under uncertainty. It is the material orienting the review phases; anchor it to the files (`path:line`), not generic. Describe *what you touched and where* (e.g. "touched polling in `X:42`", "new uncovered branch in `Y:88`"), not *which skill must run*: the choice of phases belongs to `/review`.
 
 ```markdown
-# Note per la review
+# Notes for review
 
-> Origine: 2. blueprint.md · Generato: <data> · Base-ref: <commit/ref>
+> Origin: 2. blueprint.md · Generated: <date> · Base-ref: <commit/ref>
 
-## Considerazioni
-- <fatto ancorato a file:riga che orienta una fase di review>
+## Considerations
+- <fact anchored to file:line orienting a review phase>
 - ...
 ```
 
-## Cosa restituisci
+## What you return
 
-Invocato a mano, basta il riepilogo in chat. **Invocato dentro una catena** — la fase Execute di `develop-feature` — chiudi con questo blocco, che è il solo formato su cui il chiamante decide se proseguire:
+Invoked by hand, the chat summary suffices. **Invoked inside a chain** — the Execute phase of `develop-feature` — close with this block, which is the only format on which the caller decides whether to continue:
 
 ```json
-{"ok": true, "note_review_path": "<path di 4. review-notes.md>", "verify_detail": "<esito reale delle prove mirate sul perimetro toccato>", "detail": "<se ok=false, il motivo>"}
+{"ok": true, "note_review_path": "<path of 4. review-notes.md>", "verify_detail": "<actual outcome of the targeted checks on the touched perimeter>", "detail": "<if ok=false, the reason>"}
 ```
 
-`verify_detail` porta l'esito **reale** delle prove che hai eseguito sul perimetro che hai toccato, non la loro intenzione: la suite completa e il gate di pacchetto non sono tuoi, li possiede `/review`, quindi questo campo è l'unica prova che qualcosa sia stato osservato prima della review.
+`verify_detail` carries the **real** outcome of the checks you ran on the perimeter you touched, not their intention: the full suite and the package gate are not yours, `/review` owns them, so this field is the only proof something was observed before review.
 
-Lo schema sta qui, nel file del nodo che lo produce, e chi ti invoca lo cita invece di ricopiarlo (§4.2 di `contracts/orchestration.md`).
+The schema lives here, in the file of the node producing it, and whoever invokes you cites it instead of copying it (§4.2 of `contracts/orchestration.md`).
 
-## Regola di taglio
+## Cut rule
 
-Tu **esegui**, non ridiscuti la decisione. Il brief ha già scelto cosa fare e perché: il tuo compito è realizzarlo fedelmente, verificarlo con controlli osservabili e lasciare nel file una traccia che permetta a chiunque di riprendere. Se il brief è davvero incompleto o contraddittorio al punto da non poter procedere, fermati e dillo — ma è l'eccezione, non la norma.
+You **execute**, you do not rediscuss the decision. The brief already chose what to do and why: your task is to implement it faithfully, verify it with observable checks and leave in the file a trace letting anybody resume. If the brief is truly incomplete or contradictory to the point of being unable to proceed, stop and say so — but it is the exception, not the norm.

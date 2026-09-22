@@ -1,5 +1,5 @@
 interface:
   display_name: "Study"
-  short_description: "Contratto interno aperto da research"
+  short_description: "Internal contract, opened by research"
 policy:
   allow_implicit_invocation: false

@@ -1,21 +1,21 @@
 {
   "name": "daiku",
   "version": "0.1.0",
-  "description": "Metodo di sviluppo autonomo architecture-first: i contratti delle skill, l'orchestrazione a ruoli e i contratti dei parametri di progetto.",
+  "description": "Autonomous architecture-first development method: skill contracts, role orchestration, and project parameter contracts.",
   "author": { "name": "Nicola Tomasoni" },
-  "keywords": ["metodo", "orchestrazione", "review", "memoria", "contratti"],
+  "keywords": ["method", "orchestration", "review", "memory", "contracts"],
   "skills": "./skills/",
   "interface": {
     "displayName": "Daiku",
-    "shortDescription": "Il metodo di sviluppo autonomo, come contratti in prosa",
-    "longDescription": "Diciotto contratti che descrivono cosa va fatto e in che ordine: studio del problema, documento di decisione, brief di esecuzione, esecuzione, ciclo di review a giri, allineamento di memoria e documentazione, commit. Chi esegue ogni passo e con quale modello lo dichiara un contratto unico di orchestrazione; i valori del progetto ospite stanno fuori dalle skill, in due file di parametri.",
+    "shortDescription": "The autonomous development method, as contracts in prose",
+    "longDescription": "Eighteen contracts describing what to do and in which order: problem study, decision document, execution brief, execution, multi-round review cycle, memory and documentation alignment, commit. Who runs each step and on which model is declared by a single orchestration contract; the guest project's values live outside the skills, in two parameter files.",
     "developerName": "Nicola Tomasoni",
     "category": "Developer Tools",
     "capabilities": ["Interactive", "Write"],
     "defaultPrompt": [
-      "Studia questo problema e scrivine il documento",
-      "Consegna la feature dalla cartella gia' decisa",
-      "Rivedi il diff e chiudi la review con il commit"
+      "Study this problem and write its document",
+      "Deliver the feature from the already-decided folder",
+      "Review the diff and close the review with the commit"
     ]
   }
 }

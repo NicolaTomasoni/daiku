@@ -1,175 +1,170 @@
 ---
-name: sync-host
-description: 'Installa e riallinea lo strato dell''host dentro il progetto — i guardrail e i ruoli di subagent. Su Codex scrive `.codex/hooks/`, `.codex/hooks.json` e `.codex/agents/`, perché lì un pacchetto non può trasportare né hook né subagent; su Claude Code non c''è niente da fare e lo dichiara. Si rilancia a ogni aggiornamento del pacchetto.'
-argument-hint: '[radice tecnica, opzionale — default: la directory corrente]'
+name: 'sync-host'
+description: 'Installs and realigns the host layer inside the project — the guardrails and the subagent roles. On Codex it writes `.codex/hooks/`, `.codex/hooks.json` and `.codex/agents/`, because there a package can carry neither hooks nor subagents; on Claude Code there is nothing to do and it declares so. It relaunches at every package update.'
+argument-hint: '[technical root, optional — default: current directory]'
 ---
 
-Sei il passo che porta lo **strato dell'host** di Daiku dentro un progetto, sull'host che non sa riceverlo da solo. Non tocchi i parametri e non tocchi il dominio: quelli sono di `init`. Tocchi due cose — i guardrail e i ruoli di subagent — e le tocchi in modo che chi le riceve sappia esattamente cosa gli è comparso sul disco e cosa deve approvare perché parta.
+You are the step carrying the Daiku **host layer** inside a project, on the host unable to receive it alone. You do not touch parameters and do not touch the domain: those belong to `init`. You touch two things — guardrails and subagent roles — and you touch them so whoever receives them knows exactly what appeared on disk and what must be approved for it to start.
 
-Sei **rilanciabile per disegno**, ed è la differenza con `init`: lì il valore è non sovrascrivere, qui il valore è riallineare. Un hook vecchio di tre versioni non è un file da rispettare, è un guardrail che non sa più cosa sorvegliare; e un ruolo che non è più quello del pacchetto è un subagent che lavora a un contratto che nessuno gli sta più chiedendo.
+You are **relaunchable by design**, and it is the difference with `init`: there the value is not overwriting, here the value is realigning. A three-version-old hook is not a file to respect, it is a guardrail no longer knowing what it watches; and a role no longer the package one is a subagent working at a contract nobody is asking it anymore.
 
-## Perché esisti
+## Why you exist
 
-Il manifest di Codex rifiuta due chiavi, e sono proprio quelle due.
+The Codex manifest rejects two keys, and they are precisely those two.
 
-**Gli hook.** `plugin_hooks` è una feature **rimossa**: `codex features list` la dichiara `removed`, e il validatore rifiuta la chiave `hooks`. Gli hook di Codex esistono e funzionano — `hooks stable true` — ma solo dichiarati fuori dal pacchetto, in `<repo>/.codex/hooks.json` o `~/.codex/hooks.json`.
+**Hooks.** `plugin_hooks` is a **removed** feature: `codex features list` declares it `removed`, and the validator rejects the `hooks` key. Codex hooks exist and work — `hooks stable true` — but only declared outside the package, in `<repo>/.codex/hooks.json` or `~/.codex/hooks.json`.
 
-**I subagent.** Il validatore rifiuta la chiave `agents`. I ruoli di Codex vivono in `<repo>/.codex/agents/*.toml` o `~/.codex/agents/*.toml`, di nuovo fuori dal pacchetto.
+**Subagents.** The validator rejects the `agents` key. Codex roles live in `<repo>/.codex/agents/*.toml` or `~/.codex/agents/*.toml`, again outside the package.
 
-E nessuno dei due host lascia che un pacchetto scriva nel progetto dell'utente. Quindi l'unica via è un comando che l'utente lancia. Quel comando sei tu.
+And neither host lets a package write in the user project. So the only way is a command the user launches. That command is you.
 
-Su **Claude Code** niente di tutto questo serve: `plugin.json` dichiara `hooks`, la cartella `agents/` è letta dal pacchetto, e l'aggiornamento aggiorna entrambi da solo.
+On **Claude Code** none of this is needed: `plugin.json` declares `hooks`, the `agents/` folder is read from the package, and updating updates both alone.
 
-## Il contratto degli hook è lo stesso sui due host
+## The hook contract is the same on both hosts
 
-Non riscrivi gli hook per Codex e non ne tieni due versioni. I due host hanno lo stesso identico contratto — stessa forma di `hooks.json`, stesso JSON su stdin, stesso `hookSpecificOutput.permissionDecision` per negare, stessi nomi di evento per i tre che servono — quindi i `.mjs` del pacchetto girano su Codex **come sono**.
+You do not rewrite hooks for Codex and keep no two versions. The two hosts have the same identical contract — same `hooks.json` form, same JSON on stdin, same `hookSpecificOutput.permissionDecision` to deny, same event names for the three needed — so the package `.mjs` files run on Codex **as they are**.
 
-Diverge una cosa sola, ed è la ragione per cui non basta copiare:
+A single thing diverges, and it is the reason copying is not enough:
 
-**Un hook di Codex non riceve nessuna variabile che punti al progetto.** Claude Code esporta `CLAUDE_PROJECT_DIR` e `CLAUDE_PLUGIN_ROOT`; Codex ha `PLUGIN_ROOT` e `PLUGIN_DATA` (con gli alias `CLAUDE_*`), ma puntano al **pacchetto installato** e per un hook dichiarato in `.codex/hooks.json` non sono nemmeno impostati. Resta la cwd della sessione, che non è la radice se l'utente ha aperto Codex in una sottocartella.
+**A Codex hook receives no variable pointing at the project.** Claude Code exports `CLAUDE_PROJECT_DIR` and `CLAUDE_PLUGIN_ROOT`; Codex has `PLUGIN_ROOT` and `PLUGIN_DATA` (with the `CLAUDE_*` aliases), but they point at the **installed package** and for a hook declared in `.codex/hooks.json` they are not even set. The session cwd remains, which is not the root if the user opened Codex in a subfolder.
 
-Per questo i `.mjs` risalgono alla git root — lo fa `hooks/lib/project-root.mjs` — e per questo **il path nel `command` dev'essere assoluto**, scritto da te al momento dell'installazione.
+For this the `.mjs` files climb to the git root — `hooks/lib/project-root.mjs` does so — and for this **the path in `command` must be absolute**, written by you at install time.
 
-## Il contratto dei ruoli invece diverge, e va detto al ruolo stesso
+## The role contract instead diverges, and it must be told to the role itself
 
-Su Claude Code un ruolo è un file in `agents/`, e la riga `tools:` del suo frontmatter **toglie** davvero gli strumenti: un `finder` senza `Edit` e senza `Write` non scrive file, perché non ha con cosa.
+On Claude Code a role is a file in `agents/`, and the `tools:` line of its frontmatter truly **removes** tools: a `finder` without `Edit` and without `Write` does not write files, because it has nothing to do it with.
 
-Su Codex quel livello non esiste. Un `.codex/agents/*.toml` porta `name`, `description` e `developer_instructions`, e le istruzioni arrivano davvero al subagent — ma non c'è nessuna lista di tool da restringere, e **`sandbox_mode` dichiarato lì dentro non restringe nulla**: provato il 19 settembre 2026 su `codex-cli 0.155.0`, un subagent con `sandbox_mode = "read-only"` ha scritto il file che gli era stato chiesto, sia col multi-agente di default sia con `multi_agent_v2`. La sandbox di Codex è vera — una sessione lanciata con `-s read-only` rifiuta la scrittura — ma si sceglie per sessione, non per ruolo.
+On Codex that level does not exist. A `.codex/agents/*.toml` carries `name`, `description` and `developer_instructions`, and the instructions truly reach the subagent — but there is no tool list to restrict, and **`sandbox_mode` declared inside there restricts nothing**: tried on 19 September 2026 on `codex-cli 0.155.0`, a subagent with `sandbox_mode = "read-only"` wrote the file it was asked for, both with the default multi-agent and with `multi_agent_v2`. The Codex sandbox is real — a session launched with `-s read-only` refuses writing — but it is chosen per session, not per role.
 
-Ne seguono due regole per te:
+Two rules follow for you:
 
-1. **Non scrivere `sandbox_mode` nei file che generi.** Dichiarerebbe un confine che non c'è, ed è la cosa che Daiku non fa: un vincolo scritto dove nessuno lo impone è peggio di un vincolo assente, perché chi legge smette di ripeterlo nel prompt.
-2. **Dillo al ruolo, dentro il ruolo.** Ogni file `agents/*.md` del pacchetto chiude con una sezione `## Quanto di questo te lo impone l'host`: è la sola parte host-specifica, e quando rendi quel ruolo per Codex la sostituisci con la tua (vedi *Passo 6*). Il resto del file è del ruolo e viaggia verbatim.
+1. **Do not write `sandbox_mode` in the files you generate.** It would declare a boundary that does not exist, and it is the thing Daiku does not do: a constraint written where nobody enforces it is worse than an absent constraint, because whoever reads stops repeating it in the prompt.
+2. **Tell it to the role, inside the role.** Every `agents/*.md` file of the package closes with a `## How much of this the host imposes on you` section: it is the only host-specific part, and when you render that role for Codex you replace it with yours (see *Step 6*). The rest of the file belongs to the role and travels verbatim.
 
-## Perché i file si copiano, e non si punta al pacchetto
+## Why files are copied, and the package is not pointed at
 
-Puntare alla cache del pacchetto sembra più furbo: si aggiornerebbero da soli. Non funziona. Il path della cache contiene la **versione**, quindi si rompe al primo aggiornamento — e per un hook si rompe in silenzio, perché un hook che non parte è indistinguibile da un hook che non ha niente da dire.
+Pointing at the package cache looks smarter: they would update themselves. It does not work. The cache path contains the **version**, so it breaks at the first update — and for a hook it breaks silently, because a hook that does not start is indistinguishable from a hook with nothing to say.
 
-Quindi si copiano nel progetto, e il prezzo è che il riallineamento è un gesto: questo.
+So they are copied into the project, and the price is that realignment is a gesture: this one.
 
 ## Input
 
-Argomenti: `$ARGUMENTS` — `[radice tecnica]`.
+Arguments: `$ARGUMENTS` — `[technical root]`.
 
-Con un argomento, è quella. Senza, è la directory corrente. Dev'essere dentro un repository Git: se non lo è, fermati e dillo — non inizializzi un repository al posto dell'utente.
+With an argument, it is that. Without, it is the current directory. It must be inside a Git repository: if not, stop and say so — you do not initialise a repository in place of the user.
 
-**Ma non è la radice tecnica che scrivi: è la root del repository.** Ricavala con `git rev-parse --show-toplevel`. Codex cerca il layer di progetto lì, e i `.mjs` che copi risalgono alla git root per conto proprio (`hooks/lib/project-root.mjs`): depositarli nella radice tecnica di un monorepo li metterebbe dove nessuno li guarda, e il referto direbbe installato.
+**But it is not the technical root you write: it is the repository root.** Derive it with `git rev-parse --show-toplevel`. Codex looks for the project layer there, and the `.mjs` files you copy climb to the git root on their own (`hooks/lib/project-root.mjs`): depositing them in the technical root of a monorepo would put them where nobody watches, and the report would say installed.
 
-Le due coincidono quasi sempre. Quando **non** coincidono, l'installazione riesce lo stesso ma la guardia sui comandi cerca `.daiku/project.json` alla git root, mentre `init` l'ha scritto nella radice tecnica: non lo trova, e per un hook fail-open non trovarlo significa tacere. È il caso in cui un guardrail sembra esserci e non nega niente, quindi **dillo nel referto** invece di lasciarlo scoprire.
+The two coincide almost always. When they **do not** coincide, installation still succeeds but the command guard looks for `.daiku/project.json` at the git root, while `init` wrote it in the technical root: it does not find it, and for a fail-open hook not finding it means staying silent. It is the case where a guardrail seems to exist and denies nothing, so **say so in the report** instead of leaving it to be discovered.
 
-## Procedura
+## Procedure
 
-### 1. Riconosci l'host
+### 1. Recognise the host
 
-Lo sai da dove stai girando: non chiederlo.
+You know it from where you are running: do not ask it.
 
-Su **Claude Code**: non scrivi niente. Dichiara che il pacchetto porta già i tre hook e i due ruoli, che si aggiornano con lui, e che per questo progetto non c'è nessun gesto da fare. Chiudi qui. Non agganciare quegli stessi tre hook una seconda volta da `.claude/settings.json`: li aggancia già il pacchetto, e l'utente si ritroverebbe ogni guardia eseguita due volte.
+On **Claude Code**: you write nothing. Declare the package already carries the three hooks and the two roles, updating with it, and that for this project there is no gesture to make. Close here. Do not hook those same three hooks a second time from `.claude/settings.json`: the package already hooks them, and the user would find every guard run twice.
 
-Su **Codex**: prosegui.
+On **Codex**: continue.
 
-### 2. Verifica che gli hook siano accesi
+### 2. Verify hooks are switched on
 
-Leggi `codex features list` e cerca la riga `hooks`. Se non è `true`, gli hook che scrivi non partiranno: scrivili lo stesso — l'utente può accenderli — ma **apri il referto con questo**, non chiuderlo. Un guardrail che c'è e non gira è peggio di uno assente, perché sembra esserci.
+Read `codex features list` and look for the `hooks` line. If it is not `true`, the hooks you write will not start: still write them — the user can switch them on — but **open the report with this**, do not close with it. A guardrail that exists and does not run is worse than an absent one, because it seems to exist.
 
-Se il comando non è disponibile o non risponde, non bloccarti: dichiara che non hai potuto verificarlo. Questo passo riguarda solo gli hook: i ruoli del *Passo 6* non dipendono da nessuna feature.
+If the command is unavailable or does not answer, do not block: declare you could not verify it. This step concerns only hooks: the roles of *Step 6* depend on no feature.
 
-### 3. Trova nel pacchetto ciò che devi portare
+### 3. Find in the package what you must carry
 
-Tutto sta nella radice del pacchetto — la cartella che contiene `skills/`, `contracts/`, `hooks/`, `agents/` e `templates/`, due livelli sopra questo file. È un path **relativo al pacchetto**: vale su entrambi gli host, mentre una variabile d'ambiente di path esiste solo su uno dei due.
+Everything stands at the package root — the folder containing `skills/`, `contracts/`, `hooks/`, `agents/` and `templates/`, two levels above this file. It is a path **relative to the package**: it holds on both hosts, while an environment path variable exists only on one of the two.
 
-- gli hook in `hooks/lib/`;
-- i ruoli in `agents/`.
+- the hooks in `hooks/lib/`;
+- the roles in `agents/`.
 
-Di ciascuna cartella prendi **tutto** quello che c'è, non un elenco che tieni a mente. Se il pacchetto porta un file nuovo, dev'essere sufficiente rilanciarti: un elenco cablato qui lo lascerebbe indietro in silenzio. Fra i `.mjs` di `hooks/lib/` ce ne sono infatti due che hook non sono — `project-root.mjs`, che trova la radice del progetto, e `daiku-config.mjs`, che legge `.daiku/project.json` — ma sono importati dagli altri: se ne salti uno, nessuno parte.
+Of each folder take **everything** there is, not a list you keep in mind. If the package carries a new file, relaunching you must suffice: a hardwired list here would silently leave it behind. Among the `.mjs` files of `hooks/lib/` there are indeed two that are not hooks — `project-root.mjs`, finding the project root, and `daiku-config.mjs`, reading `.daiku/project.json` — but the others import them: if you skip one, none starts.
 
-Quello che sta in `hooks/` ma **fuori** da `lib/` non si copia: `self-check.mjs` è il banco unico di chi sviluppa il pacchetto e `README.md` è la sua guida, e nessuno dei due ha niente da fare dentro un progetto ospite.
+What stands in `hooks/` but **outside** `lib/` is not copied: `self-check.mjs` is the single bench of whoever develops the package and `README.md` is its guide, and neither has anything to do inside a guest project.
 
-### 4. Prova ogni hook prima di agganciarlo
+### 4. Try every hook before hooking it
 
-Per ciascun `.mjs` che è un hook, lancia `node <file> --self-check` e leggi il JSON che stampa.
+For each `.mjs` file that is a hook, launch `node <file> --self-check` and read the JSON it prints.
 
-- `falliti` vuoto → l'hook è sano, procedi.
-- `falliti` non vuoto → **non agganciarlo**. Copialo pure, ma lascialo fuori da `hooks.json` e riportane i casi rossi nel referto.
-- Niente uscita, o uscita non parsabile → trattalo come rosso. I due moduli importati — `project-root.mjs` e `daiku-config.mjs` — non hanno banco e non sono hook: si copiano e basta, e i banchi degli altri tre li provano di riflesso.
+- empty `failed` → the hook is healthy, proceed.
+- non-empty `failed` → **do not hook it**. Copy it anyway, but leave it out of `hooks.json` and report its red cases in the report.
+- No output, or unparsable output → treat it as red. The two imported modules — `project-root.mjs` and `daiku-config.mjs` — have no bench and are no hooks: they are copied and nothing more, and the benches of the other three cover them indirectly.
 
-Questo passo esiste perché i tre hook sono **fail-open**: davanti a un guasto tacciono ed escono
-0. Un hook rotto e un hook che non ha niente da dire si assomigliano troppo perché ci si possa fidare senza il banco.
+This step exists because the three hooks are **fail-open**: on failure they stay silent and exit 0. A broken hook and a hook with nothing to say resemble each other too much to be trusted without the bench.
 
-### 5. Scrivi `.codex/hooks/` e `.codex/hooks.json`
+### 5. Write `.codex/hooks/` and `.codex/hooks.json`
 
-Copia i `.mjs` in `<root del repository>/.codex/hooks/`, **sovrascrivendo** quelli che ci sono. Non conservare le versioni vecchie e non rinominarle di lato: un file `command-guard.vecchio.mjs` che resta lì è un hook che qualcuno rimetterà in servizio senza sapere cosa fa.
+Copy the `.mjs` files into `<repository root>/.codex/hooks/`, **overwriting** the ones there. Do not keep old versions and do not rename them aside: a `command-guard.old.mjs` file staying there is a hook somebody will put back in service without knowing what it does.
 
-Se un file sul disco è **diverso** da quello del pacchetto, annota il nome: serve al referto, perché è quel file a far ripartire l'approvazione al passo 7.
+If a file on disk is **different** from the package one, annotate the name: it serves the report, because it is that file restarting approval at step 7.
 
-Per il manifesto, parti da `templates/codex/hooks.json`, che è lo scheletro, e sostituisci ogni `<REPO_ROOT>` con il path assoluto della **root del repository**, **con le barre in avanti** anche su Windows.
+For the manifest, start from `templates/codex/hooks.json`, which is the skeleton, and replace every `<REPO_ROOT>` with the absolute path of the **repository root**, **with forward slashes** even on Windows.
 
-Poi togli dai tre eventi gli hook che il passo 4 ha trovato rossi. Se ne restano zero, non scrivere un `hooks.json` con eventi vuoti: non scriverlo affatto, e dillo nel referto.
+Then remove from the three events the hooks step 4 found red. If zero remain, do not write a `hooks.json` with empty events: do not write it at all, and say so in the report.
 
-Se esiste già un `.codex/hooks.json`, non riscriverlo da zero e non appenderti in coda. Le voci si partizionano sul `command`: quelle che puntano dentro `.codex/hooks/` sono **tue** — le tue di adesso o quelle che ci hai messo l'ultima volta — e si **sostituiscono**; tutte le altre sono dell'utente e si conservano dove sono. Questo file è suo prima che tuo.
+If a `.codex/hooks.json` already exists, do not rewrite it from zero and do not append yourself at the tail. Entries partition on `command`: those pointing inside `.codex/hooks/` are **yours** — your current ones or those you put there last time — and they are **replaced**; all others belong to the user and are kept where they are. This file is the user's before it is yours.
 
-È la regola che rende vero il «rilanciabile per disegno»: senza, il secondo giro appende una seconda copia di ogni guardia ai suoi stessi eventi, e ognuna gira due volte — esattamente il guasto che il *Passo 1* vieta su Claude Code.
+It is the rule making true "relaunchable by design": without, the second round appends a second copy of every guard to its own events, and each runs twice — exactly the fault *Step 1* forbids on Claude Code.
 
-### 6. Scrivi `.codex/agents/`
+### 6. Write `.codex/agents/`
 
-Per **ogni** file `agents/<nome>.md` del pacchetto scrivi `<root del repository>/.codex/agents/<nome>.toml`, sovrascrivendo quello che c'è. Il nome del file e il campo `name` restano identici a quelli del `.md`: è ciò che permette alla §4 di `contracts/orchestration.md` di nominare un ruolo una volta sola per i due host.
+For **every** `agents/<name>.md` file of the package write `<repository root>/.codex/agents/<name>.toml`, overwriting what is there. The file name and the `name` field stay identical to those of the `.md`: it is what lets §4 of `contracts/orchestration.md` name a role only once for both hosts.
 
-La resa è meccanica, e si fa così:
+The rendering is mechanical, and it is done so:
 
 ```toml
-# generato da sync-host dal ruolo agents/<nome>.md del pacchetto — non modificare a mano
-name = "<name del frontmatter>"
-description = "<description del frontmatter>"
+# generated by sync-host from the package role agents/<name>.md — do not edit by hand
+name = "<frontmatter name>"
+description = "<frontmatter description>"
 developer_instructions = '''
-<il corpo del .md, verbatim, senza la sezione "## Quanto di questo te lo impone l'host">
+<the .md body, verbatim, without the "## How much of this the host imposes on you" section>
 
-## Quanto di questo te lo impone l'host
+## How much of this the host imposes on you
 
-Niente: su questo host nessuno dei divieti qui sopra è imposto. Non esiste una lista di tool che
-te li tolga, e la sandbox non si sceglie per ruolo. Valgono perché sono scritti e perché li stai
-leggendo. Se un gesto che stai per fare non rientra in quello che questo file ti lascia fare, non
-farlo: nessun diniego arriverà a fermarti. E se lo hai fatto lo dichiari nell'esito, perché chi ti
-ha invocato non ha nessun altro modo di saperlo.
+Nothing: on this host none of the prohibitions above is enforced. There is no tool list taking them away from you, and the sandbox is not chosen per role. They hold because they are written and because you are reading them. If a move you are about to make does not fit what this file lets you do, do not do it: no denial will ever stop you. And if you did it, declare it in the outcome, because whoever invoked you has no other way of knowing.
 '''
 ```
 
-Quattro regole, e nessuna è discrezionale:
+Four rules, and none is discretionary:
 
-- **La stringa è literal a tre apici** (`'''`), non a tre virgolette: dentro un ruolo passano backslash e path Windows, e in una stringa letterale nessuno li interpreta come escape. Se il corpo di un `.md` contenesse a sua volta `'''`, non generare quel file e dillo nel referto.
-- **La riga `tools:` del frontmatter non si trasporta.** Su Codex non ha equivalente, e scriverla sarebbe un confine dichiarato e non imposto.
-- **Nessun `sandbox_mode`**, per la ragione detta sopra.
-- **Nessun `model`**: il modello di un passo lo risolve chi invoca, secondo la §2 di `contracts/orchestration.md`, e cablarlo qui gli toglierebbe quella scelta.
+- **The string is literal with three quotes** (`'''`), not with three double quotes: inside a role pass backslashes and Windows paths, and in a literal string nobody interprets them as escapes. If the body of a `.md` in turn contained `'''`, do not generate that file and say so in the report.
+- **The `tools:` line of the frontmatter is not carried over.** On Codex it has no equivalent, and writing it would be a declared and unenforced boundary.
+- **No `sandbox_mode`**, for the reason said above.
+- **No `model`**: the model of a step is resolved by whoever invokes, per §2 of `contracts/orchestration.md`, and hardwiring it here would take that choice away.
 
-Se in `.codex/agents/` esiste un `.toml` che **non** corrisponde a nessun ruolo del pacchetto, guarda la sua prima riga. Se porta l'intestazione che generi tu, era un ruolo del pacchetto che il pacchetto non porta più: **rimuovilo** e dillo nel referto — un ruolo obsoleto resta nominabile da chi orchestra, e nessuno sa più cosa contenga. Se quella riga non c'è, il file è dell'utente: lascialo dov'è ed elencalo nel referto, così sa che c'è e che non lo tocchi tu.
+If in `.codex/agents/` a `.toml` exists **not** corresponding to any package role, watch its first line. If it carries the header you generate, it was a package role the package no longer carries: **remove it** and say so in the report — an obsolete role stays nameable by whoever orchestrates, and nobody ever knows what it contains. If that line is missing, the file belongs to the user: leave it where it is and list it in the report, so it knows it is there and you do not touch it.
 
-Vale anche per i `.toml` che **riscrivi**: come per i `.mjs` del passo 5, annota se erano assenti, identici o diversi. Chi avesse ritoccato un ruolo a mano ha il diritto di leggerlo nel referto, non di scoprirlo riaprendo il file.
+Valid also for the `.toml` files you **rewrite**: like for the `.mjs` of step 5, annotate whether they were absent, identical or different. Whoever retouched a role by hand has the right to read it in the report, not to discover it by reopening the file.
 
-### 7. Referto
+### 7. Report
 
-Chiudi con l'elenco, senza abbellimenti:
+Close with the list, without embellishments:
 
-- **Copiato** — ogni `.mjs` scritto, e per ciascuno se era assente, identico o diverso.
-- **Agganciato** — quali hook sono finiti in `hooks.json`, su quale evento.
-- **Non agganciato** — ogni hook lasciato fuori, col perché e coi casi rossi del suo banco.
-- **Ruoli scritti** — ogni `.toml` generato, con il ruolo da cui viene; e i `.toml` altrui che hai lasciato stare.
-- **Cosa deve fare l'utente adesso** — ed è il blocco che non puoi omettere, perché senza di esso non parte niente:
+- **Copied** — every written `.mjs`, and for each whether it was absent, identical or different.
+- **Hooked** — which hooks ended up in `hooks.json`, on which event.
+- **Not hooked** — every hook left out, with why and with the red cases of its bench.
+- **Written roles** — every generated `.toml`, with the role it comes from; and the alien `.toml` files you left alone.
+- **What the user must do now** — and it is the block you cannot omit, because without it nothing starts:
 
-  1. **Approvare gli hook**: `/hooks` dentro Codex, che mostra le sorgenti e permette di fidarsene. Codex registra la fiducia sull'**hash** del file: gli hook nuovi o cambiati restano segnati per revisione e **vengono saltati finché non sono approvati**. È per questo che il passo 5 annota quali file sono cambiati — sono esattamente quelli che torneranno a chiedere.
-  2. **Fidarsi del progetto**, se non lo è già: gli hook di `<repo>/.codex/` caricano solo quando quel layer è trusted. Gli hook utente non hanno questo vincolo, quelli di progetto sì.
-  3. **Dichiarare il pool**, se non l'ha già fatto. La guardia sui comandi nega soltanto le rimozioni dentro i worktree che `.daiku/project.json` dichiara in `{worktree.pool}`; push, `--no-verify` e commit di `.daiku/` sono negati sempre, senza chiave. Guarda cosa c'è nel JSON e dillo: «pool X» o «nessun pool», non un invito generico a configurare qualcosa.
+  1. **Approve the hooks**: `/hooks` inside Codex, showing the sources and letting them be trusted. Codex records trust on the file **hash**: new or changed hooks stay flagged for review and **are skipped until approved**. That is why step 5 annotates which files changed — they are exactly the ones coming back asking.
+  2. **Trust the project**, if not already: the hooks of `<repo>/.codex/` load only when that layer is trusted. User hooks have no such constraint, project ones do.
+  3. **Declare the pool**, if not already done. The command guard only denies removals inside the worktrees `.daiku/project.json` declares in `{worktree.pool}`; push, `--no-verify` and commits of `.daiku/` are always denied, without a key. Watch what is in the JSON and say so: "pool X" or "no pool", not a generic invite to configure something.
 
-  4. **Riaprire la sessione.** `SessionStart` non può scattare nella sessione in cui il file è appena comparso, e l'approvazione del punto 1 si dà comunque a hook già in servizio.
+  4. **Reopen the session.** `SessionStart` cannot trigger in the session where the file just appeared, and the approval of point 1 is still given to already serving hooks.
 
-Dillo come gesti da fare, non come una nota a piè di pagina. Un utente che salta il primo vede un'installazione riuscita e nessun guardrail attivo. I ruoli del passo 6 non hanno il vincolo dell'hash né quello della fiducia; quando vengano riletti è una proprietà dell'host che qui non è stata verificata, quindi metti anche loro dietro il riavvio invece di prometterli attivi.
+Say so as gestures to make, not as a footnote. A user skipping the first sees a successful install and no active guardrail. The step-6 roles have neither the hash constraint nor the trust one; when they are reread is a host property not verified here, so put them too behind the restart instead of promising them active.
 
-Su Claude Code il referto è la sola dichiarazione del *Passo 1*: non ci sono blocchi da compilare, perché non hai scritto niente.
+On Claude Code the report is the sole declaration of *Step 1*: there are no blocks to fill in, because you wrote nothing.
 
-Se hai rilanciato su un progetto già a posto e non è cambiato niente, dillo in una riga sola.
+If you relaunched on an already fine project and nothing changed, say so in a single line.
 
-## Cosa non fai
+## What you do not do
 
-- **Non tocchi `.daiku/`**: parametri e dominio sono di `init`. Se manca, non lo scrivi tu — segnalalo e basta.
-- **Non tocchi il codice**, mai.
-- **Non scrivi niente a livello utente** in `~/.codex/`, né hook né ruoli. Quella sede vale per tutti i progetti dell'utente, e ciò che porti è di **questo** progetto: parla di `.daiku/`, di worktree e di contratti che altrove non esistono. Se l'utente li vuole globali, è una sua decisione e la prende lui.
-- **Non inventi un ruolo** che il pacchetto non porta, e non ritocchi la prosa di quelli che porta: la tua resa è meccanica, e un ruolo riscritto per l'occasione è un contratto che diverge dal suo originale al primo aggiornamento.
-- **Non fai commit** e non fai staging di quello che hai scritto: chi ti ha lanciato guarda cosa è comparso prima di versionarlo. Segnala però che `.codex/hooks/` porta codice eseguibile, e che va versionato o ignorato con intenzione — non lasciato a metà.
-- **Non modifichi `config.toml`**. Codex accetta gli hook anche inline lì dentro, ma quel file porta molto altro ed è dell'utente: un `hooks.json` a parte, e dei `.toml` a parte, si leggono, si diffano e si tolgono senza toccare nient'altro.
+- **You do not touch `.daiku/`**: parameters and domain belong to `init`. If missing, you do not write it yourself — only report it.
+- **You do not touch the code**, ever.
+- **You write nothing at user level** in `~/.codex/`, neither hooks nor roles. That seat holds for all user projects, and what you carry belongs to **this** project: it talks of `.daiku/`, worktrees and contracts existing nowhere else. If the user wants them global, that is theirs to decide and theirs to do.
+- **You do not invent a role** the package does not carry, and do not retouch the prose of the ones it carries: your rendering is mechanical, and a role rewritten for the occasion is a contract diverging from its original at the first update.
+- **You do not commit** and do not stage what you wrote: whoever launched you watches what appeared before versioning it. Still report that `.codex/hooks/` carries executable code, and that it must be versioned or ignored on purpose — not left halfway.
+- **You do not modify `config.toml`**. Codex also accepts hooks inline there, but that file carries much else and belongs to the user: a separate `hooks.json`, and separate `.toml` files, are read, diffed and removed without touching anything else.

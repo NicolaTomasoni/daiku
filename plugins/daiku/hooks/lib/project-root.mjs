@@ -1,24 +1,24 @@
 /**
- * La radice del progetto, per un hook che gira su Claude Code **o** su Codex.
+ * The project root, for a hook running on Claude Code **or** on Codex.
  *
- * I due host non danno la stessa cosa, e la differenza non è cosmetica:
+ * The two hosts do not hand out the same thing, and the difference is not cosmetic:
  *
- *  - **Claude Code** esporta `CLAUDE_PROJECT_DIR`, che è la radice vera comunque si sia
- *    aperta la sessione.
- *  - **Codex** non ha un equivalente. Documenta `PLUGIN_ROOT` e `PLUGIN_DATA` — più gli
- *    alias di compatibilità `CLAUDE_PLUGIN_ROOT` e `CLAUDE_PLUGIN_DATA` — ma quelli
- *    puntano al **pacchetto installato**, non al progetto, e per un hook dichiarato in
- *    `.codex/hooks.json` non sono nemmeno impostati. Lì resta la cwd della sessione.
+ *  - **Claude Code** exports `CLAUDE_PROJECT_DIR`, which is the true root however
+ *    the session was opened.
+ *  - **Codex** has no equivalent. It documents `PLUGIN_ROOT` and `PLUGIN_DATA` — plus the
+ *    compatibility aliases `CLAUDE_PLUGIN_ROOT` and `CLAUDE_PLUGIN_DATA` — but those
+ *    point at the **installed package**, not the project, and for a hook declared in
+ *    `.codex/hooks.json` they are not even set. There only the session cwd remains.
  *
- * E la cwd della sessione **non è** la radice: chi apre Codex dentro una sottocartella la
- * riceve come cwd, e un hook che ci creda calcolerebbe path relativi sbagliati — con
- * l'effetto, per una guardia fail-open, di tacere invece di sbagliare rumorosamente. È la
- * documentazione di Codex a dire di risolvere dalla git root anziché fidarsi di un path
- * relativo alla cwd.
+ * And the session cwd **is not** the root: opening Codex inside a subfolder hands it
+ * over as cwd, and a hook believing it would compute wrong relative paths — with
+ * the effect, for a fail-open guard, of staying silent instead of failing loudly. It is the
+ * Codex documentation that says to resolve from the git root rather than trusting a path
+ * relative to the cwd.
  *
- * Quindi l'ordine è: la variabile dell'host se c'è, poi la git root, poi la cwd come
- * ultima spiaggia. Nessuno dei tre passi solleva: una radice sbagliata degrada, una
- * eccezione qui spegnerebbe l'hook.
+ * So the order is: the host variable when present, then the git root, then the cwd as
+ * last resort. None of the three steps throws: a wrong root degrades, an
+ * exception here would switch the hook off.
  */
 
 import { spawnSync } from 'node:child_process';
@@ -26,60 +26,60 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 /**
- * Questo modulo è stato lanciato come programma, o importato da qualcun altro?
+ * Was this module launched as a program, or imported by someone else?
  *
- * Serve perché i tre hook **esportano** le funzioni che il loro banco di prova verifica,
- * e un modulo che legge stdin ed esce `0` al solo caricamento non si lascia importare:
- * chi prova a chiamarne una funzione da fuori vede il processo morire in silenzio, che è
- * il modo peggiore di fallire in un file il cui contratto è «taci se non hai niente da
- * dire».
+ * Needed because the three hooks **export** the functions their test bench checks,
+ * and a module reading stdin and exiting `0` on load alone cannot be imported:
+ * anyone trying to call one of its functions from outside would see the process die in silence, which is
+ * the worst way to fail in a file whose contract is "stay silent when you have nothing to
+ * say".
  *
- * Il confronto è fra path risolti e senza distinzione di maiuscole, perché su Windows lo
- * stesso file si scrive in più modi. Se qualcosa va storto la risposta è **sì**: nel
- * dubbio un hook fa il suo mestiere, invece di tacere per un confronto di stringhe.
+ * The comparison is between resolved paths with no case distinction, because on Windows the
+ * same file is spelled several ways. If anything goes wrong the answer is **yes**: in
+ * doubt a hook does its job, instead of staying silent over a string comparison.
  */
-export function invocatoDirettamente(metaUrl) {
+export function invokedDirectly(metaUrl) {
   try {
-    const lanciato = process.argv[1];
-    if (!lanciato) return true;
-    return resolve(fileURLToPath(metaUrl)).toLowerCase() === resolve(lanciato).toLowerCase();
+    const launched = process.argv[1];
+    if (!launched) return true;
+    return resolve(fileURLToPath(metaUrl)).toLowerCase() === resolve(launched).toLowerCase();
   } catch {
     return true;
   }
 }
 
-/** La git root a partire da `da`, o `null` se git non risponde o non siamo in un repo. */
-export function gitRoot(da, lancia = spawnSync) {
+/** The git root starting from `from`, or `null` when git does not answer or we are outside a repo. */
+export function gitRoot(from, run = spawnSync) {
   try {
-    const esito = lancia('git', ['rev-parse', '--show-toplevel'], {
-      cwd: da,
+    const result = run('git', ['rev-parse', '--show-toplevel'], {
+      cwd: from,
       encoding: 'utf-8',
       timeout: 5000,
     });
-    if (!esito || esito.status !== 0 || !esito.stdout) return null;
-    const riga = String(esito.stdout).trim();
-    return riga || null;
+    if (!result || result.status !== 0 || !result.stdout) return null;
+    const line = String(result.stdout).trim();
+    return line || null;
   } catch {
     return null;
   }
 }
 
 /**
- * La radice, con la catena completa. `amb` esiste per il banco di prova: porta le
- * variabili d'ambiente, la cwd e il lanciatore, così la funzione resta pura.
+ * The root, with the full chain. `overrides` exists for the test bench: it carries
+ * the environment variables, the cwd and the launcher, keeping the function pure.
  */
-export function radiceProgetto(amb = {}) {
-  const env = amb.env || process.env;
-  const cwd = amb.cwd || process.cwd();
-  const lancia = amb.lancia || spawnSync;
+export function projectRoot(overrides = {}) {
+  const env = overrides.env || process.env;
+  const cwd = overrides.cwd || process.cwd();
+  const run = overrides.run || spawnSync;
 
-  // Claude Code: la radice dichiarata dall'host, che è sempre quella giusta.
+  // Claude Code: the root declared by the host, which is always the right one.
   if (env.CLAUDE_PROJECT_DIR) return env.CLAUDE_PROJECT_DIR;
 
-  // Codex: nessuna variabile di progetto, si risale dalla cwd.
-  const root = gitRoot(cwd, lancia);
+  // Codex: no project variable, climb from the cwd.
+  const root = gitRoot(cwd, run);
   if (root) return root;
 
-  // Fuori da un repo: resta la cwd, ed è quanto di meglio si possa dire.
+  // Outside a repo: the cwd remains, and that is the best that can be said.
   return cwd;
 }

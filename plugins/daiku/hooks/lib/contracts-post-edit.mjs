@@ -1,386 +1,385 @@
 #!/usr/bin/env node
 /**
- * PostToolUse su `Edit|Write|MultiEdit` — accende i controlli deterministici sul gesto che
- * introduce il difetto, invece che su un gesto successivo che potrebbe non arrivare mai.
+ * PostToolUse on `Edit|Write|MultiEdit` — runs deterministic checks on the gesture that
+ * introduces the defect, instead of on a later gesture that may never come.
  *
- * Il motivo di stare qui e non in un gate di commit: chi riscrive un contratto puo' **non
- * committare**. Un frontmatter rotto resta nel working tree finche' qualcuno non se ne
- * accorge — e nel frattempo la skill si carica senza metadati e nessuno la trova piu'.
+ * Why here and not in a commit gate: whoever rewrites a contract **might not
+ * commit at all**. A broken frontmatter stays in the working tree until somebody notices —
+ * and meanwhile the skill loads with emptied metadata and nobody finds it anymore.
  *
- * Copre quattro cose, e sono le quattro che in un progetto Daiku si rompono in silenzio:
+ * It covers four things, the four that break silently in a Daiku project:
  *
- *  1. **Il frontmatter di una `SKILL.md`.** E' il guasto peggiore del corpus perche' non
- *     fallisce: la skill *si carica lo stesso*, con i metadati svuotati, quindi il modello
- *     non la trova mai per pertinenza. Due forme, entrambe viste dal vero: un valore non
- *     quotato che contiene `: ` chiude la chiave a meta' (succede in ogni `description` con
- *     un inciso), e uno che comincia con `[` viene letto come sequenza di flusso (succede in
- *     ogni `argument-hint`, che e' fatto di `[cartella] [soluzione]`).
- *  2. **I due JSON di `.daiku/`.** `project.json` e `environment.json` sono la sola fonte dei
- *     valori di progetto: ogni contratto li apre prima di agire. Un JSON non parsabile li
- *     spegne tutti insieme.
- *  3. **Le rule di area in `.daiku/policies/`.** Si selezionano per il `paths` del loro
- *     frontmatter: senza quella chiave la rule c'e' ma non viene mai scelta.
- *  4. **Le guardie stesse.** Una guardia riscritta si verifica col proprio banco di prova,
- *     non a occhio — e questo hook lo **ricorda**, non lo fa.
+ *  1. **A `SKILL.md` frontmatter.** The worst corpus fault because it does not
+ *     fail: the skill *loads anyway*, with emptied metadata, so the model
+ *     never finds it by relevance. Two shapes, both seen in the wild: an unquoted
+ *     value containing `: ` closes the key halfway (happens in every `description`
+ *     with an aside), and one starting with `[` reads as a flow sequence (happens in
+ *     every `argument-hint`, which is made of `[folder] [solution]`).
+ *  2. **The two `.daiku/` JSON files.** `project.json` and `environment.json` are the only source
+ *     of project values: every contract opens them before acting. An unparsable JSON
+ *     switches them all off together.
+ *  3. **Area rules in `.daiku/policies/`.** They are selected by their frontmatter
+ *     `paths`: without that key the rule exists but is never picked.
+ *  4. **The guards themselves.** A rewritten guard is verified with its own test bench,
+ *     not by eye — and this hook **reminds**, it does not run.
  *
- * **Segnala, non ferma.** L'uscita e' sempre `0` e non c'e' nessun ramo che blocchi: fermare
- * a meta' la scrittura di un contratto costa piu' del difetto che si chiude. Il referto
- * arriva come contesto, e chi ha appena scritto decide.
+ * **It reports, does not block.** The exit code is always `0` and there is no branch that blocks: stopping
+ * the writing of a contract halfway costs more than the defect being closed. The report
+ * arrives as context, and whoever just wrote decides.
  *
- * **E non esegue niente.** E' la differenza col giro precedente, in cui il punto 4 lanciava
- * `node <file> --self-check` sul `.mjs` appena scritto. Sembrava comodo e non lo era: far
- * partire un file *perche' e' comparso* significa eseguire codice che nessuno ha ancora
- * guardato, scavalcando sia la conferma che l'host chiede prima di lanciare un comando, sia
- * l'approvazione per hash che Codex pretende proprio per gli hook. Un hook che dice «lancia
- * il banco» e un hook che lo lancia da solo hanno lo stesso valore diagnostico e un
- * perimetro di rischio molto diverso.
+ * **And it runs nothing.** That is the difference from the previous round, where point 4 launched
+ * `node <file> --self-check` on the freshly written `.mjs`. It looked handy and was not: starting
+ * a file *because it appeared* means running code nobody has reviewed yet, bypassing both the
+ * confirmation the host asks before launching a command and the hash approval Codex demands
+ * precisely for hooks. A hook that says "run the bench" and a hook that runs it alone have the same
+ * diagnostic value and a very different risk perimeter.
  *
- * Nessun gate su `.daiku/`, e qui e' voluto: questo hook non nega niente a nessuno, e un
- * frontmatter YAML che si svuota in silenzio e' un guasto anche per chi Daiku non ce l'ha.
- * La guardia che **nega** ha il gate, e sta in `command-guard.mjs`.
+ * No gate on `.daiku/`, and that is deliberate: this hook denies nothing to anybody, and a
+ * YAML frontmatter silently emptying is a fault even for whoever does not have Daiku.
+ * The guard that **denies** has the gate, and lives in `command-guard.mjs`.
  *
- * **Fail-open e silenzioso.** Stdin illeggibile, path fuori perimetro, file sparito, `node`
- * che non parte, uscita non parsabile, timeout → non stampa niente ed esce 0. E' la stessa
- * scelta delle altre due guardie, con lo stesso prezzo: un guasto e' indistinguibile dal
- * silenzio. Per questo il perimetro ha un banco di prova.
+ * **Fail-open and silent.** Unreadable stdin, out-of-scope path, missing file, `node`
+ * not starting, unparsable output, timeout → prints nothing and exits 0. It is the same
+ * choice as the other two guards, at the same price: a fault is indistinguishable from
+ * silence. That is why the perimeter has a test bench.
  *
- * Banco di prova: `node contracts-post-edit.mjs --self-check`. Il totale e' contato, non
- * cablato.
+ * Test bench: `node contracts-post-edit.mjs --self-check`. The total is counted, not
+ * hard-coded.
  */
 
 import { readFileSync } from 'node:fs';
 import { isAbsolute, join, relative } from 'node:path';
-import { invocatoDirettamente, radiceProgetto } from './project-root.mjs';
+import { invokedDirectly, projectRoot } from './project-root.mjs';
 
-const RADICE = radiceProgetto();
+const ROOT = projectRoot();
 
-/** Il path scritto, ridotto a relativo posix dalla radice. `null` se sta fuori. */
-export function relativoAllaRadice(percorso, radice) {
-  if (!percorso) return null;
-  const assoluto = isAbsolute(percorso) ? percorso : join(radice, percorso);
-  const rel = relative(radice, assoluto).replace(/\\/g, '/');
+/** The written path, reduced to a posix relative from the root. `null` if outside. */
+export function relativeToRoot(inputPath, root) {
+  if (!inputPath) return null;
+  const absolute = isAbsolute(inputPath) ? inputPath : join(root, inputPath);
+  const rel = relative(root, absolute).replace(/\\/g, '/');
   if (!rel || rel.startsWith('../')) return null;
   return rel;
 }
 
 /**
- * Cosa vale la pena controllare dopo aver scritto `rel`. Funzione pura: e' il perimetro, ed
- * e' la parte che il banco di prova verifica riga per riga.
+ * What is worth checking after writing `rel`. A pure function: it is the perimeter, and
+ * it is the part the test bench verifies line by line.
  */
-export function piano(rel) {
+export function plan(rel) {
   if (!rel) return [];
 
-  // Una guardia riscritta si verifica col proprio banco: gli altri controlli leggono
-  // markdown e su un `.mjs` non hanno niente da dire.
+  // A rewritten guard is verified with its own bench: the other checks read
+  // markdown and have nothing to say on a `.mjs`.
   //
-  // Il perimetro e' **qualunque** cartella `hooks/` dentro la radice, con o senza `lib/`,
-  // perche' le sedi reali sono tre e la forma precedente ne copriva una sola: `.codex/hooks/`
-  // nel progetto ospite di Codex, `hooks/lib/` in un pacchetto che si sta sviluppando,
-  // `.claude/hooks/` in un progetto che aggancia le guardie per conto suo. Su Claude Code,
-  // con Daiku installato come pacchetto, le guardie non stanno nel progetto affatto: girano
-  // dalla cache, e li' nessuno le riscrive: e' il caso in cui questo ramo giustamente tace.
+  // The perimeter is **any** `hooks/` folder inside the root, with or without `lib/`,
+  // because the real seats are three and the previous shape covered only one: `.codex/hooks/`
+  // in the Codex guest project, `hooks/lib/` in a package under development,
+  // `.claude/hooks/` in a project hooking the guards on its own. On Claude Code,
+  // with Daiku installed as a package, the guards are not in the project at all: they run
+  // from the cache, where nobody rewrites them — the case where this branch rightly stays silent.
   if (/(^|\/)hooks\/(lib\/)?[A-Za-z0-9_.-]+\.mjs$/.test(rel)) {
-    return [{ etichetta: `banco di prova di ${rel.split('/').pop()}`, tipo: 'promemoria', bersaglio: rel }];
+    return [{ label: `test bench for ${rel.split('/').pop()}`, type: 'reminder', target: rel }];
   }
 
-  // Il frontmatter di un contratto, ovunque stia: il pacchetto installato, `.claude/`,
-  // `.codex/`, o una skill di progetto.
+  // The frontmatter of a contract, wherever it lives: the installed package, `.claude/`,
+  // `.codex/`, or a project skill.
   if (/(^|\/)SKILL\.md$/.test(rel)) {
-    return [{ etichetta: 'frontmatter del contratto', tipo: 'frontmatter', bersaglio: rel }];
+    return [{ label: 'contract frontmatter', type: 'frontmatter', target: rel }];
   }
 
   if (rel === '.daiku/project.json' || rel === '.daiku/environment.json') {
-    return [{ etichetta: `sintassi di ${rel.split('/').pop()}`, tipo: 'json', bersaglio: rel }];
+    return [{ label: `syntax of ${rel.split('/').pop()}`, type: 'json', target: rel }];
   }
 
   if (/^\.daiku\/policies\/[^/]+\.md$/.test(rel) && !rel.endsWith('/README.md')) {
-    return [{ etichetta: 'frontmatter della rule di area', tipo: 'policy', bersaglio: rel }];
+    return [{ label: 'area rule frontmatter', type: 'policy', target: rel }];
   }
 
   return [];
 }
 
-// --- i controlli --------------------------------------------------------------
+// --- the checks --------------------------------------------------------------
 //
-// Ognuno prende il testo e restituisce le righe di rilievo. Sono funzioni pure: leggono
-// una stringa, non toccano il disco, e il banco le prova una per una.
+// Each takes the text and returns the finding lines. They are pure functions: they read
+// a string, do not touch the disk, and the bench tries them one by one.
 
-/** Spezza il frontmatter YAML in testa. `null` se non c'e' o non si chiude. */
-export function frontmatter(testo) {
-  const normalizzato = String(testo).replace(/\r\n/g, '\n');
-  if (!normalizzato.startsWith('---\n')) return null;
-  const fine = normalizzato.indexOf('\n---', 3);
-  if (fine === -1) return null;
-  return normalizzato.slice(4, fine + 1);
+/** Splits the leading YAML frontmatter. `null` when missing or unclosed. */
+export function frontmatter(text) {
+  const normalised = String(text).replace(/\r\n/g, '\n');
+  if (!normalised.startsWith('---\n')) return null;
+  const end = normalised.indexOf('\n---', 3);
+  if (end === -1) return null;
+  return normalised.slice(4, end + 1);
 }
 
 /**
- * I rilievi sul frontmatter di una `SKILL.md`. Cerca le due forme che svuotano i metadati
- * senza fallire, piu' le due chiavi che i validatori dei due host pretendono.
+ * Findings on a `SKILL.md` frontmatter. Looks for the two shapes that empty the metadata
+ * without failing, plus the two keys the two hosts' validators demand.
  */
-export function rilieviFrontmatter(testo) {
-  const blocco = frontmatter(testo);
-  if (blocco === null) {
-    return ['il frontmatter manca o non si chiude: serve `---` in prima riga e `---` a chiudere'];
+export function frontmatterFindings(text) {
+  const block = frontmatter(text);
+  if (block === null) {
+    return ['frontmatter is missing or unclosed: it needs `---` as the first line and `---` to close it'];
   }
 
-  const rilievi = [];
-  const visti = new Map();
+  const findings = [];
+  const seen = new Map();
 
-  for (const riga of blocco.split('\n')) {
-    // Solo le chiavi di primo livello: una riga indentata appartiene a un blocco annidato,
-    // e li' le regole di quoting sono altre.
-    const coppia = riga.match(/^([A-Za-z0-9_-]+):(.*)$/);
-    if (!coppia) continue;
-    const chiave = coppia[1];
-    const valore = coppia[2].trim();
-    visti.set(chiave, valore);
+  for (const line of block.split('\n')) {
+    // Top-level keys only: an indented line belongs to a nested block,
+    // where the quoting rules are different.
+    const pair = line.match(/^([A-Za-z0-9_-]+):(.*)$/);
+    if (!pair) continue;
+    const key = pair[1];
+    const value = pair[2].trim();
+    seen.set(key, value);
 
-    if (!valore) continue; // vuoto qui puo' essere un blocco su piu' righe: non si giudica
-    const quotato = /^'.*'$/.test(valore) || /^".*"$/.test(valore);
-    if (quotato) continue;
+    if (!value) continue; // empty here may be a multi-line block: not judged
+    const quoted = /^'.*'$/.test(value) || /^".*"$/.test(value);
+    if (quoted) continue;
 
-    if (valore.includes(': ')) {
-      rilievi.push(
-        `\`${chiave}\` non e' quotata e contiene \`: \` — YAML chiude la chiave a meta' e ` +
-          `**tutti** i metadati vengono scartati in silenzio. Quota con apice singolo.`
+    if (value.includes(': ')) {
+      findings.push(
+        `\`${key}\` is unquoted and contains \`: \` — YAML closes the key halfway and ` +
+          `**all** metadata is silently discarded. Quote it with single quotes.`
       );
-    } else if (valore.startsWith('[') || valore.startsWith('{')) {
-      rilievi.push(
-        `\`${chiave}\` non e' quotata e comincia con \`${valore[0]}\` — YAML la legge come ` +
-          `sequenza di flusso, non come testo. Quota con apice singolo.`
+    } else if (value.startsWith('[') || value.startsWith('{')) {
+      findings.push(
+        `\`${key}\` is unquoted and starts with \`${value[0]}\` — YAML reads it as a ` +
+          `flow sequence, not as text. Quote it with single quotes.`
       );
     }
   }
 
-  for (const obbligatoria of ['name', 'description']) {
-    if (!visti.has(obbligatoria)) {
-      rilievi.push(`manca \`${obbligatoria}\`: i validatori di entrambi gli host la pretendono`);
-    } else if (!visti.get(obbligatoria)) {
-      rilievi.push(`\`${obbligatoria}\` e' vuota: i validatori di entrambi gli host la rifiutano`);
+  for (const required of ['name', 'description']) {
+    if (!seen.has(required)) {
+      findings.push(`missing \`${required}\`: both hosts' validators demand it`);
+    } else if (!seen.get(required)) {
+      findings.push(`\`${required}\` is empty: both hosts' validators reject it`);
     }
   }
 
-  return rilievi;
+  return findings;
 }
 
-/** I rilievi sul frontmatter di una rule di area. */
-export function rilieviPolicy(testo) {
-  const blocco = frontmatter(testo);
-  if (blocco === null) {
-    return ['il frontmatter manca o non si chiude: senza `paths` la rule non viene mai selezionata'];
+/** Findings on an area rule frontmatter. */
+export function policyFindings(text) {
+  const block = frontmatter(text);
+  if (block === null) {
+    return ['frontmatter is missing or unclosed: without `paths` the rule is never selected'];
   }
-  if (!/^paths:/m.test(blocco)) {
-    return ['manca `paths`: la rule c\'e\' ma nessuna scansione la sceglie mai'];
+  if (!/^paths:/m.test(block)) {
+    return ['missing `paths`: the rule exists but no scan ever selects it'];
   }
   return [];
 }
 
-/** I rilievi su un JSON di parametri. */
-export function rilieviJson(testo) {
+/** Findings on a parameter JSON. */
+export function jsonFindings(text) {
   try {
-    JSON.parse(testo);
+    JSON.parse(text);
     return [];
-  } catch (errore) {
-    return [`non e' JSON valido (${errore.message}) — ogni contratto che lo apre si ferma qui`];
+  } catch (error) {
+    return [`not valid JSON (${error.message}) — every contract opening it stops here`];
   }
 }
 
-/** Svolge un passo del piano e restituisce le righe da riportare. `[]` se tace o degrada. */
-function esegui(passo, radice, amb) {
-  const assoluto = join(radice, passo.bersaglio);
+/** Runs one step of the plan and returns the lines to report. `[]` when silent or degraded. */
+function runStep(step, root, env) {
+  const absolute = join(root, step.target);
 
-  if (passo.tipo === 'promemoria') {
+  if (step.type === 'reminder') {
     return [
-      `**${passo.etichetta}** — hai riscritto una guardia. Un hook e' fail-open: davanti a un`,
-      `guasto tace ed esce 0, quindi rotto e silenzioso si assomigliano. Provalo prima di`,
-      `fidartene, e leggi il totale:`,
+      `**${step.label}** — you rewrote a guard. A hook is fail-open: facing a`,
+      `fault it stays silent and exits 0, so broken and silent look alike. Test it before`,
+      `trusting it, and read the total:`,
       '',
-      `    node ${passo.bersaglio} --self-check`,
+      `    node ${step.target} --self-check`,
       '',
-      `Su Codex quel file torna a chiedere l'approvazione: la fiducia e' registrata sull'hash,`,
-      `e finche' non la dai l'hook viene saltato.`,
+      `On Codex that file asks for approval again: trust is recorded on the hash,`,
+      `and until you grant it the hook is skipped.`,
     ];
   }
 
-  let testo;
+  let text;
   try {
-    testo = amb.leggi(assoluto);
+    text = env.read(absolute);
   } catch {
-    return []; // il file e' sparito fra la scrittura e il controllo: si tace
+    return []; // the file vanished between the write and the check: stay silent
   }
 
-  const rilievi =
-    passo.tipo === 'frontmatter'
-      ? rilieviFrontmatter(testo)
-      : passo.tipo === 'policy'
-        ? rilieviPolicy(testo)
-        : rilieviJson(testo);
+  const findings =
+    step.type === 'frontmatter'
+      ? frontmatterFindings(text)
+      : step.type === 'policy'
+        ? policyFindings(text)
+        : jsonFindings(text);
 
-  if (!rilievi.length) return [];
-  return [`**${passo.etichetta}** — ${rilievi.length} rilievi:`, ...rilievi.map((r) => `- ${r}`)];
+  if (!findings.length) return [];
+  return [`**${step.label}** — ${findings.length} findings:`, ...findings.map((f) => `- ${f}`)];
 }
 
-export function referto(rel, radice, amb) {
-  const righe = [];
-  for (const passo of piano(rel)) righe.push(...esegui(passo, radice, amb));
-  if (!righe.length) return null;
+export function report(rel, root, env) {
+  const lines = [];
+  for (const step of plan(rel)) lines.push(...runStep(step, root, env));
+  if (!lines.length) return null;
   return (
-    `I controlli deterministici hanno qualcosa da dire su cio' che hai appena scritto ` +
-    `(\`${rel}\`). **Non bloccano niente**: decidi tu.\n\n${righe.join('\n')}`
+    `The deterministic checks have something to say about what you just wrote ` +
+    `(\`${rel}\`). **They block nothing**: you decide.\n\n${lines.join('\n')}`
   );
 }
 
-const AMBIENTE_REALE = {
-  leggi: (percorso) => readFileSync(percorso, 'utf-8'),
+const REAL_ENV = {
+  read: (path) => readFileSync(path, 'utf-8'),
 };
 
-// --- banco di prova -----------------------------------------------------------
+// --- test bench -----------------------------------------------------------
 
-function ambienteFinto(file) {
-  const chiave = (p) => String(p).replace(/\\/g, '/').toLowerCase();
-  const mappa = new Map(Object.entries(file).map(([k, v]) => [chiave(k), v]));
+function fakeEnv(files) {
+  const key = (p) => String(p).replace(/\\/g, '/').toLowerCase();
+  const map = new Map(Object.entries(files).map(([k, v]) => [key(k), v]));
   return {
-    leggi: (p) => {
-      if (!mappa.has(chiave(p))) throw new Error(`ENOENT ${p}`);
-      return mappa.get(chiave(p));
+    read: (p) => {
+      if (!map.has(key(p))) throw new Error(`ENOENT ${p}`);
+      return map.get(key(p));
     },
   };
 }
 
-const R = 'C:/dev/progetto';
+const R = 'C:/dev/project';
 
 function selfCheck() {
-  const falliti = [];
-  let eseguiti = 0;
-  const verifica = (nome, condizione) => {
-    eseguiti += 1;
-    if (!condizione) falliti.push(nome);
+  const failed = [];
+  let ran = 0;
+  const check = (name, condition) => {
+    ran += 1;
+    if (!condition) failed.push(name);
   };
 
-  // --- il perimetro: cosa accende cosa ---------------------------------------
-  const tipoDi = (rel) => piano(rel).map((p) => p.tipo).join(',');
-  verifica('una SKILL.md di progetto accende il frontmatter', tipoDi('.claude/skills/review/SKILL.md') === 'frontmatter');
-  verifica('una SKILL.md di Codex accende il frontmatter', tipoDi('.codex/skills/review/SKILL.md') === 'frontmatter');
-  verifica('una SKILL.md del pacchetto accende il frontmatter', tipoDi('plugins/daiku/skills/review/SKILL.md') === 'frontmatter');
-  verifica('project.json accende il controllo JSON', tipoDi('.daiku/project.json') === 'json');
-  verifica('environment.json accende il controllo JSON', tipoDi('.daiku/environment.json') === 'json');
-  verifica('una rule di area accende il suo frontmatter', tipoDi('.daiku/policies/backend.md') === 'policy');
-  verifica('una guardia Codex ricorda il proprio banco', tipoDi('.codex/hooks/command-guard.mjs') === 'promemoria');
-  verifica('una guardia Claude ricorda il proprio banco', tipoDi('.claude/hooks/command-guard.mjs') === 'promemoria');
-  verifica('una guardia del pacchetto in sviluppo pure', tipoDi('plugins/daiku/hooks/lib/command-guard.mjs') === 'promemoria');
-  verifica('e anche il modulo che le guardie importano', tipoDi('plugins/daiku/hooks/lib/daiku-config.mjs') === 'promemoria');
-  verifica('una guardia non accende anche gli altri controlli', piano('.claude/hooks/command-guard.mjs').length === 1);
+  // --- the perimeter: what triggers what ---------------------------------------
+  const typesOf = (rel) => plan(rel).map((p) => p.type).join(',');
+  check('a project SKILL.md triggers frontmatter', typesOf('.claude/skills/review/SKILL.md') === 'frontmatter');
+  check('a Codex SKILL.md triggers frontmatter', typesOf('.codex/skills/review/SKILL.md') === 'frontmatter');
+  check('a package SKILL.md triggers frontmatter', typesOf('plugins/daiku/skills/review/SKILL.md') === 'frontmatter');
+  check('project.json triggers the JSON check', typesOf('.daiku/project.json') === 'json');
+  check('environment.json triggers the JSON check', typesOf('.daiku/environment.json') === 'json');
+  check('an area rule triggers its frontmatter', typesOf('.daiku/policies/backend.md') === 'policy');
+  check('a Codex guard recalls its own bench', typesOf('.codex/hooks/command-guard.mjs') === 'reminder');
+  check('a Claude guard recalls its own bench', typesOf('.claude/hooks/command-guard.mjs') === 'reminder');
+  check('a package guard in development too', typesOf('plugins/daiku/hooks/lib/command-guard.mjs') === 'reminder');
+  check('and also the module the guards import', typesOf('plugins/daiku/hooks/lib/daiku-config.mjs') === 'reminder');
+  check('a guard does not also trigger the other checks', plan('.claude/hooks/command-guard.mjs').length === 1);
 
-  // Fuori perimetro: silenzio, nessuna lettura e nessun processo.
-  for (const fuori of [
+  // Out of scope: silence, no reads and no processes.
+  for (const outside of [
     'src/index.ts',
     'README.md',
     '.daiku/domain/perf.md',
     '.daiku/policies/README.md',
-    'docs/nuovi-sviluppi/x/0. problem.md',
+    'docs/new-developments/x/0. problem.md',
     'package.json',
   ]) {
-    verifica(`fuori perimetro: \`${fuori}\``, piano(fuori).length === 0);
+    check(`out of scope: \`${outside}\``, plan(outside).length === 0);
   }
-  verifica('path fuori dalla radice: nessun piano', piano(relativoAllaRadice('C:/altro/x.md', R)).length === 0);
-  verifica('path assente: nessun piano', piano(null).length === 0);
+  check('path outside the root: no plan', plan(relativeToRoot('C:/other/x.md', R)).length === 0);
+  check('missing path: no plan', plan(null).length === 0);
 
-  // --- la normalizzazione del path scritto -----------------------------------
-  verifica('path assoluto normalizzato', relativoAllaRadice(`${R}/.daiku/project.json`, R) === '.daiku/project.json');
-  verifica('path con backslash normalizzato', relativoAllaRadice('C:\\dev\\progetto\\.daiku\\project.json', R) === '.daiku/project.json');
-  verifica('path relativo conservato', relativoAllaRadice('.daiku/project.json', R) === '.daiku/project.json');
-  verifica('path fuori radice: null', relativoAllaRadice('C:/dev/altro/x.md', R) === null);
+  // --- normalization of the written path -----------------------------------
+  check('normalised absolute path', relativeToRoot(`${R}/.daiku/project.json`, R) === '.daiku/project.json');
+  check('normalised backslash path', relativeToRoot('C:\\dev\\project\\.daiku\\project.json', R) === '.daiku/project.json');
+  check('relative path kept', relativeToRoot('.daiku/project.json', R) === '.daiku/project.json');
+  check('path outside root: null', relativeToRoot('C:/dev/other/x.md', R) === null);
 
-  // --- il frontmatter: le due forme che svuotano i metadati ------------------
-  const sana = "---\nname: review\ndescription: 'Ciclo di review su un diff'\n---\n\nCorpo.\n";
-  verifica('un frontmatter quotato non ha rilievi', rilieviFrontmatter(sana).length === 0);
+  // --- frontmatter: the two shapes that empty the metadata ------------------
+  const healthy = "---\nname: review\ndescription: 'Review cycle on a diff'\n---\n\nBody.\n";
+  check('quoted frontmatter has no findings', frontmatterFindings(healthy).length === 0);
 
-  const duePunti = '---\nname: review\ndescription: Ciclo di review: un diff alla volta\n---\n';
-  verifica('`: ` non quotato e\' un rilievo', rilieviFrontmatter(duePunti).some((r) => r.includes('chiude la chiave')));
+  const unquotedColon = '---\nname: review\ndescription: Review cycle: one diff at a time\n---\n';
+  check('unquoted `: ` is a finding', frontmatterFindings(unquotedColon).some((r) => r.includes('closes the key')));
 
-  const quadra = "---\nname: review\ndescription: 'x'\nargument-hint: [cartella] [soluzione]\n---\n";
-  verifica('`[` non quotata e\' un rilievo', rilieviFrontmatter(quadra).some((r) => r.includes('sequenza di flusso')));
+  const unquotedBracket = "---\nname: review\ndescription: 'x'\nargument-hint: [folder] [solution]\n---\n";
+  check('unquoted `[` is a finding', frontmatterFindings(unquotedBracket).some((r) => r.includes('flow sequence')));
 
-  const quadraQuotata = "---\nname: review\ndescription: 'x'\nargument-hint: '[cartella] [soluzione]'\n---\n";
-  verifica('`[` quotata non e\' un rilievo', rilieviFrontmatter(quadraQuotata).length === 0);
+  const quotedBracket = "---\nname: review\ndescription: 'x'\nargument-hint: '[folder] [solution]'\n---\n";
+  check('quoted `[` is not a finding', frontmatterFindings(quotedBracket).length === 0);
 
-  const duePuntiQuotati = "---\nname: review\ndescription: 'Ciclo di review: un diff alla volta'\n---\n";
-  verifica('`: ` dentro le quote non e\' un rilievo', rilieviFrontmatter(duePuntiQuotati).length === 0);
+  const quotedColon = "---\nname: review\ndescription: 'Review cycle: one diff at a time'\n---\n";
+  check('`: ` inside quotes is not a finding', frontmatterFindings(quotedColon).length === 0);
 
-  verifica('niente frontmatter e\' un rilievo', rilieviFrontmatter('# Solo prosa\n').length === 1);
-  verifica('frontmatter non chiuso e\' un rilievo', rilieviFrontmatter('---\nname: x\n').length === 1);
-  verifica('name mancante e\' un rilievo', rilieviFrontmatter("---\ndescription: 'x'\n---\n").some((r) => r.includes('manca `name`')));
-  verifica('description vuota e\' un rilievo', rilieviFrontmatter('---\nname: x\ndescription:\n---\n').some((r) => r.includes('`description` e\' vuota')));
-  verifica('CRLF non cambia il verdetto', rilieviFrontmatter(sana.replace(/\n/g, '\r\n')).length === 0);
-  verifica(
-    'una chiave annidata non si giudica come di primo livello',
-    rilieviFrontmatter("---\nname: x\ndescription: 'x'\nmetadata:\n  type: project: rotto\n---\n").length === 0
+  check('missing frontmatter is a finding', frontmatterFindings('# Prose only\n').length === 1);
+  check('unclosed frontmatter is a finding', frontmatterFindings('---\nname: x\n').length === 1);
+  check('missing name is a finding', frontmatterFindings("---\ndescription: 'x'\n---\n").some((r) => r.includes('missing `name`')));
+  check('empty description is a finding', frontmatterFindings('---\nname: x\ndescription:\n---\n').some((r) => r.includes('`description` is empty')));
+  check('CRLF does not change the verdict', frontmatterFindings(healthy.replace(/\n/g, '\r\n')).length === 0);
+  check(
+    'a nested key is not judged as top-level',
+    frontmatterFindings("---\nname: x\ndescription: 'x'\nmetadata:\n  type: project: broken\n---\n").length === 0
   );
 
-  // --- gli altri due controlli ------------------------------------------------
-  verifica('un JSON valido non ha rilievi', rilieviJson('{"a": 1}').length === 0);
-  verifica('un JSON rotto e\' un rilievo', rilieviJson('{"a": 1,}').length === 1);
-  verifica('una rule con paths non ha rilievi', rilieviPolicy("---\npaths: ['src/**']\n---\n").length === 0);
-  verifica('una rule senza paths e\' un rilievo', rilieviPolicy('---\nnome: x\n---\n').length === 1);
-  verifica('una rule senza frontmatter e\' un rilievo', rilieviPolicy('# prosa\n').length === 1);
+  // --- the other two checks ------------------------------------------------
+  check('valid JSON has no findings', jsonFindings('{"a": 1}').length === 0);
+  check('broken JSON is a finding', jsonFindings('{"a": 1,}').length === 1);
+  check('a rule with paths has no findings', policyFindings("---\npaths: ['src/**']\n---\n").length === 0);
+  check('a rule without paths is a finding', policyFindings('---\nname: x\n---\n').length === 1);
+  check('a rule without frontmatter is a finding', policyFindings('# prose\n').length === 1);
 
-  // --- il referto: cosa riporta e cosa tace -----------------------------------
-  const pulito = ambienteFinto({ [`${R}/.claude/skills/review/SKILL.md`]: sana });
-  verifica('contratto sano: nessun referto', referto('.claude/skills/review/SKILL.md', R, pulito) === null);
+  // --- the report: what it includes and what it omits -----------------------------------
+  const clean = fakeEnv({ [`${R}/.claude/skills/review/SKILL.md`]: healthy });
+  check('healthy contract: no report', report('.claude/skills/review/SKILL.md', R, clean) === null);
 
-  const rotto = ambienteFinto({ [`${R}/.claude/skills/review/SKILL.md`]: duePunti });
-  const testo = referto('.claude/skills/review/SKILL.md', R, rotto);
-  verifica('un frontmatter rotto arriva nel referto', !!testo && testo.includes('chiude la chiave'));
-  verifica('il referto dichiara che non blocca', !!testo && testo.includes('Non bloccano niente'));
-  verifica('il referto nomina il file scritto', !!testo && testo.includes('review/SKILL.md'));
+  const broken = fakeEnv({ [`${R}/.claude/skills/review/SKILL.md`]: unquotedColon });
+  const text = report('.claude/skills/review/SKILL.md', R, broken);
+  check('broken frontmatter reaches the report', !!text && text.includes('closes the key'));
+  check('the report states it does not block', !!text && text.includes('block nothing'));
+  check('the report names the written file', !!text && text.includes('review/SKILL.md'));
 
-  // --- il promemoria sulle guardie: ricorda, e non esegue --------------------
-  const senzaDisco = {
-    leggi: () => {
-      throw new Error('nessuno deve leggere un .mjs per ricordare di provarlo');
+  // --- the guard reminder: reminds, does not run --------------------
+  const withoutDisk = {
+    read: () => {
+      throw new Error('nobody must read a .mjs just to remember to test it');
     },
   };
-  const promemoria = referto('.codex/hooks/command-guard.mjs', R, senzaDisco);
-  verifica('riscrivere una guardia produce il promemoria', !!promemoria && promemoria.includes('--self-check'));
-  verifica('il promemoria nomina il file da provare', !!promemoria && promemoria.includes('command-guard.mjs'));
-  verifica('il promemoria dice perche\': un hook rotto tace', !!promemoria && promemoria.includes('fail-open'));
-  verifica('il promemoria ricorda l\'approvazione di Codex', !!promemoria && promemoria.includes('hash'));
-  verifica(
-    'nessun ambiente puo\' eseguire niente: non esiste piu\' un lanciatore',
-    typeof AMBIENTE_REALE.lancia === 'undefined'
+  const reminder = report('.codex/hooks/command-guard.mjs', R, withoutDisk);
+  check('rewriting a guard produces the reminder', !!reminder && reminder.includes('--self-check'));
+  check('the reminder names the file to test', !!reminder && reminder.includes('command-guard.mjs'));
+  check('the reminder says why: a broken hook stays silent', !!reminder && reminder.includes('fail-open'));
+  check('the reminder recalls the Codex approval', !!reminder && reminder.includes('hash'));
+  check(
+    'no environment can run anything: there is no launcher anymore',
+    typeof REAL_ENV.run === 'undefined'
   );
 
-  // --- le degradazioni: ciascuna tace, nessuna solleva ------------------------
-  verifica('file sparito: nessun referto', referto('.claude/skills/review/SKILL.md', R, ambienteFinto({})) === null);
-  verifica('fuori perimetro: nessun referto', referto('src/index.ts', R, ambienteFinto({})) === null);
+  // --- degradations: each stays silent, none throws ------------------------
+  check('missing file: no report', report('.claude/skills/review/SKILL.md', R, fakeEnv({})) === null);
+  check('out of scope: no report', report('src/index.ts', R, fakeEnv({})) === null);
 
   process.stdout.write(
-    JSON.stringify({ controlli: eseguiti, passati: eseguiti - falliti.length, falliti }, null, 2) + '\n'
+    JSON.stringify({ checks: ran, passed: ran - failed.length, failed }, null, 2) + '\n'
   );
-  return falliti.length ? 1 : 0;
+  return failed.length ? 1 : 0;
 }
 
 function main() {
-  const evento = JSON.parse(readFileSync(0, 'utf-8'));
-  const rel = relativoAllaRadice((evento.tool_input || {}).file_path, RADICE);
-  const testo = referto(rel, RADICE, AMBIENTE_REALE);
-  if (!testo) return;
+  const event = JSON.parse(readFileSync(0, 'utf-8'));
+  const rel = relativeToRoot((event.tool_input || {}).file_path, ROOT);
+  const text = report(rel, ROOT, REAL_ENV);
+  if (!text) return;
   process.stdout.write(
     JSON.stringify({
-      hookSpecificOutput: { hookEventName: 'PostToolUse', additionalContext: testo },
+      hookSpecificOutput: { hookEventName: 'PostToolUse', additionalContext: text },
     })
   );
 }
 
-if (invocatoDirettamente(import.meta.url)) {
+if (invokedDirectly(import.meta.url)) {
   if (process.argv.includes('--self-check')) {
     process.exit(selfCheck());
   }
   try {
     main();
   } catch {
-    /* fail-open: non si ferma mai una scrittura gia' avvenuta */
+    /* fail-open: never stop a write that already happened */
   }
   process.exit(0);
 }

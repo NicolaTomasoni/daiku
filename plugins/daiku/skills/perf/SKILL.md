@@ -1,164 +1,164 @@
 ---
 name: 'perf'
-description: 'Investiga uno scope per colli di bottiglia di performance (CPU, GPU, I/O, rete, rendering); default propone quick win senza toccare codice, come finder di /review restituisce rilievi in sola lettura sul diff'
+description: 'Investigates a scope for performance bottlenecks (CPU, GPU, I/O, network, rendering); default proposes quick wins without touching code, as a /review finder it returns read-only findings on the diff'
 user-invocable: false
 ---
 
-# Obiettivo
+# Goal
 
-Investiga lo scope indicato e individua cosa rende l'applicativo pesante, lento o eccessivamente costoso in risorse. **Nella modalità di default non modificare codice, configurazioni o test:** è un'indagine, non un fix.
+Investigate the indicated scope and find what makes the application heavy, slow or excessively costly in resources. **In default mode do not modify code, configurations or tests:** it is an investigation, not a fix.
 
-> **Parametri.** Ogni chiave fra graffe di questo contratto si risolve sui file di parametri del progetto, mai a memoria e mai per assunzione: le regole sono nella §5 di `contracts/project-contract.md`, che dice anche **in quale lingua scrivere** e cosa fare quando una chiave non c'è.
+> **Parameters.** Every key in braces in this contract resolves on the project parameter files, never from memory and never by assumption: the rules are in §5 of `contracts/project-contract.md`, which also says **in which language to write** and what to do when a key is missing.
 
-## Due modalità
+## Two modes
 
-- **Default (indagine).** Investighi e proponi quick win in chat, senza toccare nulla. È il comportamento descritto in tutto il resto di questo file.
-- **Finder (invocata da `/review`).** Scope = il diff passato dal chiamante, non una cartella. **Sola analisi**: nessuna modifica a file, nessun fix, nessun commit. Restituisci il blocco JSON del chiamante invece del report in chat. Vedi *Modalità finder* qui sotto; tutto il resto del file (cosa cercare, criteri di classificazione) resta valido, cambia solo la forma dell'esito.
+- **Default (investigation).** You investigate and propose quick wins in chat, without touching anything. It is the behaviour described in all the rest of this file.
+- **Finder (invoked by `/review`).** Scope = the diff passed by the caller, not a folder. **Analysis only**: no file modification, no fix, no commit. Return the caller JSON block instead of the chat report. See *Finder mode* below; all the rest of the file (what to look for, classification criteria) stays valid, only the outcome form changes.
 
-## Il dominio di questo progetto
+## The domain of this project
 
-Leggi `.daiku/domain/perf.md`: porta quali tecnologie occupano i tre livelli che questa skill ispeziona e dove ciascuna paga davvero, quali tool esterni entrano nel costo di un flusso, quali costi si manifestano a riposo, come si risolve il nome breve di un'unità nella sua cartella e come si osserva il runtime. Se non esiste, ricostruisci lo stack leggendo il repository, accetta come scope solo path espliciti, limitati alla valutazione statica, e dichiaralo nell'esito.
+Read `.daiku/domain/perf.md`: it declares which technologies occupy the three levels this skill inspects and where each truly pays, which external tools enter the cost of a flow, which costs manifest at rest, how the short name of a unit resolves into its folder and how the runtime is observed. If it does not exist, rebuild the stack by reading the repository, accept as scope only explicit paths, limit yourself to static evaluation, and declare it in the outcome.
 
-Il focus è ridurre:
+The focus is reducing:
 
-* utilizzo CPU e GPU;
-* lavoro inutile in runtime (rendering, polling, loop, retry, ricalcoli);
-* carichi eccessivi su memoria, I/O, rete o processi esterni.
+* CPU and GPU usage;
+* useless work at runtime (rendering, polling, loops, retries, recomputations);
+* excessive loads on memory, I/O, network or external processes.
 
-## Argomento: scope
+## Argument: scope
 
-Argomento: `$ARGUMENTS`
+Argument: `$ARGUMENTS`
 
-Risolvi lo scope prima di fare qualsiasi altra cosa:
+Resolve the scope before doing anything else:
 
-* L'argomento è un **path o glob** relativo alla root del repo — la cartella di una feature, di un layer o di un modulo. Usalo verbatim.
-* Accetta anche il **nome breve** di un'unità del progetto (feature frontend, service, adapter, flusso) e risolvilo nella sua cartella, aiutandoti con i cataloghi che il file di dominio indica.
-* Può essere anche un **flusso** trasversale (l'esecuzione di un tool esterno, il polling di uno stato, un ciclo di elaborazione): ricostruiscilo attraverso i layer, senza assumere che l'intero repository sia nel perimetro.
-* **Senza scope** → questo contratto non si lancia a mano: lo scope arriva da chi ti invoca. Se non è arrivato, **fermati e dillo nel blocco**, elencando le aree plausibili perché chi ti ha chiamato possa sceglierne una. Non partire mai sull'intero repo.
+* The argument is a **path or glob** relative to the repo root — the folder of a feature, layer or module. Use it verbatim.
+* Accept also the **short name** of a project unit (frontend feature, service, adapter, flow) and resolve it into its folder, helping yourself with the catalogues the domain file indicates.
+* It can also be a cross-cutting **flow** (the execution of an external tool, state polling, a processing loop): rebuild it across the layers, without assuming the whole repository is in the perimeter.
+* **Without scope** → this contract is not launched by hand: the scope arrives from whoever invokes you. If it did not arrive, **stop and say so in the block**, listing the plausible areas so whoever called you can choose one. Never start on the whole repo.
 
-Se il path risolto non esiste, segnalalo e fermati.
+If the resolved path does not exist, report it and stop.
 
-# Modalità di lavoro
+# Working mode
 
-Prima **ricostruisci il flusso reale** dello scope: entrypoint, chiamate, stato, componenti, processi lanciati, polling, cache, query, job asincroni, rendering, adapter e tool esterni coinvolti.
+First **rebuild the real flow** of the scope: entrypoint, calls, state, components, launched processes, polling, cache, queries, async jobs, rendering, involved adapters and external tools.
 
-Poi cerca colli di bottiglia e sprechi, dando priorità a **quick win a basso rischio**.
+Then look for bottlenecks and waste, prioritising low-risk **quick wins**.
 
-Valuta l'utilizzo di risorse sia **in idle** sia **durante i processi**: parecchi costi si manifestano a riposo e non sotto carico, e un'indagine che guarda solo il carico li perde tutti. Quali siano, in questo progetto, lo dice il file di dominio.
+Evaluate resource usage both **idle** and **during processes**: many costs manifest at rest and not under load, and an investigation watching only load loses them all. Which they are, in this project, the domain file says.
 
-## Cosa cercare
+## What to look for
 
-**Tre livelli, ed è una lettura di default, non una legge.** Un progetto la cui architettura non si divide così lo dichiara in `.daiku/domain/perf.md`, e allora valgono i livelli che dichiara lui. Quali tecnologie li occupino, e i punti caldi che ciascuna si porta dietro, lo dice lo stesso file: qui sotto stanno le forme di spreco, non i nomi di chi le produce.
+**Three levels, and it is a default reading, not a law.** A project whose architecture is not divided this way declares it in `.daiku/domain/perf.md`, and then the levels it declares hold. Which technologies occupy them, and the hot spots each carries with it, the same file says: below stand the forms of waste, not the names of who produces them.
 
-**Interfaccia e rendering:**
+**Interface and rendering:**
 
-* rendering ripetuti o componenti che ricalcolano troppo; assenza di memoizzazione mirata;
-* gestione inefficiente delle sottoscrizioni a dati e del lavoro legato al ciclo di vita di un'unità di interfaccia; polling troppo aggressivo o senza bail-out;
-* fetch o query duplicati; invalidazione troppo ampia;
-* GPU tenuta sveglia da animazioni continue, da superfici ridisegnate a ogni frame o da effetti visivi non necessari.
+* repeated renderings or components recomputing too much; absence of targeted memoisation;
+* inefficient management of data subscriptions and of work tied to the lifecycle of an interface unit; too aggressive polling or without bail-out;
+* duplicate fetches or queries; too wide invalidation;
+* GPU kept awake by continuous animations, by surfaces redrawn every frame or by unnecessary visual effects.
 
-**Servizio applicativo:**
+**Application service:**
 
-* loop frequenti o non limitati; concorrenza non controllata;
-* dati letti/ricaricati più volte o più grandi del necessario;
-* trasformazioni costose nel punto sbagliato; serializzazione/deserializzazione ripetuta;
-* operazioni sincrone che bloccano il flusso; file letti o scritti inutilmente;
-* log troppo verbosi in percorsi caldi.
+* frequent or unbounded loops; uncontrolled concurrency;
+* data read/reloaded several times or larger than needed;
+* expensive transformations in the wrong point; repeated serialisation/deserialisation;
+* synchronous operations blocking the flow; files read or written uselessly;
+* too verbose logs on hot paths.
 
-**Processi e tool esterni:**
+**External processes and tools:**
 
-* processi lanciati più spesso del necessario o senza cache;
-* orchestrazione inefficiente, retry, scansioni duplicate;
-* configurazione o invocazione subottimale.
-* Distingui sempre tra **costo inevitabile del tool** e costo dovuto a orchestrazione, retry/polling, mancata cache o invocazione subottimale.
+* processes launched more often than needed or without cache;
+* inefficient orchestration, retries, duplicate scans;
+* suboptimal configuration or invocation.
+* Always distinguish between **inevitable tool cost** and cost due to orchestration, retry/polling, missing cache or suboptimal invocation.
 
-**Trasversale:** dipendenze con versioni datate (valuta se un aggiornamento è consigliato e a quale rischio), assenza di debounce/cache/invalidazione mirata.
+**Cross-cutting:** dependencies with outdated versions (evaluate whether an update is recommended and at which risk), absence of debounce/cache/targeted invalidation.
 
-# Vincoli
+# Constraints
 
-* Rispetta lo scope indicato: nessun finding o proposta fuori perimetro.
-* Non proporre riscritture ampie se esiste un'ottimizzazione locale.
-* Non proporre nuove dipendenze salvo necessità forte e motivata.
-* Non introdurre architetture parallele.
-* **In modalità default:** non modificare codice, configurazioni o test; non eseguire fix; non creare commit. (In nessuna modalità si modifica codice; in modalità finder si restituiscono rilievi, vedi sotto.)
-* Non fare benchmark distruttivi o comandi pesanti senza prima motivarli.
+* Respect the indicated scope: no finding or proposal outside the perimeter.
+* Do not propose wide rewrites if a local optimisation exists.
+* Do not propose new dependencies except on strong and motivated need.
+* Do not introduce parallel architectures.
+* **In default mode:** do not modify code, configurations or tests; do not run fixes; do not create commits. (In no mode is code modified; in finder mode findings are returned, see below.)
+* Do not run destructive benchmarks or heavy commands without first motivating them.
 
-# Modalità finder (invocata da `/review`)
+# Finder mode (invoked by `/review`)
 
-Attiva quando `/review` ti invoca. Non è un'indagine da riportare in chat: è un canale di analisi sul diff, come arch/bug — ma **solo analisi**: nessuna modifica a file, nessun fix, nessun commit.
+Active when `/review` invokes you. It is not an investigation to report in chat: it is an analysis channel on the diff, like arch/bug — but **analysis only**: no file modification, no fix, no commit.
 
-- **Scope = il diff**, non una cartella. Cerca colli di bottiglia **solo nel codice toccato dalla feature**; non allargare a codice adiacente non modificato: modifiche chirurgiche, niente refactoring fuori scope.
-- **Confidence high:** win evidente all'ispezione e behavior-preserving — N+1 query, ricalcolo/riserializzazione ridondante, memoizzazione mancante, polling senza bail-out, invalidazione troppo ampia, lettura ripetuta degli stessi dati. `change` riporta il fix concreto.
-- **Confidence medium:** probabile, ma con una condizione da verificare sul codice — nominala nella `description`. `change` riporta comunque il fix concreto.
-- **Confidence low:** impatto che per giustificarsi richiederebbe una misura o un benchmark (è impatto ipotetico) — nessun `change`; la `description` porta la misura consigliata.
-- **Non applichi nulla.** La decisione di applicare o scartare ogni rilievo è dell'applicatore di `/review`, che lo riverifica.
-- **Nessuno stop interattivo, nessun output in formato indagine.** Non stampi il report `# Esito indagine performance`: restituisci il blocco dichiarato da `skills/finder-prompt/SKILL.md` § *Il blocco che restituisci*, per intero e con quei nomi di campo: leggilo da lì, qui non è ricopiato. Per questa disciplina `symbol` è la classe, la funzione o il componente in cui vive il collo di bottiglia, `change` è il fix concreto, e `description` porta problema ed evidenza, e per la confidence low la misura consigliata.
+- **Scope = the diff**, not a folder. Look for bottlenecks **only in the code touched by the feature**; do not widen to adjacent unmodified code: surgical modifications, no out-of-scope refactoring.
+- **Confidence high:** win evident on inspection and behaviour-preserving — N+1 queries, redundant recomputation/reserialisation, missing memoisation, polling without bail-out, too wide invalidation, repeated reading of the same data. `change` carries the concrete fix.
+- **Confidence medium:** likely, but with a condition to verify on the code — name it in `description`. `change` still carries the concrete fix.
+- **Confidence low:** impact which to justify itself would require a measurement or benchmark (it is hypothetical impact) — no `change`; `description` carries the recommended measurement.
+- **You apply nothing.** The decision to apply or discard each finding belongs to the `/review` applier, who reverifies it.
+- **No interactive stop, no output in investigation format.** You do not print the `# Performance investigation outcome` report: return the block declared by `skills/finder-prompt/SKILL.md` § *The block you return*, in full and with those field names: read it from there, here it is not copied. For this discipline `symbol` is the class, function or component where the bottleneck lives, `change` is the concrete fix, and `description` carries problem and evidence, and for low confidence the recommended measurement.
 
-Se servono misurazioni, privilegia lettura del codice e comandi leggeri. Come si avvia l'applicazione e dove risponde lo dice il file di dominio, che rimanda alla sola fonte di quei valori: se osservi il runtime, dichiara cosa hai misurato. Se non puoi misurare, dichiara esplicitamente nella `description` del finding che la valutazione è **statica**.
+If measurements are needed, privilege code reading and light commands. The domain file says how the application starts and where it responds, referring to the only source of those values: if you observe the runtime, declare what you measured. If you cannot measure, explicitly declare in the `description` of the finding that the evaluation is **static**.
 
-# Criteri di classificazione
+# Classification criteria
 
-Classifica ogni finding con:
+Classify each finding with:
 
-* **impatto stimato:** Alto | Medio | Basso;
-* **rischio intervento:** Basso | Medio | Alto;
-* **tipo:** CPU | GPU | memoria | I/O | rete | rendering | concorrenza | tool esterno | architettura | configurazione;
-* **evidenza:** file, funzione, hook, endpoint, service, adapter, comando o flusso osservato;
-* **quick win:** intervento minimo e concreto;
-* **verifica:** come misurare o confermare il miglioramento.
+* **estimated impact:** High | Medium | Low;
+* **intervention risk:** Low | Medium | High;
+* **type:** CPU | GPU | memory | I/O | network | rendering | concurrency | external tool | architecture | configuration;
+* **evidence:** file, function, hook, endpoint, service, adapter, command or observed flow;
+* **quick win:** minimal and concrete intervention;
+* **verification:** how to measure or confirm the improvement.
 
-Distingui tra: quick win immediata · ottimizzazione utile ma non urgente · ipotesi da misurare · intervento strutturale non adatto come quick win.
+Distinguish between: immediate quick win · useful but not urgent optimisation · hypothesis to measure · structural intervention not suited as quick win.
 
-# Output finale
+# Final output
 
-Rispondi in chat con questo formato:
+Answer in chat with this format:
 
 ```md
-# Esito indagine performance
+# Performance investigation outcome
 
-## Scope analizzato
-- Scope ricevuto:
-- File/flussi analizzati:
-- Comandi o verifiche eseguite:
-- Limiti dell'analisi (statica/misurata):
+## Analysed scope
+- Received scope:
+- Analysed files/flows:
+- Commands or checks run:
+- Analysis limits (static/measured):
 
-## Sintesi
-- Causa principale probabile:
-- Area più costosa:
-- Quick win più conveniente:
-- Rischio complessivo degli interventi:
+## Summary
+- Likely main cause:
+- Most expensive area:
+- Most convenient quick win:
+- Overall risk of the interventions:
 
-## Quick win consigliate
+## Recommended quick wins
 
-### 1. <titolo>
-Tipo: CPU | GPU | memoria | I/O | rete | rendering | concorrenza | tool esterno | configurazione
-Impatto stimato: Alto | Medio | Basso
-Rischio intervento: Basso | Medio | Alto
-Evidenza: <file/funzione/flusso>
-Problema: <descrizione concreta>
-Quick win: <intervento minimo proposto>
-Perché dovrebbe migliorare: <spiegazione sintetica>
-Verifica consigliata: <controllo o metrica>
+### 1. <title>
+Type: CPU | GPU | memory | I/O | network | rendering | concurrency | external tool | configuration
+Estimated impact: High | Medium | Low
+Intervention risk: Low | Medium | High
+Evidence: <file/function/flow>
+Problem: <concrete description>
+Quick win: <proposed minimal intervention>
+Why it should help: <concise explanation>
+Recommended check: <check or metric>
 
-### 2. <titolo>
+### 2. <title>
 ...
 
-## Ipotesi da misurare
+## Hypotheses to measure
 
-### 1. <titolo>
-Evidenza parziale:
-Misura consigliata:
-Possibile intervento:
+### 1. <title>
+Partial evidence:
+Recommended measurement:
+Possible intervention:
 
-## Interventi da evitare per ora
-- <intervento>: <motivo>
+## Changes to avoid for now
+- <intervention>: <reason>
 
-## Priorità proposta
-1. <prima azione consigliata>
-2. <seconda azione consigliata>
-3. <terza azione consigliata>
+## Proposed priority
+1. <first recommended action>
+2. <second recommended action>
+3. <third recommended action>
 ```
 
-Se non trovi quick win reali, dillo esplicitamente e indica solo le ipotesi da misurare.
+If you find no real quick wins, say so explicitly and indicate only the hypotheses to measure.
 
-Non modificare file. Non creare commit.
+Do not modify files. Do not create commits.

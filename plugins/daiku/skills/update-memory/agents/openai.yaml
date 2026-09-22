@@ -1,5 +1,5 @@
 interface:
   display_name: "Update Memory"
-  short_description: "Contratto interno aperto da commit"
+  short_description: "Internal contract, opened by commit"
 policy:
   allow_implicit_invocation: false

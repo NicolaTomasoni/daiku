@@ -1,187 +1,186 @@
 #!/usr/bin/env node
 /**
- * Guardia sui comandi distruttivi — PreToolUse su Bash e PowerShell.
+ * Destructive-command guard — PreToolUse on Bash and PowerShell.
  *
- * **Questo file non è una barriera di sicurezza, ed è bene che si sappia.** La policy
- * che un agente non può togliersi vive nei managed settings dell'host, che stanno sopra
- * ogni altra sorgente e che un processo non elevato non scrive. Qui resta un guardrail
- * contro la **distrazione**: i gesti che costano lavoro perso e che nessuna regola per
- * prefisso sa riconoscere. Chi lo riscrive non guadagna niente che `Bash(*)` non gli
- * avesse già dato.
+ * **This file is not a security barrier, and that is worth knowing.** The policy
+ * an agent cannot remove lives in the host's managed settings, which sit above
+ * every other source and which an unelevated process does not write. What remains here is a guardrail
+ * against **distraction**: gestures that cost lost work and that no prefix rule
+ * can recognise. Whoever rewrites it gains nothing `Bash(*)` had not already given.
  *
- * **Niente si accende da solo.** Questo file arriva dentro un pacchetto installato una
- * volta e attivo su *ogni* repository che l'host apre. Perciò la prima domanda non è
- * «questo comando è pericoloso?» ma «questo progetto mi ha chiesto qualcosa?», e la
- * risposta la dà `.daiku/project.json`, non il codice qui sotto:
+ * **Nothing switches itself on.** This file ships inside a package installed once
+ * and active on *every* repository the host opens. So the first question is not
+ * "is this command dangerous?" but "did this project ask for anything?", and the
+ * answer comes from `.daiku/project.json`, not from the code below:
  *
- *  - **senza `.daiku/project.json` la guardia permette tutto**, sempre, senza guardare
- *    la riga. È il confine, non una degradazione: vedi `daiku-config.mjs`;
- *  - **ogni ramo ha il proprio interruttore** nel JSON, e un interruttore assente è un
- *    ramo spento — §6 di `contracts/project-contract.md`, *ciò che il JSON non dichiara
- *    non esiste*.
+ *  - **without `.daiku/project.json` the guard allows everything**, always, without looking
+ *    at the line. It is the boundary, not a degradation: see `daiku-config.mjs`;
+ *  - **every branch has its own switch** in the JSON, and a missing switch is a
+ *    branch switched off — §6 of `contracts/project-contract.md`, *what the JSON does not declare
+ *    does not exist*.
  *
- * I rami sono cinque, e si dividono in tre famiglie.
+ * There are five branches, in three families.
  *
- * **Un fatto del sistema operativo**, acceso su ogni progetto Daiku perché non dipende
- * da nessuna scelta di chi lavora:
+ * **An operating-system fact**, on in every Daiku project because it depends on
+ * no choice of whoever works:
  *
- *  1. **I link di Windows.** `rm -rf`, `Remove-Item -Recurse` e `git worktree remove`
- *     ricorrono *dentro* una junction e svuotano la directory reale che sta dall'altra
- *     parte; solo `rd /s` si limita a sganciarla. Vale ovunque ci sia una junction, e
- *     una junction non si vede leggendo la riga di comando.
+ *  1. **Windows links.** `rm -rf`, `Remove-Item -Recurse` and `git worktree remove`
+ *     recurse *inside* a junction and empty the real directory on the other
+ *     side; only `rd /s` merely detaches it. True wherever a junction is, and
+ *     a junction cannot be seen by reading the command line.
  *
- * **Sempre accesi**, su ogni progetto Daiku, perché a un agente non si lascia mai
- * nessuna di queste libertà — mai fidarsi di un LLM, vedi `CLAUDE.md`:
+ * **Always on**, on every Daiku project, because an agent is never left
+ * any of these freedoms — never trust an LLM, see `CLAUDE.md`:
  *
- *  2. **I commit che contengono `.daiku/`.** Il repository è del cliente e non vede
- *     nulla del metodo: niente di `.daiku/` entra in un commit, in qualunque caso.
- *     `git add` e `git commit` con un pathspec sotto `.daiku/`, e il `git commit` nudo
- *     o con `-a` quando in stage — o, con `-a`, nell'albero — risulta una modifica
- *     sotto `.daiku/`. Lo stage si legge con un `git status` in sola lettura, che
- *     quando fallisce degrada a permesso.
- *  3. **`git commit --no-verify`.** Una regola per prefisso combacia sull'inizio della
- *     riga, quindi `git commit -m "…" -n` le passa accanto: qui il sottocomando si
- *     guarda davvero, in qualunque posizione stia il flag. Gli hook di commit devono
- *     sempre girare.
- *  4. **`git push`.** Stessa ragione: una regola per prefisso non entra dentro `sh -c`,
- *     mentre qui il push si riconosce anche dentro un wrapper, dietro un `sudo` o in
- *     coda a un altro comando. Il push resta un gesto manuale dell'owner. `--dry-run`
- *     no: quello non spinge niente.
+ *  2. **Commits containing `.daiku/`.** The repository belongs to the client and sees
+ *     nothing of the method: nothing of `.daiku/` enters a commit, in any case.
+ *     `git add` and `git commit` with a pathspec under `.daiku/`, and the bare `git commit`
+ *     or with `-a` when the stage — or, with `-a`, the tree — holds a change
+ *     under `.daiku/`. The stage is read with a read-only `git status`, which
+ *     degrades to allowed when it fails.
+ *  3. **`git commit --no-verify`.** A prefix rule matches the start of the
+ *     line, so `git commit -m "…" -n` walks past it: here the subcommand is
+ *     really looked at, wherever the flag stands. Commit hooks must
+ *     always run.
+ *  4. **`git push`.** Same reason: a prefix rule does not enter `sh -c`,
+ *     while here the push is recognised even inside a wrapper, behind a `sudo` or
+ *     queued after another command. Push stays a manual gesture of the owner. `--dry-run`
+ *     is not: it pushes nothing.
  *
- * **Una policy di progetto**, spenta finché il JSON non l'accende:
+ * **A project policy**, off until the JSON switches it on:
  *
- *  5. **Il pool di worktree** (`{worktree.pool}`). Dentro un worktree del pool una
- *     rimozione porta via file non committati senza recupero, e `pnpm install` riscrive
- *     il `virtualStoreDir` del `node_modules` condiviso rendendo incoerente
- *     l'installazione della radice. Nessun pool dichiarato, nessuno dei due controlli.
+ *  5. **The worktree pool** (`{worktree.pool}`). Inside a pool worktree a
+ *     removal carries away uncommitted files without recovery, and `pnpm install` rewrites
+ *     the shared `node_modules` `virtualStoreDir`, leaving the
+ *     root installation inconsistent. No declared pool, neither check.
  *
- * Dove l'host ha un `deny` di sistema, quello resta la porta vera per 3 e 4: assoluto, e
- * nessuna sorgente sotto lo può togliere. I due rami qui chiudono le forme che il
- * combaciare per prefisso non vede, e per questo stanno qui e non lì.
+ * Where the host has a system `deny`, that stays the real door for 3 and 4: absolute, and
+ * no source below can remove it. The two branches here close the shapes prefix
+ * matching does not see, and that is why they live here and not there.
  *
- * **Una forma sola non basta.** La shell accetta lo stesso gesto scritto in molti modi,
- * e la guardia deve conoscerli tutti: un `cd` in testa alla riga che cambia la base dei
- * path relativi, le virgolette intorno al nome del programma, un wrapper (`bash -c`,
- * `powershell -Command`, `cmd /c`), gli alias di PowerShell, i path in stile MSYS
- * (`/c/dev/…`) che Git Bash produce. La § *Forme che questa guardia non copre*, in fondo
- * al file, dice quelle che restano fuori: sono dichiarate apposta, perché una guardia
- * che tace su ciò che non vede fa credere di coprirlo.
+ * **One shape is not enough.** The shell accepts the same gesture written many ways,
+ * and the guard must know them all: a leading `cd` changing the base of
+ * relative paths, quotes around the program name, a wrapper (`bash -c`,
+ * `powershell -Command`, `cmd /c`), PowerShell aliases, MSYS-style paths
+ * (`/c/dev/…`) that Git Bash produces. The § *Shapes this guard does not cover*, at the bottom
+ * of the file, lists the ones left out: declared on purpose, because a guard
+ * silent about what it does not see makes readers believe it covers it.
  *
- * Contratto di questo file: **fail-open**. Qualunque cosa vada storta — stdin malformato,
- * filesystem irraggiungibile, eccezione — si permette e si esce 0. Una guardia che rompe
- * il turno costa più di quanto protegga, e il rischio che copre è raro.
+ * This file's contract: **fail-open**. Whatever goes wrong — malformed stdin,
+ * unreachable filesystem, exception — is allowed and exits 0. A guard breaking
+ * the turn costs more than it protects, and the risk it covers is rare.
  *
- * Banco di prova: `node command-guard.mjs --self-check`, dalla cartella in cui sta. Gira su un
- * filesystem simulato e non tocca niente; il totale è **contato**, non cablato. Un hook
- * fail-open guasto è indistinguibile da uno che non ha niente da dire.
+ * Test bench: `node command-guard.mjs --self-check`, from the folder it lives in. It runs on a
+ * simulated filesystem and touches nothing; the total is **counted**, not hard-coded. A broken
+ * fail-open hook is indistinguishable from one with nothing to say.
  */
 
 import { spawnSync } from 'node:child_process';
 import { lstatSync } from 'node:fs';
 import { isAbsolute, join, resolve } from 'node:path';
-import { invocatoDirettamente, radiceProgetto } from './project-root.mjs';
-import { AMBIENTE_REALE as LETTURE, contesto, contestoFinto, dentro } from './daiku-config.mjs';
+import { invokedDirectly, projectRoot } from './project-root.mjs';
+import { REAL_READS, loadContext, fakeContext, isInside } from './daiku-config.mjs';
 
-const RADICE = radiceProgetto();
+const ROOT = projectRoot();
 
-function permetti() {
+function allow() {
   process.exit(0);
 }
 
-function nega(motivo) {
+function deny(reason) {
   process.stdout.write(
     JSON.stringify({
       hookSpecificOutput: {
         hookEventName: 'PreToolUse',
         permissionDecision: 'deny',
-        permissionDecisionReason: motivo,
+        permissionDecisionReason: reason,
       },
     })
   );
   process.exit(0);
 }
 
-async function leggiStdin() {
+async function readStdin() {
   if (process.stdin.isTTY) return '';
-  const pezzi = [];
-  for await (const pezzo of process.stdin) pezzi.push(pezzo);
-  return Buffer.concat(pezzi).toString('utf-8');
+  const pieces = [];
+  for await (const piece of process.stdin) pieces.push(piece);
+  return Buffer.concat(pieces).toString('utf-8');
 }
 
-// --- tokenizzazione -----------------------------------------------------------
+// --- tokenization -----------------------------------------------------------
 //
-// Tutto ciò che segue ragiona su **token**, non su una passata di regex sulla riga
-// grezza: è la lezione del giro in cui `"git" push` scavalcava tutti e tre gli strati
-// che difendono il push, perché la passata azzerava le stringhe fra virgolette prima
-// di cercare il token `git`. Qui le virgolette si **tolgono** — chi le mette intorno
-// al nome del programma non guadagna niente — ma ogni token ricorda se era quotato,
-// così un `-n` dentro un messaggio di commit non si confonde con il flag.
+// Everything below reasons on **tokens**, not on one regex pass over the raw
+// line: the lesson of the round where `"git" push` slipped past all three layers
+// defending push, because the pass blanked quoted strings before
+// looking for the `git` token. Here quotes are **removed** — quoting
+// the program name gains nothing — but each token remembers whether it was quoted,
+// so a `-n` inside a commit message is not mistaken for the flag.
 
-/** Spezza un segmento in token, rispettando le virgolette. */
-function tokenizza(segmento) {
-  const token = [];
-  let corrente = '';
-  let quotato = false;
-  let aperta = null;
-  let pieno = false;
-  const chiudi = () => {
-    if (pieno) token.push({ t: corrente, q: quotato });
-    corrente = '';
-    quotato = false;
-    pieno = false;
+/** Splits a segment into tokens, honouring quotes. */
+function tokenize(segment) {
+  const tokens = [];
+  let current = '';
+  let quoted = false;
+  let open = null;
+  let full = false;
+  const close = () => {
+    if (full) tokens.push({ t: current, q: quoted });
+    current = '';
+    quoted = false;
+    full = false;
   };
-  for (const carattere of segmento) {
-    if (aperta) {
-      if (carattere === aperta) aperta = null;
-      else corrente += carattere;
+  for (const ch of segment) {
+    if (open) {
+      if (ch === open) open = null;
+      else current += ch;
       continue;
     }
-    if (carattere === '"' || carattere === "'") {
-      aperta = carattere;
-      quotato = true;
-      pieno = true;
+    if (ch === '"' || ch === "'") {
+      open = ch;
+      quoted = true;
+      full = true;
       continue;
     }
-    if (/\s/.test(carattere)) {
-      chiudi();
+    if (/\s/.test(ch)) {
+      close();
       continue;
     }
-    corrente += carattere;
-    pieno = true;
+    current += ch;
+    full = true;
   }
-  chiudi();
-  return token;
+  close();
+  return tokens;
 }
 
-/** Spezza una riga nei suoi segmenti di comando, rispettando le virgolette. */
-function segmenta(riga) {
-  const segmenti = [];
-  let corrente = '';
-  let aperta = null;
-  for (const carattere of riga) {
-    if (aperta) {
-      corrente += carattere;
-      if (carattere === aperta) aperta = null;
+/** Splits a line into its command segments, honouring quotes. */
+function splitSegments(line) {
+  const segments = [];
+  let current = '';
+  let open = null;
+  for (const ch of line) {
+    if (open) {
+      current += ch;
+      if (ch === open) open = null;
       continue;
     }
-    if (carattere === '"' || carattere === "'") {
-      aperta = carattere;
-      corrente += carattere;
+    if (ch === '"' || ch === "'") {
+      open = ch;
+      current += ch;
       continue;
     }
-    if (carattere === ';' || carattere === '|' || carattere === '&' || carattere === '\n') {
-      segmenti.push(corrente);
-      corrente = '';
+    if (ch === ';' || ch === '|' || ch === '&' || ch === '\n') {
+      segments.push(current);
+      current = '';
       continue;
     }
-    corrente += carattere;
+    current += ch;
   }
-  segmenti.push(corrente);
-  return segmenti.filter((s) => s.trim());
+  segments.push(current);
+  return segments.filter((s) => s.trim());
 }
 
-/** Token che precedono il comando vero e non lo cambiano: li si salta e basta. */
-const PREFISSI_NEUTRI = new Set([
+/** Tokens before the real command that do not change it: just skipped. */
+const NEUTRAL_PREFIXES = new Set([
   'sudo',
   'env',
   'time',
@@ -210,49 +209,49 @@ const PREFISSI_NEUTRI = new Set([
 const WRAPPER = /^(?:bash|sh|zsh|dash|ash|powershell|pwsh|cmd|wsl|busybox)(?:\.exe)?$/i;
 const GIT = /(?:^|[\\/])git(?:\.exe)?$/i;
 
-/** Il primo token che conta, saltati prefissi neutri, assegnazioni e parentesi. */
-function testa(token) {
+/** The first token that counts, skipping neutral prefixes, assignments and parens. */
+function head(tokens) {
   let i = 0;
-  while (i < token.length) {
-    let t = token[i].t;
-    if (!token[i].q) t = t.replace(/^[({]+/, '');
+  while (i < tokens.length) {
+    let t = tokens[i].t;
+    if (!tokens[i].q) t = t.replace(/^[({]+/, '');
     if (!t) {
       i += 1;
       continue;
     }
-    if (PREFISSI_NEUTRI.has(t) || (!token[i].q && /^[A-Za-z_][A-Za-z0-9_]*=/.test(t))) {
+    if (NEUTRAL_PREFIXES.has(t) || (!tokens[i].q && /^[A-Za-z_][A-Za-z0-9_]*=/.test(t))) {
       i += 1;
       continue;
     }
-    return { indice: i, nome: t };
+    return { index: i, name: t };
   }
   return null;
 }
 
-/** È un'opzione, non un bersaglio?
+/** Is it an option, not a target?
  *
- * `/s` e `/q` di cmd sono opzioni; `/c/dev/progetto-wt/src` è il path che **Git Bash**
- * produce, ed è la forma in cui gli agenti scrivono i path assoluti su questa
- * macchina. Scambiarlo per un'opzione è come non vederlo: solo una lettera o due
- * dopo la barra fanno un'opzione.
+ * cmd's `/s` and `/q` are options; `/c/dev/project-wt/src` is the path **Git Bash**
+ * produces, and the shape agents use for absolute paths on this
+ * machine. Mistaking it for an option means not seeing it: only one or two
+ * letters after the slash make an option.
  */
-function eFlag(pezzo) {
-  if (pezzo.q) return false;
-  if (pezzo.t.startsWith('-')) return true;
-  return /^\/[A-Za-z]{1,3}$/.test(pezzo.t);
+function isFlag(piece) {
+  if (piece.q) return false;
+  if (piece.t.startsWith('-')) return true;
+  return /^\/[A-Za-z]{1,3}$/.test(piece.t);
 }
 
-/** Il payload di un wrapper: `bash -c "<riga>"`, `cmd /c "<riga>"`, `-Command "<riga>"`. */
-function payloadWrapper(token, indice) {
-  for (let j = indice + 1; j < token.length; j += 1) {
-    if (eFlag(token[j])) continue;
-    // **Tutto** il resto del segmento, non il solo primo pezzo. Le virgolette intorno al
-    // payload sono una convenzione di chi scrive, non un obbligo della shell: `cmd /c del
-    // c:\dev\progetto-wt\src\node_modules` passa gli argomenti sciolti, e fermarsi al primo
-    // token significherebbe giudicare `del` senza il suo bersaglio — cioè permettere ogni
-    // gesto scritto senza virgolette. La forma quotata è già un token solo e si comporta
-    // esattamente come prima.
-    return token
+/** A wrapper's payload: `bash -c "<line>"`, `cmd /c "<line>"`, `-Command "<line>"`. */
+function wrapperPayload(tokens, index) {
+  for (let j = index + 1; j < tokens.length; j += 1) {
+    if (isFlag(tokens[j])) continue;
+    // **All** of the rest of the segment, not just the first piece. Quotes around the
+    // payload are the writer's convention, not a shell requirement: `cmd /c del
+    // c:\dev\project-wt\src\node_modules` passes loose arguments, and stopping at the first
+    // token would mean judging `del` without its target — i.e. allowing every
+    // gesture written without quotes. The quoted shape is already a single token and behaves
+    // exactly as before.
+    return tokens
       .slice(j)
       .map((x) => x.t)
       .join(' ');
@@ -260,11 +259,11 @@ function payloadWrapper(token, indice) {
   return null;
 }
 
-/** Il comando che segue un `-exec` di `find`, che è una riga a sé. */
-function payloadExec(token, indice) {
-  for (let j = indice; j < token.length; j += 1) {
-    if (token[j].t === '-exec' || token[j].t === '-execdir') {
-      return token
+/** The command following a `find` `-exec`: a line of its own. */
+function execPayload(tokens, index) {
+  for (let j = index; j < tokens.length; j += 1) {
+    if (tokens[j].t === '-exec' || tokens[j].t === '-execdir') {
+      return tokens
         .slice(j + 1)
         .map((x) => x.t)
         .filter((x) => x !== ';' && x !== '\\;' && x !== '+')
@@ -276,212 +275,212 @@ function payloadExec(token, indice) {
 
 // --- path ---------------------------------------------------------------------
 
-/** `/c/dev/x` è il path che Git Bash produce e che `resolve` di Windows sbaglia. */
-function normalizzaMsys(percorso) {
-  const esito = /^\/([A-Za-z])(\/.*)?$/.exec(percorso);
-  return esito ? `${esito[1]}:${esito[2] || '/'}` : percorso;
+/** `/c/dev/x` is the path Git Bash produces and Windows `resolve` gets wrong. */
+function normalizeMsys(path) {
+  const match = /^\/([A-Za-z])(\/.*)?$/.exec(path);
+  return match ? `${match[1]}:${match[2] || '/'}` : path;
 }
 
-/** Le variabili d'ambiente che il hook **conosce** si espandono prima del giudizio:
- * `%APPDATA%\x`, `$APPDATA/x`, `${APPDATA}/x`, `$env:APPDATA\x`. Senza questo passo lo
- * stesso bersaglio ha due esiti a seconda di come lo si scrive.
+/** The environment variables the hook **knows** expand before judgement:
+ * `%APPDATA%\x`, `$APPDATA/x`, `${APPDATA}/x`, `$env:APPDATA\x`. Without this step the
+ * same target has two outcomes depending on how it is written.
  *
- * Solo quelle presenti in `process.env`: una variabile di shell (`$DIR`, `%MIO%`) il
- * hook non la puo' conoscere, resta com'e' e ricade nel limite dichiarato in "Forme che
- * questa guardia NON copre" — si permette, e non e' una copertura. L'ordine conta:
- * `$env:NOME` di PowerShell va provato prima di `$NOME`, o resterebbe `:NOME` appeso. */
-function espandiVariabili(percorso) {
-  const valore = (nome) => process.env[nome] ?? process.env[nome.toUpperCase()];
-  return String(percorso)
-    .replace(/%([A-Za-z_][A-Za-z0-9_]*)%/g, (intero, nome) => valore(nome) ?? intero)
-    .replace(/\$env:([A-Za-z_][A-Za-z0-9_]*)/gi, (intero, nome) => valore(nome) ?? intero)
-    .replace(/\$\{([A-Za-z_][A-Za-z0-9_]*)\}/g, (intero, nome) => valore(nome) ?? intero)
-    .replace(/\$([A-Za-z_][A-Za-z0-9_]*)/g, (intero, nome) => valore(nome) ?? intero);
+ * Only those present in `process.env`: a shell variable (`$DIR`, `%MINE%`) the
+ * hook cannot know stays as it is and falls under the declared limit in "Shapes
+ * this guard does NOT cover" — allowed, and not coverage. Order matters:
+ * PowerShell's `$env:NAME` is tried before `$NAME`, or `:NAME` would dangle. */
+function expandVars(path) {
+  const value = (name) => process.env[name] ?? process.env[name.toUpperCase()];
+  return String(path)
+    .replace(/%([A-Za-z_][A-Za-z0-9_]*)%/g, (whole, name) => value(name) ?? whole)
+    .replace(/\$env:([A-Za-z_][A-Za-z0-9_]*)/gi, (whole, name) => value(name) ?? whole)
+    .replace(/\$\{([A-Za-z_][A-Za-z0-9_]*)\}/g, (whole, name) => value(name) ?? whole)
+    .replace(/\$([A-Za-z_][A-Za-z0-9_]*)/g, (whole, name) => value(name) ?? whole);
 }
 
-function assolutizza(bersaglio, base) {
-  const pulito = normalizzaMsys(espandiVariabili(bersaglio));
-  if (isAbsolute(pulito) || /^[A-Za-z]:/.test(pulito)) return resolve(pulito);
-  if (!base) return null; // base ignota: non si inventa un verdetto
-  return resolve(base, pulito);
+function resolveTarget(target, base) {
+  const cleaned = normalizeMsys(expandVars(target));
+  if (isAbsolute(cleaned) || /^[A-Za-z]:/.test(cleaned)) return resolve(cleaned);
+  if (!base) return null; // unknown base: no verdict invented
+  return resolve(base, cleaned);
 }
 
-/** Il worktree del pool in cui `assoluto` cade, o `null` se cade fuori.
+/** The pool worktree `absolute` falls into, or `null` when it falls outside.
  *
- * Il pool è quello che il progetto ha dichiarato in `{worktree.pool}`, e i suoi worktree
- * sono le sue directory di primo livello. Si ragiona per **prefisso di path**, non
- * risalendo a cercare un `.git`: il perimetro deve combaciare con quello che il JSON
- * dichiara, e un worktree che sta fuori dal pool è di qualcun altro — Daiku non l'ha
- * creato e non sa cosa ci sia dentro.
+ * The pool is what the project declared in `{worktree.pool}`, and its worktrees
+ * are its top-level directories. Reasoning is by **path prefix**, not by
+ * climbing to find a `.git`: the perimeter must match what the JSON
+ * declares, and a worktree outside the pool belongs to somebody else — Daiku did not
+ * create it and does not know what is inside.
  */
-function worktreeDelPool(assoluto, ctx) {
-  if (!ctx || !ctx.pool || !dentro(assoluto, ctx.pool)) return null;
+function poolWorktree(absolute, ctx) {
+  if (!ctx || !ctx.pool || !isInside(absolute, ctx.pool)) return null;
   const pool = resolve(ctx.pool).replace(/\\/g, '/').replace(/\/+$/, '');
-  const pieno = resolve(assoluto).replace(/\\/g, '/');
-  const resto = pieno.slice(pool.length).replace(/^\/+/, '');
-  const primo = resto.split('/')[0];
-  return primo ? `${pool}/${primo}` : pool;
+  const full = resolve(absolute).replace(/\\/g, '/');
+  const rest = full.slice(pool.length).replace(/^\/+/, '');
+  const first = rest.split('/')[0];
+  return first ? `${pool}/${first}` : pool;
 }
 
-/** Qualche componente del path è un link (symlink o junction Windows)? */
-function attraversaLink(assoluto, amb) {
-  const pezzi = assoluto.split(/[\\/]/);
-  let corrente = pezzi[0] + '/';
-  for (const pezzo of pezzi.slice(1)) {
-    if (!pezzo) continue;
-    corrente = join(corrente, pezzo);
-    const link = amb.eLink(corrente);
-    if (link === null) return null; // non esiste ancora: niente da proteggere
-    if (link) return corrente;
+/** Is any path component a link (symlink or Windows junction)? */
+function crossesLink(absolute, env) {
+  const pieces = absolute.split(/[\\/]/);
+  let current = pieces[0] + '/';
+  for (const piece of pieces.slice(1)) {
+    if (!piece) continue;
+    current = join(current, piece);
+    const link = env.isLink(current);
+    if (link === null) return null; // does not exist yet: nothing to protect
+    if (link) return current;
   }
   return null;
 }
 
-/** I path che un comando distruttivo prende di mira, come stringhe grezze.
+/** The paths a destructive command aims at, as raw strings.
  *
- * Ogni bersaglio porta con sé se il comando che lo nomina è lo **sgancio** del link
- * (`rd /s`, che non ricorre dentro la junction) o una rimozione che ricorre. In
- * PowerShell `rmdir`, `del`, `ri` ed `erase` sono alias di `Remove-Item`: senza di
- * loro la stessa cancellazione passa riscritta. La forma cmd `rmdir /s` è invece lo
- * sgancio, e per questo si guarda se `/s` c'è.
+ * Each target carries whether the naming command is the link **detach**
+ * (`rd /s`, which does not recurse into the junction) or a recursing removal. In
+ * PowerShell `rmdir`, `del`, `ri` and `erase` are `Remove-Item` aliases: without
+ * them the same deletion slips past simply by being rewritten. The cmd `rmdir /s` shape is the
+ * detach instead, which is why the presence of `/s` is checked.
  *
- * Il comando dev'essere in **testa** al segmento (saltati i prefissi neutri): così
- * `npm rm <pacchetto>` e `pnpm remove` non si scambiano per una rimozione di path,
- * che è il falso positivo che questa forma evita.
+ * The command must be at the segment **head** (neutral prefixes skipped): that way
+ * `npm rm <package>` and `pnpm remove` are not mistaken for a path removal,
+ * the false positive this shape avoids.
  */
-function bersagli(token) {
-  const capo = testa(token);
-  if (!capo) return [];
-  const nome = capo.nome.replace(/\.exe$/i, '').toLowerCase();
-  const resto = token.slice(capo.indice + 1);
-  const raccogli = (argomenti, sgancio) =>
-    argomenti
-      .filter((x) => !eFlag(x))
-      .map((x) => ({ bersaglio: x.t.replace(/;$/, ''), sgancio }))
-      .filter((x) => x.bersaglio);
+function targets(tokens) {
+  const first = head(tokens);
+  if (!first) return [];
+  const name = first.name.replace(/\.exe$/i, '').toLowerCase();
+  const rest = tokens.slice(first.index + 1);
+  const collect = (args, detach) =>
+    args
+      .filter((x) => !isFlag(x))
+      .map((x) => ({ target: x.t.replace(/;$/, ''), detach }))
+      .filter((x) => x.target);
 
-  if (nome === 'rd' || nome === 'rmdir') {
-    // `rd`/`rmdir` con `/s` è la forma cmd: sgancia il link senza ricorrervi dentro.
-    const sgancio = resto.some((x) => !x.q && /^\/s$/i.test(x.t));
-    return raccogli(resto, sgancio);
+  if (name === 'rd' || name === 'rmdir') {
+    // `rd`/`rmdir` with `/s` is the cmd shape: detaches the link without recursing into it.
+    const detach = rest.some((x) => !x.q && /^\/s$/i.test(x.t));
+    return collect(rest, detach);
   }
-  if (nome === 'rm' || /^(?:remove-item|erase|del|ri)$/i.test(nome)) {
-    return raccogli(resto, false);
+  if (name === 'rm' || /^(?:remove-item|erase|del|ri)$/i.test(name)) {
+    return collect(rest, false);
   }
-  if (GIT.test(capo.nome)) {
-    let j = capo.indice + 1;
-    while (j < token.length && !token[j].q && token[j].t.startsWith('-')) {
-      if (token[j].t === '-C' || token[j].t === '-c') j += 1;
+  if (GIT.test(first.name)) {
+    let j = first.index + 1;
+    while (j < tokens.length && !tokens[j].q && tokens[j].t.startsWith('-')) {
+      if (tokens[j].t === '-C' || tokens[j].t === '-c') j += 1;
       j += 1;
     }
-    if (token[j] && token[j].t === 'worktree' && token[j + 1] && token[j + 1].t === 'remove') {
-      return raccogli(token.slice(j + 2), false);
+    if (tokens[j] && tokens[j].t === 'worktree' && tokens[j + 1] && tokens[j + 1].t === 'remove') {
+      return collect(tokens.slice(j + 2), false);
     }
   }
   return [];
 }
 
-/** `pnpm install` e i suoi equivalenti: tutti riscrivono il `virtualStoreDir`. */
-function installaPnpm(token) {
-  const capo = testa(token);
-  if (!capo || capo.nome.replace(/\.(?:exe|cmd)$/i, '').toLowerCase() !== 'pnpm') return false;
-  const sotto = token.slice(capo.indice + 1).find((x) => !eFlag(x));
-  return !!sotto && /^(?:install|i|add|update|up|dedupe)$/i.test(sotto.t);
+/** `pnpm install` and its equivalents: all rewrite `virtualStoreDir`. */
+function isPnpmInstall(tokens) {
+  const first = head(tokens);
+  if (!first || first.name.replace(/\.(?:exe|cmd)$/i, '').toLowerCase() !== 'pnpm') return false;
+  const sub = tokens.slice(first.index + 1).find((x) => !isFlag(x));
+  return !!sub && /^(?:install|i|add|update|up|dedupe)$/i.test(sub.t);
 }
 
-/** Un `cd` che cambia la base da cui si risolvono i path relativi del resto della riga. */
-function cambioDirectory(token) {
-  const capo = testa(token);
-  if (!capo) return null;
-  if (!/^(?:cd|chdir|set-location|sl|pushd)$/i.test(capo.nome)) return null;
-  const argomenti = token.slice(capo.indice + 1).filter((x) => !eFlag(x));
-  if (!argomenti.length) return { ignoto: true }; // `cd` nudo: la home, che non si indovina
-  // Espanso prima del test: se la variabile e' nell'ambiente del hook il `cd` si
-  // risolve e la base resta nota; se non lo e', il marcatore sopravvive e vale il
-  // verdetto di prima — base ignota, bersagli relativi non giudicati.
-  const dir = espandiVariabili(argomenti[0].t);
-  if (dir === '-' || /[$%`]/.test(dir)) return { ignoto: true }; // variabile ignota: non risolvibile
+/** A `cd` changing the base relative paths of the rest of the line resolve from. */
+function dirChange(tokens) {
+  const first = head(tokens);
+  if (!first) return null;
+  if (!/^(?:cd|chdir|set-location|sl|pushd)$/i.test(first.name)) return null;
+  const args = tokens.slice(first.index + 1).filter((x) => !isFlag(x));
+  if (!args.length) return { unknown: true }; // bare `cd`: home, which is not guessed
+  // Expanded before testing: when the variable is in the hook's environment the `cd`
+  // resolves and the base stays known; when it is not, the marker survives and the
+  // earlier verdict holds — unknown base, relative targets not judged.
+  const dir = expandVars(args[0].t);
+  if (dir === '-' || /[$%`]/.test(dir)) return { unknown: true }; // unknown variable: unresolvable
   return { dir };
 }
 
-// --- guardia sui path ---------------------------------------------------------
+// --- path guard ---------------------------------------------------------
 
-function guardiaPath(riga, cwd, amb, ctx, profondita = 0) {
+function pathGuard(line, cwd, env, ctx, depth = 0) {
   let base = cwd;
-  for (const segmento of segmenta(riga)) {
-    const token = tokenizza(segmento);
-    if (!token.length) continue;
-    const capo = testa(token);
-    if (!capo) continue;
+  for (const segment of splitSegments(line)) {
+    const tokens = tokenize(segment);
+    if (!tokens.length) continue;
+    const first = head(tokens);
+    if (!first) continue;
 
-    // Un wrapper porta dentro le virgolette una riga intera: la si giudica come tale,
-    // con la base corrente, invece di lasciarla passare perché è un argomento.
-    if (WRAPPER.test(capo.nome) && profondita < 3) {
-      const payload = payloadWrapper(token, capo.indice);
+    // A wrapper carries a whole line inside the quotes: it is judged as one,
+    // with the current base, instead of passing because it is an argument.
+    if (WRAPPER.test(first.name) && depth < 3) {
+      const payload = wrapperPayload(tokens, first.index);
       if (payload) {
-        const esito = guardiaPath(payload, base, amb, ctx, profondita + 1);
-        if (esito) return esito;
+        const outcome = pathGuard(payload, base, env, ctx, depth + 1);
+        if (outcome) return outcome;
       }
       continue;
     }
-    const eseguito = payloadExec(token, capo.indice);
-    if (eseguito && profondita < 3) {
-      const esito = guardiaPath(eseguito, base, amb, ctx, profondita + 1);
-      if (esito) return esito;
+    const executed = execPayload(tokens, first.index);
+    if (executed && depth < 3) {
+      const outcome = pathGuard(executed, base, env, ctx, depth + 1);
+      if (outcome) return outcome;
     }
 
-    const cambio = cambioDirectory(token);
-    if (cambio) {
-      base = cambio.ignoto ? null : assolutizza(cambio.dir, base);
+    const change = dirChange(tokens);
+    if (change) {
+      base = change.unknown ? null : resolveTarget(change.dir, base);
       continue;
     }
 
-    for (const { bersaglio, sgancio } of bersagli(token)) {
-      const assoluto = assolutizza(bersaglio, base);
-      if (!assoluto) continue; // bersaglio relativo con base ignota: vedi § Forme non coperte
-      // Il disco è l'unica cosa che questa guardia chiede al mondo, ed è anche l'unica
-      // che può non rispondere. Se non risponde non si sa se c'è un link — ma il ramo
-      // del pool, che legge solo path e parametri, deve poter decidere lo stesso: per
-      // questo l'eccezione si ferma qui e non spegne l'intera valutazione.
+    for (const { target, detach } of targets(tokens)) {
+      const absolute = resolveTarget(target, base);
+      if (!absolute) continue; // relative target with unknown base: see § Uncovered shapes
+      // The disk is the only thing this guard asks of the world, and also the only
+      // one that may not answer. When it does not answer it is unknown whether a link is
+      // there — but the pool branch, which reads only paths and parameters, must still decide:
+      // that is why the exception stops here instead of switching off the whole evaluation.
       let link = null;
       try {
-        link = attraversaLink(assoluto, amb);
+        link = crossesLink(absolute, env);
       } catch {
         link = null;
       }
-      // Lo sgancio del link, quando il link **è** il bersaglio, è il rimedio che questa
-      // stessa guardia prescrive: negarlo lascia senza passo 1 chi smonta un worktree.
-      if (sgancio && link && resolve(link) === resolve(assoluto)) continue;
+      // Detaching the link, when the link **is** the target, is the remedy this
+      // same guard prescribes: denying it would leave whoever unmounts a worktree without step 1.
+      if (detach && link && resolve(link) === resolve(absolute)) continue;
       if (link) {
         return {
-          motivo:
-            `\`${bersaglio}\` attraversa un link di Windows (\`${link}\`): una rimozione ricorsiva ` +
-            `entra nella junction e svuota la directory reale che sta dall'altra parte, non il ` +
-            `link. Sgancia prima il link con \`rd\` (sul solo link), poi rimuovi quello che resta.`,
+          reason:
+            `\`${target}\` crosses a Windows link (\`${link}\`): a recursive removal ` +
+            `enters the junction and empties the real directory on the other side, not the ` +
+            `link. Detach the link first with \`rd\` (on the link alone), then remove what remains.`,
         };
       }
-      const worktree = worktreeDelPool(assoluto, ctx);
+      const worktree = poolWorktree(absolute, ctx);
       if (worktree) {
         return {
-          motivo:
-            `\`${bersaglio}\` sta nel worktree \`${worktree}\` del pool che questo progetto ` +
-            `dichiara in \`{worktree.pool}\`. Prima di rimuoverlo: enumera **tutte** le junction ` +
-            `(\`Get-ChildItem -Recurse -Force -Attributes ReparsePoint\`), sganciale con \`rd\` sul ` +
-            `solo link, e porta al sicuro i file non committati — \`git worktree remove --force\` ` +
-            `li cancella senza recupero.`,
+          reason:
+            `\`${target}\` sits in worktree \`${worktree}\` of the pool this project ` +
+            `declares in \`{worktree.pool}\`. Before removing it: list **all** junctions ` +
+            `(\`Get-ChildItem -Recurse -Force -Attributes ReparsePoint\`), detach them with \`rd\` on the ` +
+            `link alone, and save uncommitted files — \`git worktree remove --force\` ` +
+            `deletes them without recovery.`,
         };
       }
     }
 
-    if (installaPnpm(token) && base) {
-      const worktree = worktreeDelPool(resolve(base), ctx);
+    if (isPnpmInstall(tokens) && base) {
+      const worktree = poolWorktree(resolve(base), ctx);
       if (worktree) {
         return {
-          motivo:
-            `\`pnpm install\` dentro il worktree \`${worktree}\` del pool: riscrive ` +
-            `\`virtualStoreDir\` nel \`node_modules\` condiviso, e al rientro nella radice pnpm ` +
-            `considera l'installazione incoerente e chiede di ricrearla da zero. Installa dalla ` +
-            `radice tecnica, non da qui.`,
+          reason:
+            `\`pnpm install\` inside worktree \`${worktree}\` of the pool: it rewrites ` +
+            `\`virtualStoreDir\` in the shared \`node_modules\`, and back at the root pnpm ` +
+            `treats the installation as inconsistent and asks to recreate it from scratch. Install from the ` +
+            `technical root, not from here.`,
         };
       }
     }
@@ -489,108 +488,108 @@ function guardiaPath(riga, cwd, amb, ctx, profondita = 0) {
   return null;
 }
 
-// --- guardia su git -----------------------------------------------------------
+// --- git guard -----------------------------------------------------------
 //
-// Quattro rami dietro il gate del progetto, e un solo interruttore in tutto il file.
-// Il gate resta: senza `.daiku/project.json` questo progetto non ha aperto Daiku, e la
-// guardia non legge nemmeno la riga. Dietro il gate, push, `--no-verify` e commit di
-// `.daiku/` sono negati **sempre** — a un agente non si lascia mai nessuna di queste
-// libertà, e mai fidarsi di un LLM è la regola che lo dice (vedi `CLAUDE.md`). L'unica
-// cosa che il progetto dichiara è il pool dei worktree.
+// Four branches behind the project gate, and a single switch in the whole file.
+// The gate stays: without `.daiku/project.json` this project has not opened Daiku, and the
+// guard does not even read the line. Behind the gate, push, `--no-verify` and `.daiku/`
+// commits are denied **always** — an agent is never left any of these
+// freedoms, and never trusting an LLM is the rule saying so (see `CLAUDE.md`). The only
+// thing the project declares is the worktree pool.
 //
-// La ragione di leggere la riga invece di affidarsi a una regola dell'host è che una
-// regola combacia per **prefisso** e non entra dentro `sh -c`, quindi non vede né un
-// flag spostato in coda né un wrapper.
+// The reason for reading the line instead of relying on a host rule is that a
+// rule matches by **prefix** and does not enter `sh -c`, so it sees neither a
+// flag moved to the tail nor a wrapper.
 
-/** Le invocazioni di `git` nella riga, ciascuna come token `[sottocomando, …argomenti]`.
+/** The `git` invocations in the line, each as `[subcommand, …args]` tokens.
  *
- * `git` si riconosce **in testa** al segmento (saltati i prefissi neutri) o dentro il
- * payload di un wrapper noto, mai in una posizione qualunque: così
- * `echo "git push"` e `grep -rn "git push" .claude/` restano permessi, mentre una
- * vera invocazione Git può avere virgolette intorno all'eseguibile o stare nel payload
- * di un wrapper noto.
+ * `git` is recognised at the segment **head** (neutral prefixes skipped) or inside
+ * a known wrapper's payload, never in an arbitrary position: that way
+ * `echo "git push"` and `grep -rn "git push" .claude/` stay allowed, while a
+ * real Git invocation may have quotes around the executable or sit in the payload
+ * of a known wrapper.
  *
- * Le opzioni globali si saltano, comprese `-C` e `-c` che prendono un valore a parte.
+ * Global options are skipped, including `-C` and `-c` taking a separate value.
  */
-function invocazioniGit(riga, profondita = 0) {
-  const trovate = [];
-  for (const segmento of segmenta(riga)) {
-    const token = tokenizza(segmento);
-    const capo = testa(token);
-    if (!capo) continue;
-    if (WRAPPER.test(capo.nome) && profondita < 3) {
-      const payload = payloadWrapper(token, capo.indice);
-      if (payload) trovate.push(...invocazioniGit(payload, profondita + 1));
+function gitInvocations(line, depth = 0) {
+  const found = [];
+  for (const segment of splitSegments(line)) {
+    const tokens = tokenize(segment);
+    const first = head(tokens);
+    if (!first) continue;
+    if (WRAPPER.test(first.name) && depth < 3) {
+      const payload = wrapperPayload(tokens, first.index);
+      if (payload) found.push(...gitInvocations(payload, depth + 1));
       continue;
     }
-    if (!GIT.test(capo.nome)) continue;
-    let j = capo.indice + 1;
-    while (j < token.length && !token[j].q && token[j].t.startsWith('-')) {
-      if (token[j].t === '-C' || token[j].t === '-c') j += 1;
+    if (!GIT.test(first.name)) continue;
+    let j = first.index + 1;
+    while (j < tokens.length && !tokens[j].q && tokens[j].t.startsWith('-')) {
+      if (tokens[j].t === '-C' || tokens[j].t === '-c') j += 1;
       j += 1;
     }
-    if (j < token.length) trovate.push(token.slice(j));
+    if (j < tokens.length) found.push(tokens.slice(j));
   }
-  return trovate;
+  return found;
 }
 
-/** `git commit` con `-n`/`--no-verify`, in qualunque posizione stia il flag.
+/** `git commit` with `-n`/`--no-verify`, wherever the flag stands.
  *
- * Un `-n` **quotato** non è il flag: sta dentro il messaggio di commit. È la sola
- * ragione per cui i token ricordano di essere stati fra virgolette.
+ * A **quoted** `-n` is not the flag: it sits inside the commit message. That is the only
+ * reason tokens remember having been quoted.
  */
-function guardiaCommit(riga) {
-  for (const invocazione of invocazioniGit(riga)) {
-    if (!invocazione.length || invocazione[0].t !== 'commit') continue;
-    const argomenti = invocazione.slice(1);
-    if (argomenti.some((x) => !x.q && (x.t === '--no-verify' || /^-[a-z]*n/i.test(x.t)))) {
+function commitGuard(line) {
+  for (const invocation of gitInvocations(line)) {
+    if (!invocation.length || invocation[0].t !== 'commit') continue;
+    const args = invocation.slice(1);
+    if (args.some((x) => !x.q && (x.t === '--no-verify' || /^-[a-z]*n/i.test(x.t)))) {
       return {
-        motivo:
-          '`git commit` con `-n`/`--no-verify` non è ammesso: usa il commit normale ' +
-          'e lascia girare gli hook. Se un hook di commit è rotto, si aggiusta quello ' +
-          '— saltarlo lascia il difetto nella storia.',
+        reason:
+          '`git commit` with `-n`/`--no-verify` is not allowed: use a normal commit ' +
+          'and let the hooks run. If a commit hook is broken, fix that one ' +
+          '— skipping it leaves the defect in history.',
       };
     }
   }
   return null;
 }
 
-/** `git push`, che resta un gesto manuale dell'owner. */
-function guardiaPush(riga) {
-  for (const invocazione of invocazioniGit(riga)) {
-    if (!invocazione.length || invocazione[0].t !== 'push') continue;
-    const argomenti = invocazione.slice(1);
-    // `--dry-run` (e il suo `-n`) non spinge niente: negarlo sarebbe un falso positivo.
-    if (argomenti.some((x) => !x.q && (x.t === '--dry-run' || /^-[a-zA-Z]*n/.test(x.t)))) continue;
+/** `git push`, which stays a manual gesture of the owner. */
+function pushGuard(line) {
+  for (const invocation of gitInvocations(line)) {
+    if (!invocation.length || invocation[0].t !== 'push') continue;
+    const args = invocation.slice(1);
+    // `--dry-run` (and its `-n`) pushes nothing: denying it would be a false positive.
+    if (args.some((x) => !x.q && (x.t === '--dry-run' || /^-[a-zA-Z]*n/.test(x.t)))) continue;
     return {
-      motivo:
-        '`git push` non è ammesso: il push resta un gesto manuale ' +
-        "dell'owner. Se il lavoro è pronto, fermati e dillo: lo lancia chi ha le " +
-        'credenziali.',
+      reason:
+        '`git push` is not allowed: pushing stays a manual gesture ' +
+        'of the owner. If the work is ready, stop and say so: whoever holds the ' +
+        'credentials launches it.',
     };
   }
   return null;
 }
 
-/** Un pathspec che nomina `.daiku/`, in qualunque forma la shell lo scriva.
+/** A pathspec naming `.daiku/`, in whatever shape the shell writes it.
  *
- * Il confronto è sul testo del token, non sul disco: chi nomina esplicitamente
- * `.daiku/` in un `add` o un `commit` sta facendo il gesto vietato, in qualunque
- * directory lo faccia. Le virgolette non cambiano il significato di un pathspec —
- * `"..."` intorno a un path resta quel path — quindi si guardano anche i token
- * quotati. Solo un segmento intero conta: `.daiku.md` o `x.daiku/y` non sono
- * `.daiku/`, e restano permessi.
+ * Comparison is on the token text, not the disk: whoever explicitly names
+ * `.daiku/` in an `add` or a `commit` is making the forbidden gesture, in whatever
+ * directory they do it. Quotes do not change a pathspec's meaning —
+ * `"..."` around a path stays that path — so quoted tokens
+ * are watched too. Only a whole segment counts: `.daiku.md` or `x.daiku/y` are not
+ * `.daiku/`, and stay allowed.
  */
-function ePathDaiku(testo) {
-  const normalizzato = String(testo).replace(/\\/g, '/').replace(/^\.\//, '');
-  return /(^|\/)\.daiku(\/|$)/.test(normalizzato);
+function isDaikuPath(text) {
+  const normalised = String(text).replace(/\\/g, '/').replace(/^\.\//, '');
+  return /(^|\/)\.daiku(\/|$)/.test(normalised);
 }
 
-/** Le opzioni di `git commit` che mangiano il token dopo di sé: quel token è un
- * valore (un messaggio, un autore, una data), non un pathspec. La forma compatta
- * (`-am`, `-sm`) vale come la sciolta: la `m` dentro un gruppo di flag corte vuole
- * comunque il suo messaggio dopo. */
-const OPZIONI_CON_VALORE = new Set([
+/** The `git commit` options eating the token after them: that token is a
+ * value (a message, an author, a date), not a pathspec. The compact shape
+ * (`-am`, `-sm`) counts like the loose one: the `m` inside a short-flag group still
+ * wants its message after it. */
+const VALUE_OPTIONS = new Set([
   '-m',
   '--message',
   '--author',
@@ -602,183 +601,183 @@ const OPZIONI_CON_VALORE = new Set([
   '--squash',
 ]);
 
-function mangiaValore(pezzo) {
-  if (pezzo.q) return false;
-  if (OPZIONI_CON_VALORE.has(pezzo.t)) return true;
-  return /^-[a-z]*m[a-z]*$/i.test(pezzo.t);
+function takesValue(piece) {
+  if (piece.q) return false;
+  if (VALUE_OPTIONS.has(piece.t)) return true;
+  return /^-[a-z]*m[a-z]*$/i.test(piece.t);
 }
 
-/** Una riga di `git status --porcelain` con qualcosa in stage (prima colonna):
- * è ciò che un `git commit` nudo congelerebbe. `??` e `!!` non sono in stage. */
-function eStaged(riga) {
-  const x = riga[0];
+/** A `git status --porcelain` line with something staged (first column):
+ * what a bare `git commit` would freeze. `??` and `!!` are not staged. */
+function isStaged(line) {
+  const x = line[0];
   return !!x && x !== ' ' && x !== '?' && x !== '!';
 }
 
-/** Una riga con una modifica tracciata, in stage o nell'albero: è ciò che
- * `git commit -a` si porterebbe dentro. */
-function eTracciata(riga) {
-  return eStaged(riga) || (riga.length > 1 && riga[1] !== ' ' && riga[1] !== '?' && riga[1] !== '!');
+/** A line with a tracked change, staged or in the tree: what
+ * `git commit -a` would carry inside. */
+function isTracked(line) {
+  return isStaged(line) || (line.length > 1 && line[1] !== ' ' && line[1] !== '?' && line[1] !== '!');
 }
 
-/** `git add` e `git commit` che toccano `.daiku/`, senza interruttore.
+/** `git add` and `git commit` touching `.daiku/`, with no switch.
  *
- * Due strati, perché il divieto regga in qualunque caso senza leggere più del
- * necessario:
+ * Two layers, so the ban holds in any case while reading no more than
+ * necessary:
  *
- *  1. **il pathspec esplicito** — `add` o `commit` che nominano `.daiku/` — si nega
- *     sul testo della riga, senza toccare il disco;
- *  2. **lo stage** — il `commit` nudo congela tutto l'index, e `commit -a` allarga
- *     lo stage all'albero tracciato — si legge con un `git status` in sola lettura
- *     confinato a `.daiku/`. Se git non risponde, degrada a permesso: è il contratto
- *     fail-open, e lo prova il banco.
+ *  1. **the explicit pathspec** — `add` or `commit` naming `.daiku/` — is denied
+ *     on the line text, without touching the disk;
+ *  2. **the stage** — a bare `commit` freezes the whole index, and `commit -a` widens
+ *     the stage to the tracked tree — is read with a read-only `git status`
+ *     confined to `.daiku/`. When git does not answer, it degrades to allowed: the fail-open
+ *     contract, proved by the bench.
  *
- * Un `commit` limitato per pathspec a path fuori da `.daiku/` non congela ciò che
- * resta in stage, e resta permesso: è la forma con cui le skill consegnano gli altri
- * gruppi lasciando `.daiku/` dov'è.
+ * A `commit` limited by pathspec to paths outside `.daiku/` does not freeze what
+ * stays in the stage, and stays allowed: the shape skills use to deliver the other
+ * groups while leaving `.daiku/` where it is.
  */
-function guardiaDaiku(riga, cwd, amb, profondita = 0) {
+function daikuGuard(line, cwd, env, depth = 0) {
   let base = cwd;
-  for (const segmento of segmenta(riga)) {
-    const token = tokenizza(segmento);
-    if (!token.length) continue;
-    const capo = testa(token);
-    if (!capo) continue;
+  for (const segment of splitSegments(line)) {
+    const tokens = tokenize(segment);
+    if (!tokens.length) continue;
+    const first = head(tokens);
+    if (!first) continue;
 
-    if (WRAPPER.test(capo.nome) && profondita < 3) {
-      const payload = payloadWrapper(token, capo.indice);
+    if (WRAPPER.test(first.name) && depth < 3) {
+      const payload = wrapperPayload(tokens, first.index);
       if (payload) {
-        const esito = guardiaDaiku(payload, base, amb, profondita + 1);
-        if (esito) return esito;
+        const outcome = daikuGuard(payload, base, env, depth + 1);
+        if (outcome) return outcome;
       }
       continue;
     }
-    const eseguito = payloadExec(token, capo.indice);
-    if (eseguito && profondita < 3) {
-      const esito = guardiaDaiku(eseguito, base, amb, profondita + 1);
-      if (esito) return esito;
+    const executed = execPayload(tokens, first.index);
+    if (executed && depth < 3) {
+      const outcome = daikuGuard(executed, base, env, depth + 1);
+      if (outcome) return outcome;
     }
 
-    const cambio = cambioDirectory(token);
-    if (cambio) {
-      base = cambio.ignoto ? null : assolutizza(cambio.dir, base);
+    const change = dirChange(tokens);
+    if (change) {
+      base = change.unknown ? null : resolveTarget(change.dir, base);
       continue;
     }
 
-    const esito = giudizioDaikuSegmento(token, base, amb);
-    if (esito) return esito;
+    const outcome = judgeDaikuSegment(tokens, base, env);
+    if (outcome) return outcome;
   }
   return null;
 }
 
-function giudizioDaikuSegmento(token, base, amb) {
-  const capo = testa(token);
-  if (!capo || !GIT.test(capo.nome)) return null;
+function judgeDaikuSegment(tokens, base, env) {
+  const first = head(tokens);
+  if (!first || !GIT.test(first.name)) return null;
 
-  // Le opzioni globali si saltano come fa `invocazioniGit`, ma il `-C` si ricorda:
-  // è la directory in cui lo stage va letto.
-  let j = capo.indice + 1;
-  let dirC = null;
-  while (j < token.length && !token[j].q && token[j].t.startsWith('-')) {
-    if ((token[j].t === '-C' || token[j].t === '-c') && j + 1 < token.length) {
-      if (token[j].t === '-C') dirC = token[j + 1].t;
+  // Global options are skipped the way `gitInvocations` does, but `-C` is remembered:
+  // the directory where the stage is read.
+  let j = first.index + 1;
+  let cDir = null;
+  while (j < tokens.length && !tokens[j].q && tokens[j].t.startsWith('-')) {
+    if ((tokens[j].t === '-C' || tokens[j].t === '-c') && j + 1 < tokens.length) {
+      if (tokens[j].t === '-C') cDir = tokens[j + 1].t;
       j += 2;
       continue;
     }
     j += 1;
   }
-  if (j >= token.length) return null;
-  const sottocomando = token[j].t;
-  if (sottocomando !== 'add' && sottocomando !== 'commit') return null;
+  if (j >= tokens.length) return null;
+  const subcommand = tokens[j].t;
+  if (subcommand !== 'add' && subcommand !== 'commit') return null;
 
-  let tutto = false; // `-a`/`--all` di `commit`
-  const bersagli = [];
-  let saltaProssimo = false;
-  let dopoSeparatore = false;
-  for (const x of token.slice(j + 1)) {
-    if (saltaProssimo) {
-      saltaProssimo = false;
+  let all = false; // `commit` `-a`/`--all`
+  const targetList = [];
+  let skipNext = false;
+  let afterSep = false;
+  for (const x of tokens.slice(j + 1)) {
+    if (skipNext) {
+      skipNext = false;
       continue;
     }
-    if (!dopoSeparatore && !x.q && x.t === '--') {
-      dopoSeparatore = true;
+    if (!afterSep && !x.q && x.t === '--') {
+      afterSep = true;
       continue;
     }
-    if (!dopoSeparatore && !x.q && x.t.startsWith('-')) {
-      if (sottocomando === 'commit' && mangiaValore(x)) saltaProssimo = true;
-      if (sottocomando === 'commit' && (x.t === '-a' || x.t === '--all')) tutto = true;
+    if (!afterSep && !x.q && x.t.startsWith('-')) {
+      if (subcommand === 'commit' && takesValue(x)) skipNext = true;
+      if (subcommand === 'commit' && (x.t === '-a' || x.t === '--all')) all = true;
       continue;
     }
-    bersagli.push(x.t);
+    targetList.push(x.t);
   }
 
-  if (bersagli.some(ePathDaiku)) {
+  if (targetList.some(isDaikuPath)) {
     return {
-      motivo:
-        'questo comando nomina `.daiku/`: niente di Daiku entra in un commit, in ' +
-        'qualunque caso — il repository è del cliente e non vede nulla del metodo. ' +
-        'Togli quel path dal comando. Vedi `skills/commit/SKILL.md`, “Daiku non si committa”.',
+      reason:
+        'this command names `.daiku/`: nothing of Daiku enters a commit, in ' +
+        'any case — the repository belongs to the client and sees nothing of the method. ' +
+        'Drop that path from the command. See `skills/commit/SKILL.md`, "Daiku is never committed".',
     };
   }
 
-  // Un `add` senza pathspec esplicito decide al commit, non qui.
-  if (sottocomando === 'add') return null;
-  // Un `commit` limitato a path altrui non congela lo stage che resta.
-  if (bersagli.length) return null;
+  // An `add` without an explicit pathspec is decided at commit time, not here.
+  if (subcommand === 'add') return null;
+  // A `commit` limited to other paths does not freeze the remaining stage.
+  if (targetList.length) return null;
 
-  const dirGit = dirC ? (base ? assolutizza(dirC, base) : null) : base;
-  if (!dirGit) return null; // base ignota: vedi § Forme non coperte
-  // L'eccezione resta dentro questo ramo: se git non risponde, questo ramo permette
-  // e gli altri decidono — è il contratto di `valuta`, provato dal banco.
-  let righe;
+  const gitDir = cDir ? (base ? resolveTarget(cDir, base) : null) : base;
+  if (!gitDir) return null; // unknown base: see § Uncovered shapes
+  // The exception stays inside this branch: when git does not answer, this branch allows
+  // and the others decide — the `evaluate` contract, proved by the bench.
+  let lines;
   try {
-    righe = amb.statoDaiku(dirGit);
+    lines = env.daikuStatus(gitDir);
   } catch {
-    return null; // git irraggiungibile: fail-open
+    return null; // git unreachable: fail-open
   }
-  if (!righe) return null; // git irraggiungibile: fail-open
-  const tocca = tutto ? righe.some(eTracciata) : righe.some(eStaged);
-  if (!tocca) return null;
+  if (!lines) return null; // git unreachable: fail-open
+  const touches = all ? lines.some(isTracked) : lines.some(isStaged);
+  if (!touches) return null;
   return {
-    motivo: tutto
-      ? '`git commit -a` allarga lo stage a tutto l’albero tracciato, e sotto `.daiku/` ' +
-        'risulta una modifica: niente di Daiku entra in un commit, in qualunque caso. ' +
-        'Togli `.daiku/` dallo stage (`git restore --staged -- .daiku/`) oppure committi ' +
-        'per pathspec i soli file fuori da `.daiku/`.'
-      : 'lo stage contiene modifiche sotto `.daiku/`, e un `git commit` nudo le ' +
-        'congelerebbe: niente di Daiku entra in un commit, in qualunque caso. Toglile ' +
-        'dallo stage (`git restore --staged -- .daiku/`) oppure committi per pathspec ' +
-        'i soli file fuori da `.daiku/`.',
+    reason: all
+      ? '`git commit -a` widens the stage to the whole tracked tree, and under `.daiku/` ' +
+        'there is a change: nothing of Daiku enters a commit, in any case. ' +
+        'Take `.daiku/` off the stage (`git restore --staged -- .daiku/`) or commit ' +
+        'only files outside `.daiku/` by pathspec.'
+      : 'the stage holds changes under `.daiku/`, and a bare `git commit` would ' +
+        'freeze them: nothing of Daiku enters a commit, in any case. Take them ' +
+        'off the stage (`git restore --staged -- .daiku/`) or commit ' +
+        'only files outside `.daiku/` by pathspec.',
   };
 }
 
-// --- ambiente -----------------------------------------------------------------
+// --- environment ---------------------------------------------------------------
 //
-// Tutto ciò che la guardia sa del mondo passa di qui, così il banco di prova può
-// sostituirlo con un filesystem simulato e girare senza toccare niente.
+// Everything the guard knows about the world passes through here, so the test bench can
+// swap in a simulated filesystem and run without touching anything.
 
-const AMBIENTE_REALE = {
-  eLink: (percorso) => {
+const REAL_ENV = {
+  isLink: (path) => {
     try {
-      // Una junction di Windows non è un symlink per l'API POSIX, ma `lstat` la segna
-      // comunque come link simbolico: è il solo modo di vederla senza attraversarla.
-      return lstatSync(percorso).isSymbolicLink();
+      // A Windows junction is not a symlink to the POSIX API, yet `lstat` still marks
+      // it as a symbolic link: the only way to see it without crossing it.
+      return lstatSync(path).isSymbolicLink();
     } catch {
-      return null; // non esiste
+      return null; // does not exist
     }
   },
-  /** Le righe di `git status --porcelain` confinate a `.daiku/`, dalla directory
-   * indicata. Sola lettura: `[]` è pulito, `null` è git irraggiungibile — e `null`
-   * degrada a permesso, per il contratto fail-open. */
-  statoDaiku: (dir) => {
+  /** The `git status --porcelain` lines confined to `.daiku/`, from the given
+   * directory. Read-only: `[]` is clean, `null` is unreachable git — and `null`
+   * degrades to allowed, by the fail-open contract. */
+  daikuStatus: (dir) => {
     try {
-      const esito = spawnSync('git', ['status', '--porcelain', '--', '.daiku'], {
+      const outcome = spawnSync('git', ['status', '--porcelain', '--', '.daiku'], {
         cwd: dir,
         encoding: 'utf-8',
         timeout: 10000,
       });
-      if (esito.error || esito.status !== 0 || typeof esito.stdout !== 'string') return null;
-      return esito.stdout
+      if (outcome.error || outcome.status !== 0 || typeof outcome.stdout !== 'string') return null;
+      return outcome.stdout
         .split('\n')
         .map((l) => l.trimEnd())
         .filter((l) => l);
@@ -788,363 +787,363 @@ const AMBIENTE_REALE = {
   },
 };
 
-/** La decisione, senza uscire dal processo: è ciò che il banco di prova chiama.
+/** The decision, without leaving the process: what the test bench calls.
  *
- * Il disco lo interrogano due rami — quello dei link e quello dello stage di
- * `.daiku/` — e la loro eccezione resta dentro di loro: gli altri decidono su path
- * e parametri, quindi reggono anche a filesystem irraggiungibile. È provato dal
- * banco, non dichiarato qui.
+ * The disk is questioned by two branches — the link one and the `.daiku/`
+ * stage one — and their exception stays inside them: the others decide on paths
+ * and parameters, so they hold even with an unreachable filesystem. Proved by the
+ * bench, not declared here.
  */
-function valuta(riga, cwd, amb, ctx) {
-  // Il gate, prima di ogni altra cosa: senza `.daiku/project.json` questo progetto non ha
-  // aperto Daiku, e la guardia non ha niente da sorvegliare. Non si legge nemmeno la riga.
-  if (!ctx || !ctx.presente) return null;
+function evaluate(line, cwd, env, ctx) {
+  // The gate, before everything else: without `.daiku/project.json` this project has not
+  // opened Daiku, and the guard has nothing to watch. The line is not even read.
+  if (!ctx || !ctx.present) return null;
   return (
-    guardiaPath(riga, cwd, amb, ctx) ||
-    guardiaDaiku(riga, cwd, amb) ||
-    guardiaCommit(riga) ||
-    guardiaPush(riga)
+    pathGuard(line, cwd, env, ctx) ||
+    daikuGuard(line, cwd, env) ||
+    commitGuard(line) ||
+    pushGuard(line)
   );
 }
 
-/** La stessa decisione, con il contratto **fail-open** addosso: qualunque eccezione
- * diventa un permesso. È l'unica forma che `principale` usa, ed è verificabile dal
- * banco di prova — perché «permette in silenzio» e «protegge» si distinguono solo
- * provandolo. */
-function decisioneSicura(riga, cwd, amb, ctx) {
+/** The same decision, wearing the **fail-open** contract: any exception
+ * becomes an allowance. It is the only shape `main` uses, and it is verifiable by the
+ * test bench — because "silently allows" and "protects" can only be told apart
+ * by trying. */
+function safeDecide(line, cwd, env, ctx) {
   try {
-    return valuta(riga, cwd, amb, ctx);
+    return evaluate(line, cwd, env, ctx);
   } catch {
     return null;
   }
 }
 
-// --- banco di prova -----------------------------------------------------------
+// --- test bench -----------------------------------------------------------
 
-/** Un filesystem simulato: la radice tecnica del progetto, e accanto un pool di worktree
- * in cui `node_modules` e il venv sono junction — il layout che questa guardia sorveglia
- * quando un progetto dichiara `{worktree.pool}`. */
-function ambienteFinto() {
-  const chiave = (p) => String(p).replace(/\\/g, '/').replace(/\/+$/, '').toLowerCase();
-  const albero = new Map(
+/** A simulated filesystem: the project's technical root, and next to it a worktree pool
+ * where `node_modules` and the venv are junctions — the layout this guard watches
+ * when a project declares `{worktree.pool}`. */
+function fakeEnv() {
+  const key = (p) => String(p).replace(/\\/g, '/').replace(/\/+$/, '').toLowerCase();
+  const tree = new Map(
     Object.entries({
-      'c:/dev/progetto/.git': { tipo: 'dir' },
-      'c:/dev/progetto/node_modules': { tipo: 'dir' },
-      'c:/dev/progetto/backend': { tipo: 'dir' },
-      'c:/dev/progetto/backend/.venv': { tipo: 'dir' },
-      'c:/dev/progetto/docs': { tipo: 'dir' },
-      // Il pool sta fuori dalla radice tecnica, che è il caso reale: un worktree non si
-      // annida dentro il repository da cui nasce.
-      'c:/dev/wt': { tipo: 'dir' },
-      'c:/dev/wt/wt-1': { tipo: 'dir' },
-      'c:/dev/wt/wt-1/.git': { tipo: 'file' },
-      'c:/dev/wt/wt-1/node_modules': { tipo: 'link' },
-      'c:/dev/wt/wt-1/backend': { tipo: 'dir' },
-      'c:/dev/wt/wt-1/backend/.venv': { tipo: 'link' },
-      'c:/dev/wt/wt-1/docs': { tipo: 'dir' },
-      // Un worktree di qualcun altro, fuori dal pool dichiarato: la guardia non lo tocca.
-      'c:/dev/altrove/.git': { tipo: 'file' },
-      'c:/dev/altrove/docs': { tipo: 'dir' },
+      'c:/dev/project/.git': { type: 'dir' },
+      'c:/dev/project/node_modules': { type: 'dir' },
+      'c:/dev/project/backend': { type: 'dir' },
+      'c:/dev/project/backend/.venv': { type: 'dir' },
+      'c:/dev/project/docs': { type: 'dir' },
+      // The pool sits outside the technical root, the real case: a worktree is not
+      // nested inside the repository it was born from.
+      'c:/dev/wt': { type: 'dir' },
+      'c:/dev/wt/wt-1': { type: 'dir' },
+      'c:/dev/wt/wt-1/.git': { type: 'file' },
+      'c:/dev/wt/wt-1/node_modules': { type: 'link' },
+      'c:/dev/wt/wt-1/backend': { type: 'dir' },
+      'c:/dev/wt/wt-1/backend/.venv': { type: 'link' },
+      'c:/dev/wt/wt-1/docs': { type: 'dir' },
+      // Somebody else's worktree, outside the declared pool: the guard does not touch it.
+      'c:/dev/elsewhere/.git': { type: 'file' },
+      'c:/dev/elsewhere/docs': { type: 'dir' },
     })
   );
-  // Gli antenati di una voce esistono come directory ordinarie: `attraversaLink`
-  // cammina il path componente per componente, e senza di loro si fermerebbe al primo
-  // pezzo sconosciuto — cioè permetterebbe, e il banco proverebbe la cosa sbagliata.
-  const antenati = new Set();
-  for (const percorso of albero.keys()) {
-    const pezzi = percorso.split('/');
-    for (let i = 1; i < pezzi.length; i += 1) antenati.add(pezzi.slice(0, i).join('/'));
+  // A node's ancestors exist as plain directories: `crossesLink`
+  // walks the path component by component, and without them it would stop at the first
+  // unknown piece — i.e. allow, and the bench would prove the wrong thing.
+  const ancestors = new Set();
+  for (const path of tree.keys()) {
+    const pieces = path.split('/');
+    for (let i = 1; i < pieces.length; i += 1) ancestors.add(pieces.slice(0, i).join('/'));
   }
-  const voce = (p) => albero.get(chiave(p)) || (antenati.has(chiave(p)) ? { tipo: 'dir' } : undefined);
+  const entry = (p) => tree.get(key(p)) || (ancestors.has(key(p)) ? { type: 'dir' } : undefined);
   return {
-    eLink: (p) => (voce(p) ? voce(p).tipo === 'link' : null),
-    // Di default lo stage di `.daiku/` è pulito: i casi che provano lo stage sporco
-    // passano il proprio settimo elemento e il ciclo lo innesta qui sotto.
-    statoDaiku: () => [],
+    isLink: (p) => (entry(p) ? entry(p).type === 'link' : null),
+    // By default the `.daiku/` stage is clean: cases proving a dirty stage
+    // pass their own seventh element and the loop grafts it below.
+    daikuStatus: () => [],
   };
 }
 
-const CWD_RADICE = 'C:/dev/progetto';
-const CWD_WT = 'C:/dev/wt/wt-1';
+const ROOT_CWD = 'C:/dev/project';
+const WT_CWD = 'C:/dev/wt/wt-1';
 
-/** Un progetto che ha aperto Daiku e dichiara il pool: tutto ciò che resta da accendere. */
-const CTX_PIENO = contestoFinto({ pool: 'C:/dev/wt' });
+/** A project that opened Daiku and declares the pool: everything left to switch on. */
+const CTX_FULL = fakeContext({ pool: 'C:/dev/wt' });
 
-/** Un progetto che ha aperto Daiku e non ha dichiarato né pool né guardrail. */
-const CTX_NUDO = contestoFinto({});
+/** A project that opened Daiku and declared neither pool nor guardrails. */
+const CTX_BARE = fakeContext({});
 
-/** Un repository che Daiku non l'ha mai visto: qui la guardia non esiste. */
-const CTX_ASSENTE = contestoFinto({ presente: false });
+/** A repository Daiku never opened: the guard does not exist here. */
+const CTX_ABSENT = fakeContext({ present: false });
 
-/** Righe di comando con la decisione attesa. `contiene` è un pezzo del motivo.
+/** Command lines with the expected decision. `contains` is a piece of the reason.
  *
- * Tre cose vanno provate insieme, e la lista è ordinata così: che **il gate tenga** —
- * un progetto che non ha aperto Daiku non riceve nessun diniego — che **ogni
- * interruttore accenda solo il suo ramo**, e che le forme note di ciascun gesto siano
- * riconosciute. I gesti legittimi che devono restare permessi sono metà della lista, ed
- * è la metà che conta: una guardia che nega tutto passerebbe l'altra.
+ * Three things are tested together, and the list is ordered so: that **the gate holds** —
+ * a project that has not opened Daiku receives no denial — that **each switch lights only
+ * its own branch**, and that the known shapes of each move are recognised. The legitimate
+ * moves that must stay allowed are half the list, and that is the half that counts: a guard
+ * denying everything would pass the other half.
  */
-const CASI = [
-  // --- il gate: senza `.daiku/project.json` non si nega niente ----------------
-  ['progetto senza Daiku: il push passa', 'git push', CWD_RADICE, 'permetti', '', CTX_ASSENTE],
-  ['progetto senza Daiku: la junction non è affare suo', 'rm -rf c:/dev/wt/wt-1/node_modules', CWD_RADICE, 'permetti', '', CTX_ASSENTE],
-  ['progetto senza Daiku: nemmeno --no-verify', 'git commit -n -m wip', CWD_RADICE, 'permetti', '', CTX_ASSENTE],
-  ['progetto senza Daiku: nemmeno .daiku/', 'git add .daiku/project.json', CWD_RADICE, 'permetti', '', CTX_ASSENTE],
+const CASES = [
+  // --- the gate: without `.daiku/project.json` nothing is denied ----------------
+  ['project without Daiku: push passes', 'git push', ROOT_CWD, 'allow', '', CTX_ABSENT],
+  ['project without Daiku: the junction is not its business', 'rm -rf c:/dev/wt/wt-1/node_modules', ROOT_CWD, 'allow', '', CTX_ABSENT],
+  ['project without Daiku: not even --no-verify', 'git commit -n -m wip', ROOT_CWD, 'allow', '', CTX_ABSENT],
+  ['project without Daiku: not even .daiku/', 'git add .daiku/project.json', ROOT_CWD, 'allow', '', CTX_ABSENT],
 
-  // --- l'unico interruttore rimasto è il pool: push, --no-verify e .daiku/ negano
-  // sempre, senza chiave, e i casi qui sotto lo provano a interruttori spenti -----
-  ['senza dichiarazione il push è negato lo stesso', 'git push', CWD_RADICE, 'nega', 'gesto manuale', CTX_NUDO],
-  ['senza dichiarazione --no-verify è negato lo stesso', 'git commit --no-verify -m wip', CWD_RADICE, 'nega', 'non è ammesso', CTX_NUDO],
-  ['chiavi spente esplicite non spengono niente', 'git push', CWD_RADICE, 'nega', 'gesto manuale', contestoFinto({ guardrails: { deny_push: false, deny_no_verify: false } })],
-  ['nessun pool dichiarato: il worktree altrui non si tocca', 'rm -rf c:/dev/wt/wt-1/docs', CWD_RADICE, 'permetti', '', CTX_NUDO],
-  ['nessun pool dichiarato: nemmeno pnpm install', 'pnpm install', CWD_WT, 'permetti', '', CTX_NUDO],
-  ['il link però resta protetto: è un fatto del sistema, non una policy', 'rm -rf c:/dev/wt/wt-1/node_modules', CWD_RADICE, 'nega', 'attraversa un link', CTX_NUDO],
-  ['.daiku/ nega lo stesso senza interruttori: non ne ha', 'git add .daiku/project.json', CWD_RADICE, 'nega', '.daiku/', CTX_NUDO],
-  ['un worktree fuori dal pool dichiarato non è sorvegliato', 'rm -rf c:/dev/altrove/docs', CWD_RADICE, 'permetti', '', CTX_PIENO],
+  // --- the only switch left is the pool: push, --no-verify and .daiku/ always deny,
+  // with no key, and the cases below prove it with switches off -----
+  ['undeclared push is still denied', 'git push', ROOT_CWD, 'deny', 'manual gesture', CTX_BARE],
+  ['undeclared --no-verify is still denied', 'git commit --no-verify -m wip', ROOT_CWD, 'deny', 'is not allowed', CTX_BARE],
+  ['explicitly switched-off keys switch nothing off', 'git push', ROOT_CWD, 'deny', 'manual gesture', fakeContext({ guardrails: { deny_push: false, deny_no_verify: false } })],
+  ['no pool declared: someone else\'s worktree is left alone', 'rm -rf c:/dev/wt/wt-1/docs', ROOT_CWD, 'allow', '', CTX_BARE],
+  ['no pool declared: not even pnpm install', 'pnpm install', WT_CWD, 'allow', '', CTX_BARE],
+  ['the link stays protected all the same: a system fact, not a policy', 'rm -rf c:/dev/wt/wt-1/node_modules', ROOT_CWD, 'deny', 'crosses a Windows link', CTX_BARE],
+  ['.daiku/ denies with no switches all the same: it has none', 'git add .daiku/project.json', ROOT_CWD, 'deny', '.daiku/', CTX_BARE],
+  ['a worktree outside the declared pool is not watched', 'rm -rf c:/dev/elsewhere/docs', ROOT_CWD, 'allow', '', CTX_FULL],
 
-  // --- il cd che sposta la base, che è la forma che sfuggiva ------------------
-  ['cd nella stessa riga, poi rm su una junction', 'cd /c/dev/wt/wt-1 && rm -rf node_modules', CWD_RADICE, 'nega', 'attraversa un link'],
-  ['cd nella stessa riga, poi pnpm install nel worktree', 'cd /c/dev/wt/wt-1 && pnpm install', CWD_RADICE, 'nega', 'virtualStoreDir'],
-  ['cd con Set-Location, poi Remove-Item sulla junction', 'Set-Location C:/dev/wt/wt-1; Remove-Item -Recurse -Force node_modules', CWD_RADICE, 'nega', 'attraversa un link'],
-  ['cd relativo che scende nel pool', 'cd ../wt/wt-1 && rm -rf backend/.venv', CWD_RADICE, 'nega', 'attraversa un link'],
-  ['wrapper bash -c con cd dentro le virgolette', 'bash -c "cd /c/dev/wt/wt-1 && rm -rf node_modules"', CWD_RADICE, 'nega', 'attraversa un link'],
-  ['cd verso una variabile: base ignota, nessun verdetto inventato', 'cd $ALTRO && rm -rf node_modules', CWD_RADICE, 'permetti', ''],
-  ['il cd che torna indietro riporta la base nella radice', 'cd /c/dev/wt/wt-1; cd /c/dev/progetto; rm -rf node_modules', CWD_RADICE, 'permetti', ''],
-  ['find -exec rm sulla junction', 'find /c/dev/wt/wt-1 -name x -exec rm -rf /c/dev/wt/wt-1/node_modules ;', CWD_RADICE, 'nega', 'attraversa un link'],
-  ['pnpm i è pnpm install', 'cd /c/dev/wt/wt-1 && pnpm i', CWD_RADICE, 'nega', 'virtualStoreDir'],
+  // --- the cd that moves the base, the shape that used to slip through ------------------
+  ['cd on the same line, then rm on a junction', 'cd /c/dev/wt/wt-1 && rm -rf node_modules', ROOT_CWD, 'deny', 'crosses a Windows link'],
+  ['cd on the same line, then pnpm install in the worktree', 'cd /c/dev/wt/wt-1 && pnpm install', ROOT_CWD, 'deny', 'virtualStoreDir'],
+  ['cd via Set-Location, then Remove-Item on the junction', 'Set-Location C:/dev/wt/wt-1; Remove-Item -Recurse -Force node_modules', ROOT_CWD, 'deny', 'crosses a Windows link'],
+  ['relative cd descending into the pool', 'cd ../wt/wt-1 && rm -rf backend/.venv', ROOT_CWD, 'deny', 'crosses a Windows link'],
+  ['bash -c wrapper with cd inside the quotes', 'bash -c "cd /c/dev/wt/wt-1 && rm -rf node_modules"', ROOT_CWD, 'deny', 'crosses a Windows link'],
+  ['cd to a variable: unknown base, no invented verdict', 'cd $OTHER && rm -rf node_modules', ROOT_CWD, 'allow', ''],
+  ['the cd back restores the base to the root', 'cd /c/dev/wt/wt-1; cd /c/dev/project; rm -rf node_modules', ROOT_CWD, 'allow', ''],
+  ['find -exec rm on the junction', 'find /c/dev/wt/wt-1 -name x -exec rm -rf /c/dev/wt/wt-1/node_modules ;', ROOT_CWD, 'deny', 'crosses a Windows link'],
+  ['pnpm i is pnpm install', 'cd /c/dev/wt/wt-1 && pnpm i', ROOT_CWD, 'deny', 'virtualStoreDir'],
 
-  // --- le junction e il pool, forma per forma --------------------------------
-  ['rm -rf sulla junction, path assoluto', 'rm -rf /c/dev/wt/wt-1/node_modules', CWD_RADICE, 'nega', 'attraversa un link'],
-  ['rm -rf sulla junction, path Windows', 'rm -rf "C:\\dev\\wt\\wt-1\\node_modules"', CWD_RADICE, 'nega', 'attraversa un link'],
-  ['rm -rf dentro la junction', 'rm -rf c:/dev/wt/wt-1/node_modules/.pnpm', CWD_RADICE, 'nega', 'attraversa un link'],
-  ['Remove-Item con alias ri', 'ri -Recurse -Force c:/dev/wt/wt-1/node_modules', CWD_RADICE, 'nega', 'attraversa un link'],
-  ['Remove-Item con alias del', 'del c:/dev/wt/wt-1/backend/.venv', CWD_RADICE, 'nega', 'attraversa un link'],
-  ['git worktree remove su un worktree del pool', 'git worktree remove c:/dev/wt/wt-1', CWD_RADICE, 'nega', 'del pool'],
-  ['rm dentro il worktree ma fuori dalle junction', 'rm -rf c:/dev/wt/wt-1/docs', CWD_RADICE, 'nega', 'del pool'],
-  ['rd /s sul link è lo sgancio che la guardia stessa prescrive', 'rd /s /q c:\\dev\\wt\\wt-1\\node_modules', CWD_RADICE, 'permetti', ''],
-  ['rd /s dentro la junction non è uno sgancio', 'rd /s /q c:\\dev\\wt\\wt-1\\node_modules\\.pnpm', CWD_RADICE, 'nega', 'attraversa un link'],
-  ['rm nella radice tecnica, che è il repo vero', 'rm -rf c:/dev/progetto/node_modules', CWD_RADICE, 'permetti', ''],
-  ['rm di un path che non esiste', 'rm -rf c:/dev/progetto/build-che-non-ce', CWD_RADICE, 'permetti', ''],
-  ['pnpm install nella radice tecnica', 'pnpm install', CWD_RADICE, 'permetti', ''],
-  ['pnpm install nel worktree, cwd della sessione', 'pnpm install', CWD_WT, 'nega', 'virtualStoreDir'],
-  ['npm rm <pacchetto> non è una rimozione di path', 'npm rm left-pad', CWD_WT, 'permetti', ''],
-  ['pnpm remove <pacchetto> non è una rimozione di path', 'pnpm remove left-pad', CWD_WT, 'permetti', ''],
+  // --- junctions and the pool, shape by shape --------------------------------
+  ['rm -rf on the junction, absolute path', 'rm -rf /c/dev/wt/wt-1/node_modules', ROOT_CWD, 'deny', 'crosses a Windows link'],
+  ['rm -rf on the junction, Windows path', 'rm -rf "C:\\dev\\wt\\wt-1\\node_modules"', ROOT_CWD, 'deny', 'crosses a Windows link'],
+  ['rm -rf inside the junction', 'rm -rf c:/dev/wt/wt-1/node_modules/.pnpm', ROOT_CWD, 'deny', 'crosses a Windows link'],
+  ['Remove-Item with alias ri', 'ri -Recurse -Force c:/dev/wt/wt-1/node_modules', ROOT_CWD, 'deny', 'crosses a Windows link'],
+  ['Remove-Item with alias del', 'del c:/dev/wt/wt-1/backend/.venv', ROOT_CWD, 'deny', 'crosses a Windows link'],
+  ['git worktree remove on a pooled worktree', 'git worktree remove c:/dev/wt/wt-1', ROOT_CWD, 'deny', 'of the pool'],
+  ['rm inside the worktree but outside the junctions', 'rm -rf c:/dev/wt/wt-1/docs', ROOT_CWD, 'deny', 'of the pool'],
+  ['rd /s on the link is the detach this guard itself prescribes', 'rd /s /q c:\\dev\\wt\\wt-1\\node_modules', ROOT_CWD, 'allow', ''],
+  ['rd /s inside the junction is not a detach', 'rd /s /q c:\\dev\\wt\\wt-1\\node_modules\\.pnpm', ROOT_CWD, 'deny', 'crosses a Windows link'],
+  ['rm in the technical root, which is the real repo', 'rm -rf c:/dev/project/node_modules', ROOT_CWD, 'allow', ''],
+  ['rm of a path that does not exist', 'rm -rf c:/dev/project/missing-build', ROOT_CWD, 'allow', ''],
+  ['pnpm install in the technical root', 'pnpm install', ROOT_CWD, 'allow', ''],
+  ['pnpm install in the worktree, session cwd', 'pnpm install', WT_CWD, 'deny', 'virtualStoreDir'],
+  ['npm rm <package> is not a path removal', 'npm rm left-pad', WT_CWD, 'allow', ''],
+  ['pnpm remove <package> is not a path removal', 'pnpm remove left-pad', WT_CWD, 'allow', ''],
 
-  // --- il ramo commit: le forme che una regola per prefisso non vede ---------
-  ['git commit --no-verify', 'git commit --no-verify -m "wip"', CWD_RADICE, 'nega', 'non è ammesso'],
-  ['git commit -n in coda', 'git commit -m "wip" -n', CWD_RADICE, 'nega', 'non è ammesso'],
-  ['git commit -n dentro un wrapper', 'bash -lc "git commit -n -m wip"', CWD_RADICE, 'nega', 'non è ammesso'],
-  ['git commit con -n dentro il messaggio non è il flag', 'git commit -m "fix -n del parser"', CWD_RADICE, 'permetti', ''],
-  ['git commit normale', 'git commit -m "feat: qualcosa"', CWD_RADICE, 'permetti', ''],
+  // --- the commit branch: the shapes a prefix rule cannot see ---------
+  ['git commit --no-verify', 'git commit --no-verify -m "wip"', ROOT_CWD, 'deny', 'is not allowed'],
+  ['git commit -n at the end', 'git commit -m "wip" -n', ROOT_CWD, 'deny', 'is not allowed'],
+  ['git commit -n inside a wrapper', 'bash -lc "git commit -n -m wip"', ROOT_CWD, 'deny', 'is not allowed'],
+  ['git commit with -n inside the message is not the flag', 'git commit -m "fix -n of the parser"', ROOT_CWD, 'allow', ''],
+  ['normal git commit', 'git commit -m "feat: something"', ROOT_CWD, 'allow', ''],
 
-  // --- il ramo .daiku/: nessun commit contiene `.daiku/`, in qualunque caso ----
-  ['git add con pathspec .daiku/', 'git add .daiku/policies/area.md', CWD_RADICE, 'nega', '.daiku/'],
-  ['git add misto codice + .daiku/', 'git add apps/x.py .daiku/project.json', CWD_RADICE, 'nega', '.daiku/'],
-  ['git add .daiku/ dentro un wrapper', 'bash -c "git add .daiku/project.json"', CWD_RADICE, 'nega', '.daiku/'],
-  ['git commit con pathspec .daiku/ dopo --', 'git commit -m "x" -- .daiku/domain/commit-convention.md', CWD_RADICE, 'nega', '.daiku/'],
-  ['cd + commit con pathspec .daiku/', 'cd /c/dev/progetto && git commit -- .daiku/project.json', CWD_RADICE, 'nega', '.daiku/'],
-  ['il messaggio che nomina .daiku/ non è un pathspec', 'git commit -m "fix .daiku loader"', CWD_RADICE, 'permetti', ''],
-  ['git commit nudo con .daiku/ in stage', 'git commit -m "feat: x"', CWD_RADICE, 'nega', 'stage', CTX_PIENO, ['M  .daiku/project.json']],
-  ['git commit -a con .daiku/ modificato', 'git commit -a -m "x"', CWD_RADICE, 'nega', '.daiku/', CTX_PIENO, [' M .daiku/policies/area.md']],
-  ['git commit -a pulito', 'git commit -a -m "x"', CWD_RADICE, 'permetti', '', CTX_PIENO, []],
-  ['commit limitato ad altri path con .daiku/ in stage', 'git commit -- docs/x.md', CWD_RADICE, 'permetti', '', CTX_PIENO, ['M  .daiku/project.json']],
-  ['git add -A passa qui: decide il commit', 'git add -A', CWD_RADICE, 'permetti', ''],
-  ['git commit nudo pulito', 'git commit -m "docs: x"', CWD_RADICE, 'permetti', ''],
+  // --- the .daiku/ branch: no commit contains `.daiku/`, in any case ----
+  ['git add with .daiku/ pathspec', 'git add .daiku/policies/area.md', ROOT_CWD, 'deny', '.daiku/'],
+  ['mixed git add, code + .daiku/', 'git add apps/x.py .daiku/project.json', ROOT_CWD, 'deny', '.daiku/'],
+  ['git add .daiku/ inside a wrapper', 'bash -c "git add .daiku/project.json"', ROOT_CWD, 'deny', '.daiku/'],
+  ['git commit with .daiku/ pathspec after --', 'git commit -m "x" -- .daiku/domain/commit-convention.md', ROOT_CWD, 'deny', '.daiku/'],
+  ['cd + commit with .daiku/ pathspec', 'cd /c/dev/project && git commit -- .daiku/project.json', ROOT_CWD, 'deny', '.daiku/'],
+  ['a message naming .daiku/ is not a pathspec', 'git commit -m "fix .daiku loader"', ROOT_CWD, 'allow', ''],
+  ['bare git commit with .daiku/ staged', 'git commit -m "feat: x"', ROOT_CWD, 'deny', 'stage', CTX_FULL, ['M  .daiku/project.json']],
+  ['git commit -a with .daiku/ modified', 'git commit -a -m "x"', ROOT_CWD, 'deny', '.daiku/', CTX_FULL, [' M .daiku/policies/area.md']],
+  ['clean git commit -a', 'git commit -a -m "x"', ROOT_CWD, 'allow', '', CTX_FULL, []],
+  ['commit limited to other paths with .daiku/ staged', 'git commit -- docs/x.md', ROOT_CWD, 'allow', '', CTX_FULL, ['M  .daiku/project.json']],
+  ['git add -A passes here: the commit decides', 'git add -A', ROOT_CWD, 'allow', ''],
+  ['clean bare git commit', 'git commit -m "docs: x"', ROOT_CWD, 'allow', ''],
 
-  // --- il push: negato dove è dichiarato, e le forme che restano permesse -----
-  ['git push nudo', 'git push', CWD_RADICE, 'nega', 'gesto manuale'],
-  ['git -C con un altro albero', 'git -C c:/dev/wt/wt-1 push origin main', CWD_RADICE, 'nega', 'gesto manuale'],
-  ['powershell -Command "git push"', 'powershell -NoProfile -Command "git push"', CWD_RADICE, 'nega', 'gesto manuale'],
-  ['bash -lc "git push"', 'bash -lc "git push --force"', CWD_RADICE, 'nega', 'gesto manuale'],
-  ['cmd /c "git push"', 'cmd /c "git push"', CWD_RADICE, 'nega', 'gesto manuale'],
-  ['git.exe con path quotato e spazi', '"C:\\Program Files\\Git\\cmd\\git.exe" push', CWD_RADICE, 'nega', 'gesto manuale'],
-  ['sudo davanti a git push', 'sudo git push', CWD_RADICE, 'nega', 'gesto manuale'],
-  ['git push in coda a un altro comando', 'npm test && git push', CWD_RADICE, 'nega', 'gesto manuale'],
-  ['git push --dry-run non spinge niente', 'git push --dry-run', CWD_RADICE, 'permetti', ''],
-  ['git fetch non è un push', 'git fetch origin main', CWD_RADICE, 'permetti', ''],
-  ['echo di una frase che parla di git push', 'echo "git push is forbidden"', CWD_RADICE, 'permetti', ''],
-  ['grep di git push nel corpus', 'grep -rn "git push" .daiku/', CWD_RADICE, 'permetti', ''],
+  // --- push: denied where declared, and the shapes that stay allowed -----
+  ['bare git push', 'git push', ROOT_CWD, 'deny', 'manual gesture'],
+  ['git -C with another tree', 'git -C c:/dev/wt/wt-1 push origin main', ROOT_CWD, 'deny', 'manual gesture'],
+  ['powershell -Command "git push"', 'powershell -NoProfile -Command "git push"', ROOT_CWD, 'deny', 'manual gesture'],
+  ['bash -lc "git push"', 'bash -lc "git push --force"', ROOT_CWD, 'deny', 'manual gesture'],
+  ['cmd /c "git push"', 'cmd /c "git push"', ROOT_CWD, 'deny', 'manual gesture'],
+  ['git.exe with quoted path and spaces', '"C:\\Program Files\\Git\\cmd\\git.exe" push', ROOT_CWD, 'deny', 'manual gesture'],
+  ['sudo in front of git push', 'sudo git push', ROOT_CWD, 'deny', 'manual gesture'],
+  ['git push chained after another command', 'npm test && git push', ROOT_CWD, 'deny', 'manual gesture'],
+  ['git push --dry-run pushes nothing', 'git push --dry-run', ROOT_CWD, 'allow', ''],
+  ['git fetch is not a push', 'git fetch origin main', ROOT_CWD, 'allow', ''],
+  ['echo of a sentence talking about git push', 'echo "git push is forbidden"', ROOT_CWD, 'allow', ''],
+  ['grep for git push in the corpus', 'grep -rn "git push" .daiku/', ROOT_CWD, 'allow', ''],
 
-  // --- ciò che non è affare di questa guardia --------------------------------
-  // Restano qui come prova esplicita: chi legge deve vedere che il perimetro di lettura,
-  // la superficie di enforcement e i gesti Git verso HEAD appartengono alla policy
-  // dell'host, non che sono stati dimenticati qui.
-  ['il perimetro di lettura è della policy dell\'host', 'cat C:\\Windows\\System32\\drivers\\etc\\hosts', CWD_RADICE, 'permetti', ''],
-  ['la superficie degli hook è delle ACL di sistema', 'echo x > .codex/hooks/command-guard.mjs', CWD_RADICE, 'permetti', ''],
-  ['git clean non è suo', 'git clean -fd', CWD_RADICE, 'permetti', ''],
-  ['git reset --hard non è suo', 'git reset --hard HEAD', CWD_RADICE, 'permetti', ''],
+  // --- what is not this guard's business --------------------------------
+  // They stay here as explicit proof: readers must see that the read perimeter,
+  // the enforcement surface and the Git gestures towards HEAD belong to the host
+  // policy, not that they were forgotten here.
+  ['the read perimeter belongs to the host policy', 'cat C:\\Windows\\System32\\drivers\\etc\\hosts', ROOT_CWD, 'allow', ''],
+  ['the hook surface belongs to system ACLs', 'echo x > .codex/hooks/command-guard.mjs', ROOT_CWD, 'allow', ''],
+  ['git clean is not its business', 'git clean -fd', ROOT_CWD, 'allow', ''],
+  ['git reset --hard is not its business', 'git reset --hard HEAD', ROOT_CWD, 'allow', ''],
 
-  // --- righe malformate: non devono sollevare, mai ---------------------------
-  ['riga vuota', '   ', CWD_RADICE, 'permetti', ''],
-  ['virgoletta non chiusa: il bersaglio si legge lo stesso', 'rm -rf "c:/dev/wt/wt-1', CWD_RADICE, 'nega', 'del pool'],
-  ['solo separatori', '&& || ; | &', CWD_RADICE, 'permetti', ''],
-  ['parentesi e graffe nude', '( { rm } )', CWD_RADICE, 'permetti', ''],
-  ['wrapper senza payload', 'bash -c', CWD_RADICE, 'permetti', ''],
-  ['cwd assente', 'rm -rf node_modules', null, 'permetti', ''],
-  ['un comando qualunque', 'git status --short', CWD_RADICE, 'permetti', ''],
-  ['una lettura del corpus', 'cat .daiku/project.json', CWD_RADICE, 'permetti', ''],
+  // --- malformed lines: they must never throw ---------------------------
+  ['empty line', '   ', ROOT_CWD, 'allow', ''],
+  ['unterminated quote: the target still reads the same', 'rm -rf "c:/dev/wt/wt-1', ROOT_CWD, 'deny', 'of the pool'],
+  ['separators only', '&& || ; | &', ROOT_CWD, 'allow', ''],
+  ['bare parens and braces', '( { rm } )', ROOT_CWD, 'allow', ''],
+  ['wrapper without payload', 'bash -c', ROOT_CWD, 'allow', ''],
+  ['missing cwd', 'rm -rf node_modules', null, 'allow', ''],
+  ['any other command', 'git status --short', ROOT_CWD, 'allow', ''],
+  ['a read of the corpus', 'cat .daiku/project.json', ROOT_CWD, 'allow', ''],
 ];
 
 function selfCheck() {
-  const amb = ambienteFinto();
-  const falliti = [];
-  let eseguiti = 0;
+  const env = fakeEnv();
+  const failed = [];
+  let ran = 0;
 
-  for (const [nome, riga, cwd, atteso, contiene, ctx, stato] of CASI) {
-    eseguiti += 1;
-    let esito;
+  for (const [name, line, cwd, expected, contains, ctx, state] of CASES) {
+    ran += 1;
+    let outcome;
     try {
-      const ambCaso = stato === undefined ? amb : { ...amb, statoDaiku: () => stato };
-      esito = valuta(riga, cwd, ambCaso, ctx || CTX_PIENO);
-    } catch (errore) {
-      falliti.push(`${nome}: eccezione ${errore && errore.message}`);
+      const caseEnv = state === undefined ? env : { ...env, daikuStatus: () => state };
+      outcome = evaluate(line, cwd, caseEnv, ctx || CTX_FULL);
+    } catch (error) {
+      failed.push(`${name}: exception ${error && error.message}`);
       continue;
     }
-    const deciso = esito ? 'nega' : 'permetti';
-    if (deciso !== atteso) {
-      falliti.push(`${nome}: atteso ${atteso}, ottenuto ${deciso}${esito ? ` (${esito.motivo.slice(0, 120)})` : ''}`);
+    const decision = outcome ? 'deny' : 'allow';
+    if (decision !== expected) {
+      failed.push(`${name}: expected ${expected}, got ${decision}${outcome ? ` (${outcome.reason.slice(0, 120)})` : ''}`);
       continue;
     }
-    if (atteso === 'nega' && contiene && !esito.motivo.includes(contiene)) {
-      falliti.push(`${nome}: nega, ma il motivo non contiene "${contiene}"`);
+    if (expected === 'deny' && contains && !outcome.reason.includes(contains)) {
+      failed.push(`${name}: deny, but reason does not contain "${contains}"`);
     }
   }
 
-  // Il contratto fail-open, provato invece che dichiarato: davanti a un ambiente che
-  // solleva su ogni domanda, la decisione dev'essere un permesso, non un'eccezione.
-  const rotto = {
-    eLink: () => {
-      throw new Error('filesystem irraggiungibile');
+  // The fail-open contract, proved instead of declared: faced with an environment that
+  // throws on every question, the decision must be a permission, not an exception.
+  const broken = {
+    isLink: () => {
+      throw new Error('filesystem unreachable');
     },
-    statoDaiku: () => {
-      throw new Error('git irraggiungibile');
+    daikuStatus: () => {
+      throw new Error('git unreachable');
     },
   };
-  // Il disco e git li interrogano i rami dei link e dello stage di `.daiku/`: senza
-  // quelli, permettono. Gli altri decidono su path e parametri, che il disco non serve
-  // a leggere, e restano negati — compreso il pathspec `.daiku/`, che non chiede niente
-  // a nessuno.
-  const ambienteRotto = [
-    ['rm -rf c:/dev/wt/wt-1/node_modules', CWD_RADICE, 'nega'],
-    ['rm -rf c:/dev/progetto/node_modules', CWD_RADICE, 'permetti'],
-    ['pnpm install', CWD_WT, 'nega'],
-    ['git push', CWD_RADICE, 'nega'],
-    ['git commit -n -m x', CWD_RADICE, 'nega'],
-    ['git add .daiku/project.json', CWD_RADICE, 'nega'],
-    ['git commit -m x', CWD_RADICE, 'permetti'],
+  // The link and `.daiku/`-stage branches are the ones interrogating disk and git: without
+  // those, they allow. The others decide on paths and parameters, which need no disk
+  // to read, and stay denied — including the `.daiku/` pathspec, which asks nothing
+  // of anyone.
+  const brokenEnv = [
+    ['rm -rf c:/dev/wt/wt-1/node_modules', ROOT_CWD, 'deny'],
+    ['rm -rf c:/dev/project/node_modules', ROOT_CWD, 'allow'],
+    ['pnpm install', WT_CWD, 'deny'],
+    ['git push', ROOT_CWD, 'deny'],
+    ['git commit -n -m x', ROOT_CWD, 'deny'],
+    ['git add .daiku/project.json', ROOT_CWD, 'deny'],
+    ['git commit -m x', ROOT_CWD, 'allow'],
   ];
-  for (const [riga, cwd, atteso] of ambienteRotto) {
-    eseguiti += 1;
-    let deciso;
+  for (const [line, cwd, expected] of brokenEnv) {
+    ran += 1;
+    let decision;
     try {
-      deciso = decisioneSicura(riga, cwd, rotto, CTX_PIENO);
-    } catch (errore) {
-      falliti.push(`fail-open su \`${riga}\`: ha sollevato ${errore && errore.message}`);
+      decision = safeDecide(line, cwd, broken, CTX_FULL);
+    } catch (error) {
+      failed.push(`fail-open on \`${line}\`: threw ${error && error.message}`);
       continue;
     }
-    const letto = deciso ? 'nega' : 'permetti';
-    if (letto !== atteso) falliti.push(`ambiente rotto su \`${riga}\`: atteso ${atteso}, ottenuto ${letto}`);
+    const read = decision ? 'deny' : 'allow';
+    if (read !== expected) failed.push(`broken environment on \`${line}\`: expected ${expected}, got ${read}`);
   }
 
-  // Il contesto si legge davvero da un `project.json`, e il gate tiene anche quando quel
-  // file è illeggibile: è la degradazione che conta di più, perché è quella che
-  // trasformerebbe la guardia in un diniego a caso.
-  const letture = (file) => ({
-    esiste: (p) => Object.prototype.hasOwnProperty.call(file, String(p).replace(/\\/g, '/')),
-    leggi: (p) => {
-      const chiave = String(p).replace(/\\/g, '/');
-      if (!Object.prototype.hasOwnProperty.call(file, chiave)) throw new Error('ENOENT');
-      return file[chiave];
+  // The context is really read from a `project.json`, and the gate holds even when that
+  // file is unreadable: that degradation matters most, because it is the one that
+  // would turn the guard into a random denial.
+  const readers = (file) => ({
+    exists: (p) => Object.prototype.hasOwnProperty.call(file, String(p).replace(/\\/g, '/')),
+    read: (p) => {
+      const key = String(p).replace(/\\/g, '/');
+      if (!Object.prototype.hasOwnProperty.call(file, key)) throw new Error('ENOENT');
+      return file[key];
     },
   });
-  const daJson = [
-    ['nessun file: contesto assente', {}, false],
-    ['JSON rotto: contesto assente', { 'C:/dev/progetto/.daiku/project.json': '{"contract": 2,}' }, false],
-    ['JSON valido: contesto presente', { 'C:/dev/progetto/.daiku/project.json': '{"contract": 2}' }, true],
+  const fromJson = [
+    ['no file: context absent', {}, false],
+    ['broken JSON: context absent', { 'C:/dev/project/.daiku/project.json': '{"contract": 2,}' }, false],
+    ['valid JSON: context present', { 'C:/dev/project/.daiku/project.json': '{"contract": 2}' }, true],
   ];
-  for (const [nome, file, atteso] of daJson) {
-    eseguiti += 1;
-    const letto = contesto('C:/dev/progetto', letture(file));
-    if (letto.presente !== atteso) falliti.push(`${nome}: atteso presente=${atteso}`);
+  for (const [name, file, expected] of fromJson) {
+    ran += 1;
+    const read = loadContext('C:/dev/project', readers(file));
+    if (read.present !== expected) failed.push(`${name}: expected present=${expected}`);
   }
 
-  eseguiti += 1;
-  const conChiaviMorte = contesto('C:/dev/progetto', letture({
-    'C:/dev/progetto/.daiku/project.json':
+  ran += 1;
+  const withDeadKeys = loadContext('C:/dev/project', readers({
+    'C:/dev/project/.daiku/project.json':
       '{"contract": 2, "worktree": {"pool": "../wt"}, "guardrails": {"deny_push": false, "deny_no_verify": false}}',
   }));
-  if (!conChiaviMorte.presente || !dentro('C:/dev/wt/wt-1', conChiaviMorte.pool)) {
-    falliti.push('un project.json con pool e chiavi legacy non si legge come dichiarato');
+  if (!withDeadKeys.present || !isInside('C:/dev/wt/wt-1', withDeadKeys.pool)) {
+    failed.push('a project.json with pool and legacy keys is not read as declared');
   }
 
   process.stdout.write(
-    JSON.stringify({ controlli: eseguiti, passati: eseguiti - falliti.length, falliti }, null, 2) + '\n'
+    JSON.stringify({ checks: ran, passed: ran - failed.length, failed }, null, 2) + '\n'
   );
-  return falliti.length ? 1 : 0;
+  return failed.length ? 1 : 0;
 }
 
-// --- Forme che questa guardia NON copre ---------------------------------------
+// --- Shapes this guard does NOT cover ---------------------------------------
 //
-// Dichiarate apposta: una guardia che tace su ciò che non vede fa credere di coprirlo,
-// e chi legge il file smette di stare attento proprio dove dovrebbe. Tutte le voci qui
-// sotto sono la stessa famiglia — un bersaglio che nella riga non si legge — e nessuna
-// si chiude rattoppando questo file: la chiusura per effetto invece che per testo è del
-// sandbox, che su Windows nativo non esiste, e della policy di sistema.
+// Declared on purpose: a guard silent about what it does not see makes readers believe it covers it,
+// and file readers stop paying attention exactly where they should. Every entry below
+// is the same family — a target unreadable in the line — and none
+// is closed by patching this file: closing by effect instead of by text belongs to the
+// sandbox, which does not exist on native Windows, and to the system policy.
 //
-//  - **Un bersaglio costruito da una variabile di shell** (`rm -rf "$DIR"`,
-//    `cd $ALTRO && rm -rf node_modules`). La guardia vede il testo, non il valore: dopo
-//    un `cd` non risolvibile la base diventa *ignota* e i bersagli **relativi** non si
-//    giudicano affatto — si permette, e non è una copertura. Vale anche per lo stage
-//    di `.daiku/`: senza base il `git status` non si lancia.
-//  - **Un bersaglio che arriva da una pipeline** (`Get-ChildItem x | Remove-Item -Recurse`,
-//    `find … -print0 | xargs -0 rm -rf`): nella riga non c'è nessun path da leggere.
-//  - **`powershell -EncodedCommand <base64>`** e ogni altra forma offuscata.
-//  - **Uno script già scritto** (`bash pulisci.sh`, `python pulisci.py`): il gesto
-//    distruttivo sta nel file, non nella riga. Il `PreToolUse` vede solo la riga.
-//  - **Altri strumenti che cancellano**: `robocopy /MIR`, `git rm -r`. Non sono forme
-//    *equivalenti* dei gesti qui sopra: sono gesti diversi, e aggiungerli è una
-//    decisione, non una manutenzione.
-//  - **Il corpo di un heredoc** conta come comando, di proposito: `bash <<'EOF'` lo
-//    esegue davvero. Chi scrive un heredoc che *cita* `rm -rf` in un testo può vedersi
-//    negare la scrittura — è un falso positivo noto, e il rimedio è usare uno strumento
-//    di scrittura file invece della shell.
-//  - **I subagent lanciati fuori da questo harness**, che questa guardia non vede affatto.
-//  - **Ogni progetto che non ha aperto Daiku**, e ogni ramo che il suo `project.json` non
-//    accende. Non è un limite tecnico ma il confine voluto: un pacchetto installato una
-//    volta è attivo ovunque, e negare un comando a chi non ha dichiarato niente sarebbe
-//    un guasto con l'aspetto di una tutela. Chi vuole la copertura la dichiara. Il ramo
-//    `.daiku/` è l'eccezione che conferma il confine: interruttore non ne ha, ma il gate
-//    sì — senza `.daiku/project.json` resta spento anche lui.
-//  - **Il terminale dell'owner**, dove questo hook non gira affatto: lì il divieto su
-//    `.daiku/` vive nel testo della skill commit, e nessun diniego lo impone. Se un
-//    comando manuale mette `.daiku/` in stage, il `commit` nudo di un agente dopo di lui
-//    resta negato dallo stage che si legge qui — un commit manuale, no.
+//  - **A target built from a shell variable** (`rm -rf "$DIR"`,
+//    `cd $OTHER && rm -rf node_modules`). The guard sees the text, not the value: after
+//    an unresolvable `cd` the base becomes *unknown* and **relative** targets are not
+//    judged at all — allowed, and not coverage. Same for the `.daiku/`
+//    stage: without a base no `git status` runs.
+//  - **A target arriving from a pipeline** (`Get-ChildItem x | Remove-Item -Recurse`,
+//    `find … -print0 | xargs -0 rm -rf`): the line carries no path to read.
+//  - **`powershell -EncodedCommand <base64>`** and every other obfuscated shape.
+//  - **An already-written script** (`bash cleanup.sh`, `python cleanup.py`): the
+//    destructive gesture lives in the file, not the line. `PreToolUse` sees only the line.
+//  - **Other tools that delete**: `robocopy /MIR`, `git rm -r`. They are not
+//    *equivalent* shapes of the gestures above: they are different gestures, and adding them is a
+//    decision, not maintenance.
+//  - **A heredoc body** counts as a command, on purpose: `bash <<'EOF'` really
+//    runs it. Whoever writes a heredoc *quoting* `rm -rf` in a text may see
+//    the write denied — a known false positive, and the remedy is a file-writing
+//    tool instead of the shell.
+//  - **Subagents launched outside this harness**, which this guard does not see at all.
+//  - **Every project that has not opened Daiku**, and every branch its `project.json` does
+//    not switch on. Not a technical limit but the wanted boundary: a package installed once
+//    is active everywhere, and denying a command to whoever declared nothing would be
+//    a fault wearing a protection's looks. Whoever wants coverage declares it. The
+//    `.daiku/` branch is the exception proving the boundary: it has no switch, but it has
+//    the gate — without `.daiku/project.json` it stays off too.
+//  - **The owner's terminal**, where this hook does not run at all: there the ban on
+//    `.daiku/` lives in the commit skill text, and no denial enforces it. When a
+//    manual command stages `.daiku/`, an agent's bare `commit` after it
+//    stays denied by the stage read here — a manual commit is not.
 
-async function principale() {
-  const grezzo = await leggiStdin();
-  if (!grezzo.trim()) permetti();
-  let evento;
+async function main() {
+  const raw = await readStdin();
+  if (!raw.trim()) allow();
+  let event;
   try {
-    evento = JSON.parse(grezzo);
+    event = JSON.parse(raw);
   } catch {
-    permetti();
+    allow();
   }
-  const input = (evento && evento.tool_input) || {};
-  const cwd = (evento && evento.cwd) || RADICE;
-  const riga = input.command || '';
-  if (!riga.trim()) permetti();
-  // La radice si risolve dalla cwd dell'evento quando l'host non la dichiara: su Codex è
-  // l'unico appiglio, e una sessione aperta in una sottocartella non deve perdere il
-  // proprio `.daiku/` — vedi `project-root.mjs`.
-  const radice = radiceProgetto({ cwd });
-  const esito = decisioneSicura(riga, cwd, AMBIENTE_REALE, contesto(radice, LETTURE));
-  if (esito) nega(esito.motivo);
-  permetti();
+  const input = (event && event.tool_input) || {};
+  const cwd = (event && event.cwd) || ROOT;
+  const line = input.command || '';
+  if (!line.trim()) allow();
+  // The root resolves from the event cwd when the host does not declare it: on Codex it is
+  // the only handle, and a session opened in a subfolder must not lose its
+  // own `.daiku/` — see `project-root.mjs`.
+  const root = projectRoot({ cwd });
+  const outcome = safeDecide(line, cwd, REAL_ENV, loadContext(root, REAL_READS));
+  if (outcome) deny(outcome.reason);
+  allow();
 }
 
-if (invocatoDirettamente(import.meta.url)) {
+if (invokedDirectly(import.meta.url)) {
   if (process.argv.includes('--self-check')) {
     process.exit(selfCheck());
   }
-  principale().catch(() => process.exit(0));
+  main().catch(() => process.exit(0));
 }

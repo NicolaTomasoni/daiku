@@ -1,371 +1,369 @@
-# Orchestrazione delle skill — contratto unico
+# Skill orchestration — single contract
 
-Questo file è il **punto unico di modifica** per come le skill del progetto delegano lavoro e
-quale ruolo gira su ogni passo. Le skill in `skills/` descrivono *cosa* va fatto e
-*in che ordine*; qui sta *chi* lo fa e *come* lo si lancia sull'host corrente.
+This file is the **single point of change** for how the project's skills delegate work and
+which role runs on each step. The skills in `skills/` describe *what* is to be done and
+*in what order*; here lives *who* does it and *how* it is launched on the current host.
 
-## Parametri
+## Parameters
 
-Ogni chiave fra graffe di questo contratto si risolve sui file di parametri del progetto, mai a
-memoria e mai per assunzione: le regole sono nella §5 di `contracts/project-contract.md`, che dice
-anche in quale lingua scrivere e cosa fare quando una chiave non c'è. Le chiavi che questo file
-consuma sono quelle della §7 qui sotto, e vivono in `environment.json` — in `~/.daiku/`, salvo
-l'override di progetto che la §8 di quel contratto dichiara.
+Every key in braces in this contract resolves on the project parameter files, never from
+memory and never by assumption: the rules are in §5 of `contracts/project-contract.md`, which also
+says in which language to write and what to do when a key is missing. The keys this file
+consumes are those of §7 below, and they live in `environment.json` — in `~/.daiku/`, except for
+the project override that §8 of that contract declares.
 
-Vale per ogni host dichiarato in `{hosts}`. Il contratto canonico di una skill sta sempre in
-`skills/<nome>/SKILL.md`; un host che per invocarla richiede un pointer lo trova sotto
-`{hosts.<host>.skill_pointers}`. Nessuna skill duplica questo contratto e nessuna skill nomina
-un modello.
+It applies to every host declared in `{hosts}`. A skill's canonical contract always lives in
+`skills/<name>/SKILL.md`; a host that requires a pointer to invoke it finds it under
+`{hosts.<host>.skill_pointers}`. No skill duplicates this contract and no skill names
+a model.
 
-## 1. Ruoli
+## 1. Roles
 
-Due soli ruoli, anonimi per costruzione. Una skill dichiara il ruolo di un passo, mai il modello.
+Two roles only, anonymous by construction. A skill declares a step's role, never its model.
 
-| Ruolo | Quando si usa | Esempi di passo |
+| Role | When to use | Step examples |
 |---|---|---|
-| **judge** | il passo *decide* o *sintetizza*: produce lavoro nuovo a partire da input eterogenei, oppure riconcilia rilievi di più fonti dove sbagliare costa caro | brief di esecuzione, aggiornamento memoria/documentazione, riconciliazione di una review del corpus |
-| **worker** | il passo *esegue* o *ispeziona* un perimetro già delimitato: applica un piano, cerca rilievi in un diff, esegue comandi noti e ne riporta l'esito | esecuzione del brief, finder di review, scope, gate, inventario, comandi Git, log e report |
+| **judge** | the step *decides* or *synthesises*: it produces new work from heterogeneous inputs, or reconciles findings from several sources where getting it wrong is costly | execution brief, memory/documentation update, reconciliation of a corpus review |
+| **worker** | the step *executes* or *inspects* an already delimited perimeter: it applies a plan, hunts for findings in a diff, runs known commands and reports the outcome | brief execution, review finder, scope, gate, inventory, Git commands, logs and reports |
 
-Un passo puramente meccanico (una riga di log, un `git add` di file già elencati, l'append di un
-report) resta un **worker**: non merita un ruolo terzo.
+A purely mechanical step (a log line, a `git add` of already listed files, appending a
+report) stays a **worker**: it does not deserve a third role.
 
-## 2. Il modello di un ruolo
+## 2. A role's model
 
-Il modello di un passo è `{hosts.<host>.models.<role>}`, dove `<host>` è l'host corrente e
-`<role>` è quello che la skill ha dichiarato per quel passo. È l'unica risoluzione ammessa, e
-avviene qui: la skill dichiara il ruolo e si ferma lì.
+A step's model is `{hosts.<host>.models.<role>}`, where `<host>` is the current host and
+`<role>` is the one the skill declared for that step. It is the only allowed resolution, and it
+happens here: the skill declares the role and stops there.
 
-**Risoluzione dell'host.** L'host è quello su cui stai girando, e lo sai da dove stai girando: non
-chiederlo. Su un host che richiede un pointer, è il pointer che ti ha invocato — il file sotto
-`{hosts.<host>.skill_pointers}` — a nominarlo. Se non lo sai in nessuno dei due modi, vale
-`{default_host}`, e nessuno degli host dichiarati oggi nello scheletro richiede un pointer.
+**Host resolution.** The host is the one you are running on, and you know it from where you are running: do not
+ask for it. On a host that requires a pointer, it is the pointer that invoked you — the file under
+`{hosts.<host>.skill_pointers}` — that names it. If you do not know it in either way, `{default_host}` applies, and none of the hosts currently declared in the skeleton requires a pointer.
 
-**Backend alternativi.** Se la sessione gira su un backend switchato — uno di `{backends}` che non
-è quello nativo dell'host — i nomi di modello di `{hosts.<host>.models}` restano gli alias di tier
-da dichiarare: è l'env dello switcher a rimapparli sul modello reale del backend. Non c'è nulla da
-cambiare qui, e nessuna skill deve conoscere quel mapping: l'unica cosa che cambia per davvero è
-la concorrenza (§5).
+**Alternative backends.** If the session runs on a switched backend — one of `{backends}` that is not
+the host's native one — the model names in `{hosts.<host>.models}` remain the tier aliases
+to declare: it is the switcher's env that remaps them onto the backend's real model. There is nothing to
+change here, and no skill needs to know that mapping: the only thing that truly changes is
+concurrency (§5).
 
-Se l'host non permette di scegliere il modello di un subagent, il ruolo resta comunque
-dichiarato nel prompt e il passo gira sul modello di default: la sequenza e i contratti non
-cambiano.
+If the host does not let you choose a subagent's model, the role is still
+declared in the prompt and the step runs on the default model: the sequence and the contracts do not
+change.
 
-## 3. Skill invocabili e contratti interni
+## 3. Invocable skills and internal contracts
 
-Ogni contratto sotto `skills/` è, prima di tutto, un **path che un subagent riceve e
-legge**: è la forma che li fa funzionare identici su ogni host, senza un pointer per ciascuno.
-Alcuni, in più, **si lanciano a mano**. Le due cose non si escludono, perché non descrivono il
-file ma l'invocazione: lo stesso contratto è un **entry point** quando lo lanci tu ed è un
-**contratto interno** quando è una catena a delegarlo. `research` è la raccolta che
-`new-feature` si procura quando le serve, con il riordino delegato a `study`, e insieme il comando con cui chiedi gli appunti tu.
+Every contract under `skills/` is, first of all, a **path that a subagent receives and
+reads**: it is the form that makes them work identically on every host, without one pointer per host.
+Some, in addition, **are launched by hand**. The two things do not exclude each other, because they do not describe the
+file but the invocation: the same contract is an **entry point** when you launch it and an
+**internal contract** when a chain delegates to it. `research` is the collection that
+`new-feature` procures for itself when it needs it, with reordering delegated to `study`, and at the same time the command with which you request the notes yourself.
 
-**Gli entry point sono sette, e non è un numero che cresce da solo.** Un contratto si lancia a
-mano solo se è il **punto d'ingresso di una catena**, mai perché è comodo averlo sotto mano:
-ciò che sta in mezzo a una catena lo raggiunge chi l'ha aperta, e aggiungerlo qui significa
-aprire un secondo modo di arrivarci, con scope e permessi diversi da mantenere allineati per
-sempre. I sette stanno in due gruppi, che non si usano negli stessi momenti.
+**There are seven entry points, and it is not a number that grows on its own.** A contract is launched by
+hand only if it is the **entry point of a chain**, never because it is handy to have it around:
+what sits in the middle of a chain is reached by whoever opened it, and adding it here means
+opening a second way to get there, with different scope and permissions to keep aligned
+forever. The seven fall into two groups, which are not used at the same moments.
 
-**Il metodo — sono questi cinque, e sono tutto il lavoro di ogni giorno:**
+**The method — these five, and they are all of everyday work:**
 
-| Entry point | Perché |
+| Entry point | Why |
 |---|---|
-| `new-feature` | si parte da un'idea e non c'è ancora niente sul disco: dalla descrizione fino al commit, in un'unica esecuzione. Dentro ci sono lo studio, le decisioni e la consegna, che per questo non si lanciano da sé |
-| `research` | gli appunti su una tecnologia valgono anche da soli, prima che esista una consegna che li consumi. Lanciato così **deposita il file riordinato e si ferma**: non apre niente a valle |
-| `review` | la review vive anche da sola, su un diff scritto a mano |
-| `code-review` | un passaggio solo-bug sullo scope che gli dici, senza giri né fix: occhi sul codice senza aprire un ciclo |
-| `commit` | chiude una review lanciata con `--no-commit`, o un diff scritto fuori da una review |
+| `new-feature` | you start from an idea and there is nothing on disk yet: from the description to the commit, in a single run. Inside live the study, the decisions and the delivery, which is why they are not launched on their own |
+| `research` | notes on a technology are also valuable on their own, before any delivery consumes them. Launched this way it **deposits the reordered file and stops**: it opens nothing downstream |
+| `review` | the review also lives on its own, on a hand-written diff |
+| `code-review` | a bugs-only pass over the scope you tell it, with no rounds and no fixes: eyes on the code without opening a cycle |
+| `commit` | it closes a review launched with `--no-commit`, or a diff written outside a review |
 
-**L'installazione — due comandi che si lanciano una volta per progetto**, e che nessuna catena
-può raggiungere perché girano *prima* che ci sia una catena:
+**Installation — two commands that are launched once per project**, and that no chain
+can reach because they run *before* there is a chain:
 
-| Entry point | Perché |
+| Entry point | Why |
 |---|---|
-| `init` | è il primo di tutti: apre `.daiku/` su un progetto che non ce l'ha, e finché non gira nessun altro contratto ha i valori con cui lavorare |
-| `sync-host` | porta guardrail e ruoli di subagent nello strato dell'host che non sa riceverli dal pacchetto, e si rilancia a ogni aggiornamento |
+| `init` | it is the first of all: it opens `.daiku/` on a project that does not have it, and until it runs no other contract has the values to work with |
+| `sync-host` | it carries guardrails and subagent roles into the host layer that cannot receive them from the package, and it is re-launched on every update |
 
-Tutto il resto — `decision-doc`, `develop-feature`, `update-memory`, `blueprint`, `execute`,
-`finder-prompt`, `applier`, `arch-check`, `perf`, `test-coverage`, `study` — è **contratto interno**: un
-subagent lo riceve come *path da leggere*, non come skill da invocare. I primi tre lo sono
-diventati il 19 settembre 2026, e ciascuno ha già chi lo apre: `decision-doc` e `develop-feature`
-li apre `new-feature`, `update-memory` lo apre `commit`, a ogni invocazione. `study` lo è diventato
-con la scissione da `research`, che lo apre a ogni invocazione per il riordino. Un contratto interno
-**non chiede niente all'owner** e non ha `argument-hint`: una scelta vera la restituisce nel
-proprio blocco, e chi l'ha chiamato la porta in chat (§ *Domandare all'owner*).
+Everything else — `decision-doc`, `develop-feature`, `update-memory`, `blueprint`, `execute`,
+`finder-prompt`, `applier`, `arch-check`, `perf`, `test-coverage`, `study` — is an **internal contract**: a
+subagent receives it as a *path to read*, not as a skill to invoke. The first three became so
+on 19 September 2026, and each already has who opens it: `decision-doc` and `develop-feature`
+are opened by `new-feature`, `update-memory` is opened by `commit`, on every invocation. `study` became one
+with the split from `research`, which opens it on every invocation for reordering. An internal contract
+**asks the owner nothing** and has no `argument-hint`: it returns a genuine choice in its own
+block, and whoever called it carries it into the chat (§ *Ask the owner*).
 
-Che un host esponga per nome anche un contratto non dichiarato qui è una comodità di quell'host,
-non un'invocabilità dichiarata: dichiarata è questa sezione.
+That a host also exposes by name a contract not declared here is a convenience of that host,
+not a declared invocability: what is declared is this section.
 
-Su un host che dichiara `{hosts.<host>.skill_pointers}` una skill di queste due tabelle si lancia
-solo se lì ha il proprio pointer, e non tutte ce l'hanno: quelle che non ce l'hanno restano
-raggiungibili dagli host che quella chiave non la dichiarano, e che caricano i contratti
-direttamente da `skills/`. Aggiungere il pointer che manca, o quello di un contratto
-interno che serve lanciare a mano, è dodici righe — non un'altra copia del contratto.
+On a host declaring `{hosts.<host>.skill_pointers}` a skill from these two tables is launched
+only if it has its own pointer there, and not all have one: those that do not remain
+reachable from hosts not declaring that key, which load the contracts
+directly from `skills/`. Adding the missing pointer, or that of an internal
+contract needed by hand, is twelve lines — not another copy of the contract.
 
-### Un contratto raggiungibile in più di un modo dichiara le proprie modalità in casa
+### A contract reachable in more than one way declares its modes at home
 
-Lo stesso file è entry point e contratto interno, e le due invocazioni non hanno lo stesso scope
-né gli stessi permessi: `research` deposita gli appunti e si ferma quando lo lanci tu, e
-alimenta la catena quando è `new-feature` a procurarselo. Quella differenza **si dichiara nel nodo**, una sezione per
-modalità, con scope, permessi di scrittura e blocco di ritorno. Chi invoca **sceglie** la modalità
-e non riscrive i vincoli: una lista di deroghe scritta nel chiamante si erode a ogni modifica del
-nodo, e nessuno se ne accorge finché il nodo non fa, in modalità finder, qualcosa che quella lista
-aveva dimenticato di disattivare.
+The same file is both entry point and internal contract, and the two invocations do not have the same scope
+or the same permissions: `research` deposits the notes and stops when you launch it, and
+feeds the chain when it is `new-feature` that procures it. That difference **is declared in the node**, one section per
+mode, with scope, write permissions and return block. Whoever invokes **chooses** the mode
+and does not rewrite the constraints: an exemption list written in the caller erodes with every change to the
+node, and nobody notices until the node does, in finder mode, something that list
+had forgotten to disable.
 
-Vale per ogni nodo raggiungibile in più di un modo, compresi quelli che arriveranno da fuori: un
-contratto importato arriva senza modalità, e la strada breve per chi lo invoca è sempre la stessa.
-La sezione delle modalità si scrive **prima** di collegarlo, non dopo il primo incidente.
+It applies to every node reachable in more than one way, including those that will arrive from outside: an
+imported contract arrives without modes, and the short road for whoever invokes it is always the same.
+The modes section is written **before** connecting it, not after the first incident.
 
-### La topologia: chi è collegato a cosa
+### The topology: what is connected to what
 
-Le regole di delega della §4 dicono *come* si lancia un passo. Questa tabella dice *cosa è
-collegato a cosa*: chi può invocare un nodo, con quale input già risolto, con quale ritorno
-atteso, e se quel nodo può ri-delegare. **Si legge prima di delegare**, e ogni cella è un
-**rimando**, mai una copia: il contenuto vive nel file del nodo, che resta l'unico posto in cui si
-modifica. Non è un motore — l'orchestrazione resta dell'agente (§6) — è la mappa che gli evita di
-ricostruire il grafo dalla prosa di chi chiama.
+The delegation rules of §4 say *how* a step is launched. This table says *what is
+connected to what*: who may invoke a node, with which already-resolved input, with which expected
+return, and whether that node may re-delegate. **Read it before delegating**, and every cell is a
+**reference**, never a copy: the content lives in the node's file, which remains the only place where it is
+changed. It is not an engine — orchestration stays with the agent (§6) — it is the map that spares it
+rebuilding the graph from the caller's prose.
 
-| Nodo | Chi lo invoca | Riceve già risolto | Restituisce | Ri-delega |
+| Node | Invoked by | Receives already resolved | Returns | Re-delegates |
 |---|---|---|---|---|
-| `init` | owner | radice tecnica, o niente e vale la directory corrente | il referto di § *Referto* del suo file: scritto, lasciato com'era, da compilare | no |
-| `sync-host` | owner | radice tecnica, o niente e vale la directory corrente | il referto di § *Referto* del suo file: copiato, agganciato, non agganciato, ruoli scritti, e i gesti che restano all'utente | no |
-| `new-feature` | owner | descrizione della feature o del problema, in linguaggio naturale | § *Esito* del suo file: la cartella aperta, i documenti che la catena ha prodotto e l'esito della consegna | sì — indagine per area, `research`, `decision-doc` due volte, e `develop-feature` come figlio orchestrante |
-| `decision-doc` | `new-feature` § *Lo studio delle decisioni* e § *Il recepimento* | cartella del problema, eventuale sottoinsieme da analizzare, il documento già scritto, i path degli appunti di `research` e delle memorie pertinenti, e al recepimento le risposte dell'owner per numero | `0.5. studio-strategico.md` o `1. decision-doc.md` sul disco, con `0. problem.md` rifinito, e il blocco di § *Il blocco che restituisci* del suo file | no |
-| `research` | owner, `new-feature` § *La conoscenza che ti manca* | nome della tecnologia; da `new-feature` anche la versione in uso nel progetto e le domande a cui gli appunti devono rispondere | path del file in `{paths.lib_notes}/`, in entrambe le modalità, niente altro | sì — fan-out per blocco tematico (foglie) + `study` come figlio foglia |
-| `study` | `research` § *Passaggio 2* soltanto | path del file sporco, tecnologia, versione studiata e ultima con date | file riordinato in `{paths.lib_notes}/` + il blocco di § *Il blocco che restituisci* del suo file | no — foglia |
-| `blueprint` | `develop-feature` fase 1 | cartella con `1. decision-doc.md`, soluzione scelta verbatim, memorie pertinenti | § *Cosa restituisci* del suo file | no |
-| `execute` | `develop-feature` fase 2 | cartella con `2. blueprint.md`, memorie pertinenti | § *Cosa restituisci* del suo file | no |
-| `develop-feature` | `new-feature` § *La consegna* | cartella e soluzione scelta | § *Esito* del suo file | sì — le sue fasi, e `review` come figlio orchestrante |
-| `review` | owner, `develop-feature` fase 3 | base-ref o path di `4. review-notes.md`, ledger da riaprire (scelto su `base` **e** `item`), `--no-commit` da chi committa da sé, effort, `--backend` quando la sessione gira lì, radici di lavoro e artefatti quando gira su un worktree | § *Esito* del suo file | sì — finder, applicatore, copertura, gate, `commit` |
-| il finder di un giro (`finder-prompt`) | `review` § *Finder* | disciplina e contratto, `BASE` e file del giro, effort, applicati e scartati dal ledger | § *Il blocco che restituisci* del suo file | no |
-| `code-review` | owner, `review` come finder `bug` | scope detto a mano **oppure** scope del giro | report in chat **oppure** § *Il blocco che restituisci* di `finder-prompt`, con la scala di `confidence` che il suo file dichiara | **no** |
-| `arch-check` | `review` come finder `arch` | scope del giro | il blocco di `finder-prompt` § *Il blocco che restituisci*; scope e permessi li dichiara il suo file | no |
-| `perf` | `review` come finder `perf` | scope **oppure** scope del giro | il blocco di `finder-prompt` § *Il blocco che restituisci*; scope e permessi li dichiara la sua § *Modalità finder* | no |
-| `test-coverage` | `review` § *Copertura* con `--auto` | macrocategoria **oppure** diff finale del ciclo e memorie pertinenti | § *Modalità automatica* del suo file | no |
-| `applier` | `review` § *Applicatore* | rilievi di tutti i finder del giro, applicati dei giri precedenti, scope e `BASE`, memorie pertinenti, e la **modalità** quando è il giro di chiusura sui test | § *Il blocco che restituisci* del suo file | no |
-| `commit` | owner, `review` § *Chiusura* (sempre, salvo `--no-commit`) | perimetro del gruppo codice; memoria/doc e versione/changelog li partiziona da sé (§ *Procedura* 3 del suo file) | § *Procedura* 8 del suo file, in chat | sì — `update-memory`, **sempre e senza eccezioni** |
-| `update-memory` | `develop-feature` fase 5b, `commit` § *Allineamento* (**sempre**, a ogni invocazione di `commit`) | diff in index, cartella della feature dove depositare il proprio artefatto (da `develop-feature`), **permesso di commit del proprio gruppo** | § *Procedura* 7 del suo file | no |
+| `init` | owner | technical root, or nothing and the current directory applies | the report of § *Report* in its file: written, left as it was, to fill in | no |
+| `sync-host` | owner | technical root, or nothing and the current directory applies | the report of § *Report* in its file: copied, hooked, not hooked, roles written, and the gestures left to the user | no |
+| `new-feature` | owner | description of the feature or problem, in natural language | § *Outcome* of its file: the opened folder, the documents the chain produced and the delivery outcome | yes — per-area investigation, `research`, `decision-doc` twice, and `develop-feature` as orchestrating child |
+| `decision-doc` | `new-feature` § *The study of decisions* and § *Incorporation* | problem folder, optional subset to analyse, the already written document, the paths of the `research` notes and of the relevant memories, and on receiving the owner's answers by number | `0.5. strategic-study.md` or `1. decision-doc.md` on disk, with `0. problem.md` refined, and the block of § *The block you return* of its file | no |
+| `research` | owner, `new-feature` § *The missing knowledge* | name of the technology; from `new-feature` also the version in use in the project and the questions the notes must answer | path of the file in `{paths.lib_notes}/`, in both modes, nothing else | yes — fan-out per thematic block (leaves) + `study` as leaf child |
+| `study` | `research` § *Step 2* only | path of the dirty file, studied technology, studied and latest versions with dates | reordered file in `{paths.lib_notes}/` + the block of § *The block you return* of its file | no — leaf |
+| `blueprint` | `develop-feature` phase 1 | folder with `1. decision-doc.md`, chosen solution verbatim, relevant memories | § *What you return* of its file | no |
+| `execute` | `develop-feature` phase 2 | folder with `2. blueprint.md`, relevant memories | § *What you return* of its file | no |
+| `develop-feature` | `new-feature` § *Delivery* | folder and chosen solution | § *Outcome* of its file | yes — its phases, and `review` as orchestrating child |
+| `review` | owner, `develop-feature` phase 3 | base-ref or path of `4. review-notes.md`, ledger to reopen (chosen on `base` **and** `item`), `--no-commit` from whoever commits on their own, effort, `--backend` when the session runs there, work roots and artefacts when running on a worktree | § *Outcome* of its file | yes — finder, applier, coverage, gate, `commit` |
+| a round's finder (`finder-prompt`) | `review` § *Finder* | discipline and contract, round `BASE` and file, effort, ledger applied and discarded | § *The block you return* of its file | no |
+| `code-review` | owner, `review` as `bug` finder | hand-told scope **or** round scope | report in chat **or** § *The block you return* of `finder-prompt`, with the `confidence` scale its file declares | **no** |
+| `arch-check` | `review` as `arch` finder | round scope | the block of `finder-prompt` § *The block you return*; its file declares scope and permissions | no |
+| `perf` | `review` as `perf` finder | scope **or** round scope | the block of `finder-prompt` § *The block you return*; its § *Finder mode* declares scope and permissions | no |
+| `test-coverage` | `review` § *Coverage* with `--auto` | macro-category **or** final cycle diff and relevant memories | § *Automatic mode* of its file | no |
+| `applier` | `review` § *Applier* | findings of all round finders, previous rounds' applied, scope and `BASE`, relevant memories, and the **mode** when it is the closing round on tests | § *The block you return* of its file | no |
+| `commit` | owner, `review` § *Closing* (always, except `--no-commit`) | code-group perimeter; it partitions memory/docs and version/changelog itself (§ *Procedure* 3 of its file) | § *Procedure* 8 of its file, in chat | yes — `update-memory`, **always and without exceptions** |
+| `update-memory` | `develop-feature` phase 5b, `commit` § *Alignment* (**always**, on every `commit` invocation) | diff in index, feature folder where to deposit its own artefact (from `develop-feature`), **commit permission for its own group** | § *Procedure* 7 of its file | no |
 
-**Un arco nuovo si dichiara qui.** Collegare un nodo a un chiamante che non lo aveva significa
-aggiornare la sua riga — i chiamanti, l'input che ora riceve risolto, il permesso che
-l'invocazione gli passa — nella stessa modifica che scrive l'arco. Una riga non aggiornata è un
-arco che esiste nel codice dei prompt e non esiste da nessuna parte che si possa leggere: è la
-forma in cui il permesso di un nodo finisce per dipendere da chi lo chiama senza che nessuno
-l'abbia deciso.
+**A new arc is declared here.** Connecting a node to a caller that did not have it means
+updating its row — the callers, the input it now receives resolved, the permission that
+the invocation passes it — in the same change that writes the arc. A row left un-updated is an
+arc that exists in the prompts' code and exists nowhere readable: it is the form in which a node's permission ends up depending on who calls it without anyone
+having decided so.
 
-**E questa tabella oggi la verifica soltanto chi la rilegge.** Tre delle sue proprieta' sono
-verificabili a macchina — che i nodi siano tutti e soli quelli su disco, che ogni contratto
-consegnato a un subagent **come contratto da leggere** compaia fra i chiamanti della propria riga,
-e che ogni rimando a sezione di una cella — «§ *X* del suo file» — trovi davvero quell'heading — ma
-nessuno strumento del pacchetto le controlla. Un verificatore è esistito e **è stato rimosso il 18
-settembre 2026**: risolveva la propria radice per posizione sul disco, e alla prima riorganizzazione
-dell'albero ha smesso di trovare il corpus senza che l'uscita lo dicesse. Finché non ne esiste uno
-che sappia dove si trova, questa riga dichiara ciò che è vero: la tabella si tiene a mano, e una
-cella non aggiornata non la prende nessuno.
+**And today this table is verified only by whoever re-reads it.** Three of its properties are
+machine-verifiable — that the nodes are all and only those on disk, that every contract
+handed to a subagent **as a contract to read** appears among its own row's callers,
+and that every section reference in a cell — "§ *X* of its file" — truly finds that heading — but
+no tool in the package checks them. A verifier existed and **was removed on 18
+September 2026**: it resolved its own root by position on disk, and at the first tree reorganisation
+it stopped finding the corpus without its output saying so. Until one exists that
+knows where it is, this line declares what is true: the table is kept by hand, and nobody catches
+a cell left un-updated.
 
-## 4. Delega
+## 4. Delegation
 
-Una skill orchestrante lancia ogni passo come **subagent in contesto fresco**, mai eseguendolo
-inline nella conversazione: è ciò che tiene la catena lunga dentro un contesto sano e ciò che
-rende un passo ripetibile.
+An orchestrating skill launches every step as a **subagent in a fresh context**, never running it
+inline in the conversation: that is what keeps the long chain inside a healthy context and what
+makes a step repeatable.
 
-Come si lancia, per host:
+How to launch, per host:
 
-- **`claude`** — tool `Agent`, con `model` risolto secondo la §2 e `subagent_type` scelto così:
-  `finder` per i passi di sola analisi che riportano rilievi (i finder di una review), `Explore`
-  per la sola ricerca, `general-purpose` per tutto il resto — cioè per i passi che devono
-  scrivere. Più subagent indipendenti si lanciano nello **stesso** blocco di tool call per farli
-  girare davvero in parallelo.
+- **`claude`** — `Agent` tool, with `model` resolved per §2 and `subagent_type` chosen thus:
+  `finder` for analysis-only steps that report findings (a review's finders), `Explore`
+  for search only, `general-purpose` for everything else — that is, for steps that must
+  write. Several independent subagents are launched in the **same** tool-call block to make them
+  truly run in parallel.
 
-  `finder` è l'unico **ruolo del pacchetto**, definito in `agents/` nella sua radice, e lì ha un
-  **toolset ristretto**: niente `Edit`, niente `Write`, nessuna delega ad altri agent. È la
-  differenza fra un vincolo dichiarato nel prompt e uno vero: un finder che «corregge già che
-  c'è» non compare fra gli applicati, non ha un'`anchor` nel ledger, e nessun giro successivo lo
-  rivede.
+  `finder` is the package's only **role**, defined in `agents/` at its root, and there it has a
+  **restricted toolset**: no `Edit`, no `Write`, no delegation to other agents. It is the
+  difference between a constraint declared in the prompt and a real one: a finder that "fixes while it is
+  at it" does not appear among the applied, has no `anchor` in the ledger, and no later round
+  re-sees it.
 
-  **Il confine vero è quale tool c'è, non cosa ci scrivi dentro** — e su questo ruolo passa a
-  metà. L'assenza di `Edit` e `Write` è imposta davvero. `Bash` invece c'è, con gli specificatori
-  `Bash(git diff:*)`, `Bash(git log:*)`, `Bash(git grep:*)`, che **non restringono** nulla: un
-  finder esegue `ls`, `cat`, `grep -rn` e qualunque altra riga senza un diniego, e lo si è visto
-  accadere. Per quella metà la sola lettura è prosa come su un host `prosa`, quindi **ripetigli
-  nel prompt il vincolo di sola lettura** — su ogni host, non solo su quelli senza harness.
-- **`codex`** — subagent nativo dell'host, con il modello risolto secondo la §2.
+  **The real boundary is which tool is there, not what you write inside it** — and on this role it holds
+  halfway. The absence of `Edit` and `Write` is truly enforced. `Bash`, instead, is there, with specifiers
+  `Bash(git diff:*)`, `Bash(git log:*)`, `Bash(git grep:*)`, which **restrict** nothing: a
+  finder runs `ls`, `cat`, `grep -rn` and any other line without a denial, and it has been seen
+  happening. For that half, read-only rests on the prompt as on a `prose` host, so **repeat the read-only constraint
+  in the prompt** — on every host, not only on those without a harness.
+- **`codex`** — the host's native subagent, with the model resolved per §2.
 
-  **Il ruolo si chiama qui come là.** `finder` esiste anche su Codex, come
-  `.codex/agents/finder.toml`, se `sync-host` è passata su questo progetto: stesso nome, stesso
-  contratto, resa diversa. Se non è passata, non c'è un ruolo da nominare — il passo parte
-  senza, e lo dichiari nell'esito.
+  **The role is called here as there.** `finder` also exists on Codex, as
+  `.codex/agents/finder.toml`, if `sync-host` has run on this project: same name, same
+  contract, different rendering. If it has not run, there is no role to name — the step starts
+  without one, and you declare it in the outcome.
 
-  **Nominarlo non impone niente, però.** Su questo host non c'è una lista di tool da restringere, e
-  `sandbox_mode` dentro un file di ruolo **non restringe nulla**: un subagent che lo porta scrive
-  lo stesso. Il ruolo serve a far arrivare il contratto al figlio senza che tu lo ricopi, non a
-  chiudergli una porta. L'unico confine vero dell'host è la sandbox di **sessione**, che chi lancia
-  Codex sceglie all'avvio e non è tua da scegliere.
+  **Naming it enforces nothing, though.** On this host there is no tool list to restrict, and
+  `sandbox_mode` inside a role file **restricts nothing**: a subagent carrying it writes
+  just the same. The role exists to get the contract to the child without you recopying it, not to
+  close it a door. The host's only real boundary is the **session** sandbox, which whoever launches
+  Codex chooses at startup and is not yours to choose.
 
-  Il runtime vuole il modello in due gesti diversi, ed è una proprietà dell'host, non della skill
-  che lo incontra: un passo risolto a `{hosts.<host>.models.worker}` si lancia **senza passare
-  `model`**, così eredita quel modello dal parent; un passo risolto a
-  `{hosts.<host>.models.judge}` quel modello lo passa esplicitamente. Perché l'eredità valga, **il parent deve già girare su
-  `{hosts.<host>.models.worker}`**: se non ci gira, fermati e chiedi di selezionarlo per questa
-  sessione, senza fallback — un judge ereditato al posto di un worker esce a contratto identico a
-  un passo girato come doveva, e niente a valle distingue i due.
+  The runtime wants the model in two different gestures, and it is a property of the host, not of the skill
+  that meets it: a step resolved to `{hosts.<host>.models.worker}` is launched **without passing
+  `model`**, so it inherits that model from the parent; a step resolved to
+  `{hosts.<host>.models.judge}` passes that model explicitly. For inheritance to hold, **the parent must already run on
+  `{hosts.<host>.models.worker}`**: if it does not, stop and ask to select it for this
+  session, with no fallback — an inherited judge in place of a worker exits with a contract identical to
+  a step run as it should be, and nothing downstream distinguishes the two.
 
-**L'harness non ha lo stesso spessore sui due host, e `{hosts.<host>.enforcement}` dice quale.**
-`harness` significa che tre cose sono attive e impongono da sole: il `deny` delle permission rule,
-gli hook, e la **lista** dei tool che un agent dichiara — un tool assente è un confine vero. Non
-copre il **contenuto** di un comando Bash: uno specificatore come `Bash(git diff:*)` descrive
-un'intenzione e non la impone, e un agent che ha `Bash` ha `Bash` intero. `prosa` significa che
-nessuno dei tre strati esiste, e gli invarianti valgono solo perché sono scritti — lì nulla ferma
-un `git push`, una rimozione che attraversa una junction o un finder che scrive.
+**The harness does not have the same depth on both hosts, and `{hosts.<host>.enforcement}` says which.**
+`harness` means three things are active and enforce on their own: the `deny` of the permission rules,
+the hooks, and the **list** of tools an agent declares — an absent tool is a real boundary. It does not
+cover the **content** of a Bash command: a specifier such as `Bash(git diff:*)` describes
+an intention and does not enforce it, and an agent that has `Bash` has all of `Bash`. `prose` means that
+none of the three layers exists, and the invariants hold only because they are written — there nothing stops
+a `git push`, a removal crossing a junction or a finder that writes.
 
-Ne segue una regola sola, valida ovunque: **un vincolo che non sia l'assenza di un tool si ripete
-nel prompt del subagent** — su un host `prosa` tutti, su un host `harness` quelli che nessuno dei
-tre strati copre, a partire dalla sola lettura di chi ha `Bash`. E **lo dichiari nell'esito**:
-stesso contratto e stesse parole non sono stesse garanzie, e senza quel campo nulla a valle può
-distinguere i due casi.
+A single rule follows, valid everywhere: **a constraint that is not a tool's absence is repeated
+in the subagent's prompt** — on a `prose` host all of them, on a `harness` host those none of the
+three layers covers, starting with the read-only of whoever has `Bash`. And **you declare it in the outcome**:
+same contract and same words are not the same guarantees, and without that field nothing downstream can
+distinguish the two cases.
 
-Regole valide su ogni host:
+Rules valid on every host:
 
-1. **Prompt autosufficiente.** Il subagent parte da zero: nel prompt gli dai il contratto da
-   leggere (il path della skill), l'input risolto (cartella, scope, base-ref) e il formato di
-   ritorno. Non contare su nulla che sia solo nella tua conversazione.
+1. **Self-sufficient prompt.** The subagent starts from zero: in the prompt you give it the contract to
+   read (the skill's path), the resolved input (folder, scope, base-ref) and the return
+   format. Do not count on anything that lives only in your conversation.
 
-   **Memoria pertinente.** A un passo che scrive codice, o che decide cosa scriverne, passi anche
-   `{memory.index}` e i **path** delle memorie che il suo perimetro tocca — quelle che hai già
-   in mano, scelte sull'indice — con l'istruzione di aprirle prima di lavorare. Non riassumerle
-   nel prompt: un fatto riassunto è un fatto che diverge dal suo file al primo aggiornamento. Se
-   nessuna memoria è pertinente, passi solo l'indice. È il canale per cui i fatti non deducibili
-   dal codice raggiungono chi parte da zero: senza, finiscono ricopiati dentro i contratti, ed è
-   la copia che i subagent leggono.
-2. **Ritorno a contratto.** Ogni passo che alimenta una decisione a valle restituisce un blocco
-   JSON con i campi che la skill dichiara: si legge quello, non la prosa. Se il blocco manca o
-   è incompleto, il passo è fallito — non interpretarlo a intuito.
+   **Relevant memory.** To a step that writes code, or decides what to write, you also pass
+   `{memory.index}` and the **paths** of the memories its perimeter touches — those you already
+   hold, chosen on the index — with the instruction to open them before working. Do not summarise them
+   in the prompt: a summarised fact is a fact that diverges from its file at the first update. If
+   no memory is relevant, pass only the index. It is the channel through which facts not deducible
+   from the code reach whoever starts from zero: without it, they end up recopied inside the contracts, and it is
+   the copy that the subagents read.
+2. **Return by contract.** Every step that feeds a downstream decision returns a JSON block
+   with the fields the skill declares: read that, not the prose. If the block is missing or
+   incomplete, the step has failed — do not interpret it by feel.
 
-   **E un passo fallito ha un tetto.** Si rilancia **una volta sola**, con lo stesso identico
-   prompt; se non torna neanche allora, cosa ne segue lo dichiara la skill che lo ospita, e deve
-   dichiararlo per iscritto. Senza quel tetto lo stesso silenzio produce comportamenti tutti
-   difendibili e incomparabili fra esecuzioni — rilanciare a oltranza, saltare il passo, chiudere
-   il ciclo — e nel resoconto le tre esecuzioni si leggono uguali. Un orchestratore che rilancia
-   finché non ottiene la risposta che vuole non sta orchestrando.
+   **And a failed step has a ceiling.** It is relaunched **exactly once**, with the same identical
+   prompt; if it still does not come back, what follows is declared by the skill hosting it, and it must
+   declare it in writing. Without that ceiling the same silence produces behaviours that are all
+   defensible and incomparable across runs — relaunching indefinitely, skipping the step, closing
+   the cycle — and in the report the three runs read the same. An orchestrator that relaunches
+   until it gets the answer it wants is not orchestrating.
 
-   **Lo schema lo dichiara il nodo, una volta sola.** Il blocco di ritorno di un passo si scrive
-   nel file del nodo che lo produce. Chi lo consuma lo **cita** — «il blocco che *quel file*
-   dichiara, per intero» — e non lo ricopia; se ne legge di proposito solo un sottoinsieme,
-   dichiara quali campi ignora e perché. Uno schema ricopiato dal chiamante si restringe
-   attraversando l'arco: nasce identico, poi il nodo aggiunge un campo e il chiamante no, e quel
-   campo semplicemente non arriva al decisore — che continua a decidere, con meno informazione di
-   quanta ne esista, senza che niente segnali la perdita.
-3. **Un passo, un subagent.** Non accorpare due fasi in un solo subagent per risparmiare un
-   giro: la sequenza dichiarata dalla skill è il contratto.
-4. **Se la delega non è disponibile** sull'host corrente, esegui il passo in linea rispettando
-   comunque ordine, perimetro e formato di ritorno, e dichiaralo nell'esito. Ma prima leggi la
-   sottosezione qui sotto: per i passi che si reggono sull'indipendenza dei figli, *inline* è il
-   secondo gradino, non il primo.
+   **The schema is declared by the node, exactly once.** A step's return block is written
+   in the file of the node that produces it. Whoever consumes it **cites** it — "the block that *that file*
+   declares, in full" — and does not recopy it; if it deliberately reads only a subset,
+   it declares which fields it ignores and why. A schema recopied by the caller shrinks
+   crossing the arc: it is born identical, then the node adds a field and the caller does not, and that
+   field simply does not reach the decider — who keeps deciding, with less information than
+   exists, with nothing signalling the loss.
+3. **One step, one subagent.** Do not merge two phases into a single subagent to save a
+   round: the sequence the skill declares is the contract.
+4. **If delegation is unavailable** on the current host, run the step inline while still respecting
+   order, perimeter and return format, and declare it in the outcome. But first read the
+   subsection below: for steps that stand on the children's independence, *inline* is the
+   second rung, not the first.
 
-### Profondità e degradazione
+### Depth and degradation
 
-**Chi può ri-delegare.** Un passo delegato **esegue**: non delega a sua volta. Le sole eccezioni
-sono i nodi orchestranti che la §3 dichiara raggiungibili anche come figli — `develop-feature`
-(che orchestra le proprie fasi), `review` (finder, applicatore, gate, commit) e `commit` (che
-delega l'allineamento a `update-memory`) — **più `research`, che come figlio di `new-feature`
-orchestra il proprio fan-out di raccolta e ne delega il riordino a `study`, foglia**. Ogni altro
-passo delegato è una **foglia**, e il cammino più lungo del grafo resta di quattro livelli,
-`new-feature → develop-feature → review → finder`, con la catena di raccolta a tre livelli
-`new-feature → research → study`. Un nodo che si accorge di voler delegare, e non è uno dei quattro, sta eseguendo il
-lavoro di qualcun altro: torna a contratto e lascia decidere a chi l'ha chiamato.
+**Who may re-delegate.** A delegated step **executes**: it does not delegate in turn. The only exceptions
+are the orchestrating nodes that §3 declares also reachable as children — `develop-feature`
+(which orchestrates its own phases), `review` (finder, applier, gate, commit) and `commit` (which
+delegates alignment to `update-memory`) — **plus `research`, which as a child of `new-feature`
+orchestrates its own collection fan-out and delegates reordering to `study`, a leaf**. Every other
+delegated step is a **leaf**, and the longest path in the graph stays four levels,
+`new-feature → develop-feature → review → finder`, with the collection chain at three levels
+`new-feature → research → study`. A node that realises it wants to delegate, and is not one of the four, is doing
+someone else's work: return to contract and let whoever called it decide.
 
-**La degradazione ha due gradini, non uno.** Un passo la cui resa dipende dall'**indipendenza**
-dei figli — i finder di un giro di `/review` — non degrada a
-*inline*: degrada prima a **subagent sequenziali**, che è già il caso normale sui backend con
-`{backends.<backend>.sequential_fanout}` (§5) e in cui la cecità reciproca resta intatta perché
-ogni contesto è comunque fresco. Solo se nemmeno quello è possibile si esegue in linea.
+**Degradation has two rungs, not one.** A step whose yield depends on the children's **independence**
+— the finders of a `/review` round — does not degrade to
+*inline*: it degrades first to **sequential subagents**, which is already the normal case on backends with
+`{backends.<backend>.sequential_fanout}` (§5) and in which mutual blindness stays intact because
+each context is still fresh. Only if even that is impossible do you run inline.
 
-E allora **lo si dichiara nel blocco di ritorno** (`"indipendenza": "persa"`, o fra le
-`limitations` se il blocco ne ha), perché ordine, perimetro e formato sopravvivono alla
-degradazione ma la cecità no: tre discipline valutate nello stesso contesto *sono* la singola
-passata già convinta di sé che il fan-out esiste per evitare. Senza quel campo l'esito esce
-identico a quello di un fan-out cieco, e nulla a valle può distinguerli.
+And then **you declare it in the return block** (`"independence": "lost"`, or among the
+`limitations` if the block has them), because order, perimeter and format survive
+degradation but blindness does not: three disciplines evaluated in the same context *are* the single
+pass already convinced of itself that fan-out exists to avoid. Without that field the outcome exits
+identical to that of a blind fan-out, and nothing downstream can distinguish them.
 
-### Domandare all'owner
+### Ask the owner
 
-**Un subagent non ha un canale verso l'owner.** Parte da zero, scrive il suo blocco e muore:
-nessuno legge una sua domanda, e una domanda posta lì dentro si trasforma in un'assunzione presa
-in silenzio o in un passo che resta appeso. Quindi **chiede solo chi gira nella conversazione** —
-il nodo che l'owner ha invocato — e un passo delegato che si trova davanti a una scelta vera la
-**restituisce** nel proprio blocco invece di risolverla: è chi l'ha chiamato a portarla in chat.
+**A subagent has no channel to the owner.** It starts from zero, writes its block and dies:
+nobody reads its question, and a question asked in there turns into an assumption taken
+in silence or a step left hanging. So **only whoever runs in the conversation asks** —
+the node the owner invoked — and a delegated step facing a genuine choice
+**returns** it in its own block instead of resolving it: it is whoever called it that carries it into the chat.
 
-Le decisioni si pongono come **domanda strutturata**: un titolo, due-quattro opzioni mutuamente
-esclusive con id stabile `A`, `B` (, `C`, `D`), ciascuna con una riga su cosa comporta, e quella
-consigliata per prima e dichiarata tale. Quale sia la consigliata non si inferisce dalla prosa:
-la dice `recommended_id` nel blocco che la porta — per contratto di `decision-doc` è sempre `"A"`,
-già per prima — e chi domanda la riporta senza riordinare. Come si renda quella forma è una proprietà dell'host, non della skill — che dichiara di
-voler domandare e si ferma lì, come dichiara un ruolo senza nominare un modello:
+Decisions are asked as a **structured question**: a title, two-to-four mutually exclusive
+options with stable `A`, `B` (, `C`, `D`) ids, each with one line on what it entails, and the
+recommended one first and declared as such. Which one is recommended is not inferred from the prose:
+`recommended_id` in the block carrying it says so — by `decision-doc` contract it is always `"A"`,
+already first — and whoever asks reports it without reordering. How that form is rendered is a property of the host, not of the skill — which declares it wants
+to ask and stops there, as it declares a role without naming a model:
 
-- **`claude`** — tool `AskUserQuestion`, una domanda per decisione, **al massimo quattro per
-  chiamata**: se le decisioni sono di più, si fanno più chiamate in sequenza, in ordine di gravità.
-  L'opzione `A` va per prima, con `(consigliata)` in coda alla label. L'owner può sempre
-  rispondere fuori dalle opzioni, e quella risposta libera **prevale**.
-- **`codex`**, e ogni host senza un tool di domanda strutturata — la stessa lista, numerata, in
-  chat, con le opzioni come lettere (`A` per prima, dichiarata consigliata) e l'invito a rispondere in forma compatta (`1A, 2B, …`). Il
-  contenuto è identico: cambia solo il modo in cui arriva.
+- **`claude`** — `AskUserQuestion` tool, one question per decision, **at most four per
+  call**: if there are more decisions, make more calls in sequence, in order of severity.
+  Option `A` goes first, with `(recommended)` appended to the label. The owner may always
+  answer outside the options, and that free answer **prevails**.
+- **`codex`**, and every host without a structured-question tool — the same list, numbered, in
+  chat, with the options as letters (`A` first, declared recommended) and the invitation to answer compactly (`1A, 2B, …`). The
+  content is identical: only the delivery changes.
 
-**Chi domanda non si ferma a domandare.** Una skill che pone decisioni e poi lascia all'owner il
-compito di rilanciarla a mano con le risposte gli sta chiedendo di fare l'orchestratore al posto
-suo. Le risposte tornano dentro la stessa esecuzione, e la catena prosegue da lì fino a dove il
-suo contratto dichiara di arrivare.
+**Whoever asks does not stop at asking.** A skill that poses decisions and then leaves the owner
+the job of relaunching it by hand with the answers is asking him to be the orchestrator in its
+place. The answers return inside the same run, and the chain continues from there to wherever its
+contract declares it goes.
 
-## 5. Concorrenza
+## 5. Concurrency
 
-Il **fan-out parallelo** è il default: i passi indipendenti (i finder di una review, gli auditor
-di un audit) girano insieme.
+**Parallel** fan-out is the default: independent steps (a review's finders, the auditors
+of an audit) run together.
 
-Eccezione: i backend che dichiarano `{backends.<backend>.sequential_fanout}` girano i passi
-indipendenti **in sequenza**. Se l'invocazione dichiara uno di quei backend (`review` con
-`--backend`), sequenzializza il fan-out; in ogni altro caso resta parallelo.
+Exception: backends declaring `{backends.<backend>.sequential_fanout}` run independent steps
+**in sequence**. If the invocation declares one of those backends (`review` with
+`--backend`), it sequentialises the fan-out; in every other case it stays parallel.
 
-I passi che toccano la stessa working tree (build, test, commit, calcolo di un base-ref) sono
-**sempre** sequenziali, su ogni host: non sono serializzabili altrimenti.
+Steps touching the same working tree (build, test, commit, computing a base-ref) are
+**always** sequential, on every host: they are not otherwise serialisable.
 
-## 6. Divieti
+## 6. Prohibitions
 
-- Nessuna skill nomina un modello: nomina un ruolo, e il modello lo risolve questo file
-  sull'ambiente. Il ruolo è l'unica cosa che una skill ha il diritto di scrivere.
-- Nessuna skill duplica questo contratto, né i valori che esso legge da
-  `environment.json`, nemmeno "per comodità".
-- Nessuna skill introduce un terzo ruolo o un profilo di modello proprio.
-- Il tool `Workflow` non è il motore di nessuna skill: l'orchestrazione è dell'agente, che delega
-  a subagent secondo questo file. Non invocarlo.
+- No skill names a model: it names a role, and this file resolves the model
+  on the environment. The role is the only thing a skill has the right to write.
+- No skill duplicates this contract, nor the values it reads from
+  `environment.json`, not even "for convenience".
+- No skill introduces a third role or a model profile of its own.
+- The `Workflow` tool is no skill's engine: orchestration belongs to the agent, which delegates
+  to subagents per this file. Do not invoke it.
 
-## 7. Le chiavi di `environment.json`
+## 7. The `environment.json` keys
 
-Il file sta in `~/.daiku/environment.json`, uno per owner e per macchina; un progetto può
-sovrascriverlo per intero con un `.daiku/environment.json` proprio. Le due sedi, e l'ordine in cui
-si cercano, sono la §8 di `contracts/project-contract.md`.
+The file lives in `~/.daiku/environment.json`, one per owner and per machine; a project may
+override it wholesale with its own `.daiku/environment.json`. The two locations, and the order in which
+they are looked up, are §8 of `contracts/project-contract.md`.
 
-| Chiave | Mestiere |
+| Key | Purpose |
 |---|---|
-| `contract` | numero intero della forma del file, con le regole della §7 di `contracts/project-contract.md` |
-| `default_host` | host da assumere quando nulla lo dichiara |
-| `hosts` | l'insieme degli host dichiarati; si cita così quando una skill li **enumera** invece di nominarne uno |
-| `backends` | l'insieme dei backend dichiarati; si cita così quando una skill ne valida uno contro l'elenco |
-| `hosts.<host>.models` | i modelli dichiarati per quell'host; si cita così quando conta l'insieme e non il singolo ruolo |
-| `hosts.<host>.models.<role>` | il modello del ruolo che la skill ha dichiarato per quel passo (§2) |
-| `hosts.<host>.models.judge` | modello con cui gira il ruolo judge su quell'host |
-| `hosts.<host>.models.worker` | modello con cui gira il ruolo worker su quell'host |
-| `hosts.<host>.skill_pointers` | cartella in cui l'host cerca i pointer delle skill invocabili; assente se l'host non ne richiede |
-| `hosts.<host>.enforcement` | `harness` se l'host impone con `deny`, hook e **assenza** di un tool — mai il contenuto di un comando Bash; `prosa` se gli invarianti valgono solo perché scritti (§4) |
-| `hosts.<host>.settings_file` | file in cui l'host tiene la configurazione di ambiente della sessione |
-| `hosts.<host>.base_url_env` | nome della variabile con cui, in quel file, l'host punta il backend attivo; assente se l'host non switcha |
-| `hosts.<host>.native_backend` | backend attivo quando l'host non è switchato |
-| `backends.<backend>` | un backend LLM esistente; la chiave è il nome con cui lo si dichiara a una skill |
-| `backends.<backend>.base_url` | URL a cui l'ambiente punta quando quel backend è attivo; assente sul backend nativo dell'host |
-| `backends.<backend>.sequential_fanout` | dichiarata solo sui backend il cui fan-out va sequenzializzato (§5) |
-| `backends.<backend>.caveats` | avvisi di quel backend da riportare in riepilogo, uno per riga; assente se non ce ne sono |
-| `temp_dir` | directory temporanea della macchina, per gli artefatti che non devono finire nel repository |
+| `contract` | integer of the file's form, with the rules of §7 of `contracts/project-contract.md` |
+| `default_host` | host to assume when nothing declares it |
+| `hosts` | the set of declared hosts; cited thus when a skill **enumerates** them instead of naming one |
+| `backends` | the set of declared backends; cited thus when a skill validates one against the list |
+| `hosts.<host>.models` | the models declared for that host; cited thus when the set counts and not the single role |
+| `hosts.<host>.models.<role>` | the model of the role the skill declared for that step (§2) |
+| `hosts.<host>.models.judge` | model the judge role runs on for that host |
+| `hosts.<host>.models.worker` | model the worker role runs on for that host |
+| `hosts.<host>.skill_pointers` | folder where the host looks for the invocable skills' pointers; absent if the host requires none |
+| `hosts.<host>.enforcement` | `harness` if the host enforces with `deny`, hooks and a tool's **absence** — never a Bash command's content; `prose` if the invariants hold only because they are written (§4) |
+| `hosts.<host>.settings_file` | file where the host keeps the session's environment configuration |
+| `hosts.<host>.base_url_env` | name of the variable with which, in that file, the host points at the active backend; absent if the host does not switch |
+| `hosts.<host>.native_backend` | backend active when the host is not switched |
+| `backends.<backend>` | an existing LLM backend; the key is the name used to declare it to a skill |
+| `backends.<backend>.base_url` | URL the environment points at when that backend is active; absent on the host's native backend |
+| `backends.<backend>.sequential_fanout` | declared only on backends whose fan-out must be sequentialised (§5) |
+| `backends.<backend>.caveats` | that backend's warnings to report in summary, one per line; absent if there are none |
+| `temp_dir` | machine's temporary directory, for artefacts that must not end up in the repository |
 
-Nessuna chiave è obbligatoria oltre a `contract`: per tutto il resto vale la degradazione della
-§6 di `contracts/project-contract.md`.
+No key is mandatory besides `contract`: for everything else the degradation of
+§6 of `contracts/project-contract.md` applies.
 
-**La forma corrente è 2.** È salita da `1` il 19 settembre 2026, quando il ruolo che si chiamava
-`giudice` è diventato `judge`: la chiave `hosts.<host>.models.giudice` non esiste più, e un file
-rimasto alla forma `1` porta ancora quella — il modello del ruolo `judge` non si risolverebbe,
-senza che niente lo dica. È esattamente il caso che il numero serve a rendere riconoscibile.
+**The current form is 2.** It rose from `1` on 19 September 2026, when the role called
+`giudice` became `judge`: the `hosts.<host>.models.giudice` key no longer exists, and a file
+left at form `1` still carries that one — the `judge` role's model would not resolve,
+without anything saying so. It is exactly the case the number exists to make recognisable.

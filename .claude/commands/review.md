@@ -399,7 +399,7 @@ file.
 
 Poi gira i comandi della §7 nell'ordine che quella sezione dichiara, selezionandoli con la sua
 condizione: l'elenco ricalcolato dice se il perimetro tocca `plugins/daiku/hooks/` e se ci sono file
-nuovi. **Riporta l'esito reale di ciascuno**, compresi i totali `controlli` dei banchi e l'esito di
+nuovi. **Riporta l'esito reale di ciascuno**, compresi i totali `checks` dei banchi e l'esito di
 ogni `check-ignore`: sono le due cose che un verde nudo non dice.
 
 **Correggi da te solo ciò che è meccanico**, dentro l'elenco ricalcolato e a significato invariato:

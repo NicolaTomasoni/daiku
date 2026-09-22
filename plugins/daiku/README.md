@@ -1,11 +1,11 @@
 <p align="center">
-  <img src="icon.png" alt="Icona di Daiku: un bonsai" width="200" />
+  <img src="icon.png" alt="Daiku icon: a bonsai" width="200" />
 </p>
 
 <h1 align="center">Daiku</h1>
 
 <p align="center">
-  <i>Far crescere un progetto nella giusta direzione.</i>
+  <i>Growing a project in the right direction.</i>
 </p>
 
 <p align="center">
@@ -14,94 +14,95 @@
   <a href="https://developers.openai.com/codex"><img alt="OpenAI Codex" src="https://img.shields.io/badge/OpenAI_Codex-000000?style=flat&logo=openai&logoColor=white" /></a>
 </p>
 
-> Un bonsai non cresce a caso: cresce nella direzione giusta perché qualcuno ha deciso
-> la forma, guida i rami e pota dove serve — con pazienza, intervento dopo intervento.
+> A bonsai does not grow at random: it grows in the right direction because somebody decided
+> the shape, guides the branches and prunes where needed — patiently, one intervention
+> after another.
 >
-> Daiku fa lo stesso con il tuo software. Gli agenti AI lavorano veloci e in autonomia, ma
-> **dentro i vincoli architetturali che hai deciso tu** — e Daiku li obbliga a rispettarli, non
-> li suggerisce e basta. Ogni contributo viene controllato, potato, ricontrollato. Così il
-> progetto cresce, feature dopo feature, **senza perdere la forma**. Disponibile per
-> **Claude Code** e **Codex**.
+> Daiku does the same with your software. AI agents work fast and autonomously, but
+> **inside the architectural constraints you decided** — and Daiku forces them to respect
+> those constraints, not merely suggest them. Every contribution is checked, pruned,
+> re-checked. That way the project grows, feature after feature, **without losing its
+> shape**. Available for **Claude Code** and **Codex**.
 
-## Perché ti piacerà
+## Why you will like it
 
-- **La forma la decidi tu.** Dichiari una volta i vincoli del progetto — architettura, regole,
-  convenzioni — e da quel momento ogni agente AI ci lavora dentro. Non sono consigli nel vento:
-  sono controlli che scattano davvero.
-- **Potatura automatica.** Ogni lavoro passa da controlli a più giri: bug, architettura,
-  prestazioni, test. Ciò che cresce storto viene corretto, e le correzioni vengono
-  ricontrollate finché non resta niente da sistemare.
-- **Racconti, non configuri.** Descrivi l'idea in linguaggio naturale: indagine sul codice,
-  studio delle tecnologie, progetto, esecuzione — al resto pensa lui, dentro la forma che
-  hai tracciato.
-- **I bivi restano tuoi.** Quando c'è una decisione vera ti fa la domanda, con le opzioni già
-  studiate e una consigliata. Rispondi e lui riparte da solo, fino al commit.
-- **Niente si perde.** Ogni lavoro vive in una cartella di file, non nella memoria della
-  chat: puoi interrompere, chiudere tutto, riprendere fra una settimana — lui rilegge i file
-  e riparte da dove era rimasto. E quello che si impara lavorando resta versionato insieme
-  al codice, non svanisce con la sessione.
-- **Guardie silenziose.** Tre piccoli controlli ti proteggono dalle distrazioni costose
-  (un push partito per sbaglio, un commit che salta i controlli) senza mai darti fastidio:
-  su un progetto che non usa Daiku non si fanno nemmeno sentire.
+- **You decide the shape.** You declare the project's constraints once — architecture, rules,
+  conventions — and from then on every AI agent works inside them. Not advice in the wind:
+  checks that really fire.
+- **Automatic pruning.** Every job goes through multi-round checks: bugs, architecture,
+  performance, tests. What grows crooked gets corrected, and corrections get
+  re-checked until nothing is left to fix.
+- **You narrate, you do not configure.** You describe the idea in natural language: code investigation,
+  technology study, design, execution — it handles the rest, inside the shape you
+  traced.
+- **Forks stay yours.** When there is a real decision it asks you, with options already
+  studied and one recommended. You answer and it restarts alone, down to the commit.
+- **Nothing gets lost.** Every job lives in a folder of files, not in chat
+  memory: you can interrupt, close everything, resume in a week — it re-reads the files
+  and restarts where it left off. And what is learned by working stays versioned together
+  with the code, and does not vanish with the session.
+- **Silent guards.** Three small checks protect you from costly distractions
+  (a push fired by mistake, a commit skipping the checks) without ever bothering you:
+  on a project not using Daiku they do not even stir.
 
-## Come si comincia
+## How to start
 
-**1. Installa il plugin** — una volta sola, sul tuo host:
+**1. Install the plugin** — once, on your host:
 
 ```text
-# su Claude Code, dalla chat:
-/plugin marketplace add <indirizzo-del-marketplace>
+# on Claude Code, from the chat:
+/plugin marketplace add <marketplace-address>
 /plugin install daiku@daiku
 
-# su Codex, dal terminale:
-codex plugin marketplace add <indirizzo-del-marketplace>
+# on Codex, from the terminal:
+codex plugin marketplace add <marketplace-address>
 codex plugin add daiku@daiku
 ```
 
-> L'indirizzo definitivo del marketplace arriva con la prima uscita pubblica di Daiku.
-> Nel frattempo si installa dal checkout locale del repository (entrambi gli host lo accettano).
+> The final marketplace address arrives with Daiku's first public release.
+> Meanwhile install from the repository's local checkout (both hosts accept it).
 
-Unico requisito: **Node.js** — e serve solo alle guardie di protezione, nient'altro da installare.
+Only requirement: **Node.js** — and only the protection guards need it, nothing else to install.
 
-**2. Aprilo sul tuo progetto** — una volta per progetto, dalla radice del repository:
+**2. Open it on your project** — once per project, from the repository root:
 
 ```text
 /init
 ```
 
-Ti chiede solo due cose — in che lingua vuoi la chat e in che lingua i commit — e prepara
-tutto il resto da solo. Quello che non può indovinare te lo elenca alla fine: è l'unica parte
-da leggere con attenzione.
+It asks only two things — which language for the chat and which for commits — and prepares
+everything else alone. What it cannot guess it lists at the end: the only part
+worth reading carefully.
 
-**3. Se sei su Codex**, dopo ogni aggiornamento del pacchetto rilancia:
+**3. If you are on Codex**, after every package update re-run:
 
 ```text
 /sync-host
 ```
 
-Riallinea le protezioni e i ruoli dentro il progetto (su Claude Code non serve: li porta il
-pacchetto e si aggiornano da soli). Poi approva gli hook cambiati con `/hooks` dentro Codex.
+It realigns protections and roles inside the project (on Claude Code no need: the
+package carries them and they update alone). Then approve changed hooks with `/hooks` inside Codex.
 
-## I comandi, dal più semplice al più grande
+## The commands, from simplest to largest
 
-Tre comandi per il lavoro di tutti i giorni, in ordine di grandezza: `/research` procura
-conoscenza, `/review` controlla un diff, `/new-feature` va da un'idea al commit orchestrando
-tutto il resto. 
+Three commands for everyday work, ordered by size: `/research` procures
+knowledge, `/review` checks a diff, `/new-feature` goes from an idea to the commit by orchestrating
+everything else.
 
 ### `/research`
 
-Quando al modello manca una conoscenza — una libreria giovane, una versione uscita dopo il suo
-cutoff — se la studia dalle fonti vere: documentazione, repository, registry. La raccolta
-avviene su più fronti in parallelo; poi `study` riordina gli appunti e li deposita in un file.
-Lanciato a mano, il file è la consegna; dentro una feature viene invocato al bisogno.
+When the model lacks knowledge — a young library, a version released after its
+cutoff — it studies it from the real sources: documentation, repositories, registries. Collection
+runs on several fronts in parallel; then `study` tidies the notes and deposits them in a file.
+Run by hand, the file is the delivery; inside a feature it is invoked as needed.
 
-### `/new-feature` — dalla descrizione al commit
+### `/new-feature` — from description to commit
 
-È il comando con cui comincia ogni lavoro. Gli racconti l'idea in linguaggio naturale — o gli passi la cartella dove hai già raccolto materiale, e lui riprende da lì. Prima indaga il codice e mette il problema nero su bianco; se gli manca una conoscenza, si affida a `/research`. 
+The command every job starts with. You tell it the idea in natural language — or hand it the folder where you already collected material, and it resumes from there. First it investigates the code and puts the problem down in black and white; when knowledge is missing, it relies on `/research`.
 
-Poi `decision-doc` studia le opzioni e viene a farti le domande, con una risposta consigliata: rispondi e lui recepisce, finché ogni decisione è chiusa. 
+Then `decision-doc` studies the options and comes to ask its questions, with a recommended answer: you answer and it records, until every decision is closed.
 
-A quel punto, `develop-feature` prende in mano la consegna: `blueprint` scrive il piano di lavoro, `execute` lo esegue, `/review` lo controlla, `update-memory` allinea la memoria e la documentazione e `commit` chiude la feature. Lavora sempre in un worktree a parte, che alla fine viene fuso e pulito.
+At that point, `develop-feature` takes over delivery: `blueprint` writes the work plan, `execute` runs it, `/review` checks it, `update-memory` aligns memory and documentation, and `commit` closes the feature. It always works in a separate worktree, merged and cleaned at the end.
 
 ```mermaid
 flowchart TD
@@ -119,14 +120,14 @@ flowchart TD
 
 ### `/review`
 
-Gli affidi del codice scritto a mano e parte il controllo di qualità. Prima guarda cosa è
-cambiato e rilegge i rilievi già scartati in passato, per non riproporteli. Poi il primo giro:
-tre revisori indipendenti leggono lo stesso codice senza vedersi fra loro — i bug sempre,
-l'architettura e le prestazioni solo quando il diff le tocca. Poi `applier` applica le
-correzioni; e siccome sono codice che nessuno ha ancora letto, il giro dopo ricontrolla i soli
-file toccati, finché non resta niente da trovare. A quel punto `test-coverage` scrive i test
-che mancano, una verifica completa di compilazione e test gira una volta sola, e `commit`
-chiude. Se preferisci committare da te, il ciclo si ferma al report.
+You hand it hand-written code and the quality check starts. First it looks at what
+changed and re-reads findings discarded in the past, so as not to raise them again. Then round one:
+three independent reviewers read the same code without seeing each other — bugs always,
+architecture and performance only when the diff touches them. Then `applier` applies the
+fixes; and since those are code nobody read yet, the next round re-checks only the
+touched files, until nothing is left to find. At that point `test-coverage` writes the missing
+tests, one full compile-and-test verification runs a single time, and `commit`
+closes. If you prefer committing yourself, the cycle stops at the report.
 
 ```mermaid
 flowchart TD
@@ -140,5 +141,5 @@ flowchart TD
     style CR fill:#a855f712,stroke:#a855f7
 ```
 
-Due pezzi si usano anche da soli: `/code-review` fa un passaggio solo sui bug con l'esito in
-chat; `/commit` sistema memoria e documenti e chiude in commit separati.
+Two pieces also stand alone: `/code-review` runs a single bug pass with the outcome in
+chat; `/commit` tidies memory and documents and closes in separate commits.
