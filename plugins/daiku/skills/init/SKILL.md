@@ -20,8 +20,9 @@ Arguments: `$ARGUMENTS` — `[technical root]`.
 
 The **technical root** is the directory the skills run from, the one carrying the project instructions file — `CLAUDE.md` on Claude Code, `AGENTS.md` on Codex. It is not always the repository root: a monorepo may have the code under a subfolder and the technical root inside there.
 
-- With an argument, it is that. Verify it exists and is inside a Git repository.
-- Without an argument, it is the current directory. If it is not inside a Git repository, stop and say so: you do not initialise a repository in place of the user.
+- With an argument, it is that. Without an argument, it is the current directory.
+- Then run exactly `git -C "<technical root>" rev-parse --show-toplevel`, on both hosts and both shells. Do not choose another command and do not add checks around it: the exit code is the verdict, and its stdout is the repository root you reuse at *Step 2*.
+- If the exit code is not `0`, stop here with exactly these two lines and nothing else: `Cannot initialise Daiku here: <technical root> is not inside a Git repository.` on the first line, `Not written: nothing was written.` on the second. No check line, no `fatal:` output, no how-to-`git init`, no relaunch instructions: you do not initialise a repository in place of the user.
 - If `.daiku/` already exists, it is not an error: continue in **completion** mode (see *Idempotence*).
 
 ## Where the skeletons stand
@@ -53,7 +54,7 @@ They are two questions, not one, because they are two different audiences (§5.5
 
 They concern **the future**, not this run: neither changes one line of what you are about to write, which is in English however they answer. Ask them just the same, and before everything else, because they end up in `project.json` and because the report you close with is the first text they apply to.
 
-**Do not ask cold: propose.** First look, read-only, and carry a motivated proposal — the language of `README.md` and of the instructions file for chat, that of the latest messages of `git log --oneline -30` for commits. Then ask confirmation in a single question, saying what you observed. On an empty repository, or where the two sources disagree, say so and ask without proposing.
+**Ask bare, with no preamble.** Use `AskUserQuestion` with two questions: `Chat language` — `Which language for chat replies, summaries, reports and method documents?` — and `Commit language` — `Which language for commit messages and changelog entries?` Options in both: Italiano, English, Other. You may mark one option as recommended from what you read (`README.md` and the instructions file for chat, `git log --oneline -30` for commits), but do not write why: no observed sources, no empty-repo explanation, no note about which `.md` files are not source. The question text stays as above, nothing else.
 
 If the user does not answer — because you are running inside a chain, or because the session has no interactive channel — **do not invent**: leave the two keys out of `project.json` and list them among the things to fill in. §5.5 already declares what happens without them, and a silent default here is worse than their absence.
 

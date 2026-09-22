@@ -3,6 +3,5 @@
   "version": "0.1.0",
   "description": "Autonomous architecture-first development method: skill contracts, role orchestration, and project parameter contracts.",
   "author": { "name": "Nicola Tomasoni" },
-  "keywords": ["method", "orchestration", "review", "memory", "contracts"],
-  "hooks": "./hooks/hooks.json"
+  "keywords": ["method", "orchestration", "review", "memory", "contracts"]
 }

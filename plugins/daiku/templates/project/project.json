@@ -1,5 +1,5 @@
 {
-  "contract": 2,
+  "contract": 1,
   "name": "<project name, as it appears in text addressed to the user>",
   "repo_root": "<absolute path of the repository root, with forward slashes>",
   "code_root": "<root of the application code, with a trailing slash>",
