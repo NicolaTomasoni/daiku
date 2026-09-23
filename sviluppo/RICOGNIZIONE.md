@@ -396,6 +396,15 @@ aggiornamento comandato e tutto ciò che non è una skill.
 > l'approvazione per hash che Codex pretende per gli hook (§3.7). Se quella verifica di topologia
 > tornerà, sarà un comando che qualcuno lancia — come `hooks/self-check.mjs` — non un hook che lo
 > lancia da sé.
+>
+> **Tornata il 23 settembre 2026** come `sviluppo/tools/check-topology.mjs`: Node senza
+> dipendenze, radice passata per argomento, esito JSON contato. Verifica proprio le tre proprietà
+> sopra. Prova eseguita il 23 settembre 2026: `node sviluppo/tools/check-topology.mjs
+> plugins/daiku` → `{"checks":296,"passed":296,"failed":[]}`, uscita `0`. *(Erano 283 lo stesso
+> giorno, prima che il valutatore deterministico crescesse la prosa dei contratti: il totale conta
+> i rimandi di sezione, e citarne di nuovi alza il numero.)*
+>
+> Vive fuori dal pacchetto, in `sviluppo/tools/`, così non viaggia con ciò che si pubblica.
 
 ### 5.2 Le convenzioni di progetto che il metodo presuppone
 
@@ -496,9 +505,9 @@ Daiku/
    │                                         `sync-host` in `.codex/agents/*.toml` (§3.6)
    ├─ hooks/                              ← solo Claude: plugin_hooks rimossa su Codex (§3.4)
    │  ├─ hooks.json
-   │  ├─ README.md                        la guida dei tre guardrail: rami, gate, banchi
-   │  ├─ self-check.mjs                   i tre banchi in un colpo; non si installa mai
-   │  └─ lib/*.mjs                        i 3 hook + `project-root` e `daiku-config`, importati
+   │  ├─ README.md                        la guida dei quattro guardrail: rami, gate, banchi
+   │  ├─ self-check.mjs                   i quattro banchi in un colpo; non si installa mai
+   │  └─ lib/*.mjs                        i 4 hook + `project-root` e `daiku-config`, importati
    ├─ templates/                        ← ciò che init copia; mai letto in place
    │  ├─ project/{project.json,instructions.md,domain/,policies/}  tutto in inglese (§5.6)
    │  ├─ owner/environment.json           destinazione `~/.daiku/`, non il progetto (7.4)
@@ -563,7 +572,7 @@ progetto/
 | `project.json` | `templates/progetto/project.json`, svuotato | per progetto |
 | `environment.json` | `templates/owner/environment.json`, svuotato | per owner |
 | `context/README.md` | `templates/progetto/dominio/README.md` | scheletro |
-| *(da ReforgIA)* `docs/scripts/check-contratti.py` | ~~`tools/check-contratti.py`~~ | copiato e poi **rimosso** il 18/09/2026: risolveva la radice per posizione e non trovava più il corpus (§5.1) |
+| *(da ReforgIA)* `docs/scripts/check-contratti.py` | `sviluppo/tools/check-topology.mjs` (fuori dal pacchetto) | copiato e poi **rimosso** il 18/09/2026 perché risolveva la radice per posizione; **riscritto** il 23/09/2026 in Node senza dipendenze, con la radice per argomento — le tre proprietà di §5.1 tornano verificate (296 controlli verdi il 23/09/2026); spostato fuori da `plugins/` il 23/09/2026 perché è attrezzo di chi sviluppa, non cosa che si pubblica |
 
 ### 7.4 Le conseguenze sulla prosa dei contratti
 

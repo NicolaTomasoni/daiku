@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 48eaa498-ed6e-4a36-847d-3f8fa95f7f21
-  modified: 2026-09-22T11:51:49.601Z
+  modified: 2026-09-23T18:04:37.333Z
 ---
 
 Dal 18 settembre 2026 `.claude/` porta un **corpus di sviluppo**: `orchestration.md`, i comandi in
@@ -70,6 +70,13 @@ Nello stesso giorno, su ordine esplicito dell'owner, sono state corrette qui due
 ai nomi morti delle chiavi dei banchi (`controlli`/`passati`/`falliti` → `checks`/`passed`/`failed`)
 in `orchestration.md` e `commands/review.md`: erano le uniche due sedi del cantiere che nominavano
 identificatori del prodotto. Vedi [[confine-degli-identificatori]].
+
+**E dal 23 settembre 2026 diverge anche il metodo, insieme alla lingua.** Il prodotto ha un
+**valutatore deterministico** — `plugins/daiku/architect/architect.mjs`, il suo blocco in
+`schemas/blocks.json` e il campo `architect_agreement` nell'esito di `develop-feature` — e da lì le
+skill del pacchetto **non dichiarano più la sequenza**: la chiedono a lui, e il verdetto vincola.
+Qui non c'è niente di simile, e non ci sarà finché non lo autorizzi: `commands/deliver-feature.md`
+recita ancora la sequenza a parole. Vedi [[valutatore-deterministico]].
 
 **E dal 19 settembre 2026 diverge anche il nome di un ruolo.** Nel prodotto il ruolo che decide si
 chiama `judge`, qui ancora `giudice` — 11 occorrenze in 6 file, `orchestration.md` compreso. Nel

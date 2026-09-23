@@ -3,6 +3,7 @@ agent loop.
 
 ## Comportamento
 Rispondi in italiano e in modo chiaro e semplice, non dare per scontato che l'utente conosca il progetto perché cambia spesso e va rispegato.
+Non chiedere mai permessi o conferme: lavora sempre in bypass, in autonomia, senza fermarti ad approvare.
 
 ## Questo file non fa parte di Daiku
 
@@ -137,4 +138,13 @@ si assomigliano. La terza verifica è la loro, e vale come le altre due:
 node plugins/daiku/hooks/self-check.mjs
 ```
 
-Lancia i banchi di prova dei tre hook, stampa il totale contato ed esce `1` al primo caso rosso.
+Lancia insieme i banchi di prova dei quattro hook e quello del valutatore deterministico
+(`plugins/daiku/architect/`), stampa il totale contato ed esce `1` al primo caso rosso.
+
+```bash
+node sviluppo/tools/check-topology.mjs plugins/daiku
+```
+
+Verifica la topologia del corpus (nodi su disco = righe di tabella, handoff fra chiamanti,
+rimandi di sezione), con totale contato ed uscita `1` al primo caso rosso. Si lancia a mano
+prima di un rilascio, accanto al self-check.

@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 48eaa498-ed6e-4a36-847d-3f8fa95f7f21
-  modified: 2026-09-21T14:19:32.119Z
+  modified: 2026-09-23T18:04:26.291Z
 ---
 
 Il repo è **insieme marketplace e pacchetto**: una sola alberatura serve Claude Code e Codex,
@@ -23,7 +23,9 @@ perché i due host cercano file con nomi diversi e ignorano quelli dell'altro. R
 | `skills/` | i **18 contratti** del metodo, uno per cartella | **entrambi** gli host, stessi identici file |
 | `contracts/` | `orchestration.md`, `project-contract.md` | le skill li aprono per path; non sono skill loro stessi |
 | `agents/` | `finder` — l'unico subagent a toolset ristretto | solo Claude Code: Codex lo rifiuta |
-| `hooks/` | il wiring `hooks.json`, i **tre hook** in `lib/` e i **due moduli** che importano (`project-root.mjs`, `daiku-config.mjs`); accanto, fuori da `lib/`, `self-check.mjs` e `README.md`, che sono di chi sviluppa il pacchetto e non si trasportano | solo Claude Code: su Codex `plugin_hooks` è rimossa |
+| `hooks/` | il wiring `hooks.json`, i **quattro hook** in `lib/` e i **due moduli** che importano (`project-root.mjs`, `daiku-config.mjs`); accanto, fuori da `lib/`, `self-check.mjs` e `README.md`, che sono di chi sviluppa il pacchetto e non si trasportano | solo Claude Code: su Codex `plugin_hooks` è rimossa |
+| `architect/` | `architect.mjs`: il **valutatore deterministico** — risponde a sei domande meccaniche e tiene l'ordine della catena. Accanto, il suo banco, che `hooks/self-check.mjs` lancia (vedi [[valutatore-deterministico]]) | l'agente, che lo invoca: non è un hook, nessun `hooks.json` lo nomina, e non si installa in un progetto |
+| `schemas/` | `blocks.json`: lo specchio controllabile dei blocchi di ritorno — la prosa del nodo resta normativa | i controlli scritti a mano e gli umani che scrivono i nodi |
 | `templates/` | gli scheletri che `init` copierà nel progetto ospite | nessuno: non vengono mai letti in place |
 | `.claude-plugin/`, `.codex-plugin/` | i due manifest, uno per host | gli host, all'installazione |
 
@@ -61,6 +63,8 @@ Non si possono spostare: gli host li cercano lì e basta.
 - `backup/skill-estratte.md` — il registro ad append di ciò che è stato tolto dalle skill
 - `esempi/reforgia/` — dominio e politiche di ReforgIA, come esempio di un livello Dominio
   compilato davvero
+- `tools/check-topology.mjs` — verifica la topologia del corpus, lanciato a mano prima del rilascio;
+  sta qui e non sotto `plugins/` così non viaggia con ciò che si pubblica (spostato il 23/09/2026)
 
 ## I nomi che si somigliano e non c'entrano niente
 
