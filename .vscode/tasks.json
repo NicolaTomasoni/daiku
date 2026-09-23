@@ -80,6 +80,20 @@
       ],
       "problemMatcher": [],
       "presentation": { "reveal": "always", "panel": "shared" }
+    },
+    {
+      "label": "Nuovo progetto: crea e pubblica su GitLab",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/sviluppo/scripts/new-project.ps1"
+      ],
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "shared" }
     }
   ]
 }
