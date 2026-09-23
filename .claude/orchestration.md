@@ -20,10 +20,14 @@ Daiku*).
   diversi. Qui il progetto è uno solo: ogni path, ogni comando e ogni modello sono **scritti per
   esteso** dentro il contratto che li usa. Non esiste un file di parametri da leggere, e una
   graffa in un contratto di questo corpus è un refuso.
-- **Niente worktree.** Il prodotto consegna ogni feature su un worktree di un pool. Qui si lavora
-  sul **branch corrente dell'albero principale**: `git` traccia soltanto `plugins/`, quindi un
-  worktree nascerebbe senza `CLAUDE.md`, senza `sviluppo/` e senza questo corpus — cioè senza il
-  contesto che ogni subagent deve leggere.
+- **Niente worktree — con la motivazione da riscrivere.** Il prodotto consegna ogni feature su un
+  worktree di un pool. Qui si lavora sul **branch corrente dell'albero principale**: è l'owner ad
+  aprire un branch, se vuole isolare una consegna. La ragione che questa riga portava — «`git`
+  traccia soltanto `plugins/`, quindi un worktree nascerebbe senza `CLAUDE.md`, senza `sviluppo/` e
+  senza questo corpus» — **è caduta il 18 settembre 2026**, quando il repository ha cominciato a
+  tracciare tutto: un worktree oggi conterrebbe anche il corpus. La regola resta in piedi finché
+  l'owner non decide altrimenti, ma **non ha più la sua motivazione scritta**: è un punto aperto
+  (`sviluppo/PUNTI-APERTI.md`), non una conclusione.
 
 ## Le sedi di questo progetto
 
@@ -237,9 +241,8 @@ comando:
 ```bash
 claude plugin validate plugins/daiku
 python ~/.codex/skills/.system/plugin-creator/scripts/validate_plugin.py plugins/daiku
-node plugins/daiku/hooks/lib/guardia-comandi.mjs --self-check
-node plugins/daiku/hooks/lib/contratti-post-edit.mjs --self-check
-node plugins/daiku/hooks/lib/ciclo-aperto.mjs --self-check
+node sviluppo/tools/check-topology.mjs plugins/daiku
+node plugins/daiku/hooks/self-check.mjs
 ```
 
 **I due validatori vanno passati entrambi, sullo stesso albero, e la seconda riga non si salta**
@@ -247,8 +250,8 @@ node plugins/daiku/hooks/lib/ciclo-aperto.mjs --self-check
 rifiutare i campi di manifest non ammessi, ed è quello di Claude Code a segnalare le skill che si
 caricherebbero con i metadati vuoti.
 
-I tre `--self-check` sono banchi di prova a **totale contato**: escono con un JSON che porta
-`checks`, `passed` e `failed`. **Si riporta il numero di `checks`, non solo il verde**: un
+I banchi che quell'ultimo comando lancia sono a **totale contato**: ognuno esce con un JSON che porta
+`checks`, `passed` e `failed`, e il comando somma i `checks` di tutti. **Si riporta il numero di `checks`, non solo il verde**: un
 totale che cala mentre i controlli crescono è un banco che ha smesso di girare, e il verde da solo
 non lo mostra.
 
@@ -262,24 +265,26 @@ Un file nuovo che **non** è ignorato si pubblica al prossimo commit; uno che lo
 chi installa. Nessuno dei due è un errore in sé — è un fatto, e va riportato nell'esito del gate,
 perché è l'unica cosa irreversibile di tutta la catena.
 
-**Quali comandi girano.** I due validatori girano **sempre**, perché guardano l'albero intero. I tre
-`--self-check` girano **solo se il perimetro tocca `plugins/daiku/hooks/`**. Il `check-ignore` gira
-**solo se il diff ha introdotto file nuovi**.
+**Quali comandi girano.** I due validatori e la topologia girano **sempre**, perché
+guardano l'albero intero. Il comando dei banchi gira **solo se il perimetro tocca
+`plugins/daiku/hooks/` o `plugins/daiku/architect/`**. Il `check-ignore` gira **solo se il diff ha introdotto file nuovi**.
 
 ### Cosa questo gate non copre
 
 Si dichiara qui perché un controllo assente e un controllo passato si leggono uguali in un esito, e
 questa è l'unica riga che li distingue.
 
-**Nessun controllo legge la prosa dei contratti.** I due validatori guardano la forma del pacchetto
-— manifest, frontmatter, struttura — non cosa un contratto dice. Un rimando a un file che non
-esiste, una sezione citata e mai scritta, uno schema di ritorno divergente fra nodo e chiamante:
-tutto questo passa il gate. Un verificatore della topologia è esistito nel pacchetto ed è stato
-**rimosso il 18 settembre 2026**, perché risolveva la propria radice per posizione sul disco e dopo
-la riorganizzazione dell'albero cercava il corpus in `plugins/.claude/` — contando 3 controlli su
-una ventina ed uscendo `1` per costruzione. Finché non ne esiste uno che sappia dove si trova, quei
-difetti li prende **solo il finder di `review`**, ed è il motivo per cui la prima delle sue cinque
-famiglie è «rimandi che non risolvono».
+**La prosa dei contratti la legge la topologia, per le tre proprietà meccaniche.** Il
+verificatore `sviluppo/tools/check-topology.mjs` — Node senza dipendenze, radice passata per
+argomento — controlla che i nodi su disco siano tutti e soli le righe della tabella di §3 di
+`contracts/orchestration.md`, che ogni contratto passato a un subagent compaia fra i chiamanti
+della propria riga, e che ogni rimando `§ *X*` trovi davvero la sua intestazione. Vive fuori dal
+pacchetto, in `sviluppo/tools/`, e gira nel gate come i validatori. Ciò che non copre — un rimando
+che esiste ma è attribuito al file sbagliato, uno schema di ritorno divergente fra nodo e
+chiamante — lo prende **il finder di `review`**, ed è il motivo per cui la prima delle sue cinque
+famiglie è «rimandi che non risolvono». (Un verificatore precedente era stato **rimosso il 18
+settembre 2026** perché risolveva la propria radice per posizione sul disco e dopo la
+riorganizzazione cercava il corpus nel posto sbagliato.)
 
 **Il validatore Codex, su questa macchina, potrebbe non partire.** Se esce
 `ModuleNotFoundError: No module named 'yaml'`, manca `pyyaml` (`python -m pip install pyyaml`):
@@ -301,12 +306,22 @@ Prima non era così — `git` tracciava soltanto `plugins/`, le due vetrine, `RE
 `commit`, l'assenza di un «commit 2» in `deliver-feature`, un perimetro di review «fuori
 dall'indice per costruzione».
 
-> **Allineamento aperto.** Questa sezione è stata corretta il 19 settembre 2026; i contratti che
-> dipendono da lei — `commit`, `update-memory`, `deliver-feature`, `review`, `blueprint`,
-> `execute`, `decision-doc`, `studia-problema` — portano ancora la premessa vecchia, e vanno
-> riletti prima di fidarsi di ciò che dicono su git. Finché non sono allineati, **vince questa
-> sezione**: dove un contratto dice che il suo perimetro è fuori dall'indice, quel perimetro è
-> nell'indice.
+**I gruppi sono tre, e ognuno ha la sua sede**: codice (`plugins/`), memoria e documentazione
+(`CLAUDE.md`, `sviluppo/**`), versione (i due `plugin.json`). `commit` li committa in quest'ordine.
+`deliver-feature` fa lo stesso, con **una** differenza dichiarata: il commit del gruppo
+memoria/documentazione è la sua **ultima** fase, dopo il report — perché il report scrive ancora, e
+il registro delle consegne è di quel gruppo.
+
+> **Allineamento chiuso il 23 settembre 2026.** I contratti che dipendevano dalla premessa vecchia
+> — `commit`, `update-memory`, `deliver-feature`, `review`, `blueprint`, `execute`, `decision-doc`,
+> `studia-problema` — sono stati riletti e corretti quel giorno. La premessa vecchia **non ha più
+> sedi**: se ne trovi una, è un difetto del contratto che la porta, da segnalare e correggere — non
+> una deroga da applicare.
+>
+> **Una cosa è rimasta aperta**, ed è dichiarata qui perché non la si scambi per dimenticanza: la
+> regola «questo corpus non usa worktree» (sopra, § *Questo corpus non è il prodotto*) portava come
+> motivazione proprio la premessa vecchia, e da allora non ne ha più una scritta. La regola vale
+> ancora, la decisione è dell'owner.
 
 Il giorno in cui il repository diventa pubblico, questa sezione è una delle cose da rileggere
 (`sviluppo/memory/pubblicazione-su-github.md`).

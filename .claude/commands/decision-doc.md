@@ -175,9 +175,10 @@ Copri in quest'ordine di priorità:
    non eseguibili).
 
 Un rilievo che vale il doppio in questo repository: **una decisione che pubblica**. Ogni file nuovo
-sotto `plugins/` esce com'è scritto a chiunque aggiunga il marketplace, e il `.gitignore` a lista di
-ammissione è l'unico confine che tiene. Se il problema propone di aggiungere qualcosa lì dentro,
-chiedersi se ci appartiene **è** un rilievo bloccante, non una nota.
+sotto `plugins/` esce com'è scritto a chiunque aggiunga il marketplace, e nessun filtro lo trattiene:
+il `.gitignore` non è più il confine, e la lista di copia dello script di rilascio prende `plugins/`
+in blocco. Se il problema propone di aggiungere qualcosa lì dentro, chiedersi se ci appartiene **è**
+un rilievo bloccante, non una nota.
 
 Non inventare: se un'area è fuori scope, dillo invece di riempirla. Apri il report con un **verdetto
 di sintesi** (pronto per lo studio tecnico / pronto con correzioni / ancora da pensare, e perché in

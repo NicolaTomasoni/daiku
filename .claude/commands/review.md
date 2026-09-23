@@ -29,7 +29,7 @@ Cosa c'è dentro quel perimetro, perché i finder guardino la cosa giusta:
 |---|---|---|
 | contratti in prosa | `skills/**/SKILL.md`, `contratti/*.md` | rimandi a file o sezioni che non esistono, due contratti che dichiarano la stessa cosa in modo diverso, uno schema di ritorno ricopiato e divergente, un modello nominato dentro una skill, frontmatter non quotato |
 | manifest e vetrine | `.claude-plugin/`, `.codex-plugin/` | chiavi che un validatore rifiuta, versione fuori sync fra i due manifest, `source` che punta altrove |
-| codice eseguibile | `hooks/lib/*.mjs`, `tools/*.py` | bug veri: logica, path risolti male, banchi `--self-check` che contano meno di quello che dichiarano |
+| codice eseguibile | `hooks/lib/*.mjs`, `architect/*.mjs` | bug veri: logica, path risolti male, banchi `--self-check` che contano meno di quello che dichiarano |
 | template | `templates/**` | valori di un altro progetto e path di questa macchina, che al rilascio escono così come sono |
 | documentazione del prodotto | `README.md` | dice del pacchetto qualcosa che il pacchetto non fa |
 
@@ -102,7 +102,7 @@ resta alcun file, fermati**: non c'è nulla da rivedere, dillo e chiudi.
 2. **Apri il ledger**: `sviluppo/runtime/review/review-ledger-<BASE breve>-<HHMMSS di avvio>.json`
    (le prime sette cifre dello SHA, l'orario di avvio), creando la cartella se non esiste — alla
    prima review di questo repository non c'è. È il file che rende economici i giri successivi. Il nome porta baseline e orario perché più review possono girare nella stessa
-   sessione. La sede è fuori da git per costruzione, ma **stabile**: non a scadenza di sessione.
+   sessione. La sede è **stabile**: un file su disco, non uno stato che scade con la sessione.
 
    **Il ledger dichiara di chi è.** Alla riga `base` si affianca `item`: la **cartella di lavoro**,
    normalizzata con slash `/`, quando l'input era `4. review-notes.md` o la cartella che lo

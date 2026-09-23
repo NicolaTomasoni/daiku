@@ -13,22 +13,26 @@ Sei invocato in tre modi: **dentro la consegna**, come passo obbligatorio prima 
 Memory di `deliver-feature`); **dentro un commit**, delegato da `commit` sul diff che sta per essere
 congelato; **manuale**, in chat su un commit o un range specifico.
 
-## Qui non committi mai, e non è una cautela
+## Il tuo perimetro è nell'indice, ma non sei tu a committarlo
 
-Nel prodotto, questo contratto può ricevere il permesso di committare il proprio gruppo. **Qui no,
-in nessuna invocazione**: `git` traccia soltanto `plugins/`, le due vetrine, `README.md` e
-`.gitignore`, quindi ogni file del tuo perimetro è **fuori dall'indice per costruzione**
-(`.claude/orchestration.md` §8). Non c'è un commit da fare, e non c'è un `git add` che riuscirebbe:
-forzarlo con `-f` pubblicherebbe lo sviluppo di Daiku insieme al prodotto.
+Il `.gitignore` esclude soltanto `.claude/settings.local.json`: i file del tuo perimetro —
+`CLAUDE.md`, `sviluppo/**` — sono **nell'indice** come il prodotto, e la storia li conserva. Vale dal
+18 settembre 2026; prima era il contrario, e più di un contratto di questo corpus ne porta ancora la
+traccia (`.claude/orchestration.md` §8).
 
-Restituisci quindi **sempre** `committed: null`, e il campo si scrive lo stesso: un campo che manca
-non dice «non ho committato», dice che non si sa.
+**Resti comunque tu a non committare.** Il tuo mestiere è scrivere sul disco; a mettere in stage e a
+committare è chi ti ha chiamato: il nodo `commit`, che il gruppo memoria/documentazione lo committa
+in un commit proprio, o la fase di commit di `deliver-feature`. Quindi in ogni invocazione: **nessun
+`git add`, nessun `git commit`, nessun `git push`, e l'indice non si tocca** — se ti accorgi di
+volerlo fare, ti sei allontanato dal perimetro di questa skill.
 
-Ne segue una cosa che vale la pena tenere presente mentre scrivi: ciò che scrivi tu **vive solo su
-questa macchina**. Non c'è una storia che lo recuperi, non c'è un commit che lo congeli. È la parte
-più fragile della consegna, non la meno importante.
+Restituisci **sempre** `committed: null`, e il campo si scrive lo stesso: un campo che manca non dice
+«non ho committato», dice che non si sa. Un passo che torna con uno SHA ha committato qualcosa che non
+doveva nemmeno poter mettere in stage, e chi ti ha chiamato deve saperlo: dichiaralo.
 
-Mai `git push`, in nessun caso.
+Ne segue una cosa da tenere presente mentre scrivi: quando torni, ciò che hai scritto **non è ancora
+in nessun commit**. Se chi ti ha chiamato non lo mette in stage, resta sul disco e non lo recupera
+nessuno — e il tuo blocco di ritorno è l'unico posto dove quel lavoro è dichiarato.
 
 ## Input: il diff da ispezionare
 
@@ -64,8 +68,9 @@ Quattro sedi, quattro mestieri. Un fatto che sta nella sede sbagliata non è un 
 
 **Il `README.md` del pacchetto non è tuo.** `plugins/daiku/README.md` sta sotto il perimetro del
 prodotto: se una consegna cambia ciò che il pacchetto offre, quel file lo aggiorna l'esecutore,
-dentro il proprio diff e dentro il proprio commit. Toccarlo da qui lo sposterebbe in un gruppo che
-in questo repository non si committa.
+dentro il proprio diff e dentro il proprio commit. Toccarlo da qui lo sposterebbe dal gruppo codice a
+quello memoria/documentazione, cioè in un commit che non è il suo — e chi legge la storia troverebbe
+il documento del pacchetto in mezzo al racconto di chi lo costruisce.
 
 ## La forma della memoria di questo progetto
 

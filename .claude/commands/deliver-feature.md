@@ -1,5 +1,5 @@
 ---
-description: 'Consegna un lavoro su plugins/daiku dal decision-doc già risolto fino al commit, in un''unica invocazione — brief, esecuzione, review a giri, decisione, allineamento degli artefatti di sviluppo, commit, report. Orchestrata da te, delegando ogni fase a un subagent.'
+description: 'Consegna un lavoro su plugins/daiku dal decision-doc già risolto fino al commit, in un''unica invocazione — brief, esecuzione, review a giri, decisione, allineamento degli artefatti di sviluppo, commit del lavoro, report, commit degli artefatti di sviluppo. Orchestrata da te, delegando ogni fase a un subagent.'
 argument-hint: '[cartella] [soluzione scelta]'
 ---
 
@@ -11,9 +11,10 @@ esiste uno script che lo faccia al posto tuo.
 ## Dove si lavora
 
 **Sulla working tree principale, sul branch corrente.** Questo corpus non usa worktree
-(`.claude/orchestration.md`, § *Questo corpus non è il prodotto*): `git` traccia soltanto
-`plugins/`, quindi un worktree nascerebbe senza `CLAUDE.md`, senza `sviluppo/` e senza i contratti
-che ogni subagent deve leggere.
+(`.claude/orchestration.md`, § *Questo corpus non è il prodotto*). La ragione che quel contratto
+portava — un worktree che sarebbe nato senza `CLAUDE.md`, senza `sviluppo/` e senza i contratti da
+leggere — **non vale più dal 18 settembre 2026**, quando il repository ha cominciato a tracciare
+tutto. La regola resta in piedi; la motivazione è un punto aperto, non una conclusione.
 
 Conseguenze da tenere presenti, perché sono il prezzo di questa scelta:
 
@@ -47,8 +48,9 @@ Argomenti: `$ARGUMENTS` — `<cartella> <soluzione scelta>`.
 
 ## Prima di iniziare
 
-Leggi `.claude/orchestration.md`: ruoli, delega, concorrenza, il gate della §7 e la §8 che dice
-perché qui non esiste un commit per memoria e documentazione. Ogni fase dichiara il proprio ruolo
+Leggi `.claude/orchestration.md`: ruoli, delega, concorrenza, il gate della §7 e la §8, che dice
+**dove finiscono** gli artefatti di sviluppo — sono nell'indice anche loro, e la fase 6 li committa.
+Ogni fase dichiara il proprio ruolo
 (**giudice** o **worker**) e tu risolvi il modello con la regola della sua §2 — mai da qui.
 
 ## Avanzamento e rilievi
@@ -70,16 +72,18 @@ contratto da leggere (il **path**, mai il nome), l'input risolto e il blocco JSO
 
 Ogni blocco porta il campo che dichiara l'esito della propria fase: `ok` per Brief, Execute e
 Report, `gate` per Review, `staged` per lo Stage, `updated` per la Memoria, `committed` per il
-Commit. **Se quel campo dice fallimento, o se il blocco non torna affatto, la consegna si ferma lì**
-(vedi *Blocco anticipato*) — un blocco assente non si interpreta a intuito e non si ricostruisce
-dalla prosa del subagent.
+Commit, `docs_committed` per il Commit degli artefatti di sviluppo. **Se quel campo dice fallimento,
+o se il blocco non torna affatto, la consegna si ferma lì** (vedi *Blocco anticipato*) — un blocco
+assente non si interpreta a intuito e non si ricostruisce dalla prosa del subagent.
 
 **Cosa dice fallimento, campo per campo**, perché non tutti quei campi ne dichiarano uno:
-`ok: false` per Brief, Execute e Report; `staged: false` per lo Stage, che salta 5b e 6 e va al
-report; `committed: false` per il Commit; e in ogni fase il **blocco assente**. Per la **Review** il
-fallimento è **solo** il blocco assente, non `gate`: un `gate: "rosso"` è una misura riuscita, e la
-tabella della fase 4 la classifica `BLOCCATO`. `updated: false` **non è mai un fallimento**:
-`update-memory` lo dichiara l'esito atteso quando il diff non giustifica alcuna scrittura.
+`ok: false` per Brief, Execute e Report; `staged: false` per lo Stage, che salta 5b, 6 e 8 e va al
+report; `committed: false` per il Commit; `docs_committed: false` per il Commit degli artefatti di
+sviluppo, che è però l'esito normale quando non c'è niente da committare; e in ogni fase il **blocco
+assente**. Per la **Review** il fallimento è **solo** il blocco assente, non `gate`: un
+`gate: "rosso"` è una misura riuscita, e la tabella della fase 4 la classifica `BLOCCATO`.
+`updated: false` **non è mai un fallimento**: `update-memory` lo dichiara l'esito atteso quando il
+diff non giustifica alcuna scrittura.
 
 Le fasi che hanno un contratto proprio dichiarano il blocco **in casa loro**, e qui si cita: ogni
 riscrittura locale si restringe alla prima modifica del nodo (§4.2 di `.claude/orchestration.md`).
@@ -266,15 +270,16 @@ Se `staged` è `false`, non c'è nulla da consegnare: salta 5b e 6, vai al repor
 - il **vincolo di perimetro**: non toccare `plugins/`, non toccare l'indice di git, non eseguire
   alcun comando Git di scrittura.
 
-**Non c'è nessun permesso di commit da concedere, e non c'è un commit a valle che raccolga il suo
-lavoro.** In questo repository il suo perimetro è fuori da git per costruzione
-(`.claude/orchestration.md` §8): scrive sul disco e basta, e il suo `committed` è `null`. Se torna
+**Il suo perimetro è nell'indice, ma non è lui a committarlo.** Il passo scrive sul disco e
+restituisce `committed: null` in ogni caso: a mettere in stage e a committare è la **fase 6**, che il
+gruppo memoria/documentazione lo committa in un commit **proprio**, distinto da quello del lavoro.
+(`.claude/orchestration.md` §8). Se torna
 con uno SHA, ha committato qualcosa che non doveva nemmeno poter mettere in stage: verificalo con
 `git log`, riportalo come anomalia in chat, e guarda **cosa** ha committato prima di proseguire.
 
 L'esito atteso è il blocco che `update-memory` dichiara nella propria § *Procedura*, punto 7, per
-intero. **Le voci di `confirm_with_owner` portale fino al report**: qui non esiste un commit dentro
-cui potrebbero riemergere, quindi il report è l'unico posto dove sopravvivono.
+intero. **Le voci di `confirm_with_owner` portale fino al report**: nessun passo le raccoglie da sé,
+e il report è l'unico posto dove sopravvivono.
 
 ### 6. Commit — ruolo **worker**
 
@@ -286,16 +291,17 @@ committi esattamente ciò che c'è. Messaggio conforme a `.claude/commands/commi
 § *Convenzione* — tipo(scope): descrizione, corpo asciutto, italiano. **Mai** trailer di co-autoria
 né menzioni all'agente che ha generato il lavoro. Poi `git log --oneline -1` per leggerne lo SHA.
 
-**Commit 2 — la versione.** Solo se il diff ha toccato uno dei due `plugin.json` e solo se il primo
-commit è riuscito. Ambito **esclusivo**: `plugins/daiku/.claude-plugin/plugin.json` e
+**Commit 2 — la versione.** Solo se il diff ha toccato uno dei due `plugin.json` e solo se il commit
+1 è riuscito. Ambito **esclusivo**: `plugins/daiku/.claude-plugin/plugin.json` e
 `plugins/daiku/.codex-plugin/plugin.json`. Prima di committare, verifica che portino lo **stesso
 numero**: due manifest con versioni diverse sono il difetto che nessuno vede finché un host aggiorna
 e l'altro no. Se il gruppo è vuoto, questo commit **non esiste**.
 
-**Non esiste un commit di memoria e documentazione.** Ciò che la fase 5b ha scritto è fuori da git
-per costruzione: non tentare un `git add` su quei path, e non forzarlo con `-f`.
-
 **Mai `git push`**, in nessuno dei due.
+
+**Il gruppo memoria e documentazione non si committa qui**, ed è la sola differenza dall'ordine che
+il nodo `commit` segue: la fase 7 scrive ancora, e il suo file è di quel gruppo. Si committa nella
+**fase 8**, quando la consegna ha finito di scrivere.
 
 **Se la sequenza si ferma fra un gruppo e il successivo, dillo con i path.**
 
@@ -346,8 +352,42 @@ Paragrafi separati da una riga vuota. Chiaro e sintetico: si deve capire lo stat
 
 È l'ultima fase e nessuno decide più niente sul suo esito, ma il blocco serve lo stesso: un report
 che non è stato scritto è l'unica traccia della consegna che sparisce — e qui più che altrove,
-perché `sviluppo/consegne.md` non è committato e non ha una storia da cui recuperarlo. Se `ok` è
-`false`, riportalo in chat con il motivo.
+perché `sviluppo/consegne.md` è il registro delle consegne di questo repository: se una voce non
+c'è, quella consegna non è mai avvenuta per chi la cerca. Se `ok` è `false`, riportalo in chat con il
+motivo.
+
+### 8. Commit degli artefatti di sviluppo — ruolo **worker**
+
+**Solo se** il commit 1 della fase 6 è riuscito, e solo se c'è qualcosa da committare. Un subagent,
+un commit, sul branch corrente. È il **gruppo memoria e documentazione** di `.claude/commands/commit.md`,
+e arriva qui e non nella fase 6 per una ragione sola: la fase 7 scrive ancora, e il registro delle
+consegne è di questo gruppo.
+
+**Cosa ci entra.** Tutto ciò che questa consegna ha scritto **fuori** da `plugins/` — è il gruppo
+memoria e documentazione di `.claude/commands/commit.md`, che comprende `CLAUDE.md`, `sviluppo/**` e
+`.claude/**` — e nient'altro:
+
+- i `files` che la fase 5b ha elencato, e i file che ha creato;
+- gli artefatti della consegna nella cartella dell'item: il brief, le note di review, il report della
+  review, il rapporto di allineamento;
+- il ledger del ciclo, sotto `sviluppo/runtime/review/`;
+- `sviluppo/consegne.md`, dove la fase 7 ha appena appeso;
+- i file fuori dal pacchetto che il **brief** ha elencato uno per uno, se il piano ne prevedeva.
+
+**Non ci entra nient'altro.** Un path sporco che nessuna fase di questa consegna ha nominato non è
+tuo: lascialo dov'è e dillo in `detail`. Un `git add -A` qui è il modo in cui il lavoro di un'altra
+sessione entra in una consegna che non lo racconta.
+
+I file si mettono in stage **elencati singolarmente** (`git add <path>`, mai `-A`, mai `.`), e il
+messaggio segue la § *Convenzione* di `.claude/commands/commit.md`: `docs(<scope>): ...`, in
+italiano, corpo asciutto, **mai** trailer di co-autoria. Poi `git log --oneline -1`.
+
+**Mai `git push`.** **Mai `git add` su qualcosa sotto `plugins/`**: quel gruppo è già committato, e
+se qualcosa sotto il pacchetto è ancora sporco, quello è un fatto da riportare — non da raccogliere.
+
+```json
+{"docs_committed": true, "docs_commit_sha": "<sha>", "docs_files": ["<path>"], "detail": "<se docs_committed=false: perché, e i path sporchi che non sono tuoi>"}
+```
 
 ## Blocco anticipato
 
@@ -369,8 +409,8 @@ report e in `reason`.
 ## Esito
 
 1. **In chat, poche righe**: stato finale (`VERDE` | `VERDE_CON_DECISIONI` | `BLOCCATO` |
-   `interrotta`), SHA se committato, i file nuovi che da adesso si pubblicano, i file di sviluppo
-   toccati e non committati. Il dettaglio — gate, voci da confermare, decisioni rimaste — è già in
+   `interrotta`), SHA se committato, i file nuovi che da adesso si pubblicano, e i file di sviluppo
+   che la fase 8 ha committato. Il dettaglio — gate, voci da confermare, decisioni rimaste — è già in
    `sviluppo/consegne.md`: **non ripeterlo**, rimanda al file.
 
 2. **Chiudi sempre con il blocco a contratto**, così chi ti ha invocato lo legge senza interpretare
@@ -384,7 +424,8 @@ report e in `reason`.
      "version_commit_sha": "<sha o null>",
      "file_nuovi_pubblicati": ["<path sotto plugins/ che questo commit rende pubblico>"],
      "sviluppo_aggiornato": false,
-     "sviluppo_files": ["<path fuori da plugins/, scritti e non committati>"],
+     "docs_commit_sha": "<sha o null>",
+     "sviluppo_files": ["<path fuori da plugins/ che la fase 8 ha committato>"],
      "confirm_with_owner": ["<le voci della fase 5b, verbatim>"],
      "report_path": "sviluppo/consegne.md",
      "sporco": ["<path rimasti non committati sotto plugins/, se lo stato è BLOCCATO o interrotta>"],
@@ -393,13 +434,14 @@ report e in `reason`.
    ```
 
    Ogni campo viene da una fase, e si riporta **verbatim** da lì — non si ricalcola a memoria:
-   `status` dalla fase 4; `commit_sha` e `version_commit_sha` dalla fase 6;
-   `file_nuovi_pubblicati` dalla fase 3; `sviluppo_aggiornato` e `sviluppo_files` dai campi
-   `updated` e `files` della fase 5b (`false` e `[]` se la fase non è stata eseguita);
-   `confirm_with_owner` dalla 5b; `reason` dal `detail` della fase che ha bloccato.
+   `status` dalla fase 4; `commit_sha` e `version_commit_sha` dalla fase 6; `docs_commit_sha` dalla
+   fase 8; `file_nuovi_pubblicati` dalla fase 3; `sviluppo_aggiornato` dal campo `updated` della fase
+   5b e `sviluppo_files` dal campo `docs_files` della fase 8 (`false` e `[]` se la fase non è stata
+   eseguita); `confirm_with_owner` dalla 5b; `reason` dal `detail` della fase che ha bloccato.
 
-   `sviluppo_files` esiste perché quei path non compaiono in nessun `git log`: è l'unico posto in
-   cui chi legge scopre che la memoria si è mossa.
+   `sviluppo_files` resta l'elenco di ciò che la memoria ha mosso: è dentro un commit anche lui, ma
+   nessuno lo cerca in un `git log` di prodotto, e il riepilogo è il posto dove si vede che la
+   consegna ha toccato due cose e non una.
 
 ## Auto-inganni (fermali prima che ti fermino)
 
@@ -410,10 +452,10 @@ report e in `reason`.
 | «Il gate è rosso ma il diff è chiaramente giusto, committo» | Gate rosso = `BLOCCATO`. La classificazione è deterministica, non un giudizio. |
 | «Il validatore Codex non parte, lo considero verde» | È dichiarato obbligatorio da `CLAUDE.md`. Un gate che lo aggira certifica un pacchetto che nessuno ha validato per Codex: resta `BLOCCATO`, e il motivo è `pyyaml`, non il diff. |
 | «Questa la lascio come decisione post-commit, così decide l'owner» | Le decisioni post-commit sono bivi veri, non ciò che nessuno ha voluto risolvere. Se una strada è chiaramente la giusta, si risolve dove il rilievo nasce. |
-| «Committo prima e allineo dopo» | L'ordine è dichiarato: stage → allineamento → commit. Nessun lavoro si congela senza che ciò che lo spiega sia stato riallineato sullo **stesso** diff — e qui quell'allineamento non ha un commit che lo recuperi dopo. |
-| «La memoria tanto non si committa, salto la fase 5b» | È il contrario: proprio perché non si committa, se non la scrivi adesso non la scrive nessuno mai. |
-| «Aggiungo `-A` allo stage, è più comodo» | Mai: lo scope è `plugins/` e i file si elencano singolarmente. |
-| «I file di sviluppo li aggiungo con `git add -f`, così sono al sicuro» | Quel `-f` **pubblica** lo sviluppo di Daiku insieme al prodotto. Il confine di git è deliberato (§8 di `.claude/orchestration.md`). |
+| «Committo prima e allineo dopo» | L'ordine è dichiarato: stage → allineamento → commit. Nessun lavoro si congela senza che ciò che lo spiega sia stato riallineato sullo **stesso** diff. |
+| «La memoria tanto non si committa, salto la fase 5b» | È il contrario: il gruppo memoria/documentazione è un commit vero, e se salti la 5b resta vuoto. Il fatto che il diff ha reso falso resta falso in un file che la prossima sessione legge credendoci. |
+| «Aggiungo `-A` allo stage, è più comodo» | Mai: i file si elencano singolarmente, in tutte e due le fasi di stage. In fase 8 un `-A` è il modo in cui il lavoro di un'altra sessione entra in una consegna che non lo racconta. |
+| «La fase 8 è una formalità, la salto» | È l'unica cosa che porta nella storia il racconto della consegna: il brief, la review, il registro. Saltata, tutto quel lavoro esiste solo su questa macchina — ed è esattamente ciò che questa skill faceva fino al 23 settembre 2026. |
 | «Apro un branch per la consegna, è più pulito» | Il branch lo apre l'owner prima di lanciarti. Tu lavori dove ti trovi, e non cambi il contesto sotto i piedi a chi ti ha lanciato. |
 | «Uso il modello più grosso, questo passo mi sembra difficile» | Il modello viene dal ruolo dichiarato dalla fase, risolto con la §2 di `.claude/orchestration.md`. Non si sceglie a sensazione. |
 | «Riassumo io in chat gate e voci da confermare» | Sono già nel report. Il tuo riepilogo è stato + commit + cosa si pubblica, non un doppione. |

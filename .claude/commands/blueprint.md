@@ -42,9 +42,10 @@ Il perimetro di lavoro è **`plugins/daiku/`**, e nient'altro. Prima di congelar
 questi, perché un brief che non li ha letti produce task che non reggono:
 
 - **`CLAUDE.md`** — gli invarianti di sviluppo. Due contano sempre: il prodotto è
-  `plugins/daiku/` e nient'altro, e il `.gitignore` a lista di ammissione fa nascere escluso ogni
-  file nuovo. Un task che crea un file fuori da `plugins/` va detto esplicitamente; un task che ne
-  crea uno dentro **pubblica**, e il brief deve dirlo.
+  `plugins/daiku/` e nient'altro, e un file nuovo lì dentro **si pubblica** — il `.gitignore` non è
+  più il confine e non c'è nessuna lista di ammissione da aggiornare. Un task che crea un file fuori
+  da `plugins/` va detto esplicitamente; un task che ne crea uno dentro **pubblica**, e il brief deve
+  dirlo.
 - **`sviluppo/RICOGNIZIONE.md`** — i fatti verificati sui due host. Se il piano tocca manifest,
   marketplace, frontmatter di una skill o collocazione di un file, il capitolo 3 dice già cosa i
   validatori accettano e rifiutano.
@@ -58,7 +59,9 @@ questi, perché un brief che non li ha letti produce task che non reggono:
    con i metadati vuoti e nessuno la trova più per pertinenza.
 2. I contratti si citano fra loro **per path**, non per nome: i due host nominano le skill in modo
    incompatibile.
-3. Un file già tracciato da git il `.gitignore` non lo protegge: va tolto con `git rm --cached`.
+3. Il `.gitignore` esclude soltanto `.claude/settings.local.json`: **non è più il confine di ciò che
+   si pubblica**. Il confine è la lista di copia dello script di rilascio, che prende `plugins/` in
+   blocco, quindi un file nuovo sotto il pacchetto esce al primo commit che lo contiene.
 
 ## Principi
 
@@ -140,8 +143,8 @@ Il file è scritto **rivolgendosi all'esecutore** (seconda persona, imperativo o
 - Modifiche chirurgiche: tocca solo ciò che serve alla soluzione. Niente
   riscritture o miglioramenti fuori scope.
 - Rispetta `CLAUDE.md`: il prodotto è `plugins/daiku/` e nient'altro; un file
-  nuovo sotto `plugins/` **si pubblica**, e va riammesso in `.gitignore`
-  soltanto se lo si è deciso.
+  nuovo sotto `plugins/` **si pubblica** al primo commit che lo contiene, e
+  l'unico modo di non pubblicarlo è non metterlo lì.
 - Niente operazioni Git distruttive o remote: nessun `push`, nessuna PR,
   nessun `reset --hard` non giustificato.
 - Non fare (non-goals): <elenca ciò che è esplicitamente fuori da questa soluzione>

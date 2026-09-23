@@ -1,5 +1,5 @@
 ---
-description: 'Crea commit seguendo la convenzione di naming — allinea sempre prima gli artefatti di sviluppo al diff staged delegando a update-memory, controlla che i due manifest portino la stessa versione, poi committa il gruppo codice. Mai push.'
+description: 'Crea commit seguendo la convenzione di naming — allinea sempre prima gli artefatti di sviluppo al diff staged delegando a update-memory, controlla che i due manifest portino la stessa versione, poi committa in gruppi separati: codice, memoria e documentazione, versione. Mai push.'
 argument-hint: '[file o perimetro, opzionale — default: lo stage corrente]'
 ---
 
@@ -8,27 +8,35 @@ Crea commit dei file indicati. Se non ne vengono indicati, committa lo stage cor
 
 ## Cosa è committabile in questo repository
 
-Il `.gitignore` esclude tutto e riammette a mano `plugins/`, `.claude-plugin/`, `.agents/`,
-`README.md` e sé stesso. **Tutto il resto — `CLAUDE.md`, `sviluppo/`, `.claude/`, `.vscode/` — è
-fuori dall'indice per costruzione**, ed è voluto: chi aggiunge il marketplace riceve un clone
-dell'intero repository, quindi ciò che resta fuori da git è l'unico confine che tiene
-(`.claude/orchestration.md` §8).
+Il `.gitignore` esclude **soltanto** `.claude/settings.local.json`, che non deve stare in nessun git.
+**Tutto il resto è nell'indice**, prodotto e sviluppo insieme: `CLAUDE.md`, `sviluppo/`, `.claude/`,
+`.vscode/`.
 
-Ne segue la differenza più grossa rispetto al contratto del prodotto: **qui i gruppi di commit sono
-due, non tre.**
+Il confine di ciò che si pubblica **non passa da qui**, ed è per questo che il file è così corto:
+chi aggiunge il marketplace riceve un clone dell'**intero** repository — lo schema di Claude Code lo
+dice alla voce `sparsePaths`, «If omitted, the full repository is cloned» — quindi il filtro non può
+stare in un `.gitignore`. Sta nella lista di copia dello script di pubblicazione, che prende i soli
+path ammessi e li committa in un **secondo** repository su GitHub (`CLAUDE.md`, § *Due repository*).
+
+Ne segue che **qui i gruppi di commit sono tre, come nel prodotto**, e che il terzo esiste dal 18
+settembre 2026.
 
 | Gruppo | Cosa | Committabile |
 |---|---|---|
 | **codice** | tutto ciò che il diff tocca sotto `plugins/`, più le due vetrine in radice se le tocca | sì |
+| **memoria e documentazione** | `CLAUDE.md`, `sviluppo/**`, `.claude/**` — tutto il cantiere: memoria, ricognizione, punti aperti, contratti di sviluppo, registro delle consegne | sì, in un commit proprio |
 | **versione** | `plugins/daiku/.claude-plugin/plugin.json` e `plugins/daiku/.codex-plugin/plugin.json`, quando il numero cambia | sì, in un commit proprio |
-| ~~memoria e documentazione~~ | `CLAUDE.md`, `sviluppo/**` | **no** — ignorati da git |
 
-Il gruppo memoria/documentazione **non produce un commit**: non tentare un `git add` su quei path —
-fallirebbe — e non forzarlo con `-f`, che pubblicherebbe lo sviluppo di Daiku insieme al prodotto.
-L'allineamento si fa lo stesso, e resta scritto sul disco: vedi § *Allineamento*.
+Il gruppo memoria/documentazione **si committa**, e in un commit proprio: raccoglie ciò che
+`update-memory` ha appena scritto — vedi § *Allineamento*. Non lo si mescola al gruppo codice: un
+diff di prodotto e il racconto che lo spiega sono due cose, e chi cerca il secondo non guarda il
+primo.
 
-Un file **già tracciato** il `.gitignore` non lo protegge: se ne trovi uno che non dovrebbe esserci,
-si toglie con `git rm --cached <file>`, che lo lascia sul disco. È già successo con `CLAUDE.md`.
+> **Fino al 18 settembre 2026 era il contrario**, e più di un contratto di questo corpus ne porta
+> ancora la traccia: il `.gitignore` escludeva tutto e riammetteva a mano `plugins/`, le due
+> vetrine, `README.md` e sé stesso, i file di sviluppo erano davvero fuori dall'indice, e il gruppo
+> memoria/documentazione non esisteva. Dove un contratto dice ancora che il suo perimetro è fuori
+> dall'indice, **vale il contrario** (`.claude/orchestration.md` §8).
 
 ## Convenzione
 
@@ -78,9 +86,11 @@ codice è vuoto**. Lì non c'è un diff su cui allineare.
 **Non si chiede mai all'owner.** Né prima, come conferma, né dopo, come promemoria da eseguire a
 mano. Un allineamento rimandato è un allineamento che non avviene.
 
-**E qui pesa il doppio.** Nel prodotto, ciò che `update-memory` scrive finisce in un commit e la
-storia lo conserva. Qui no: i suoi file sono fuori da git, quindi esistono solo su questa macchina.
-Saltare la delega non lascia indietro un commit: lascia indietro un fatto che nessuno recupererà.
+**E qui pesa il doppio, per la ragione opposta a quella di ieri.** Ciò che `update-memory` scrive
+finisce nel **gruppo memoria/documentazione**, che è un commit vero come quello di codice: se salti
+la delega, quel gruppo non si riempie, e il fatto che il diff aveva reso falso resta falso in un file
+che la prossima sessione leggerà credendoci. Non è un documento in meno: è una bugia in più, e qui
+non c'è nessun altro passo che la raccolga.
 
 **Come delegare.** Un **subagent** in contesto fresco, ruolo **giudice** secondo
 `.claude/orchestration.md` — leggilo e risolvi da lì il modello, mai da qui. Mai eseguire il passo
@@ -149,25 +159,27 @@ un commit.
    - **Con parametri**: committa solo il perimetro indicato.
    - **Senza parametri**: committa lo stage corrente.
 
-3. **Separa i gruppi.** Partiziona in **due**: **codice** (tutto sotto `plugins/`, più le vetrine in
-   radice se toccate) e **versione** (i due `plugin.json`, se il numero cambia). Verifica che nulla
-   di ciò che stai per committare stia fuori da quei due gruppi: se ci finisce, o è un file che il
-   `.gitignore` avrebbe dovuto escludere, o è un file che qualcuno ha riammesso — in entrambi i casi
-   fermati e chiedi, perché è una pubblicazione.
+3. **Separa i gruppi.** Partiziona in **tre**: **codice** (tutto sotto `plugins/`, più le vetrine in
+   radice se toccate), **memoria e documentazione** (`CLAUDE.md`, `sviluppo/**`) e **versione** (i
+   due `plugin.json`, se il numero cambia). Verifica che nulla di ciò che stai per committare stia
+   fuori da quei tre gruppi: se ci finisce, fermati e chiedi — un path che non sai collocare o è una
+   pubblicazione che non hai deciso, o è una sede di questo repository che nessuno ha ancora
+   dichiarato.
 
 4. **Metti in stage il gruppo codice** (`git add <file>`, elencati singolarmente — mai `-A`, mai
    `.`), senza committare. Serve prima del passo 5: il diff su cui l'allineamento si fa è quello in
    index.
 
 5. **Allinea gli artefatti di sviluppo**, delegando secondo § *Allineamento*. I file che la delega
-   tocca **non si mettono in stage**: restano sul disco, fuori da git. Se hai saltato la delega,
-   dichiara in una riga perché (l'unico motivo ammesso è il gruppo codice vuoto).
+   tocca entrano nel **gruppo memoria/documentazione**, e si mettono in stage al passo 7 come gli
+   altri — `git add <file>`, elencati singolarmente. Se hai saltato la delega, dichiara in una riga
+   perché (l'unico motivo ammesso è il gruppo codice vuoto).
 
 6. **Controlla la versione** secondo § *Versione*: i due manifest coincidono? Se no, allineali e
    metti i due file nel gruppo versione.
 
-7. **Crea i commit**, uno per gruppo non vuoto, nell'ordine: prima **codice**, poi **versione**.
-   Senza chiedere conferma su nome o descrizione.
+7. **Crea i commit**, uno per gruppo non vuoto, nell'ordine: prima **codice**, poi **memoria e
+   documentazione**, poi **versione**. Senza chiedere conferma su nome o descrizione.
 
    - Fai lo staging dei soli file del gruppo corrente, elencati singolarmente. Mai mescolare gruppi
      in un unico commit. Il gruppo codice è già in stage dal passo 4: verifica con `git status` che

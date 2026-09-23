@@ -2,10 +2,11 @@
 /**
  * Topology verifier for the Daiku contract corpus.
  *
- * Development tool, not guest code: it is never installed into a project and is never
+ * Development tool, not guest code: it lives outside `plugins/daiku/` so it never
+ * ships with the package, it is never installed into a project and is never
  * hooked to an event. Run by hand and before a release, beside `hooks/self-check.mjs`:
  *
- *   node plugins/daiku/tools/check-topology.mjs plugins/daiku
+ *   node sviluppo/tools/check-topology.mjs plugins/daiku
  *
  * The root always arrives as an argument and is never derived from this file's position
  * on disk. Output is counted JSON `{checks, passed, failed[]}`; exit `1` on the first

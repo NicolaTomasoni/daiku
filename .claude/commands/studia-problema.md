@@ -49,8 +49,8 @@ Il problema va collocato. Le aree sono queste, e non sono backend e frontend:
 |---|---|
 | **contratti** | `plugins/daiku/skills/**/SKILL.md` e `plugins/daiku/contratti/*.md` — il metodo in prosa: cosa va fatto, in che ordine, chi delega a chi |
 | **host** | cosa Claude Code e Codex accettano davvero: manifest, marketplace, skill, agent, hook, invocazione, installazione |
-| **impacchettamento** | `.claude-plugin/`, `.agents/`, i due `plugin.json`, il `.gitignore` a lista di ammissione, versione e distribuzione |
-| **strumenti** | `plugins/daiku/hooks/lib/*.mjs` e `plugins/daiku/tools/*.py` — il codice eseguibile del pacchetto, con i suoi banchi `--self-check` |
+| **impacchettamento** | `.claude-plugin/`, `.agents/`, i due `plugin.json`, la lista di copia dello script di rilascio, versione e distribuzione |
+| **strumenti** | `plugins/daiku/hooks/lib/*.mjs` e `plugins/daiku/architect/*.mjs` — il codice eseguibile del pacchetto, con i suoi banchi `--self-check` |
 | **progetto ospite** | `plugins/daiku/templates/` e tutto ciò che un `init` dovrebbe scrivere nel progetto di destinazione |
 
 Un problema che non cade in nessuna di queste è un segnale: o è di sviluppo e non di prodotto
@@ -92,9 +92,10 @@ Lancia **subagent worker in parallelo** (ruolo e modo di lanciarli da `.claude/o
   esistono più;
 - **i fatti sugli host**: cosa il validatore reale accetta e rifiuta, cosa l'installazione fa
   davvero — con le prove eseguibili su questa macchina, non con la documentazione a memoria;
-- **la forma del pacchetto**: manifest, vetrine, `.gitignore`, cosa esce e cosa resta;
-- **il codice eseguibile**: `hooks/lib/*.mjs`, `tools/*.py`, i loro `--self-check` e cosa contano
-  davvero;
+- **la forma del pacchetto**: manifest, vetrine, la lista di copia dello script di rilascio — è lei
+  a decidere cosa esce, non più il `.gitignore`;
+- **il codice eseguibile**: `hooks/lib/*.mjs`, `architect/*.mjs`, i loro `--self-check` e cosa
+  contano davvero;
 - **il confronto con il documento di riferimento**: cosa `RICOGNIZIONE.md` dichiara sull'area, e se
   regge ancora.
 
