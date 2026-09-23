@@ -5,10 +5,12 @@
  *
  *  - **Claude Code** exports `CLAUDE_PROJECT_DIR`, which is the true root however
  *    the session was opened.
- *  - **Codex** has no equivalent. It documents `PLUGIN_ROOT` and `PLUGIN_DATA` — plus the
- *    compatibility aliases `CLAUDE_PLUGIN_ROOT` and `CLAUDE_PLUGIN_DATA` — but those
- *    point at the **installed package**, not the project, and for a hook declared in
- *    `.codex/hooks.json` they are not even set. There only the session cwd remains.
+ *  - **Codex** has no equivalent. The environment a Codex session hands a hook carries no
+ *    project path: the variables it exports are its own — `CODEX_SESSION_ID`,
+ *    `CODEX_THREAD_ID`, `CODEX_VERSION`, `CODEX_CI`, `CODEX_MANAGED_BY_NPM`,
+ *    `CODEX_MANAGED_PACKAGE_ROOT`, `CODEX_SANDBOX_NETWORK_DISABLED` — and none of them
+ *    names the project, nor does any of them point at the installed package in a way that
+ *    could stand in for it. There only the session cwd remains.
  *
  * And the session cwd **is not** the root: opening Codex inside a subfolder hands it
  * over as cwd, and a hook believing it would compute wrong relative paths — with

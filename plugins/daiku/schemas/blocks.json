@@ -100,12 +100,22 @@
       "enums": {},
       "note": "No JSON block of its own: reports the develop-feature block verbatim; its status is that block's status."
     },
-    "develop-feature-outcome": {
-      "producer": "skills/develop-feature/SKILL.md § Outcome",
-      "required": ["folder", "status", "worktree", "commit_sha", "merge_sha", "memory_updated", "memory_committed", "memory_commit_sha", "version_commit_sha", "report_path", "reason"],
+    "architect": {
+      "producer": "skills/develop-feature/SKILL.md § The evaluator (architect-internal, no producer file)",
+      "required": ["ok", "verdict", "remaining", "resume_from", "blockers", "retry", "fallback", "readings", "detail"],
       "optional": [],
       "enums": {
-        "status": ["GREEN_COMMITTED", "GREEN_WITH_POST_DECISIONS", "BLOCKED_NO_COMMIT", "blocked"]
+        "verdict": ["BLOCKED_NO_COMMIT", "GREEN_COMMITTED", "GREEN_WITH_POST_DECISIONS", "blocked", "commit", "fallback", "proceed", "restart", "resume", "retry", "stop", "unblock"]
+      },
+      "note": "The effective domain of `verdict` depends on `question`: this enum is the union of the six domains, one per question — decision, closing, unblock, propagation, resumption, order — and `verdict` is `null` when the question does not apply, that is `propagation` on a block that came back. `remaining` and `resume_from` are filled by `order` and `resumption` alone; `retry` and `fallback` by `propagation` alone; `readings` by the ambiguity rule alone. Field names of the blocks this one consumes are not renamed on either side: `gate`, `gate_detail`, `outcome`, `missing_disciplines`, `blocking`, `to_confirm`, `base`, `item`, `rounds`, `commit`, `commit_sha`."
+    },
+    "develop-feature-outcome": {
+      "producer": "skills/develop-feature/SKILL.md § Outcome",
+      "required": ["folder", "status", "worktree", "commit_sha", "merge_sha", "memory_updated", "memory_committed", "memory_commit_sha", "version_commit_sha", "architect_agreement", "report_path", "reason"],
+      "optional": [],
+      "enums": {
+        "status": ["GREEN_COMMITTED", "GREEN_WITH_POST_DECISIONS", "BLOCKED_NO_COMMIT", "blocked"],
+        "architect_agreement": ["match", "divergence"]
       }
     },
     "develop-feature-acquisition": {

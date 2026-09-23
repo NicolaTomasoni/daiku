@@ -26,7 +26,7 @@ You do not rewrite hooks for Codex and keep no two versions. The two hosts have 
 
 A single thing diverges, and it is the reason copying is not enough:
 
-**A Codex hook receives no variable pointing at the project.** Claude Code exports `CLAUDE_PROJECT_DIR` and `CLAUDE_PLUGIN_ROOT`; Codex has `PLUGIN_ROOT` and `PLUGIN_DATA` (with the `CLAUDE_*` aliases), but they point at the **installed package** and for a hook declared in `.codex/hooks.json` they are not even set. The session cwd remains, which is not the root if the user opened Codex in a subfolder.
+**A Codex hook receives no variable pointing at the project.** Claude Code exports `CLAUDE_PROJECT_DIR`, which *is* the project root. Codex exports no project path at all: what a session hands its hooks are its own variables — `CODEX_SESSION_ID`, `CODEX_THREAD_ID`, `CODEX_VERSION`, `CODEX_CI`, `CODEX_MANAGED_BY_NPM`, `CODEX_MANAGED_PACKAGE_ROOT`, `CODEX_SANDBOX_NETWORK_DISABLED` — and none of them names the project. The session cwd remains, which is not the root if the user opened Codex in a subfolder.
 
 For this the `.mjs` files climb to the git root — `hooks/lib/project-root.mjs` does so — and for this **the path in `command` must be absolute**, written by you at install time.
 

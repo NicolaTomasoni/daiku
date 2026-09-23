@@ -144,21 +144,31 @@ rebuilding the graph from the caller's prose.
 | `commit` | owner, `review` § *Closing* (always, except `--no-commit`) | code-group perimeter; it partitions memory/docs and version/changelog itself (§ *Procedure* 3 of its file) | § *Procedure* 8 of its file, in chat | yes — `update-memory`, **always and without exceptions** |
 | `update-memory` | `develop-feature` phase 5b, `commit` § *Alignment* (**always**, on every `commit` invocation) | diff in index, feature folder where to deposit its own artefact (from `develop-feature`), **commit permission for its own group** | § *Procedure* 7 of its file | no |
 
-**A new arc is declared here.** Connecting a node to a caller that did not have it means
-updating its row — the callers, the input it now receives resolved, the permission that
-the invocation passes it — in the same change that writes the arc. A row left un-updated is an
+**A new arc is declared in the program, and its row here follows it.** Connecting a node to a
+caller that did not have it means declaring the arc in `GRAPH` of
+`plugins/daiku/architect/architect.mjs` and updating its row — the callers, the input it now
+receives resolved, the permission that the invocation passes it — in the same change that writes
+the arc. A row left un-updated is an
 arc that exists in the prompts' code and exists nowhere readable: it is the form in which a node's permission ends up depending on who calls it without anyone
 having decided so.
 
-**And today this table is verified only by whoever re-reads it.** Three of its properties are
-machine-verifiable — that the nodes are all and only those on disk, that every contract
-handed to a subagent **as a contract to read** appears among its own row's callers,
-and that every section reference in a cell — "§ *X* of its file" — truly finds that heading — but
-no tool in the package checks them. A verifier existed and **was removed on 18
-September 2026**: it resolved its own root by position on disk, and at the first tree reorganisation
-it stopped finding the corpus without its output saying so. Until one exists that
-knows where it is, this line declares what is true: the table is kept by hand, and nobody catches
-a cell left un-updated.
+**And today this table is the reflection of a program, not its seat.** The order lives in
+`plugins/daiku/architect/architect.mjs`: that program carries the graph above as its own data and
+answers, given the entry point and the artefacts already on disk, which phases remain. The table
+still **shows** the graph to whoever reads a contract — no row is deleted and no name changes —
+but it no longer **declares** it: where a skill used to restate the sequence, it asks the evaluator
+and follows the verdict.
+
+**A machine compares the two.** `node plugins/daiku/hooks/self-check.mjs` launches the bench of
+`architect/` together with the benches of the four hooks, and that bench reads this file, extracts
+the rows above, and refuses a divergence in either direction — a node the program does not carry, a
+row with no node on disk, a caller on one side and not on the other. The three properties this
+section has always declared stay with the verifier that lives **outside** the package,
+`sviluppo/tools/check-topology.mjs`, run by hand and in the release gate beside the two validators.
+A verifier existed once and **was removed on 18 September 2026** because it resolved its own root by
+position on disk, and at the first tree reorganisation it stopped finding the corpus without its
+output saying so: the verifier that replaced it and the evaluator both take their root as an
+argument, for that reason. Neither of them promises more than a command already executes.
 
 ## 4. Delegation
 

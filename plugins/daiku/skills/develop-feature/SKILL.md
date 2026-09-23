@@ -34,6 +34,69 @@ Two roots, two roles, passed to every phase already resolved:
 
 Read `contracts/orchestration.md`: roles, host, how a subagent launches, concurrency. Each phase below declares its own role (**judge** or **worker**) and you resolve the model with the rule of its §2 — never from here.
 
+**And before the first phase, prove the evaluator runs.** It is the move `sync-host` already makes on the hook benches — try before hooking, not after the first fault. The proof is the first question this delivery needs anyway (`order`, in § *The evaluator*): if it comes back, the evaluator runs and the sequence is known; **if it does not, the delivery does not start**. The verdict binds, so a delivery started on an evaluator that does not answer breaks where it is least visible. The diagnosis tells two causes apart and they are not the same thing: **the environment** — `node` not on the `PATH`, the fix on the user's side — and **the package** — a malformed input, or a case the bench does not cover, which is a defect of Daiku and is declared as such.
+
+## The evaluator
+
+Four of the classifications below are **not read off this prose any more**: they are asked, and the
+verdict binds. It is one program, and asking it is one command:
+
+```bash
+node <package root>/architect/architect.mjs <package root>
+```
+
+It reads **one JSON object on stdin** and writes **one JSON object on stdout**; it starts no
+process, talks to no model and opens no file. What it answers:
+
+| Question | Where it is used here |
+|---|---|
+| `order` | § *The sequence* — given the entry point and the artefacts already on disk, which phases remain |
+| `decision` | § *4. Decision* — the classification of the six rows |
+| `unblock` | § *Mechanical unblock* — whether only mechanical work remains |
+| `propagation` | *Block validation*, below — what follows a block that did not come back |
+
+**What it reads is one JSON object whose keys are fixed**, and a caller that guesses one of them
+stops the delivery. `question` is always there; then only what that question needs: `entry` (the
+entry point) and `present` (the artefacts already on disk) for `order` and `resumption`, the
+`review_outcome` block in full for `decision`, `closing` and `unblock`, its `commit` alone for
+`resumption` (it says whether the cycle had already closed), the `ledger` (or `null`) for `order`,
+`closing` and `resumption` — for `order` a ledger that exists and is not passed turns into a fork
+for the owner where a verdict was due — and `step` (`{"node": …, "block": …|null, "attempt": 1|2}`)
+for `propagation`. These are the six questions it answers; the two this file does not use — `closing`
+and `resumption` — are the ones `skills/review/SKILL.md` § *Baseline and ledger* and § *Closing*
+ask, with the same keys. A key a question needs and does not find is a loud failure, never a
+guessed value.
+
+**The root is a path relative to the package** — the folder containing `skills/`, `contracts/` and
+`architect/`, **two levels above this file** — in the same form `init` and `sync-host` already use:
+it holds on both hosts, while an environment path variable exists only on one of the two. The two
+hosts hand it over differently and both notations are written here because of it, because it is the
+most exposed assumption of this design. On **Claude Code** the host substitutes its path variables
+(`${CLAUDE_PLUGIN_ROOT}`, `${CLAUDE_SKILL_DIR}`) inside the text of a `SKILL.md`, so the command can
+name the root directly. On **Codex** the host hands the skill the **absolute path of its own
+`SKILL.md`** and nothing else: there the climb of the two levels is done **by you**, and it is an
+instruction, not a fact of the harness. Getting it wrong is contained: the command does not start
+and it is visible, instead of starting and looking in the wrong place.
+
+**The block it returns** is the one `schemas/blocks.json` § *architect* declares, and that is its
+only copy: this file cites it and does not restate it. It always carries all nine fields —
+`ok`, `verdict`, `remaining`, `resume_from`, `blockers`, `retry`, `fallback`, `readings`, `detail` —
+with `null` or empty where the question does not use them.
+
+**The fields it deliberately ignores** — which §4 point 2 of `contracts/orchestration.md` requires of
+whoever reads only a part of a block — are declared in the head comment of `architect/architect.mjs`,
+and that is their only copy: this file cites them and does not restate them. Not reading a field is
+why a missing one among them changes no verdict.
+
+**It fails loudly, and the two causes are told apart.** This is not a hook and does not degrade
+open: a missing or malformed input is an error, never an implicit `false`. The diagnosis names
+**the environment** — `node` not on the `PATH`, the fix on the user's side — and **the package** —
+a malformed input, or a case its bench does not cover, which is a defect of Daiku and is declared
+as such. **The verdict binds: if it does not run, the delivery does not continue.**
+
+**The field that measures.** It is `architect_agreement`, and § *Outcome* is its only copy: this
+section cites it and does not restate it.
+
 ## Progress and findings
 
 **No progress log is kept on file.** Progress and findings go **in chat**, as you go: one line when a phase starts and when it returns, with the role running it, and immediately what you noticed and what needs no block — a subagent returned malformed, a phase slower than expected, evidence not adding up.
@@ -44,6 +107,13 @@ The state needed to **resume** is not that: they are the artefacts the phases de
 
 The phases are ordered and not skippable. Each is **one** subagent, with the prompt giving it the contract to read, the resolved input and the JSON block to return.
 
+**Which phases remain is not read off this file, it is asked.** Before phase 0, ask the evaluator
+(`question: "order"`), passing the entry point, the artefacts already on disk and the `ledger` (or
+`null`): the verdict says where to start and what is left to do, and the sections below are its
+**rendering** — the same sequence, shown to whoever reads a contract, no phase deleted and no name
+changed. They no longer declare it. Two things this does not change: the phases are still ordered and
+none is skippable, and the worktree lifecycle of phase 0 still belongs here.
+
 Each block carries the field declaring the outcome of its own phase: `ok` for Brief, Execute and Report, `gate` for Review, `staged` for Stage, `updated` for Memory, `committed` for Commit. **If that field says failure, or if the block does not come back at all, the delivery stops there** (see *Early block*) — an absent block is not interpreted by feel and not rebuilt from the prose of the subagent.
 
 **What says failure, field by field**, because not all those fields declare one: `ok: false` for Brief, Execute and Report; `staged: false` for Stage, which skips 5b and 6 and goes to the report as the phase itself prescribes; `committed: false` for Commit; and in every phase the **absent block**. For **Review** failure is **only** the absent block, not `gate`: a `gate: "red"` is a successful measurement, and the table of phase 4 classifies it `BLOCKED_NO_COMMIT` — stopping here would flatten it onto `blocked`, which means "the brief broke", and the difference between a delivery not compiling and one never started would be lost. `updated: false` is **never a failure**: `skills/update-memory/SKILL.md` declares it "the expected outcome, not a failure" when the diff justifies no writing, and phase 6 already foresees that case in writing ("If 5b wrote nothing, this commit **does not exist**").
@@ -52,7 +122,7 @@ The phases having their own contract declare the block **at home**, and here it 
 
 **Block validation.** Every phase block is validated under the Validation clause of §4 of
 `contracts/orchestration.md`: a missing or malformed block relaunches the phase exactly once
-with the identical prompt, and a malformed block counts as missing. On second failure the
+with the identical prompt, and a malformed block counts as missing. **What follows a failure is asked, not judged here**: call the evaluator with `question: "propagation"` and `step` set to `{"node": <the phase>, "block": <what came back>|null, "attempt": 1|2}` — `retry` is the relaunch with the identical prompt, `fallback` the outcome the skill hosting that phase declares for the case. The **ceiling** stays written here because it is a consequence and not a classification: **exactly one** relaunch, never a third attempt. On second failure the
 delivery stops at that phase (see *Early block*) with the `detail` of its block — for Review,
 failure is only the absent block, never a measured `gate: "red"`. The expected form of each
 block is cited from the file declaring it, never recopied here, and mirrored in
@@ -118,7 +188,9 @@ If review finds no file under `{code_root}` to review, stop: there is no deliver
 
 ### 4. Decision — you decide it **yourself**, in chat, without subagent
 
-It is a deterministic classification on already structured data: no second judge is needed to re-judge. The review applier already marked each `to_confirm` item with `blocking`, because it had the finding in hand.
+It is a deterministic classification on already structured data: no second judge is needed to re-judge. **And it is not redone here — it is asked.** Call the evaluator with `question: "decision"` and the `review_outcome` block in full; the verdict is `GREEN_COMMITTED`, `GREEN_WITH_POST_DECISIONS` or `BLOCKED_NO_COMMIT`, and `blockers` lists **every** condition that blocks, not the first. The table below is that rule shown to whoever reads it, and it no longer declares it: what remains here is the **consequences**, which are ours and are not a classification — on `BLOCKED_NO_COMMIT` one does not stage, does not align memory, does not commit, and the worktree stays dirty on purpose.
+
+The review applier already marked each `to_confirm` item with `blocking`, because it had the finding in hand.
 
 Describe each open item as `<file>[:<line>] [<class>] <scenario>`, then:
 
@@ -141,7 +213,9 @@ The **non**-blocking items are `post_commit_decisions`: they do not stop the com
 
 ### Mechanical unblock — when the only blocker is the red gate
 
-If the classification is `BLOCKED_NO_COMMIT` for only the first line of the table (`gate` ≠ `green`) — that is converged exit (`fixed-point`), empty `missing_disciplines`, no `blocking: true` item and empty `to_confirm` — do not stop: the cycle already said everything it knew how to say, only mechanical work remains. Delegate **one** worker subagent which, in the work root, corrects only the gate findings on the diff lines with an obvious single-solution fix (mechanical lint, format, types), relaunches the gate of the touched area and returns `gate`/`gate_detail`/`needs_tradeoff`. Constraints: no behaviour change, no file outside the reported ones, never stage/commit, and if even a single fix admits two defensible options the subagent leaves it alone and declares it in `needs_tradeoff` instead of guessing.
+**Whether the block is only the red gate is asked, not judged here.** Call the evaluator with `question: "unblock"` and the same `review_outcome` block: `unblock` or `blocked`, and on `blocked` the reasons. It unblocks only when the cycle already said everything it knew how to say — converged exit (`fixed-point`), empty `missing_disciplines`, no `blocking: true` item and empty `to_confirm` — and **on `blocked` the three consequences below hold unchanged**: they are ours, not a classification.
+
+If the verdict is `unblock`, delegate **one** worker subagent which, in the work root, corrects only the gate findings on the diff lines with an obvious single-solution fix (mechanical lint, format, types), relaunches the gate of the touched area and returns `gate`/`gate_detail`/`needs_tradeoff`. Constraints: no behaviour change, no file outside the reported ones, never stage/commit, and if even a single fix admits two defensible options the subagent leaves it alone and declares it in `needs_tradeoff` instead of guessing.
 
 - If `gate: green` and empty `needs_tradeoff` come back: reclassify with the table (the typical outcome is `GREEN_COMMITTED`) and continue from phase 5 on; the report tells the unblock in a paragraph.
 - Otherwise (if `gate` is still `red`, or `needs_tradeoff` is non-empty): `BLOCKED_NO_COMMIT` stays with those blockers, and from here on the paragraph below holds (no stage/memory/commit, dirty and declared worktree).
@@ -270,12 +344,15 @@ If Acquisition, Brief or Execute fail, the delivery stops: say so in chat, have 
      "memory_committed": false,
      "memory_commit_sha": "<sha or null>",
      "version_commit_sha": "<sha or null>",
+     "architect_agreement": "match|divergence|null",
      "report_path": "<report path, <folder>/5. review-report.md>",
      "reason": "<only if blocked: the exact reason>"
    }
    ```
 
 Every field comes from a phase, and is reported **verbatim** from there — not recomputed from memory: `status` from phase 4 (a conflicting merge of phase 6b reclassifies it `BLOCKED_NO_COMMIT`); `worktree` from phase 0 (`null` if it acquired nothing); `commit_sha` from `committed`/`commit_sha` of phase 6; `merge_sha` from phase 6b (`null` if merge did not start or went into conflict); `memory_updated` from the `updated` field of phase 5b (`false` if the phase was not run); `memory_committed` and `memory_commit_sha` and `version_commit_sha` from phase 6; `reason` from the `detail` of the blocking phase. The delivery does not park — on `BLOCKED_NO_COMMIT` and on `blocked` the worktree stays dirty and the paths are declared in the report and in `reason`.
+
+**`architect_agreement` is the one field that measures the delivery instead of reporting it.** It says whether your own reading of the four asked classifications coincided with the verdict of § *The evaluator*: `match` when they agreed, `divergence` when they did not — and on a divergence the verdict held, which is the case worth reading. It is `null` when the evaluator never ran, and a `null` there is not a fault but a fact to declare. It is the first use of the evaluator to measure Daiku itself: if the two readings always coincide, the evaluator bought little, and knowing that is worth the whole delivery.
 
 ## Self-deceptions (stop them before they stop you)
 

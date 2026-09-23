@@ -12,7 +12,7 @@ other two never stop anything and only say what they know.
 
 Next to them stand two modules that are not hooks: `lib/project-root.mjs` finds the project
 root on both hosts, `lib/daiku-config.mjs` reads `.daiku/project.json`. They have no bench of
-their own: the benches of the three importing them test them.
+their own: the benches of the four importing them test them.
 
 ## Not a security barrier
 
@@ -84,13 +84,19 @@ That is why each carries a test bench running on a simulated filesystem, touchin
 nothing, and printing a counted total:
 
 ```bash
-node hooks/self-check.mjs          # all four benches at once, with the summed total
+node hooks/self-check.mjs          # all five benches at once, with the summed total
 node hooks/lib/command-guard.mjs --self-check   # one only, as sync-host runs it
 node hooks/lib/edit-guard.mjs --self-check      # the coarse edit perimeter, alone
 ```
 
 The first exits `1` on the first red: the command for a CI and to run before a
 release, next to the two package validators.
+
+The five are the four above plus the evaluator's, which lives in `architect/` — outside
+`lib/`, because that folder is copied into the user's project and this one is not. It is the
+only bench here whose program **fails loudly**: the four hooks stay silent on a fault, so a
+total that drops is the only sign a bench stopped running, and that sign is worth exactly as
+much for the evaluator, whose silence stops a delivery.
 
 ## What they do not do
 
