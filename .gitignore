@@ -1,0 +1,13 @@
+# Dipendenze
+node_modules/
+
+# Build
+out/
+dist/
+*.vsix
+
+# Test host di VS Code
+.vscode-test/
+
+# Segreti
+*.secrets.json
