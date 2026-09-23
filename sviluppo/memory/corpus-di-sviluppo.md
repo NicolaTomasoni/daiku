@@ -95,10 +95,22 @@ si costruisce, e un tavolo non deve assomigliare al mobile. Anche una modifica c
 entrambi i corpus si scrive solo nel prodotto e lì si ferma. Nessuno dei due alberi aggiorna l'altro, e nessuna skill di
 questo corpus scrive dentro `plugins/daiku/skills/` per allinearlo a sé stessa.
 
-**Il corpus è rimasto indietro su un punto.** Dieci contratti di qui — e `orchestration.md` fino
-alla correzione del 19 settembre 2026 — sono scritti sulla premessa che tutto ciò che sta fuori da
-`plugins/` sia escluso da git, quindi parlano di perimetri «fuori dall'indice per costruzione», di
-un `committed` sempre `null` e di un `.gitignore` a lista di ammissione che non esiste più. È una
-premessa falsa da quando il repo versiona tutto, e allinearli è un lavoro da autorizzare.
+**Il corpus era rimasto indietro su un punto, e non lo è più.** Fino al 23 settembre 2026 dieci
+contratti di qui — e `orchestration.md` fino alla correzione del 19 settembre — erano scritti sulla
+premessa che tutto ciò che sta fuori da `plugins/` sia escluso da git: parlavano di perimetri «fuori
+dall'indice per costruzione», di un `committed` sempre `null`, di un `.gitignore` a lista di
+ammissione che non esiste più, e in `execute` la premessa era perfino **invertita** — un file nuovo
+sotto il pacchetto «nasce escluso» e va riammesso, mentre oggi nasce pubblicato. **Quel giorno sono
+stati riletti e corretti su ordine dell'owner**: i gruppi di commit sono tre anche qui, il gruppo
+memoria e documentazione si committa, e `deliver-feature` ha una fase 8 che lo fa dopo il report.
+La premessa falsa non ha più sedi: se ne ricompare una, è un difetto del contratto che la porta —
+da segnalare e correggere, non una deroga da applicare.
+
+**Una scelta è rimasta senza la sua ragione.** La regola «questo corpus non usa worktree» poggiava
+sulla stessa premessa caduta — un worktree che sarebbe nato senza `CLAUDE.md`, senza `sviluppo/` e
+senza i contratti da leggere — e da allora non ne ha più una scritta: i due contratti ora lo
+dichiarano invece di far finta di niente, e la decisione è dell'owner (`PUNTI-APERTI.md`, voce 8).
+È il caso più insidioso dei due: la scelta regge ancora, la ragione no, e chi la legge crede di
+sapere perché.
 
 Vedi [[alberatura-pacchetto]] e [[si-pubblica-solo-il-prodotto]].
