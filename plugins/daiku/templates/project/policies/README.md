@@ -27,6 +27,27 @@ translates into a check, "keep the backend clean" does not. Whoever reads these 
 them on every run and does not trust a memorised list: if the text changes, what gets verified
 changes with it.
 
+A rule may carry an **optional machine-readable block**: the same invariant, restated so
+`arch-check` verifies it without interpreting the prose. When the block is present and its
+folders cover the scope, the block is what gets checked; otherwise the prose is, as before.
+The block is a convention, never an obligation — a rule without it stays a fully valid rule.
+
+```markdown
+---
+paths:
+  - "src/server/**"
+layers:
+  - name: api
+    folders: ["src/server/api/**"]
+    deny_imports: ["src/server/db/**"]
+---
+```
+
+- `name` is the stable handle cited in findings.
+- `folders` is the scope of the check, with the same pattern form as `paths`.
+- `deny_imports` lists forbidden import fragments, as path substrings — not resolved
+  modules — so the check stays a grep, in every language.
+
 The name `policies/` is not a fancy synonym for `rules/`: on Codex, `rules/` is already a host
 security concept — Starlark files governing command execution — and reusing that name would
 collide two things that have nothing to do with each other.

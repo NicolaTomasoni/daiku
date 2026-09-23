@@ -129,7 +129,7 @@ Launch a subagent with a self-contained prompt holding:
 - the **step role**: **worker**, model resolved per §2 of `contracts/orchestration.md`;
 - the **scope constraint**: it rewrites and reorders **only** that file, does not open new files, does not commit and does not push, **does not delegate** (it is a leaf);
 - the `study` **block stays internal**: read it to know whether reordering succeeded, do not forward it and do not copy it;
-- the **cap**: a failed step is retried **only once**, with the very same prompt (§4.2 of `contracts/orchestration.md`).
+- the **cap**: a failed step is retried **only once**, with the very same prompt (§4.2 of `contracts/orchestration.md`). This is the Validation clause of §4 of that contract applied to `study` — a missing or malformed block relaunches it once, and on second failure § *If `study` fails* below applies. Its expected form is cited from `skills/study/SKILL.md`, never recopied here, and mirrored in `schemas/blocks.json`.
 
 If `study` fails twice, § *If `study` fails* below applies.
 

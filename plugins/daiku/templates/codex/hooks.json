@@ -12,6 +12,17 @@
             "statusMessage": "Destructive command guard"
           }
         ]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit|apply_patch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"<REPO_ROOT>/.codex/hooks/edit-guard.mjs\"",
+            "timeout": 15,
+            "statusMessage": "Coarse edit perimeter"
+          }
+        ]
       }
     ],
     "PostToolUse": [

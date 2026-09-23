@@ -31,7 +31,7 @@ If one of these is missing, **do not choose it yourself and do not ask for it**:
 
 1. **Read in full what your `Where it comes from` column indicates, before analysing.** Those contracts declare at home their own **Finder mode**: follow it — it is the part valid here, and it says what of the rest of the file is not run. Load `{instructions_file}` where needed.
 
-2. **Only for `arch`**: the rules to verify live in the invariants of `{instructions_file}` and in the area rules in `.daiku/policies/`. List that folder, read the `paths` frontmatter of each file and **open** those whose patterns cover the scope files. Do not take them as loaded: automatic loading triggers by opening a matching file, not by inspecting a diff.
+2. **Only for `arch`**: the rules to verify live in the invariants of `{instructions_file}` and in the area rules in `.daiku/policies/`. List that folder, read the `paths` frontmatter of each file and **open** those whose patterns cover the scope files. Do not take them as loaded: automatic loading triggers by opening a matching file, not by inspecting a diff. If an opened policy carries a `layers:` block, verify per the `skills/arch-check/SKILL.md` mapping; otherwise verify the prose.
 
 3. **Scope**, which is the only thing changing between one round and the next:
    - **round 1**: `git diff <BASE> -- {code_root}`, and **read every added line in full** before judging;

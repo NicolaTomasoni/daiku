@@ -236,6 +236,19 @@ the `{memory.root}` corpus has two writers as soon as `init` finishes — the ho
 two forms in the same folder. There the default does not anticipate a user choice: it spares them
 having to make it before writing their first memory.
 
+#### Area policies are found by paths, and may carry layers
+
+An area policy (`.daiku/policies/*.md`) is found by **match**, not by role: a skill lists
+the folder, reads the `paths` frontmatter of each file, and opens those whose patterns cover
+the files it works on. A policy without `paths` is never opened by anyone.
+
+A policy **may** also carry an optional `layers:` frontmatter block restating an invariant
+in machine-readable form — `name`, the `folders` it applies to, and the `deny_imports`
+fragments forbidden there. When the block is present and its folders cover the scope, readers
+verify the block instead of interpreting the prose; when absent or malformed, they verify the
+prose as before. The block is a convention, never an obligation: a policy without it stays a
+fully valid policy, and no check reports a missing block.
+
 ### 5.5 The language — read here once, not repeated in every skill
 
 The skills of this package are written in English, but **the language a skill writes in is not

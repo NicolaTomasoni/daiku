@@ -1,0 +1,153 @@
+{
+  "$comment": "Checkable mirror of the return blocks the skills declare in prose. The prose of each declaring file stays the normative schema; on divergence the prose holds and this file is updated to match. Read by hand-written checks (readFile + JSON.parse, no dependencies) and by humans writing nodes. Method only: no guest values, no machine paths.",
+  "blocks": {
+    "decision-doc": {
+      "producer": "skills/decision-doc/SKILL.md § The block you return",
+      "required": ["stage", "stage_why", "file", "verdict", "applied_fixes", "decisions", "incorporated", "open_items"],
+      "optional": [],
+      "enums": {
+        "stage": ["strategic", "technical"],
+        "decisions.classification": ["blocker", "serious risk", "weakness", "improvement"],
+        "decisions.recommended_id": ["A"]
+      }
+    },
+    "blueprint": {
+      "producer": "skills/blueprint/SKILL.md § What you return",
+      "required": ["ok", "brief_path", "detail"],
+      "optional": [],
+      "enums": {}
+    },
+    "execute": {
+      "producer": "skills/execute/SKILL.md § What you return",
+      "required": ["ok", "note_review_path", "verify_detail", "detail"],
+      "optional": [],
+      "enums": {}
+    },
+    "finder": {
+      "producer": "skills/finder-prompt/SKILL.md § The block you return",
+      "required": ["findings"],
+      "optional": [],
+      "enums": {
+        "findings.confidence": ["high", "medium", "low"]
+      }
+    },
+    "applier": {
+      "producer": "skills/applier/SKILL.md § The block you return",
+      "required": ["applied", "discarded", "to_confirm", "oscillation"],
+      "optional": [],
+      "enums": {
+        "to_confirm.class": ["arch", "bug", "perf", "test-coverage"]
+      }
+    },
+    "coverage-auto": {
+      "producer": "skills/test-coverage/SKILL.md § Automatic mode",
+      "required": ["written_tests", "to_confirm", "skipped", "why"],
+      "optional": [],
+      "enums": {
+        "to_confirm.class": ["test-coverage"]
+      }
+    },
+    "gate": {
+      "producer": "skills/review/SKILL.md § Gate (review-internal, no producer file)",
+      "required": ["gate", "gate_detail"],
+      "optional": [],
+      "enums": {
+        "gate": ["green", "red"]
+      }
+    },
+    "review-outcome": {
+      "producer": "skills/review/SKILL.md § Outcome",
+      "required": ["rounds", "outcome", "disciplines_round_1", "missing_disciplines", "independence", "oscillation", "applied", "severe", "on_previous_fix", "discarded", "gate", "gate_detail", "commit", "commit_sha", "blocking", "coverage", "ledger", "report", "to_confirm"],
+      "optional": [],
+      "enums": {
+        "outcome": ["fixed-point", "diminishing-returns", "oscillation", "rounds-truncated", "rounds-exhausted"],
+        "independence": ["intact", "lost"],
+        "commit": ["done", "partial", "not-requested", "skipped"],
+        "coverage": ["tests-written", "no-tests-needed"]
+      }
+    },
+    "commit": {
+      "producer": "skills/commit/SKILL.md § Procedure 8",
+      "required": ["commits", "version_decision"],
+      "optional": [],
+      "enums": {
+        "commits.group": ["code", "memory", "version"]
+      }
+    },
+    "update-memory": {
+      "producer": "skills/update-memory/SKILL.md § Procedure 7",
+      "required": ["updated", "files", "confirm_with_owner", "detail", "committed"],
+      "optional": [],
+      "enums": {}
+    },
+    "study": {
+      "producer": "skills/study/SKILL.md § The block you return",
+      "required": ["ok", "technology", "file", "studied_version", "latest_version", "date", "to_verify", "detail"],
+      "optional": [],
+      "enums": {}
+    },
+    "research": {
+      "producer": "skills/research/SKILL.md § Final output",
+      "required": [],
+      "optional": [],
+      "enums": {},
+      "note": "No JSON block: returns only the reordered file path."
+    },
+    "new-feature": {
+      "producer": "skills/new-feature/SKILL.md § Outcome",
+      "required": [],
+      "optional": [],
+      "enums": {},
+      "note": "No JSON block of its own: reports the develop-feature block verbatim; its status is that block's status."
+    },
+    "develop-feature-outcome": {
+      "producer": "skills/develop-feature/SKILL.md § Outcome",
+      "required": ["folder", "status", "worktree", "commit_sha", "merge_sha", "memory_updated", "memory_committed", "memory_commit_sha", "version_commit_sha", "report_path", "reason"],
+      "optional": [],
+      "enums": {
+        "status": ["GREEN_COMMITTED", "GREEN_WITH_POST_DECISIONS", "BLOCKED_NO_COMMIT", "blocked"]
+      }
+    },
+    "develop-feature-acquisition": {
+      "producer": "skills/develop-feature/SKILL.md § Acquisition",
+      "required": ["ok", "worktree", "worktree_root", "detail"],
+      "optional": [],
+      "enums": {}
+    },
+    "develop-feature-stage": {
+      "producer": "skills/develop-feature/SKILL.md § Stage",
+      "required": ["staged", "files", "detail"],
+      "optional": [],
+      "enums": {}
+    },
+    "develop-feature-merge": {
+      "producer": "skills/develop-feature/SKILL.md § Merge",
+      "required": ["merged", "merge_sha", "conflicts", "detail"],
+      "optional": [],
+      "enums": {}
+    },
+    "develop-feature-report": {
+      "producer": "skills/develop-feature/SKILL.md § Report",
+      "required": ["ok", "report_path", "detail"],
+      "optional": [],
+      "enums": {}
+    }
+  },
+  "ledger": {
+    "producer": "skills/review/SKILL.md § Baseline and ledger",
+    "required": ["base", "item", "rounds", "outcome", "coverage", "gate", "gate_detail"],
+    "round_required": ["n", "disciplines", "missing_disciplines", "applied", "discarded", "to_confirm", "oscillation", "verdict", "why"],
+    "enums": {
+      "rounds.verdict": ["continue", "stop"]
+    }
+  },
+  "params": {
+    "producer": "contracts/project-contract.md §4 and contracts/orchestration.md §7",
+    "project_json": ["contract", "name", "repo_root", "code_root", "instructions_file", "language.chat", "language.commit", "tech_doc", "changelog", "version.file", "version.field", "version.replicated_in", "paths.studies", "paths.lib_notes", "paths.review_state", "memory.root", "memory.index", "commit.memory_prefix", "worktree.pool", "worktree.prefix", "worktree.max", "worktree.branch_prefix", "areas", "areas.<area>.paths", "areas.<area>.gate", "areas.<area>.lint_fix", "areas.<area>.test_targeted", "areas.<area>.coverage"],
+    "environment_json": ["contract", "default_host", "hosts", "backends", "hosts.<host>.models", "hosts.<host>.models.<role>", "hosts.<host>.models.judge", "hosts.<host>.models.worker", "hosts.<host>.skill_pointers", "hosts.<host>.enforcement", "hosts.<host>.settings_file", "hosts.<host>.base_url_env", "hosts.<host>.native_backend", "backends.<backend>", "backends.<backend>.base_url", "backends.<backend>.sequential_fanout", "backends.<backend>.caveats", "temp_dir"],
+    "contract_expected": {
+      "project_json": 2,
+      "environment_json": 2
+    }
+  }
+}

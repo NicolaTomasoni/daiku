@@ -252,6 +252,17 @@ Rules valid on every host:
    crossing the arc: it is born identical, then the node adds a field and the caller does not, and that
    field simply does not reach the decider — who keeps deciding, with less information than
    exists, with nothing signalling the loss.
+
+   **Validation clause.** A step's return block is validated before use: if the block is missing,
+   or a required field is absent or malformed, the step has failed — it is relaunched **exactly
+   once**, with the identical prompt; if it still does not come back, the outcome the hosting
+   skill declares for that case applies. Whoever consumes a block **cites** the declaring file
+   and never recopies its schema; if it deliberately reads only a subset, it declares which
+   fields it ignores and why. A malformed intermediate block is treated as a missing block: a
+   string that is not the expected block is a block that did not come back. The machine-readable
+   form of every block lives in `schemas/blocks.json`, which declares required and optional
+   fields: the prose of the node stays the normative schema, the JSON file is its checkable
+   mirror, and on divergence the prose holds.
 3. **One step, one subagent.** Do not merge two phases into a single subagent to save a
    round: the sequence the skill declares is the contract.
 4. **If delegation is unavailable** on the current host, run the step inline while still respecting

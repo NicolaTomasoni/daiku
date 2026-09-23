@@ -50,6 +50,14 @@ Each block carries the field declaring the outcome of its own phase: `ok` for Br
 
 The phases having their own contract declare the block **at home**, and here it is cited: every local rewrite shrinks at the first modification of the node (§4.2 of `contracts/orchestration.md`).
 
+**Block validation.** Every phase block is validated under the Validation clause of §4 of
+`contracts/orchestration.md`: a missing or malformed block relaunches the phase exactly once
+with the identical prompt, and a malformed block counts as missing. On second failure the
+delivery stops at that phase (see *Early block*) with the `detail` of its block — for Review,
+failure is only the absent block, never a measured `gate: "red"`. The expected form of each
+block is cited from the file declaring it, never recopied here, and mirrored in
+`schemas/blocks.json`, where the prose of the node stays normative on divergence.
+
 ### 0. Acquisition — **worker** role
 
 A subagent assigning the worktree. In the prompt: the pool `{worktree.pool}`, the prefix `{worktree.prefix}`, the cap `{worktree.max}`, the branch prefix `{worktree.branch_prefix}`, and the block to return. It runs only these Git commands, in order, without asking confirmation.
@@ -74,7 +82,7 @@ Subagent producing the brief. In the prompt:
 
 - read in full `skills/blueprint/SKILL.md` and follow that contract to the letter;
 - folder `<folder>` (contains `1. decision-doc.md`), chosen solution `<verbatim>`;
-- load `{instructions_file}` and, for each area the brief touches, open the pertinent rule in `.daiku/policies/` reading their `paths`: decide the layer placement **before** opening code, do not rely on automatic loading of the rules;
+- load `{instructions_file}` and, for each area the brief touches, open the pertinent rule in `.daiku/policies/` reading their `paths`: decide the layer placement **before** opening code, do not rely on automatic loading of the rules, and declare it as Target paths in the brief;
 - `{memory.index}` and the paths of the memories the perimeter touches, to open before deciding (§4.1 of `contracts/orchestration.md`): the already taken decisions and the constraints not deducible from the code stand there, and a brief ignoring them makes the executor rediscover them at its own expense;
 - the brief reads `1. decision-doc.md` and writes `2. blueprint.md` in the **artefacts root** (the main tree): it anchors the code by reading it there — the worktree is a copy synchronised at acquisition;
 - if `<folder>/2. blueprint.md` already exists, do **not** rerun the brief: return `ok: true` with the existing path;
@@ -87,7 +95,7 @@ The expected outcome is the block `skills/blueprint/SKILL.md` declares in its ow
 Executor subagent. In the prompt:
 
 - read in full `skills/execute/SKILL.md` and follow that contract to the letter (real autonomy, observable verification, update the file while working, mandatory closing verification — **without** launching the suite or the package gate, which belong to phase 3 — deposit `4. review-notes.md` with the real base-ref);
-- apply it to folder `<folder>`; load `{instructions_file}`; area rules enter alone when you open the files they cover, but if you touch an area without having read one of its files, open it yourself;
+- apply it to folder `<folder>`; load `{instructions_file}`; area rules enter alone when you open the files they cover, but if you touch an area without having read one of its files, open it yourself; stay inside the brief's Target paths — a needed excursion updates the brief Journal first;
 - code and Git commands in the **work root** of the worktree; `4. review-notes.md` in the **artefacts root**, and the base-ref you deposit there is the SHA of the work-root HEAD at execution start (`git -C <worktree_root> rev-parse HEAD`);
 - `{memory.index}` and the paths of the memories pertinent to the perimeter, to open before writing (§4.1 of `contracts/orchestration.md`);
 - ask nothing of the user; stop only before a real block (unjustified destructive action or irreconcilable contradiction).
@@ -148,7 +156,7 @@ The worst case is confined instead of prevented: the blocked dirty stays on the 
 
 Two subagents in sequence, **both before the commit**.
 
-**5a. Stage — worker role.** Stage is separate from commit because step 5b must read the **full** diff of the feature — new files included, which `git diff` does not show until they are in index. In the prompt: the worktree work root, and run only these Git commands with `git -C <worktree_root>`, in order, without asking confirmation — `git status --porcelain -- {code_root}` to locate the touched files (always ignore any file external to `{code_root}`, even if modified), `git add <the identified files, listed singly>` (never `-A`, never `.`), again `git status --porcelain -- {code_root}` to confirm the index. Never `git commit`, never `git push` in this step.
+**5a. Stage — worker role.** Stage is separate from commit because step 5b must read the **full** diff of the feature — new files included, which `git diff` does not show until they are in index. In the prompt: the worktree work root, and run only these Git commands with `git -C <worktree_root>`, in order, without asking confirmation — `git status --porcelain -- {code_root}` to locate the touched files (always ignore any file external to `{code_root}`, even if modified — the edit guard denies creating such files), `git add <the identified files, listed singly>` (never `-A`, never `.`), again `git status --porcelain -- {code_root}` to confirm the index. Never `git commit`, never `git push` in this step.
 
 ```json
 {"staged": true, "files": ["<path>"], "detail": "<if staged=false, why>"}

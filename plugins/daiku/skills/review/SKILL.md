@@ -34,7 +34,7 @@ Arguments: `$ARGUMENTS`. **The default is the normal case, and it requires no ar
 - **`--backend <name>`** (optional): the name of the backend the session runs on, to declare only if not the native one of the host; it affects only fan-out concurrency, and it is `contracts/orchestration.md` §5 saying whether that backend sequentialises it.
 - If the first argument resolves to neither a base-ref nor a valid path, ask — do not guess.
 
-**Hard scope constraint:** review always and only covers files under `{code_root}`. No external file enters finders or fixes, even if modified, untracked or cited in the review notes. Everything not standing under `{code_root}` — documentation, memory, skill contracts — belongs to `update-memory`, which the commit contract delegates itself. The changelog does not: `skills/commit/SKILL.md` claims it in its own § *Version bump and changelog* and writes it directly, without passing through `update-memory`.
+**Hard scope constraint:** review always and only covers files under `{code_root}`. No external file enters finders or fixes, even if modified, untracked or cited in the review notes. Everything not standing under `{code_root}` — documentation, memory, skill contracts — belongs to `update-memory`, which the commit contract delegates itself. The changelog does not: `skills/commit/SKILL.md` claims it in its own § *Version bump and changelog* and writes it directly, without passing through `update-memory`. The PreToolUse edit guard enforces this coarse perimeter on new files; layer placement inside `{code_root}` stays with `arch`.
 
 ## Before starting
 
@@ -114,6 +114,19 @@ If your verification and the applier block diverge, **yours holds**: annotate th
 
 ## The cycle
 
+### Block validation
+
+Every block this cycle consumes is validated under the Validation clause of §4 of
+`contracts/orchestration.md`: a missing or malformed block relaunches the step exactly once
+with the identical prompt, and a malformed intermediate block counts as missing. On second
+failure the outcome is the one each phase already declares below: a finder enters
+`missing_disciplines` in the round ledger; the applier closes the round with
+`verdict: "stop"` and a blocking `to_confirm` item; coverage enters `missing_disciplines` as
+`test-coverage` with `coverage` staying `null`; the gate reports `gate: "red"` with the
+silence as detail. The expected form of each block is cited from the file declaring it —
+never recopied here — and mirrored in `schemas/blocks.json`, where the prose of the node
+stays normative on divergence.
+
 ### Which disciplines run, at which round
 
 It is the rule holding together fan-out and iteration, and it is worth understanding before running it.
@@ -149,6 +162,8 @@ Finders do not see each other: it is deliberate, and it is the separation produc
 **Sharding of large diffs.** At round 1, above an indicative threshold — more than two thousand added lines or more than thirty files — the `bug` finder splits into several subagents for coherent file groups (by layer or by flow), same prompt, each with its own subset, launched together; findings merge before the applier. `arch` and `perf` do not split: they judge the whole form. It is the reason the closing review of an autonomous cycle, arriving with the diff of a whole run, can still respect "read every added line in full".
 
 Each discipline has its own contract, which `skills/finder-prompt/SKILL.md` indicates and which declares **at home** its own finder mode — scope, read-only, confidence scale, and which parts of the file are not run here. The one of `bug` is the Claude plugin text, adapted to the project roles and to finder mode: no native skill of the host is needed for the cycle to exist.
+
+When this review runs on a work item — the input was `4. review-notes.md` or the folder containing it, so `item` is known — the `arch` finder also opens `<folder>/2. blueprint.md` and reads its Target paths line if present: a scope file under `{code_root}` standing outside the declared targets is an `arch` finding at medium confidence, with `change` carrying either the move into a declared area or the brief update justifying the excursion. No blueprint, no Target paths line, or a review launched by hand on a naked base-ref: skip this check silently. It never creates a new finding class, and it enters `to_confirm` only as a true fork.
 
 **A finder not returning is a missed discipline, not an empty discipline.** They are two outcomes resembling each other — fewer findings — and they can no longer be distinguished downstream, because `arch` and `perf` are done **only once** on the complete diff and never rerun: if it did not run here, nobody ran on that diff. The rule is deterministic, and you do not decide it round by round:
 
@@ -259,9 +274,9 @@ If the red comes from failed tests or a compile/import error, **do not invent a 
 
 **The commit is the last step of the cycle, not an option.** A review arriving here with green gate and no blocking item has already decided: the work is deliverable, and leaving it uncommitted does not make it safer — it only makes it a dirty tree somebody else will have to interpret. Whoever commits itself suppresses it with `--no-commit` (§ *Input*); in every other case it runs.
 
-The commit runs **only** if all hold: no `to_confirm` item with `blocking: true`, no detected oscillation, exit different from `rounds-exhausted`, empty `missing_disciplines`, and **green gate**. Otherwise close with the report and stop.
+The commit runs **only** if all hold: no `to_confirm` item with `blocking: true`, no detected oscillation, exit different from `rounds-exhausted`, empty `missing_disciplines`, **green gate**, and a ledger the commit can read — it opens (`JSON.parse` succeeds with `base` and `item` present) and the tail fields the commit reads (`outcome`, `coverage`, `gate`, `gate_detail`, and `missing_disciplines` as the union of the rounds) have the expected form against `schemas/blocks.json`. An unreadable ledger counts as `rounds-exhausted` for commit purposes: stopped, declared. Malformed intermediate blocks reuse the missing-block rules of § *Block validation* above: a string that is not the expected block is a block that did not come back. Otherwise close with the report and stop.
 
-These five conditions are what makes the automatic commit defensible, and it is why they are never loosened "because by now the commit always": before they were the second door after a flag the user typed by hand, now they are the **only** one. A cycle respecting them delivers code that crossed every foreseen discipline; a cycle skipping one delivers a diff nobody watched in full, and does so without anybody having pressed anything.
+These six conditions are what makes the automatic commit defensible, and it is why they are never loosened "because by now the commit always": before they were the second door after a flag the user typed by hand, now they are the **only** one. A cycle respecting them delivers code that crossed every foreseen discipline; a cycle skipping one delivers a diff nobody watched in full, and does so without anybody having pressed anything.
 
 `rounds-exhausted` blocks the commit because it is an exit by exhaustion, not by convergence: the cycle was still correcting defects when it ran out of room. `rounds-truncated` does not: there you truncate with `--rounds N`, and you know what you are delivering — the commit can proceed.
 
@@ -271,7 +286,7 @@ When it runs, delegate it to a **judge** subagent fully reading `skills/commit/S
 
 **If its block does not come back**, the general rule of § *A step not returning, when it is not a finder* holds: you relaunch it **only once**, with the identical prompt. If it does not come back even then, `commit` is `skipped` with the reason, `commit_sha` is `null`, and **you do not commit yourself** to close the hole: `git log` says what already entered, never what is missing, and a commit made here would skip the memory and documentation alignment and the bump living in that contract.
 
-**The SHA comes back with it.** The subagent reports the SHA of every produced commit (§ *Procedure* 8 of `skills/commit/SKILL.md`): the one of the **code** ends up verbatim in `commit_sha`. Do not derive it from `git log -1` — after `/commit` the working tree carries two or three distinct commits and the last is not the code one. If the sequence stops between one group and the next, `commit` is `partial`, `commit_sha` carries what truly exists, and you say so in closing.
+**The block comes back with it.** The subagent reports the block § *Procedure* 8 of `skills/commit/SKILL.md` declares: `commits[group=code].sha` ends up verbatim in `commit_sha` — the same value, read from its declared seat instead of the prose. Do not derive it from `git log -1` — after `/commit` the working tree carries two or three distinct commits and the last is not the code one. If the sequence stops between one group and the next, `commit` is `partial`, `commit_sha` carries what truly exists, and you say so in closing.
 
 ## Outcome
 
@@ -300,7 +315,7 @@ When it runs, delegate it to a **judge** subagent fully reading `skills/commit/S
    }
    ```
 
-`oscillation` counts the items the applier recorded in that field along the whole cycle, and it is **not** redundant with `outcome`: an oscillation detected at the last round exits with that name, but one detected earlier — and suppressed — lets the cycle continue, and at that point `outcome` carries the name of how the cycle ended, not of what it met. It is one of the five conditions stopping the commit (§ *Closing*), so whoever decides downstream must be able to read it also when it is not the exit.
+`oscillation` counts the items the applier recorded in that field along the whole cycle, and it is **not** redundant with `outcome`: an oscillation detected at the last round exits with that name, but one detected earlier — and suppressed — lets the cycle continue, and at that point `outcome` carries the name of how the cycle ended, not of what it met. It is one of the six conditions stopping the commit (§ *Closing*), so whoever decides downstream must be able to read it also when it is not the exit.
 
 `independence` is `lost` **only** if the round-1 fan-out did not run on independent subagents: delegation was unavailable and you evaluated the disciplines inline, in the same context. A sequential fan-out on a backend imposing it stays `intact` — contexts are still fresh and blind to each other (§4 of `contracts/orchestration.md`, *Depth and degradation*). It is not a modesty field: it is what distinguishes, downstream, a review from a single pass.
 
@@ -338,7 +353,7 @@ If in the cycle you saw a **behaviour change visible to the user** (new flow, ac
 | "The gate is red for a test, I patch it" | Only lint and format are corrected here. A red test is `gate: "red"` with the real output, and the commit does not run. |
 | "The fix is proven: I wrote the test and it passes" | If the code transforms data arriving from outside — client sources, imported files, tool outputs — an input written by you proves the mechanism does what you had in mind, not that it **still fires** on the real ones. The real case has comments, strings and forms you would not have invented. Take one and pass it inside: a fix round all green on synthetic cases already made inert, on real code, the function it had to repair. |
 | "I commit myself with `git commit`, the contract is long" | The commit contract holds together memory, documentation, changelog and version. Skipping it leaves the repo misaligned without anybody noticing. The commit is delegated to `/commit`, always. |
-| "The commit by now always runs, those five conditions are bureaucracy" | They were the second door after a hand-typed flag; now they are the only one. A red gate, a blocking item, `rounds-exhausted`, an oscillation or a missed discipline stop the commit — and if you skip one you deliver a diff nobody watched in full, without anybody having pressed anything. |
+| "The commit by now always runs, those six conditions are bureaucracy" | They were the second door after a hand-typed flag; now they are the only one. A red gate, a blocking item, `rounds-exhausted`, an oscillation, a missed discipline or an unreadable ledger stop the commit — and if you skip one you deliver a diff nobody watched in full, without anybody having pressed anything. |
 
 ## Cut rule
 

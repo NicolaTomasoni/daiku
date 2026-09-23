@@ -48,7 +48,7 @@ Before freezing the code in a commit, the non-code artefacts must be realigned *
 
 **After delegation.** If `updated` is `true`, the files it touched — `{memory.root}`, `{instructions_file}`, `{tech_doc}`, **in every case excluding paths under `.daiku/`** — enter the memory/doc group and end up in the separate `{commit.memory_prefix}` commit: repartition before proceeding. If it already committed that group itself, **do not redo that commit**: verify it with `git log` and continue with the rest of the sequence, which stays yours. If `confirm_with_owner` is not empty, **report its items to the user in the final outcome**: they are conflicting facts deliberately left intact, and they neither resolve themselves nor hide inside a commit.
 
-**If the block does not come back** — prose instead of JSON, incomplete block, subagent not answering — the step has failed: relaunch it **only once**, with the identical prompt (§4.2 of `contracts/orchestration.md`). If it does not come back even then, **the memory/doc group of this invocation is empty**: do not rebuild it by looking at `git status`, because you would commit files nobody declared to you and which may belong to another flow. Proceed with the other groups and declare in the outcome that the alignment was not done on this diff — it is the only thing preventing an artefact left behind from looking aligned.
+**If the block does not come back** — prose instead of JSON, incomplete block, subagent not answering — the step has failed: relaunch it **only once**, with the identical prompt (§4.2 of `contracts/orchestration.md`). This is the Validation clause of §4 of that contract applied to `update-memory`, whose expected form is cited from its own § *Procedure*, point 7 — never recopied here — and mirrored in `schemas/blocks.json`. If it does not come back even then, **the memory/doc group of this invocation is empty**: do not rebuild it by looking at `git status`, because you would commit files nobody declared to you and which may belong to another flow. Proceed with the other groups and declare in the outcome that the alignment was not done on this diff — it is the only thing preventing an artefact left behind from looking aligned.
 
 ## Version bump and changelog
 
@@ -123,5 +123,13 @@ An empty group produces no commit.
 8. Show the created commits with `git log --oneline -n <how many were produced>` — they can be more than three, if the delegate committed its own group itself — declare the decision taken on the version — the new number with the cycle theme, or no bump and why — and, if delegation returned items in `confirm_with_owner`, report them.
 
 **Report to the caller the SHA of every produced commit, saying which group it is of**, as you already do with `confirm_with_owner`: whoever invoked you puts it in a field of its own block and cannot derive it from `git log -1`, which after you returns the last group and not the code one. If you stop between one group and the next, say so explicitly: the sequence is **partial**, not executed.
+
+**Then emit the machine-readable block**, beside the prose above which stays unchanged:
+
+```json
+{"commits": [{"group": "code|memory|version", "sha": "<sha>"}], "version_decision": "<the new number with the cycle theme, or no bump and why>"}
+```
+
+One item per produced group — code, memory/doc, version/changelog, or more if the delegate committed its own group itself; a group that produced no commit has no item. These field names are additive: the prose report and the SHA lines above stay exactly as they are, and no existing key is renamed or removed. The expected form is mirrored in `schemas/blocks.json` (§ *commit*), where this file stays normative on divergence.
 
 **Never** run `git push`, `git push --force`, or any command writing to the remote. **Never** add the `Co-Authored-By` trailer nor any mention of the agent that generated the work (`Generated with …` or similar) to the commit messages.

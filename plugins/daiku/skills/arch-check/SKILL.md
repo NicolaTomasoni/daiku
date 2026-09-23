@@ -33,6 +33,7 @@ Treat every rule as a verifiable invariant. If the text changes, what you verify
 - For each relevant rule, **translate it into a check** on file + pattern, always inside the scope:
   - identify the target files from the layered diagram or from the rule text (extension, suffix, layer folder);
   - derive the violation pattern from the rule text (e.g. "layer X does not import Y" → grep on imports of Y in the files of layer X).
+- **If the opened policy carries a `layers:` block** (§5.4 of `contracts/project-contract.md`), verify the block instead of interpreting the prose: for each layer whose `folders` cover scope files and whose folders exist (inactive-rule check unchanged), grep the added lines and the opened callers for each `deny_imports` fragment — `import … from '…'`, `require(…)`, `from … import`, or the language's equivalent; a bare path-substring match counts, in every language. One finding per violating line, citing `policy-file#layer-name`. If the block is absent, malformed, or its folders are empty or missing, fall back to the prose translation above, untouched.
 - **Skip inactive rules.** A rule is inactive if the layer or file it presupposes does not exist yet (missing or empty folder, only placeholders). Verify existence before grepping.
 - **Grep in parallel** for all active rules.
 - **Inactive rules and those without violations are not reported.** The return is a list of findings, and an empty list is a valid answer.

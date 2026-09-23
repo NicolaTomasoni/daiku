@@ -1,11 +1,12 @@
-# The three guardrails
+# The four guardrails
 
-Daiku ships three hooks. They do two different jobs: one **stops a gesture** before it happens, the
+Daiku ships four hooks. They do two different jobs: two **stop a gesture** before it happens, the
 other two never stop anything and only say what they know.
 
 | Hook | Event | What it does |
 |---|---|---|
 | `lib/command-guard.mjs` | `PreToolUse` on `Bash`/`PowerShell` | denies five destructive gestures: four always, one only where the project declares it |
+| `lib/edit-guard.mjs` | `PreToolUse` on `Edit`/`Write`/`MultiEdit` (`apply_patch` too on Codex) | denies new files outside the declared seats; edits to existing files always pass |
 | `lib/contracts-post-edit.mjs` | `PostToolUse` on `Edit`/`Write` | after a write to the corpus, reports faults that would not fail on their own |
 | `lib/session-advice.mjs` | `SessionStart` | at startup, says whether Daiku is halfway opened and whether work was left in flight |
 
@@ -44,6 +45,7 @@ command dangerous?" but "did this project ask for anything?".
 | worktree pool | `worktree.pool` | removals inside a pool worktree, and `pnpm install` run from one |
 | `--no-verify` | *no switch*: `.daiku/project.json` is enough | `git commit` with `-n` or `--no-verify`, wherever the flag stands |
 | push | *no switch*: `.daiku/project.json` is enough | `git push`, even inside a wrapper or queued after another command; `--dry-run` no |
+| new-file spill | *no switch*: `.daiku/project.json` is enough | creating a file outside the declared seats — `{code_root}`, the single-file seats, the folder seats, `.daiku/` conventions, review state, temp; editing an existing file is always allowed |
 
 The first branch has no switch because it is not a policy: `rm -rf` entering a junction and
 destroying what sits on the other side is an operating-system fact, true in every
@@ -74,7 +76,7 @@ a YAML frontmatter silently emptying is a fault even for whoever does not have D
 
 ## They degrade open, and that is why they have a bench
 
-All three are **fail-open**: malformed stdin, missing file, unreachable disk, exception →
+All four are **fail-open**: malformed stdin, missing file, unreachable disk, exception →
 silent and exit `0`. A guard breaking the turn costs more than it protects.
 
 The price is declared: **a broken hook is indistinguishable from one with nothing to say.**
@@ -82,8 +84,9 @@ That is why each carries a test bench running on a simulated filesystem, touchin
 nothing, and printing a counted total:
 
 ```bash
-node hooks/self-check.mjs          # all three benches at once, with the summed total
+node hooks/self-check.mjs          # all four benches at once, with the summed total
 node hooks/lib/command-guard.mjs --self-check   # one only, as sync-host runs it
+node hooks/lib/edit-guard.mjs --self-check      # the coarse edit perimeter, alone
 ```
 
 The first exits `1` on the first red: the command for a CI and to run before a
@@ -101,7 +104,7 @@ release, next to the two package validators.
 
 ## Node and nothing else
 
-The three hooks are `.mjs` files run with `node`, dependency-free: no `package.json`, no
+The four hooks are `.mjs` files run with `node`, dependency-free: no `package.json`, no
 module to install. On a project where `node` is not on the `PATH` they do not start — and since
 the host does not stop a turn for a failing hook, the result is silence. When a project
 has no Node, these guardrails are absent: a requirement, not a graceful degradation.

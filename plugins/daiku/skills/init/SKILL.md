@@ -60,7 +60,7 @@ If the user does not answer — because you are running inside a chain, or becau
 
 ### 1. Recognise the host
 
-On **Claude Code** hooks and subagents are carried by the package and update themselves: do **not** hook those three hooks a second time from `.claude/settings.json`, because the package already hooks them and every guard would run twice. The only thing you write under `.claude/` is a single key in `settings.local.json`, and it is at *Step 7*: it serves to carry the host memory inside the repository, and there is no other way to tell the host.
+On **Claude Code** hooks and subagents are carried by the package and update themselves: do **not** hook those four hooks a second time from `.claude/settings.json`, because the package already hooks them and every guard would run twice. The only thing you write under `.claude/` is a single key in `settings.local.json`, and it is at *Step 7*: it serves to carry the host memory inside the repository, and there is no other way to tell the host.
 
 On **Codex** the manifest rejects `agents` and `hooks`, and `plugin_hooks` is a removed feature: that layer must be written inside the project, under `.codex/`. **You do not write it**: it is the trade of `sync-host`, which copies the `.mjs` files, tries them with their bench and hooks only the healthy ones, and which generates `.codex/agents/*.toml` from the package roles. Close the report saying to launch it — until it runs, that project has neither guardrails nor subagent roles.
 
@@ -152,6 +152,22 @@ If you do not know where to place a line, keep it. A section at the end with wha
 At the bottom of the skeleton there is a comment line declaring that file passed through here. **If you find it, the file was already structured: leave it alone** and list it among the things left as they were.
 
 It is what makes safe this exception to idempotence. A relaunch serves to pick up a skeleton previously missing, not to restructure a file the user meanwhile rewrote by hand — and it is likely it did, because of everything you write it is the file touched most often. Whoever wants restructuring removes that line, or asks you.
+
+### 6-bis. Recheck every file you wrote
+
+What you just wrote is read by skills and hooks that trust its form: recheck it now, with tools
+needing nothing to install — `node -e` and `grep` — before the report:
+
+- for **each `project.json` / `environment.json` you wrote**: it parses, its keys are among those
+  `contracts/project-contract.md` §4 (`project.json`) and `contracts/orchestration.md` §7
+  (`environment.json`) declare — as mirrored in `schemas/blocks.json` § *params* — and no
+  `<...>` placeholder residue remains (hunt it against `templates/`, which is where every
+  placeholder comes from);
+- for **the instructions file**: no `<...>` residue remains.
+
+A file failing the recheck is fixed now, not reported as done: a placeholder surviving in a
+parameter file degrades every skill silently, which is exactly the failure this step exists to
+catch. Report the recheck file by file, in one line each.
 
 ### 7. Carry the host memory into the repository — only on Claude Code
 

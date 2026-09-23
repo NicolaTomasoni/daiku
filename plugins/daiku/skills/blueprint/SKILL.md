@@ -43,7 +43,7 @@ The argument indicates the **folder** (where `1. decision-doc.md` lives) and **w
 
 3. **Distill the chosen solution**: from what must be done and why, to the constraints and specifications, to the completion criteria. Keep only the material of the chosen option.
 
-4. **Anchor to the real code.** Read the files and the code locations the solution touches. Verify that the assumptions of the document hold and collect the concrete paths and details the executor will need. Where reality diverges from the document, adapt the plan of the next step accordingly.
+4. **Anchor to the real code.** Read the files and the code locations the solution touches. Verify that the assumptions of the document hold and collect the concrete paths and details the executor will need. Derive the **target paths** — the `{code_root}`-relative paths and areas the solution will touch, read from the policies `paths`/`layers` before opening code. Where reality diverges from the document, adapt the plan of the next step accordingly.
 
 5. **Build the implementation plan**: break the solution into ordered and verifiable tasks. Each task = one executable step + one **observable check** declaring it complete. If one task presupposes another, put it after. **Open** the plan with a reconnaissance task (verify in the field the remaining assumptions of the brief) and **close it** with the mandatory closing verification (the strongest check targeted at the perimeter — imports and tests of the touched code — + self-review against the completion criteria).
 
@@ -84,6 +84,8 @@ The file is written **addressing the executor** (second person, operational impe
   refactoring or improvements out of scope.
 - Respect the project's architectural rules (`{instructions_file}` and
   `.daiku/policies/`).
+- Target paths: <the `{code_root}`-relative paths and areas the solution will touch,
+  derived from the policies `paths`/`layers` before opening code>
 - No destructive or remote Git operations (no unjustified reset --hard,
   no push, no PR) unless explicitly requested in the brief.
 - Do not do (non-goals): <list what is explicitly out of this solution>

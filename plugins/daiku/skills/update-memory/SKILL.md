@@ -55,13 +55,13 @@ Besides the delivery diff, **every run** also verifies what is currently in stag
 
 3. **For each artefact, decide whether the diff justifies it:**
    - **`{instructions_file}`**: only if an invariant valid in every session changed, the global behaviour, the documentary contract or the repo structure. Never implementation detail or rule limited to one area.
-   - **`.daiku/policies/`**: if a layer, an architectural flow or a boundary pertinent only to specific files changes. Update the closest existing rule; create one only if none covers the boundary. Every rule must have `paths` frontmatter with real patterns finding at least one repository file; never rules without `paths`. They stay in the working tree and are never committed (the exception at the top of this file).
+   - **`.daiku/policies/`**: if a layer, an architectural flow or a boundary pertinent only to specific files changes. Update the closest existing rule; create one only if none covers the boundary. Every rule must have `paths` frontmatter with real patterns finding at least one repository file; never rules without `paths`. Include a `layers:` block when the diff just created a natural folders/`deny_imports` boundary; never forced — prose suffices. They stay in the working tree and are never committed (the exception at the top of this file).
    - **`{memory.root}`**: follow the memory contract to the letter — fully read `{memory.index}`, locate the closest file, classify in the form that contract declares, update or merge, and **update `{memory.index}` in the same modification** if you create, rename, move or merge a memory.
    - **`{tech_doc}`**: only if something changed that a human reader, at the level of *what the system does and why* (never code or variable names), must now read differently. In particular, a **behaviour change visible to the user** introduced by the diff — new flow, new action, changed default or semantics — is the typical trigger: it is precisely what a Doc reader must find updated. If an upstream review (`/review`) left a doc-alignment reminder, it is honoured here.
 
 4. **Apply the minimum modifications** to only the artefacts step 3 justified. If none is, stop here: produce nothing.
 
-5. **Never modify files under `{code_root}`**: if you catch yourself wanting to do so, you strayed from the perimeter of this skill.
+5. **Never modify files under `{code_root}`**: if you catch yourself wanting to do so, you strayed from the perimeter of this skill. Your seats — `{instructions_file}`, `{memory.root}`, `{tech_doc}`, `.daiku/policies/` — are the guard's create-allowed list.
 
 6. **Save in the project encoding**, without degrading non-ASCII characters.
 

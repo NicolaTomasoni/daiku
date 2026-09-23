@@ -28,7 +28,7 @@ import { fileURLToPath } from 'node:url';
 /**
  * Was this module launched as a program, or imported by someone else?
  *
- * Needed because the three hooks **export** the functions their test bench checks,
+ * Needed because the four hooks **export** the functions their test bench checks,
  * and a module reading stdin and exiting `0` on load alone cannot be imported:
  * anyone trying to call one of its functions from outside would see the process die in silence, which is
  * the worst way to fail in a file whose contract is "stay silent when you have nothing to

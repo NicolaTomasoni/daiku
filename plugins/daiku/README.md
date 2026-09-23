@@ -83,6 +83,39 @@ worth reading carefully.
 It realigns protections and roles inside the project (on Claude Code no need: the
 package carries them and they update alone). Then approve changed hooks with `/hooks` inside Codex.
 
+## Skills are behaviour only
+
+Skills stay identical on every project: they say *what* is done and *in what order*,
+never *with which values*. Anything project-specific lives one level down:
+
+- `.daiku/project.json` — paths and literal commands (gates, fixers, coverage, changelog,
+  version file). A gate is the exact line plus its cwd, never a description.
+- `~/.daiku/environment.json` — host, model per role, backends, machine paths.
+- `.daiku/domain/` — local judgement: conventions and criteria that need a *why*.
+- `.daiku/policies/` — architectural rules valid only for certain paths.
+- memory and `tech_doc` — facts not deducible from the code: decisions and whys.
+
+If a key is missing, the skill does not invent it: it skips that part and declares it.
+An incomplete JSON makes a skill do less, not do wrong.
+
+## If you start from an almost-empty project
+
+This is the normal case, not an error:
+
+1. `/init` on an empty repo leaves the unknowable keys out and lists them in its
+   *To fill in* block — the most important part of its report.
+2. Define stack and language with the agent, then re-run `/init` from the same root.
+   It runs in completion mode: it never overwrites, it writes only the missing pieces.
+   That is how `project.json` evolves when the project takes shape — `update-memory`
+   never touches it.
+3. Then run `/new-feature`: it now reads the real values.
+
+There is no hook keeping parameters up to date on every commit: hooks never write to
+disk by design. Continuous alignment already exists as delegation — every `commit`
+delegates to `update-memory`, which aligns instructions, policies, memory and tech doc
+on the staged diff with two brakes: no unjustified update, minimum delta. Returning
+`updated: false` is the expected outcome, not a failure.
+
 ## The commands, from simplest to largest
 
 Three commands for everyday work, ordered by size: `/research` procures

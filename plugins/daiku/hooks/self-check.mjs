@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 /**
- * The test benches of the three hooks, in a single shot.
+ * The test benches of the four hooks, in a single shot.
  *
  * `node hooks/self-check.mjs` from the package root. Exits `0` if every case is
- * green, `1` on the first red, and prints the **counted** total — the sum of what the three
+ * green, `1` on the first red, and prints the **counted** total — the sum of what the four
  * benches really ran, not a number written here.
  *
- * It exists because three fail-open hooks are three ways of staying silent, and a fault in
- * one of the three is indistinguishable from silence until somebody runs its bench. A single
+ * It exists because four fail-open hooks are four ways of staying silent, and a fault in
+ * one of the four is indistinguishable from silence until somebody runs its bench. A single
  * command makes that move repeatable before a release, in a CI, or after touching a file
- * that all three import.
+ * that all four import.
  *
  * It is not a hook and is never installed into a project: `sync-host` copies the contents of
  * `hooks/lib/`, and this file sits one level above. Whoever tests an installed hook runs
