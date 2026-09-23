@@ -20,14 +20,12 @@ Daiku*).
   diversi. Qui il progetto è uno solo: ogni path, ogni comando e ogni modello sono **scritti per
   esteso** dentro il contratto che li usa. Non esiste un file di parametri da leggere, e una
   graffa in un contratto di questo corpus è un refuso.
-- **Niente worktree — con la motivazione da riscrivere.** Il prodotto consegna ogni feature su un
-  worktree di un pool. Qui si lavora sul **branch corrente dell'albero principale**: è l'owner ad
-  aprire un branch, se vuole isolare una consegna. La ragione che questa riga portava — «`git`
-  traccia soltanto `plugins/`, quindi un worktree nascerebbe senza `CLAUDE.md`, senza `sviluppo/` e
-  senza questo corpus» — **è caduta il 18 settembre 2026**, quando il repository ha cominciato a
-  tracciare tutto: un worktree oggi conterrebbe anche il corpus. La regola resta in piedi finché
-  l'owner non decide altrimenti, ma **non ha più la sua motivazione scritta**: è un punto aperto
-  (`sviluppo/PUNTI-APERTI.md`), non una conclusione.
+- **Niente worktree.** Il prodotto consegna ogni feature su un worktree di un pool. Qui si lavora
+  sul **branch corrente dell'albero principale**: è l'owner ad aprire un branch, se vuole isolare
+  una consegna. **La regola non ha una motivazione scritta**, ed è dichiarato qui perché non la si
+  scambi per una dimenticanza: a un worktree di questo repository non mancherebbe niente —
+  conterrebbe anche `CLAUDE.md`, `sviluppo/` e questo corpus, che il repository traccia come il
+  prodotto. La decisione è dell'owner (`sviluppo/PUNTI-APERTI.md`, voce 5).
 
 ## Le sedi di questo progetto
 
@@ -54,9 +52,9 @@ un'omissione da riparare a mano — una cartella vuota non dice niente a nessuno
 si legge come un registro di zero consegne invece che come un registro mai aperto.
 
 **Questo repository versiona tutto**: prodotto, ricognizione, punti aperti, memoria, esempi e
-istruzioni. Il `.gitignore` non filtra più niente — esclude soltanto `.claude/settings.local.json`,
-che non deve stare in nessun git. Fino al 18 settembre 2026 era il contrario, e la differenza conta
-qui perché il gruppo memoria/documentazione **adesso si committa** (§ *Il gruppo memoria/doc*).
+istruzioni. Il `.gitignore` non filtra niente — esclude soltanto `.claude/settings.local.json`, che
+non deve stare in nessun git — e il gruppo memoria/documentazione **si committa** come gli altri (§
+*Il gruppo memoria/doc*).
 
 Il confine di ciò che esce si è spostato altrove: sta nella lista di copia dello script di
 pubblicazione, che copia i soli path ammessi in un **secondo** repository su GitHub. Nessun
@@ -296,15 +294,9 @@ si risolve con un'installazione, non con una consegna.
 ## 8. Il gruppo memoria/doc
 
 Nel prodotto, gli artefatti non-codice — memoria, istruzioni, documento tecnico — vanno in un
-commit distinto dopo quello di feature. **Qui vale lo stesso**, dal 18 settembre 2026: `CLAUDE.md`,
-tutto `sviluppo/` e la memoria sono versionati come il prodotto, quindi c'è un indice in cui
-metterli e una storia da cui recuperarli.
-
-Prima non era così — `git` tracciava soltanto `plugins/`, le due vetrine, `README.md` e il
-`.gitignore` — e il corpus era stato scritto su quella premessa. Le conseguenze di allora, che
-**non valgono più**: un `committed` sempre `null` in `update-memory`, due gruppi invece di tre in
-`commit`, l'assenza di un «commit 2» in `deliver-feature`, un perimetro di review «fuori
-dall'indice per costruzione».
+commit distinto dopo quello di feature. **Qui vale lo stesso**: `CLAUDE.md`, tutto `sviluppo/` e la
+memoria sono versionati come il prodotto, quindi c'è un indice in cui metterli e una storia da cui
+recuperarli.
 
 **I gruppi sono tre, e ognuno ha la sua sede**: codice (`plugins/`), memoria e documentazione
 (`CLAUDE.md`, `sviluppo/**`), versione (i due `plugin.json`). `commit` li committa in quest'ordine.
@@ -312,16 +304,9 @@ dall'indice per costruzione».
 memoria/documentazione è la sua **ultima** fase, dopo il report — perché il report scrive ancora, e
 il registro delle consegne è di quel gruppo.
 
-> **Allineamento chiuso il 23 settembre 2026.** I contratti che dipendevano dalla premessa vecchia
-> — `commit`, `update-memory`, `deliver-feature`, `review`, `blueprint`, `execute`, `decision-doc`,
-> `studia-problema` — sono stati riletti e corretti quel giorno. La premessa vecchia **non ha più
-> sedi**: se ne trovi una, è un difetto del contratto che la porta, da segnalare e correggere — non
-> una deroga da applicare.
->
-> **Una cosa è rimasta aperta**, ed è dichiarata qui perché non la si scambi per dimenticanza: la
-> regola «questo corpus non usa worktree» (sopra, § *Questo corpus non è il prodotto*) portava come
-> motivazione proprio la premessa vecchia, e da allora non ne ha più una scritta. La regola vale
-> ancora, la decisione è dell'owner.
+> **Il confine di git è questo, e non un altro.** Un contratto di questo corpus che dica che il suo
+> perimetro è fuori dall'indice, o che il gruppo memoria/documentazione non si committa, è un difetto
+> da correggere — non una deroga da applicare.
 
 Il giorno in cui il repository diventa pubblico, questa sezione è una delle cose da rileggere
 (`sviluppo/memory/pubblicazione-su-github.md`).

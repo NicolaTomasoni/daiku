@@ -16,9 +16,8 @@ congelato; **manuale**, in chat su un commit o un range specifico.
 ## Il tuo perimetro è nell'indice, ma non sei tu a committarlo
 
 Il `.gitignore` esclude soltanto `.claude/settings.local.json`: i file del tuo perimetro —
-`CLAUDE.md`, `sviluppo/**` — sono **nell'indice** come il prodotto, e la storia li conserva. Vale dal
-18 settembre 2026; prima era il contrario, e più di un contratto di questo corpus ne porta ancora la
-traccia (`.claude/orchestration.md` §8).
+`CLAUDE.md`, `sviluppo/**` — sono **nell'indice** come il prodotto, e la storia li conserva
+(`.claude/orchestration.md` §8).
 
 **Resti comunque tu a non committare.** Il tuo mestiere è scrivere sul disco; a mettere in stage e a
 committare è chi ti ha chiamato: il nodo `commit`, che il gruppo memoria/documentazione lo committa

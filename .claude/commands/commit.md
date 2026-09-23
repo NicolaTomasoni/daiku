@@ -32,11 +32,9 @@ Il gruppo memoria/documentazione **si committa**, e in un commit proprio: raccog
 diff di prodotto e il racconto che lo spiega sono due cose, e chi cerca il secondo non guarda il
 primo.
 
-> **Fino al 18 settembre 2026 era il contrario**, e più di un contratto di questo corpus ne porta
-> ancora la traccia: il `.gitignore` escludeva tutto e riammetteva a mano `plugins/`, le due
-> vetrine, `README.md` e sé stesso, i file di sviluppo erano davvero fuori dall'indice, e il gruppo
-> memoria/documentazione non esisteva. Dove un contratto dice ancora che il suo perimetro è fuori
-> dall'indice, **vale il contrario** (`.claude/orchestration.md` §8).
+> Un contratto di questo corpus che dica che il suo perimetro è fuori dall'indice, o che il gruppo
+> memoria/documentazione non si committa, è un difetto da correggere (`.claude/orchestration.md`
+> §8).
 
 ## Convenzione
 

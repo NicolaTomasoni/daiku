@@ -11,10 +11,8 @@ esiste uno script che lo faccia al posto tuo.
 ## Dove si lavora
 
 **Sulla working tree principale, sul branch corrente.** Questo corpus non usa worktree
-(`.claude/orchestration.md`, § *Questo corpus non è il prodotto*). La ragione che quel contratto
-portava — un worktree che sarebbe nato senza `CLAUDE.md`, senza `sviluppo/` e senza i contratti da
-leggere — **non vale più dal 18 settembre 2026**, quando il repository ha cominciato a tracciare
-tutto. La regola resta in piedi; la motivazione è un punto aperto, non una conclusione.
+(`.claude/orchestration.md`, § *Questo corpus non è il prodotto*). **La regola non ha una
+motivazione scritta**: è un punto aperto, non una conclusione (`sviluppo/PUNTI-APERTI.md`, voce 5).
 
 Conseguenze da tenere presenti, perché sono il prezzo di questa scelta:
 

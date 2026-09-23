@@ -176,7 +176,7 @@ Copri in quest'ordine di priorità:
 
 Un rilievo che vale il doppio in questo repository: **una decisione che pubblica**. Ogni file nuovo
 sotto `plugins/` esce com'è scritto a chiunque aggiunga il marketplace, e nessun filtro lo trattiene:
-il `.gitignore` non è più il confine, e la lista di copia dello script di rilascio prende `plugins/`
+il `.gitignore` non è il confine, e la lista di copia dello script di rilascio prende `plugins/`
 in blocco. Se il problema propone di aggiungere qualcosa lì dentro, chiedersi se ci appartiene **è**
 un rilievo bloccante, non una nota.
 

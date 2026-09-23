@@ -37,9 +37,9 @@ di questo corpus che non si riallinea da sola.
 Due fatti del repository che valgono a ogni task:
 
 - **Un file nuovo sotto `plugins/` si pubblica, e non c'è niente da aggiornare per farlo.** Il
-  `.gitignore` esclude soltanto `.claude/settings.local.json`: non è più il confine di ciò che esce,
-  e non esiste più nessuna lista di ammissione. Il confine sta nella lista di copia dello script di
-  pubblicazione, che prende `plugins/` in blocco (`CLAUDE.md`, § *Due repository*): un file nuovo lì
+  `.gitignore` esclude soltanto `.claude/settings.local.json` e **non è il confine di ciò che
+  esce**: il confine sta nella lista di copia dello script di pubblicazione, che prende `plugins/`
+  in blocco (`CLAUDE.md`, § *Due repository*): un file nuovo lì
   dentro esce al primo commit che lo contiene, e non si torna indietro. Se il brief lo prevede,
   fallo; se non lo prevede e ti accorgi che serve, è un fatto nuovo: annotalo nel Diario e dillo
   nell'esito, non deciderlo di slancio.
@@ -98,7 +98,7 @@ Sei un esecutore autonomo: nessuno ti controlla mentre lavori, quindi l'unico mo
 | «Rileggere il brief da capo dopo l'interruzione è uno spreco» | Dopo una compattazione lo stato vive **solo** nel file (task + Diario). Rileggilo per intero. |
 | «Questo dettaglio manca, chiedo» | Deducilo dal brief e dai file che cita. Si chiede **solo** davanti a un blocco reale. |
 | «Già che ci sono allineo anche `.claude/commands/`» | Fuori perimetro. Quel corpus è una derivazione dei contratti del prodotto e si riallinea a mano, quando lo si decide. |
-| «Aggiungo il file nuovo al `.gitignore`, così non esce» | Non funziona, e il `.gitignore` non è più il confine: quel file uscirebbe lo stesso. L'unico modo di non pubblicarlo è **non metterlo** sotto `plugins/`. Se il brief non lo prevede, è un fatto nuovo: annota e dichiara. |
+| «Aggiungo il file nuovo al `.gitignore`, così non esce» | Non funziona: il `.gitignore` non è il confine, e quel file uscirebbe lo stesso. L'unico modo di non pubblicarlo è **non metterlo** sotto `plugins/`. Se il brief non lo prevede, è un fatto nuovo: annota e dichiara. |
 | «Salto questo task, lo faccio dopo» | Segui l'ordine dato. Adattarlo è lecito solo se emergono fatti nuovi, e va motivato nel Diario. |
 | «La verifica la salto, ho già visto che funziona» | «Ho visto» non è evidenza osservabile: la verifica di chiusura è obbligatoria. |
 | «Lancio tutto il gate, così sono sicuro» | Non è tuo: `review` lo esegue sempre sul tuo diff, subito dopo. Qui verifichi il perimetro che hai toccato. |

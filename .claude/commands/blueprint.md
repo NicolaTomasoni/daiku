@@ -59,7 +59,7 @@ questi, perché un brief che non li ha letti produce task che non reggono:
    con i metadati vuoti e nessuno la trova più per pertinenza.
 2. I contratti si citano fra loro **per path**, non per nome: i due host nominano le skill in modo
    incompatibile.
-3. Il `.gitignore` esclude soltanto `.claude/settings.local.json`: **non è più il confine di ciò che
+3. Il `.gitignore` esclude soltanto `.claude/settings.local.json`: **non è il confine di ciò che
    si pubblica**. Il confine è la lista di copia dello script di rilascio, che prende `plugins/` in
    blocco, quindi un file nuovo sotto il pacchetto esce al primo commit che lo contiene.
 

@@ -32,15 +32,15 @@ scelte dell'owner le fanno divergere e non sono reversibili per copia:
   `environment.json`) perché deve girare su progetti diversi. Qui il progetto è uno: path, comandi e
   modelli sono scritti per esteso dentro il contratto che li usa. Una graffa `{…}` in questo corpus
   è un refuso.
-- **Niente worktree.** Si lavora sul branch corrente dell'albero principale. La ragione
-  originaria non vale più — nasceva dal `.gitignore` che tracciava solo `plugins/`, per cui un
-  worktree si sarebbe aperto senza `CLAUDE.md`, senza `sviluppo/` e senza i contratti che ogni
-  subagent deve leggere; da quando il repo versiona tutto, un worktree se li porterebbe dietro. La
-  scelta resta in piedi ma **la sua giustificazione è da rifare**.
-- **Il commit di memoria e documentazione qui c'è**, dal 18 settembre 2026, e prima non c'era: il
-  perimetro di `update-memory` era fuori dall'indice per costruzione, quindi il suo `committed` era
-  sempre `null` e `commit` partizionava in due gruppi invece che in tre. Ora `CLAUDE.md`,
-  `sviluppo/` e la memoria sono versionati come il prodotto.
+- **Niente worktree.** Si lavora sul branch corrente dell'albero principale. La scelta resta in
+  piedi ma **non ha una giustificazione scritta**: a un worktree di questo repository non
+  mancherebbe niente, perché il repo versiona tutto e se lo porterebbe dietro, `CLAUDE.md`,
+  `sviluppo/` e i contratti che ogni subagent deve leggere compresi. La decisione è dell'owner
+  (`PUNTI-APERTI.md`, voce 5).
+- **Il commit di memoria e documentazione qui c'è**, e `commit` partiziona in **tre** gruppi come il
+  contratto del prodotto: il perimetro di `update-memory` — `CLAUDE.md`, `sviluppo/`, `.claude/` — è
+  nell'indice, e `deliver-feature` lo committa in una fase propria, dopo il report perché il
+  registro delle consegne è di quel gruppo.
 
 Il prodotto ha **diciotto** contratti, questo corpus ne ha **dodici** (più `confronta-repo.md`,
 che non ha un gemello). Gli otto non derivati sono
@@ -49,10 +49,9 @@ che non ha un gemello). Gli otto non derivati sono
 dentro `review`, che quindi qui scrive in casa propria il prompt del finder e il mestiere
 dell'applicatore; gli altri sei semplicemente non servono a sviluppare Daiku.
 
-**Il decimo del cantiere non ha più un gemello nel prodotto.** `memory-review` è stata
-**eliminata dal pacchetto il 19 settembre 2026**, con la ragione che segue: se il corpus avesse
-bisogno di una revisione periodica, vorrebbe dire che il modo in cui cresce non funziona, e il
-rimedio andrebbe messo lì. Al suo posto, `update-memory` gira a **ogni** invocazione di `/commit`,
+**`memory-review` non ha un gemello nel prodotto**, e la ragione vale la pena tenerla: se il corpus
+avesse bisogno di una revisione periodica, vorrebbe dire che il modo in cui cresce non funziona, e
+il rimedio andrebbe messo lì. Al suo posto, `update-memory` gira a **ogni** invocazione di `/commit`,
 senza eccezioni. Nel cantiere la skill resta finché qualcuno non decide di toglierla anche di qui:
 è una decisione a parte, non un allineamento.
 
@@ -95,22 +94,20 @@ si costruisce, e un tavolo non deve assomigliare al mobile. Anche una modifica c
 entrambi i corpus si scrive solo nel prodotto e lì si ferma. Nessuno dei due alberi aggiorna l'altro, e nessuna skill di
 questo corpus scrive dentro `plugins/daiku/skills/` per allinearlo a sé stessa.
 
-**Il corpus era rimasto indietro su un punto, e non lo è più.** Fino al 23 settembre 2026 dieci
-contratti di qui — e `orchestration.md` fino alla correzione del 19 settembre — erano scritti sulla
-premessa che tutto ciò che sta fuori da `plugins/` sia escluso da git: parlavano di perimetri «fuori
-dall'indice per costruzione», di un `committed` sempre `null`, di un `.gitignore` a lista di
-ammissione che non esiste più, e in `execute` la premessa era perfino **invertita** — un file nuovo
-sotto il pacchetto «nasce escluso» e va riammesso, mentre oggi nasce pubblicato. **Quel giorno sono
-stati riletti e corretti su ordine dell'owner**: i gruppi di commit sono tre anche qui, il gruppo
-memoria e documentazione si committa, e `deliver-feature` ha una fase 8 che lo fa dopo il report.
-La premessa falsa non ha più sedi: se ne ricompare una, è un difetto del contratto che la porta —
-da segnalare e correggere, non una deroga da applicare.
+**Il confine di git non è il `.gitignore`.** Il `.gitignore` del repository esclude soltanto
+`.claude/settings.local.json`: i file di questo corpus — `CLAUDE.md`, `sviluppo/**`, `.claude/**` —
+sono **nell'indice** come il prodotto, e il confine di ciò che si pubblica sta nella lista di copia
+dello script di rilascio, che prende `plugins/` in blocco. Ne segue che i gruppi di commit sono
+**tre** come nel prodotto — codice, memoria e documentazione, versione — e che il gruppo memoria e
+documentazione **si committa**: `commit` lo fa in un commit proprio, e `deliver-feature` in una fase
+8 dopo il report. Un contratto di questo corpus che dica il contrario è un difetto da correggere,
+non una deroga da applicare.
 
-**Una scelta è rimasta senza la sua ragione.** La regola «questo corpus non usa worktree» poggiava
-sulla stessa premessa caduta — un worktree che sarebbe nato senza `CLAUDE.md`, senza `sviluppo/` e
-senza i contratti da leggere — e da allora non ne ha più una scritta: i due contratti ora lo
-dichiarano invece di far finta di niente, e la decisione è dell'owner (`PUNTI-APERTI.md`, voce 8).
-È il caso più insidioso dei due: la scelta regge ancora, la ragione no, e chi la legge crede di
-sapere perché.
+**Una scelta senza la sua ragione.** La regola «questo corpus non usa worktree»
+(`orchestration.md` § *Questo corpus non è il prodotto*, `deliver-feature` § *Dove si lavora*) **non
+ha una motivazione scritta**: i due contratti la dichiarano senza dire perché, e a un worktree di
+questo repository non mancherebbe niente — conterrebbe anche `CLAUDE.md`, `sviluppo/` e il corpus,
+che il repository traccia come il prodotto. La decisione è dell'owner (`PUNTI-APERTI.md`, voce 5).
+È il caso più insidioso: la scelta regge, la ragione no, e chi legge crede di sapere perché.
 
 Vedi [[alberatura-pacchetto]] e [[si-pubblica-solo-il-prodotto]].

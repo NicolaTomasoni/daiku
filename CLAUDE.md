@@ -49,8 +49,8 @@ Serve perché chi aggiunge il marketplace riceve un clone dell'**intero** reposi
 full repository is cloned». Il repo *è* l'artefatto consegnato: non c'è un passo di
 impacchettamento dove mettere il filtro, come farebbe il campo `files` di un `package.json`.
 
-Il confine quindi non sta più nel `.gitignore`, che ora esclude solo `.claude/settings.local.json`.
-Sta nella lista di copia dello script, e va tenuto nella stessa forma a lista di ammissione:
+Il confine non sta nel `.gitignore`, che esclude solo `.claude/settings.local.json`. Sta nella lista
+di copia dello script, e va tenuto nella stessa forma a lista di ammissione:
 «copia questi path», mai «copia tutto tranne». Un file nuovo nasce così fuori dal pacchetto
 pubblicato, ed è il contrario di una dimenticanza che pubblica.
 
@@ -106,6 +106,25 @@ Tre cose da guardare ogni volta: i **nomi** (path, cartelle, skill, ruoli di sub
 scelta può restare giusta dopo che la ragione per cui fu presa è evaporata, e allora si riscrive
 il perché invece di lasciare in piedi quello vecchio. Se una correzione cambia il metodo e non
 solo un fatto, fermati e chiedi invece di deciderla da solo.
+
+## Togliere vuol dire togliere
+
+Quando qualcosa esce da un file — una voce, una sezione, un rimando, un'intera riga — **esce e
+basta**. Non si annota che c'era. Niente «questa voce è stata chiusa», niente «il resto sta nella
+storia», niente buchi nella numerazione da spiegare, niente frase che dice dove è finito. Chi legge
+quel file domani non deve sapere che prima c'era dell'altro: per lui quella cosa **non è mai
+esistita**.
+
+Vale in ogni sede: i contratti del prodotto, `.claude/`, i documenti di `sviluppo/`, la memoria, i
+commenti nel codice. Vale anche per il *perché* di una scelta: se la ragione è caduta, si riscrive
+la ragione o si toglie la frase — non si racconta che una volta la ragione era un'altra. E vale
+anche quando il buco è scomodo: un identificatore che si sfasa, un rimando che punta altrove. Il
+rimando si sistema, non si storicizza.
+
+**La storia non è un compito del documento.** `git log` la porta per intero, e chi la vuole la va a
+leggere lì. Un file che racconta cosa è stato tolto è più lungo, più vecchio e più fragile di uno
+che dice solo cosa c'è — e ogni riga su qualcosa che non c'è più è una riga che il prossimo
+refactor dovrà ricordarsi di aggiornare.
 
 ## Mai fidarsi di un LLM
 
