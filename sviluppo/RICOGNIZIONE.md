@@ -580,11 +580,11 @@ Meccaniche ma diffuse, e sono il costo vero di questa disposizione.
 
 1. **I rimandi cambiano forma, e non ne basta una sola.** Un rimando a una skill non può più
    essere un path, perché `${CLAUDE_PLUGIN_ROOT}` cambia a ogni aggiornamento e Codex non ha un
-   equivalente (§3.2) — ma **i due host la nominano diversamente**: `/daiku:review` su Claude
-   Code, che namespacizza sempre, e `$review` su Codex, che non namespacizza affatto. Il rimando
-   va scritto in una forma che regga entrambi, o dichiarato una volta sola in un punto che
-   `init` risolve per host. Un rimando a un contratto di riferimento — che skill non è — diventa
-   invece un path **relativo alla radice del pacchetto** (`contratti/orchestration.md`).
+   equivalente (§3.2). La forma che il pacchetto usa è **il nome con lo slash** (`/review`,
+   `/commit`, `/init`): non nomina host, namespace né cartella d'installazione, è la stessa sui due
+   host, e **il README del pacchetto la dichiara**. Un rimando a un contratto di riferimento — che
+   skill non è — è invece un path **relativo alla radice del pacchetto**
+   (`contracts/orchestration.md`).
 2. **`.claude/project.json` → `.daiku/project.json`**, `.claude/context/<ruolo>.md` →
    `.daiku/dominio/<ruolo>.md`, `.claude/rules/` → `.daiku/politiche/`. Il prefisso `.claude/`
    dentro un contratto che deve girare su Codex è una bugia.

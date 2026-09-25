@@ -1,0 +1,28 @@
+{
+  "_cosa": "Presidio di questo cantiere. Impedisce a un agente di ESEGUIRE il codice di un repo target analizzato con repo-intelligence, e protegge questo presidio da modifiche dell'agente. Vive solo in questo repository: non fa parte di Daiku e non viene pubblicato.",
+  "_interruttore": "Metti \"enabled\" a false per spegnere il presidio sull'esecuzione del target, a true per riaccenderlo. Sei l'unico a poterlo fare: l'agente non puo' scrivere questo file, ne' .claude/settings.json, ne' .claude/hooks/guardia-target.mjs. La loro protezione NON si spegne con l'interruttore: se bastasse spegnerlo per aprirli, un agente lo spegnerebbe per riscriverli. Per far evolvere il presidio lo modifichi tu a mano, oppure togli temporaneamente l'hook da .claude/settings.json.",
+  "_limiti": "Non e' una cassaforte: il match e' sul testo del comando, quindi un binario rinominato o un path costruito a runtime possono sfuggirgli. E' un guardrail contro la distrazione, non un confine contro un attaccante.",
+  "enabled": false,
+  "radici_non_eseguibili": [
+    "C:/Users/tomas/AppData/Local/Temp/repo-intelligence"
+  ],
+  "programmi_permessi_sulle_radici": [
+    "graphify",
+    "opensrc",
+    "git",
+    "rg",
+    "ls",
+    "dir",
+    "cat",
+    "type",
+    "find",
+    "head",
+    "tail",
+    "wc"
+  ],
+  "file_protetti": [
+    ".claude/settings.json",
+    ".claude/hooks/guardia-target.mjs",
+    ".claude/guardia-target.json"
+  ]
+}

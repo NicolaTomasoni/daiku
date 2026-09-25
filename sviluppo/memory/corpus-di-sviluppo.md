@@ -35,8 +35,7 @@ scelte dell'owner le fanno divergere e non sono reversibili per copia:
 - **Niente worktree.** Si lavora sul branch corrente dell'albero principale. La scelta resta in
   piedi ma **non ha una giustificazione scritta**: a un worktree di questo repository non
   mancherebbe niente, perché il repo versiona tutto e se lo porterebbe dietro, `CLAUDE.md`,
-  `sviluppo/` e i contratti che ogni subagent deve leggere compresi. La decisione è dell'owner
-  (`PUNTI-APERTI.md`, voce 5).
+  `sviluppo/` e i contratti che ogni subagent deve leggere compresi.
 - **Il commit di memoria e documentazione qui c'è**, e `commit` partiziona in **tre** gruppi come il
   contratto del prodotto: il perimetro di `update-memory` — `CLAUDE.md`, `sviluppo/`, `.claude/` — è
   nell'indice, e `deliver-feature` lo committa in una fase propria, dopo il report perché il
@@ -107,7 +106,7 @@ non una deroga da applicare.
 (`orchestration.md` § *Questo corpus non è il prodotto*, `deliver-feature` § *Dove si lavora*) **non
 ha una motivazione scritta**: i due contratti la dichiarano senza dire perché, e a un worktree di
 questo repository non mancherebbe niente — conterrebbe anche `CLAUDE.md`, `sviluppo/` e il corpus,
-che il repository traccia come il prodotto. La decisione è dell'owner (`PUNTI-APERTI.md`, voce 5).
+che il repository traccia come il prodotto.
 È il caso più insidioso: la scelta regge, la ragione no, e chi legge crede di sapere perché.
 
 Vedi [[alberatura-pacchetto]] e [[si-pubblica-solo-il-prodotto]].

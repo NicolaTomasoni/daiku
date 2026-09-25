@@ -101,6 +101,19 @@ never *with which values*. Anything project-specific lives one level down:
 If a key is missing, the skill does not invent it: it skips that part and declares it.
 An incomplete JSON makes a skill do less, not do wrong.
 
+## How the contracts cite each other
+
+A contract never writes an absolute path: the package is copied verbatim into each host's cache,
+and that folder changes at every update. Two forms, and only two:
+
+- **to another contract's file** — the path relative to the package root: `skills/review/SKILL.md`,
+  `contracts/orchestration.md`;
+- **to a skill** — its name with a slash: `/review`, `/commit`, `/init`.
+
+The slash form is a name, not a path: it carries no host, no namespace and no installation folder,
+and it is the same on both hosts, so no contract has to know which one it is running on. Each host
+resolves that name its own way.
+
 ## If you start from an almost-empty project
 
 This is the normal case, not an error:
