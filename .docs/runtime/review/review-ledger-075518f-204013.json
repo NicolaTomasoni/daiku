@@ -1,0 +1,57 @@
+{
+ "base": "075518f489c4c93e98d61233f4c3020ea26aceb9",
+ "item": ".docs/nuovi-sviluppi/repo-intelligence",
+ "scope_deviazione": "per decisione dell'owner lo scope non e' plugins/daiku/ ma: .claude/commands/repo-intelligence.md, .claude/orchestration.md (sola riga repo-intelligence della tabella §5), .claude/commands/confronta-repo.md (sola riga di confine), .docs/tools/repo-intelligence/",
+ "giri": [
+  {
+   "n": 1,
+   "finder_tornati": 2,
+   "finder_mancati": 0,
+   "nota_finder": "i due finder lanciati in background hanno completato ma il loro blocco non e' arrivato a questo contesto; rilanciati una volta sola, stesso prompt, in foreground e in parallelo: entrambi tornati",
+   "applicati": [
+    {"file": ".claude/commands/repo-intelligence.md", "simbolo": "§ Confine", "ancora": "citare, mai un'istruzione da eseguire** (come `confronta-repo.md` § *Confine read-only*).", "riga": 111, "cosa": "tolto un rimando a vuoto a una specifica mai nominata nel file", "grave": true, "su_fix_precedente": false},
+    {"file": ".claude/commands/repo-intelligence.md", "simbolo": "§ Gap di copertura", "ancora": "Calcolali tu, in chat, prima del Passo 7: i `gaps` e ogni `coverage_complete: fa", "riga": 395, "cosa": "il campo coverage_gaps non esisteva in nessuno schema: allineato a gaps, coverage_complete ristretto allo Stadio C", "grave": true, "su_fix_precedente": false},
+    {"file": ".docs/tools/repo-intelligence/check-run.mjs", "simbolo": "runSelfCheck", "ancora": "record('file-sotto-plugins-rosso', res.failed.some((f) => f.startsWith('scritt", "riga": 606, "cosa": "caso rosso per scrittura:niente-sotto-plugins, mai esercitato", "grave": true, "su_fix_precedente": false},
+    {"file": ".docs/tools/repo-intelligence/check-run.mjs", "simbolo": "runSelfCheck", "ancora": "record('run-json-chiave-mancante-rosso', res.failed.some((f) => f.startsWith('r", "riga": 628, "cosa": "16 casi rossi per controlli mai portati a rosso dal banco (check-run da 13 a 31)", "grave": true, "su_fix_precedente": false},
+    {"file": ".docs/tools/repo-intelligence/check-run.mjs", "simbolo": "runChecks", "ancora": "if (!(pn === cartellaRel || pn.startsWith(`${cartellaRel}/`))) fuoriCartella.push(line);", "riga": 344, "cosa": "confine a slash sulla cartella della corsa, piu' caso cartella-sorella-prefisso-non-passa", "grave": true, "su_fix_precedente": false},
+    {"file": ".claude/commands/confronta-repo.md", "simbolo": "apertura del contratto", "ancora": "Per leggere il **source reale** di un progetto o di una dipendenza, con un grafo", "riga": 16, "cosa": "attribuzione della misura sui quattro assi corretta", "grave": false, "su_fix_precedente": false},
+    {"file": ".claude/commands/repo-intelligence.md", "simbolo": "§ I file di una corsa", "ancora": "combaciare carattere per carattere. Di `0. study.md` il parser verifica solo che", "riga": 326, "cosa": "dichiarazione di verifica ristretta ai tre documenti che il parser verifica davvero", "grave": false, "su_fix_precedente": false},
+    {"file": ".claude/commands/repo-intelligence.md", "simbolo": "§ 0. Gate di avvio", "ancora": "`stato_git_iniziale`. `radici_non_eseguibili` non entra in `run.json`: è `check-", "riga": 152, "cosa": "solo enabled confluisce in run.json, come presidio.acceso", "grave": false, "su_fix_precedente": false}
+   ],
+   "scartati": [],
+   "da_confermare": [],
+   "oscillazione": [],
+   "verdetto": "continua",
+   "perche": "regola 2: cinque fix gravi applicati"
+  },
+  {
+   "n": 2,
+   "finder_tornati": 1,
+   "finder_mancati": 0,
+   "applicati": [
+    {"file": ".docs/tools/repo-intelligence/check-run.mjs", "simbolo": "runSelfCheck", "ancora": "record('scheda-priorita-invalida-rosso', res.failed.some((f) => f.startsWith('sch", "riga": 779, "cosa": "campi-validi accorpava sette enum ma solo Azione aveva una fixture: aggiunte sei fixture, una per campo", "grave": true, "su_fix_precedente": false},
+    {"file": ".docs/tools/repo-intelligence/check-run.mjs", "simbolo": "runSelfCheck", "ancora": "record('toolchain-opensrc-binario-vuoto-rosso', res.failed.some((f) => f.starts", "riga": 667, "cosa": "coperte le due meta' scoperte dei controlli toolchain (opensrc.binario, graphify.versione)", "grave": false, "su_fix_precedente": false}
+   ],
+   "scartati": [],
+   "da_confermare": [],
+   "oscillazione": [],
+   "verifica_segnali": "ancore del giro 1 in check-run.mjs tutte presenti (righe 344, 606, 628): su_fix_precedente false; nessuna ancora ripetuta: nessuna oscillazione. Banco: check-run 39, self-check 52",
+   "verdetto": "continua",
+   "perche": "regola 3: il grave cade su runSelfCheck, lo stesso blocco riscritto al giro 1 (area ancora calda)"
+  },
+  {
+   "n": 3,
+   "finder_tornati": 1,
+   "finder_mancati": 0,
+   "applicati": [],
+   "scartati": [],
+   "da_confermare": [],
+   "oscillazione": [],
+   "verdetto": "fermati",
+   "perche": "regola 1: zero rilievi, zero fix: punto fisso"
+  }
+ ],
+ "uscita": "punto-fisso",
+ "gate": "verde",
+ "gate_detail": "Deviazione di scope dichiarata dall'owner: il perimetro non e' plugins/daiku/ ma .claude/commands/repo-intelligence.md, la riga repo-intelligence di .claude/orchestration.md §5, la riga di confine di .claude/commands/confronta-repo.md e .docs/tools/repo-intelligence/. claude plugin validate plugins/daiku: passed. validate_plugin.py plugins/daiku: passed (pyyaml presente). check-topology.mjs plugins/daiku: checks 296, passed 296, failed []. repo-intelligence/self-check.mjs: checks 52, passed 52, failed [] (era 26 all'avvio della review). File nuovi sotto plugins/: nessuno, check-ignore non lanciato. hooks/self-check e prompt audit di §7 non lanciati: il perimetro non tocca plugins/daiku/. Il diff di .claude/orchestration.md contiene anche modifiche concorrenti di altre sessioni (rename sviluppo->.docs, sezione prompt audit in §7), fuori da questo lavoro."
+}
