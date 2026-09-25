@@ -1,6 +1,6 @@
 ---
 name: alberatura-pacchetto
-description: "Cosa contiene ogni cartella del repo Daiku e a cosa serve, con i nomi che si somigliano e non c'entrano niente"
+description: "Cosa contiene ogni cartella del repo e a cosa serve — i due prodotti, lo sviluppo — con i nomi che si somigliano e non c'entrano niente"
 metadata: 
   node_type: memory
   type: project
@@ -8,13 +8,15 @@ metadata:
   modified: 2026-09-23T18:04:26.291Z
 ---
 
-Il repo è **insieme marketplace e pacchetto**: una sola alberatura serve Claude Code e Codex,
-perché i due host cercano file con nomi diversi e ignorano quelli dell'altro. Ristrutturato il
-18 settembre 2026; prima tutto stava in `src/`, che era uno snapshot di `ReforgIA/src/.claude`.
+Il repo ospita due prodotti, Daiku e Kaji (vedi [[monorepo-daiku-kaji]]). **In radice non entra
+nessun file di prodotto**: ci sono le sedi di sviluppo e una cartella per prodotto, ciascuna delle
+quali è per intero la radice del suo repository pubblico — `plugins/` per Daiku, `extensions/kaji/`
+per Kaji.
 
-**La radice si divide in tre gruppi, non due.**
+`plugins/` è **insieme marketplace e pacchetto**: una sola alberatura serve Claude Code e Codex,
+perché i due host cercano file con nomi diversi e ignorano quelli dell'altro.
 
-## 1. Il prodotto — l'unica cosa che viene pubblicata
+## 1. Il prodotto Daiku — `plugins/`
 
 `plugins/daiku/` è il pacchetto vero e proprio: tutto ciò che un utente riceve e installa.
 
@@ -29,17 +31,27 @@ perché i due host cercano file con nomi diversi e ignorano quelli dell'altro. R
 | `templates/` | gli scheletri che `init` copierà nel progetto ospite | nessuno: non vengono mai letti in place |
 | `.claude-plugin/`, `.codex-plugin/` | i due manifest, uno per host | gli host, all'installazione |
 
-Accanto, in radice, le due **vetrine** — non sono il pacchetto, sono il cartello che lo indica:
+Accanto, nella radice di `plugins/`, le due **vetrine** — non sono il pacchetto, sono il cartello
+che lo indica:
 
-- `.claude-plugin/marketplace.json` — per Claude Code
-- `.agents/plugins/marketplace.json` — per Codex
+- `plugins/.claude-plugin/marketplace.json` — per Claude Code
+- `plugins/.agents/plugins/marketplace.json` — per Codex
 
 Due file separati perché i due host cercano nomi diversi. Entrambi dicono la stessa cosa: «qui
-c'è un pacchetto che si chiama daiku, sta in `./plugins/daiku`».
+c'è un pacchetto che si chiama daiku, sta in `./daiku`». Con loro stanno il `.gitattributes` del
+prodotto e, quando nascerà, il README pubblico. Il marketplace locale si registra su
+`<repo>/plugins`, non sulla radice del repo.
 
-## 2. Lo sviluppo *obbligato* a stare in radice
+## 2. Il prodotto Kaji — `extensions/kaji/`
 
-Non si possono spostare: gli host li cercano lì e basta.
+La radice del repository pubblico di Kaji: `package.json`, `src/`, `test/`, il suo `.gitignore` e
+il suo `.gitattributes`. Il codice non è ancora cominciato; i documenti di progetto stanno in
+`sviluppo/kaji/`.
+
+## 3. Lo sviluppo *obbligato* a stare in radice
+
+Non si possono spostare: gli host e git li cercano lì e basta. Oltre a questi, in radice ci sono
+solo `.gitignore` e `.gitattributes` del repository di sviluppo.
 
 - **`CLAUDE.md`** — le istruzioni per chi sviluppa Daiku. Non è Daiku.
 - **`.claude/`** — come si lavora *su* Daiku, non come Daiku funziona. Dentro c'è:
@@ -52,13 +64,15 @@ Non si possono spostare: gli host li cercano lì e basta.
 - **`.vscode/`** — `tasks.json` con gli switch fra backend LLM: tooling personale dell'owner, con
   path della sua home. Non c'entra niente con Daiku.
 
-## 3. Lo sviluppo che si è potuto raccogliere
+## 4. Lo sviluppo che si è potuto raccogliere
 
-`sviluppo/` tiene tutto ciò che serve a costruire Daiku e che *non* era obbligato in radice:
+`sviluppo/` tiene tutto ciò che serve a costruire i due prodotti e che *non* era obbligato in radice:
 
 - `RICOGNIZIONE.md` — il documento di riferimento: cosa offrono i due host, cosa manca, perché
   ogni file sta dove sta, con le prove eseguite sui validatori reali
 - `PUNTI-APERTI.md` — le decisioni ancora da prendere
+- `kaji/` — i documenti di progetto di Kaji: prodotto, tech stack, branding
+- `appunti.md` — gli appunti sparsi dell'owner
 - `memory/` — questa memoria; è versionata come tutto il resto, ma non viene pubblicata
 - `backup/skill-estratte.md` — il registro ad append di ciò che è stato tolto dalle skill
 - `esempi/reforgia/` — dominio e politiche di ReforgIA, come esempio di un livello Dominio
@@ -72,13 +86,13 @@ Non si possono spostare: gli host li cercano lì e basta.
 
 | Nome | Dov'è | Cos'è davvero |
 |---|---|---|
-| `.agents/` | radice | vetrina **Codex** (un `marketplace.json`) |
+| `.agents/` | in `plugins/` | vetrina **Codex** (un `marketplace.json`) |
 | `agents/` | in `plugins/daiku/` | i **subagent Claude Code** — nessuna relazione col precedente |
-| `.claude-plugin/` | radice | la **vetrina** Claude Code |
+| `.claude-plugin/` | in `plugins/` | la **vetrina** Claude Code |
 | `.claude-plugin/` | in `plugins/daiku/` | il **manifest** del pacchetto |
-| `.claude/` | radice | come lavora l'owner, niente a che vedere col prodotto |
+| `.claude/` | radice del repo | come lavora l'owner, niente a che vedere col prodotto |
 
-La regola che scioglie tutto: **in radice `.agents/` e `.claude-plugin/` sono vetrine; dentro
+La regola che scioglie tutto: **in `plugins/` `.agents/` e `.claude-plugin/` sono vetrine; dentro
 `plugins/daiku/` sono il pacchetto.**
 
 ## Le tre regole di collocazione

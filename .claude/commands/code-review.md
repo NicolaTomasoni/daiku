@@ -70,9 +70,9 @@ ricorrenti:
   `plugins/daiku/.codex-plugin/plugin.json`: sono due file che portano lo stesso numero e si
   aggiornano insieme.
 
-  **I path si scrivono per esteso**, sempre: `.claude-plugin/` in radice è la **vetrina** (porta un
+  **I path si scrivono per esteso**, sempre: `.claude-plugin/` in `plugins/` è la **vetrina** (porta un
   `marketplace.json`), dentro `plugins/daiku/` è il **manifest** (porta un `plugin.json`). Sono tre
-  coppie di nomi che si somigliano e fanno lavori diversi — la quarta è `.agents/` in radice contro
+  coppie di nomi che si somigliano e fanno lavori diversi — la quarta è `.agents/` in `plugins/` contro
   `agents/` nel pacchetto — e un path scritto a metà manda chi legge sul file sbagliato.
 - **una cosa messa dalla parte sbagliata del confine**: un file di sviluppo finito sotto
   `plugins/`, o un contratto che il prodotto deve portare finito fuori.

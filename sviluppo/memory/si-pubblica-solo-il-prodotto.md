@@ -12,17 +12,19 @@ Daiku e Kaji stanno in **tre repository** (Daiku in due dal 18 settembre 2026, K
 25 settembre 2026, vedi [[monorepo-daiku-kaji]]).
 
 Lo **sviluppo** è questo: `NicolaTomasoni/daiku-kaji-dev`, privato, con dentro tutto —
-`plugins/daiku/`, `extensions/kaji/`, `sviluppo/`, `CLAUDE.md`, `.claude/`, `.vscode/`. Il
+`plugins/`, `extensions/kaji/`, `sviluppo/`, `CLAUDE.md`, `.claude/`, `.vscode/`. Il
 `.gitignore` in radice non filtra niente dei prodotti: esclude solo `.claude/settings.local.json`,
 che non deve stare in nessun git (vedi [[memoria-nel-repo]]). Gli ignore di build di Kaji stanno
 in `extensions/kaji/.gitignore`, che viaggia col prodotto.
 
 La **pubblicazione** sono due repository su GitHub, uno per prodotto, che non sono branch di
-questo né fork: sono alberi **generati**. A ogni rilascio uno script per prodotto copia lì i soli
-path ammessi e committa. Là dentro non si lavora mai.
+questo né fork: sono alberi **generati**. **In radice non entra nessun file di prodotto**: ogni
+prodotto ha una cartella che è per intero la radice del suo repository pubblico, vetrine, README e
+`.gitattributes` compresi. A ogni rilascio uno script per prodotto copia il contenuto di quella
+cartella e committa. Là dentro non si lavora mai.
 
-- **Daiku:** `plugins/`, `.claude-plugin/`, `.agents/`, `README.md`, `.gitattributes`.
-- **Kaji:** il *contenuto* di `extensions/kaji/` portato in radice, più `.gitattributes`.
+- **Daiku:** il contenuto di `plugins/` — le due vetrine, `daiku/`, `.gitattributes`, il README.
+- **Kaji:** il contenuto di `extensions/kaji/`.
 
 **Why:** di norma il filtro «cosa esce» non sta nel repo ma nel passo di impacchettamento — il
 campo `files` di un `package.json`, `MANIFEST.in` in Python — e allora un repo solo basta. Per
@@ -38,15 +40,14 @@ La storia di questo repo è comunque impubblicabile, perché `CLAUDE.md` sta nel
 È il pattern *dist repo*: jQuery pubblica `jquery/jquery-dist`, Symfony ribalta il monorepo in
 repo read-only con `splitsh-lite`, Google usa Copybara. Quegli strumenti qui sono fuori scala —
 bastano venti righe di script per prodotto. Per Daiku `git subtree split` **non** è utilizzabile:
-lavora su un prefisso solo, e lì le radici da copiare sono quattro. Per Kaji il prefisso è uno
-solo (`extensions/kaji/`), ma `.gitattributes` sta fuori, e la storia di sviluppo non si pubblica
-comunque.
+lavora su un prefisso solo, e la storia di sviluppo non si pubblica comunque.
 
 **How to apply:** tre cose che ogni script deve fare, e che non vengono gratis.
 
-La lista di copia va tenuta **a lista di ammissione** — «copia questi path», mai «copia tutto
-tranne» — perché resti vera la proprietà che conta: un file nuovo nasce fuori dal pacchetto
-pubblicato, e per farcelo entrare bisogna deciderlo.
+Si copia **la cartella del prodotto e nient'altro**, mai «tutto il repository tranne»: un file
+nato fuori da `plugins/` o da `extensions/kaji/` resta fuori dai pacchetti pubblicati. Il rovescio
+va tenuto presente: un file nato dentro, esce — la cartella di prodotto non è posto per appunti,
+banchi di sviluppo o strumenti, che vanno in `sviluppo/`.
 
 La destinazione va **svuotata** prima di copiare (tutto tranne il suo `.git`), altrimenti i file
 cancellati o rinominati nel prodotto restano nel pacchetto pubblicato. Non è teorico: il refactor
@@ -56,7 +57,8 @@ E il confine **non guarda dentro i file**: ciò che sta sotto `plugins/` ed `ext
 com'è scritto. Il gate prima del primo push pubblico è ancora aperto — vedi
 [[pubblicazione-su-github]] per cosa ricontrollare.
 
-Nota sul `.gitattributes`: sta in entrambe le liste di copia apposta. Questo repo ha
+Nota sul `.gitattributes`: ogni cartella di prodotto porta il suo, accanto a quello di radice che
+vale per lo sviluppo. Questo repo ha
 `core.autocrlf = true` nel config **locale**, quindi senza `* text=auto eol=lf` il working tree
 tornerebbe CRLF a ogni checkout, e gli script — che copiano dal working tree, non da
 `git archive` — riverserebbero CRLF nei pacchetti pubblicati. L'attributo tiene LF su entrambi i

@@ -41,7 +41,7 @@ chi lo legge non sa più quale delle due lingue sia quella che conta.
 La condizione è **una sola e non si deroga: aggiorni ogni lettore nello stesso diff, e lo provi.**
 Dopo una rinomina, tutte e tre queste cose devono valere:
 
-- `grep -rn "<nome vecchio>"` su `plugins/`, `.claude/` e `.agents/` non torna niente;
+- `grep -rn "<nome vecchio>"` su `plugins/` e `.claude/` non torna niente;
 - `node plugins/daiku/hooks/self-check.mjs` esce verde **con lo stesso totale di prima** — un totale che cala è un banco che ha smesso di girare, e il verde da solo non lo mostra;
 - i due validatori della § *Verificare il pacchetto* di `CLAUDE.md` passano entrambi.
 

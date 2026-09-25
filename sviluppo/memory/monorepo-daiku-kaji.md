@@ -8,15 +8,18 @@ metadata:
   modified: 2026-09-25T18:08:22.737Z
 ---
 
-Dal 25 settembre 2026 questo repository ospita due prodotti: **Daiku** (`plugins/daiku/`) e
-**Kaji** (`extensions/kaji/`), un'estensione VS Code che mostra quale agente, provider e modello
+Dal 25 settembre 2026 questo repository ospita due prodotti: **Daiku** (`plugins/`, con il
+pacchetto in `plugins/daiku/`) e **Kaji** (`extensions/kaji/`), un'estensione VS Code che mostra quale agente, provider e modello
 stanno lavorando e cambia ciò che il runtime permette di cambiare. Kaji è un nome di lavoro:
 `sviluppo/kaji/BRANDING.md` propone *Kaname*, e il nome definitivo è un punto aperto.
 
 Kaji è arrivato con la sua storia (merge `5b2d198`, due commit), dal repository GitLab
 `claude-code-router-extension`. I suoi documenti di progetto stanno in `sviluppo/kaji/`
 (`README.md` prodotto, `TECH-STACK.md` architettura, `BRANDING.md` nome); in `extensions/kaji/`
-per ora c'è solo il `.gitignore`, perché il codice non è ancora cominciato.
+per ora ci sono solo `.gitignore` e `.gitattributes`, perché il codice non è ancora cominciato.
+
+In radice non entra nessun file di prodotto: `plugins/` ed `extensions/kaji/` sono ciascuna per
+intero la radice del repository pubblico del proprio prodotto (vedi [[alberatura-pacchetto]]).
 
 **Why:** i due prodotti si parlano. Kaji ha già in disegno la F17, *Subagent observability*, che è
 esattamente la vista degli agenti che Daiku orchestra; e `plugins/daiku/contracts/orchestration.md`

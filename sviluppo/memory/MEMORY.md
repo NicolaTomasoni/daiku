@@ -2,7 +2,7 @@
 
 Indice delle memorie del progetto. Una riga per file, nessun contenuto qui dentro.
 
-- [Alberatura del pacchetto](alberatura-pacchetto.md) — cosa contiene ogni cartella e a cosa serve, i nomi che si somigliano e non c'entrano, le tre regole di collocazione
+- [Alberatura del pacchetto](alberatura-pacchetto.md) — nessun file di prodotto in radice: plugins/ e extensions/kaji/ sono le radici pubbliche; cosa contiene ogni cartella, i nomi che si somigliano e non c'entrano, le tre regole di collocazione
 - [Il corpus di sviluppo](corpus-di-sviluppo.md) — i contratti in `.claude/` sono una derivazione di quelli del prodotto: in cosa divergono, perché non si toccano, e su quale premessa sono rimasti indietro
 - [Si pubblica solo il prodotto](si-pubblica-solo-il-prodotto.md) — tre repository: qui si sviluppa con tutto dentro, su GitHub si pubblicano Daiku e Kaji come alberi generati dagli script
 - [Il monorepo Daiku + Kaji](monorepo-daiku-kaji.md) — due prodotti autonomi nello stesso repository: dove sta ciascuno, cosa condividono, e la regola che nessuno legge i file dell'altro

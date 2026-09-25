@@ -1,8 +1,8 @@
 # Il presidio del target
 
 Documentazione del presidio di **questo cantiere** (`.claude/`). Non fa parte di Daiku e non viene
-pubblicato: la lista di copia dello script di pubblicazione prende `plugins/`, `.claude-plugin/`,
-`.agents/`, `README.md`, `.gitattributes`, e `.claude/` non è fra questi.
+pubblicato: lo script di pubblicazione copia il solo contenuto di `plugins/`, e `.claude/` sta
+fuori.
 
 Serve a una cosa sola: **impedire che un agente esegua il codice di un repository target**, cioè di
 un repo di terzi preso in analisi da `repo-intelligence`. Un repository di terzi si legge, si

@@ -1,27 +1,22 @@
 # Questo è il repository di **sviluppo** di Daiku e Kaji, e contiene tutto: i due prodotti in
-# `plugins/daiku/` ed `extensions/kaji/`, la ricognizione, i punti aperti, la memoria, gli esempi
-# e le istruzioni di progetto. Resta privato e non diventa mai pubblico — la sua storia porta
+# `plugins/` ed `extensions/kaji/`, la ricognizione, i punti aperti, la memoria, gli esempi e le
+# istruzioni di progetto. Resta privato e non diventa mai pubblico — la sua storia porta
 # `CLAUDE.md` nel commit iniziale, e non si ripulisce.
 #
 # La pubblicazione sono **due** repository su GitHub, uno per prodotto, che non sono branch di
-# questo né fork: sono alberi generati. A ogni rilascio uno script per prodotto copia lì i soli
-# path ammessi e committa. Per Daiku sono `plugins/`, `.claude-plugin/`, `.agents/`, `README.md`,
-# `.gitattributes`; per Kaji il contenuto di `extensions/kaji/` più `.gitattributes`. Là dentro
-# non si lavora.
+# questo né fork: sono alberi generati. A ogni rilascio uno script per prodotto copia lì il
+# contenuto della cartella del prodotto — `plugins/` per Daiku, `extensions/kaji/` per Kaji — e
+# committa. Là dentro non si lavora.
 #
-# Per Daiku serve perché chi aggiunge il marketplace riceve un clone dell'**intero** repository,
-# non solo di `plugins/daiku/`: lo schema di Claude Code lo dice alla voce `sparsePaths` — «If
-# omitted, the full repository is cloned» — e su Codex `--sparse` esiste per la stessa ragione.
-# Il repo *è* l'artefatto consegnato: non c'è un passo di impacchettamento dove mettere il
-# filtro, come farebbe il campo `files` di un `package.json`.
+# Per Daiku serve perché chi aggiunge il marketplace riceve un clone dell'**intero** repository:
+# lo schema di Claude Code lo dice alla voce `sparsePaths` — «If omitted, the full repository is
+# cloned» — e su Codex `--sparse` esiste per la stessa ragione. Il repo *è* l'artefatto
+# consegnato: non c'è un passo di impacchettamento dove mettere il filtro.
 #
-# Quindi il confine di ciò che esce non sta qui: sta nelle liste di copia degli script, che vanno
-# tenute a lista di ammissione — «copia questi path», mai «copia tutto tranne» — perché resti vera
-# la proprietà che conta: un file nuovo nasce fuori dai pacchetti pubblicati, e per farcelo
-# entrare bisogna deciderlo.
-#
-# Gli ignore propri di Kaji — dipendenze, build, VSIX — stanno in `extensions/kaji/.gitignore`,
-# che viaggia con il prodotto nel suo repository pubblico.
+# Quindi il confine di ciò che esce non sta qui: sta nel perimetro delle due cartelle di prodotto.
+# Un file nato fuori da quelle resta fuori dai pacchetti pubblicati; uno nato dentro, esce. Gli
+# ignore propri di ciascun prodotto — per Kaji dipendenze, build, VSIX — stanno dentro la sua
+# cartella, e viaggiano con lui nel suo repository pubblico.
 #
 # Qui si esclude soltanto ciò che non deve stare in **nessun** git.
 

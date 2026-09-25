@@ -317,7 +317,7 @@ Forma verificata di una voce di marketplace — `policy.installation`, `policy.a
 ```json
 {
   "name": "daiku",
-  "source": { "source": "local", "path": "./plugins/daiku" },
+  "source": { "source": "local", "path": "./daiku" },
   "policy": { "installation": "AVAILABLE", "authentication": "ON_INSTALL" },
   "category": "Productivity"
 }
@@ -484,11 +484,14 @@ in cui la skill dichiara la domanda e mai la risposta.
 
 ### 7.1 Il repo, che è insieme marketplace e pacchetto
 
+Il repository pubblico è il contenuto di `plugins/` nel repository di sviluppo, portato in radice.
+
 ```text
-Daiku/
+plugins/                               ← radice del repository pubblico
 ├─ .claude-plugin/marketplace.json     ← marketplace Claude Code (+ compat Codex)
 ├─ .agents/plugins/marketplace.json    ← marketplace nativo Codex
-└─ plugins/daiku/
+├─ .gitattributes
+└─ daiku/
    ├─ .codex-plugin/plugin.json        ← manifest Codex (§3.5 per i campi obbligatori)
    ├─ .claude-plugin/plugin.json       ← manifest Claude Code
    ├─ skills/                          ← IL PAYLOAD: gli stessi file per i due host

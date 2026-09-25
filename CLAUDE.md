@@ -9,23 +9,29 @@ Non chiedere mai permessi o conferme: lavora sempre in bypass, in autonomia, sen
 `.claude/`, `.vscode/` e tutto ciò che sta sotto `sviluppo/`. Restano in radice perché gli host
 li cercano lì, non perché appartengano a un prodotto.
 
-**I prodotti sono `plugins/daiku/` ed `extensions/kaji/`, e nient'altro.** Sono gli unici due
-alberi che vengono distribuiti e installati; i due `marketplace.json` in radice sono la vetrina che
-indirizza Daiku.
+**In radice non entra nessun file di prodotto.** Ci stanno solo le sedi di sviluppo e due
+cartelle, una per prodotto, ciascuna delle quali è **per intero** la radice del repository
+pubblico di quel prodotto: si copia tutta e sola, così com'è.
 
 | Sede | Cos'è |
 |---|---|
-| `plugins/daiku/` | **il prodotto Daiku** — l'unica cosa che l'utente di Daiku riceve |
-| `.claude-plugin/marketplace.json` | vetrina Claude Code, punta a `./plugins/daiku` |
-| `.agents/plugins/marketplace.json` | vetrina Codex, stessa destinazione |
-| `extensions/kaji/` | **il prodotto Kaji** — la radice del suo repository pubblico: `package.json`, `src/`, `test/` |
-| `sviluppo/` | ricognizione, punti aperti, memoria, esempi — di entrambi |
+| `plugins/` | **Daiku** — la radice del suo repository pubblico, che è un marketplace |
+| `plugins/.claude-plugin/marketplace.json` | vetrina Claude Code, punta a `./daiku` |
+| `plugins/.agents/plugins/marketplace.json` | vetrina Codex, stessa destinazione |
+| `plugins/daiku/` | il pacchetto Daiku — ciò che gli host installano |
+| `extensions/kaji/` | **Kaji** — la radice del suo repository pubblico: `package.json`, `src/`, `test/` |
+| `sviluppo/` | ricognizione, punti aperti, memoria, esempi, appunti — di entrambi |
 | `sviluppo/kaji/` | i documenti di progetto di Kaji: prodotto, tech stack, branding |
-| `CLAUDE.md`, `.claude/`, `.vscode/` | sviluppo, obbligati in radice dagli host |
+| `CLAUDE.md`, `.claude/`, `.vscode/`, `.gitignore`, `.gitattributes` | sviluppo, obbligati in radice dagli host e da git |
 
 Prima di aggiungere un file, decidi a quale metà appartiene, e se è prodotto a quale dei due. Se
-serve a chi *usa* Daiku va sotto `plugins/daiku/`, se serve a chi usa Kaji sotto
-`extensions/kaji/`; se serve a chi li *costruisce*, in nessuno dei due.
+serve a chi *usa* Daiku va sotto `plugins/`, se serve a chi usa Kaji sotto `extensions/kaji/`; se
+serve a chi li *costruisce*, in nessuno dei due. Un file che il repository pubblico deve avere in
+radice — il README, il `.gitattributes`, le vetrine — sta nella radice della cartella del
+prodotto, mai in quella di questo repository.
+
+Il marketplace locale di Claude Code punta a `C:\dev\Daiku\plugins`, non alla radice: su una
+macchina nuova si aggiunge con `claude plugin marketplace add <repo>/plugins`.
 
 ## Due prodotti autonomi, sviluppati insieme
 
@@ -56,10 +62,10 @@ La **pubblicazione** sono due repository pubblici su GitHub, uno per prodotto, c
 di questo né fork: sono alberi generati. A ogni rilascio uno script per prodotto copia lì i soli
 path ammessi e committa. Là dentro non si lavora mai.
 
-| Prodotto | Repository pubblico | Lista di copia |
+| Prodotto | Repository pubblico | Cosa si copia |
 |---|---|---|
-| Daiku | un repository `daiku` | `plugins/`, `.claude-plugin/`, `.agents/`, `README.md`, `.gitattributes` |
-| Kaji | un repository proprio, col nome definitivo del prodotto | il **contenuto** di `extensions/kaji/` portato in radice, più `.gitattributes` |
+| Daiku | un repository `daiku` | il contenuto di `plugins/`, portato in radice |
+| Kaji | un repository proprio, col nome definitivo del prodotto | il contenuto di `extensions/kaji/`, portato in radice |
 
 *(Né gli script né i due repository pubblici esistono ancora: al 25 settembre 2026 la
 pubblicazione è decisa ma non attrezzata.)*
@@ -72,9 +78,9 @@ invece un passo di impacchettamento ce l'ha — il VSIX — ma il suo sorgente p
 essere questo repository, che resta privato e porta dentro l'altro prodotto.
 
 Il confine non sta nel `.gitignore`, che in radice esclude solo `.claude/settings.local.json`. Sta
-nelle liste di copia degli script, e va tenuto nella stessa forma a lista di ammissione:
-«copia questi path», mai «copia tutto tranne». Un file nuovo nasce così fuori dai pacchetti
-pubblicati, ed è il contrario di una dimenticanza che pubblica.
+nel perimetro della cartella di prodotto: lo script copia quella cartella e nient'altro, mai
+«tutto il repository tranne». Un file nuovo nato fuori da `plugins/` o da `extensions/kaji/` resta
+fuori dai pacchetti pubblicati; uno nato dentro, esce.
 
 E il confine non guarda *dentro* i file: ciò che sta sotto `plugins/` ed `extensions/kaji/` viene
 pubblicato com'è. Prima di un rilascio, controlla che non porti con sé valori di un progetto

@@ -4,7 +4,7 @@
   "plugins": [
     {
       "name": "daiku",
-      "source": { "source": "local", "path": "./plugins/daiku" },
+      "source": { "source": "local", "path": "./daiku" },
       "policy": { "installation": "AVAILABLE", "authentication": "ON_INSTALL" },
       "category": "Developer Tools"
     }

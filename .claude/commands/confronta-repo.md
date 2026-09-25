@@ -13,6 +13,8 @@ pacchetto. Produce un **censimento**: ogni miglioria con la sua evidenza, la **s
 cui atterrerebbe e una proposta. Decidere e implementare è di una richiesta successiva e
 presidiata.
 
+Per leggere il **source reale** di un progetto o di una dipendenza, con un grafo interrogabile e un piano di adozione, c'è `.claude/commands/repo-intelligence.md`: quel comando misura il metodo sui quattro assi e non esegue niente.
+
 ## Dove vivono le cose in questo repo
 
 Il repository si divide in **due metà che non si toccano**, e il confronto le riguarda in modo
@@ -25,8 +27,8 @@ diverso.
   progetto, ma non è ciò che il repo osservato dovrebbe battere: quel repo pubblica il proprio
   prodotto, non il proprio cantiere.
 
-Attenzione a tre coppie di nomi quasi identici: `.claude-plugin/` in radice è la **vetrina** del
-marketplace, dentro `plugins/daiku/` è il **manifest** del pacchetto; `.agents/` in radice è la
+Attenzione a tre coppie di nomi quasi identici: `.claude-plugin/` in `plugins/` è la **vetrina** del
+marketplace, dentro `plugins/daiku/` è il **manifest** del pacchetto; `.agents/` in `plugins/` è la
 vetrina di Codex, `plugins/daiku/agents/` sono i **subagent**; `.claude/` in radice è il cantiere
 dell'owner e non ha niente a che vedere col prodotto.
 
@@ -103,7 +105,7 @@ Le regole che la tabella non dice, e che sono state verificate sui validatori de
 - Se **nessuna sede regge** — la forma del repo non ha un corrispettivo in Daiku — la voce non è
   `adotta` né `adatta`: è `ispira`, e dichiara la domanda aperta invece di inventarsi un posto.
 - Non atterra **mai** niente in `sviluppo/esempi/`, in `.vscode/`, nei due `marketplace.json` di
-  radice, né in `CLAUDE.md` usato come sostituto di una sede vera.
+  `plugins/`, né in `CLAUDE.md` usato come sostituto di una sede vera.
 
 ## Ruoli e delega
 

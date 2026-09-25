@@ -5,7 +5,7 @@
   "plugins": [
     {
       "name": "daiku",
-      "source": "./plugins/daiku",
+      "source": "./daiku",
       "description": "Metodo di sviluppo autonomo architecture-first: i contratti delle skill, l'orchestrazione a ruoli e i contratti dei parametri."
     }
   ]

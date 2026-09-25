@@ -27,7 +27,7 @@ e che non puoi aggiornare insieme.** Quelli non si toccano mai:
 Tutto il resto — variabili, funzioni, parametri, costanti, chiavi di oggetti interni, nomi dei
 casi di prova — **si traduce con la prosa**, a una condizione sola: aggiorni ogni lettore nello
 stesso diff, e lo **provi** con le tre prove che la regola scrive accanto a sé (il `grep` del nome
-vecchio a vuoto su `plugins/`, `.claude/` e `.agents/`; il banco degli hook verde **con lo stesso
+vecchio a vuoto su `plugins/` e `.claude/`; il banco degli hook verde **con lo stesso
 totale di prima**; i due validatori). Se non puoi fare tutte e tre, quel nome è di confine.
 
 **Why:** la vecchia regola sembrava prudente e non lo era. Proibiva anche le rinomine che nessuno
