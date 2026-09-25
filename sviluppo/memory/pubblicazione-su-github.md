@@ -1,32 +1,38 @@
 ---
 name: pubblicazione-su-github
-description: Il repo pubblico di Daiku va su GitHub e non su GitLab, e non esiste ancora — cosa ripulire prima di crearlo
+description: "Tutti e tre i repository stanno su GitHub — lo sviluppo privato come daiku-kaji-dev, i due pubblici non esistono ancora — e cosa ricontrollare prima di crearli"
 metadata:
+  node_type: memory
   type: project
+  originSessionId: 69438169-0316-47c8-a4e8-3365650ee2cf
+  modified: 2026-09-25T18:08:12.897Z
 ---
 
-Il repository di sviluppo **resta privato per sempre**, su GitLab. Quello di pubblicazione — un
-secondo repository, generato, vedi [[si-pubblica-solo-il-prodotto]] — va su **GitHub** e non su
-GitLab (deciso il 18 settembre 2026). Al 18 settembre 2026 non esiste ancora: il pacchetto non è
-pronto.
+Tutti e tre i repository stanno su **GitHub** (vedi [[si-pubblica-solo-il-prodotto]]).
 
-**Why:** entrambi gli host accettano la forma breve `owner/repo` solo per GitHub —
-`/plugin marketplace add owner/repo` su Claude Code, `codex plugin marketplace add owner/repo`
-su Codex. Un GitLab richiederebbe l'URL git completo su tutti e due, e allungherebbe le
-istruzioni di installazione senza dare nulla in cambio.
+- Lo **sviluppo** è `NicolaTomasoni/daiku-kaji-dev`, privato per sempre. È stato spostato da
+  GitLab il 25 settembre 2026, quando Kaji è entrato nel monorepo ([[monorepo-daiku-kaji]]).
+  Il progetto GitLab `tomasoni.nicola/daiku` e quello di Kaji (`claude-code-router-extension`)
+  non sono più remote di niente.
+- Le due **pubblicazioni**, una per Daiku e una per Kaji, al 25 settembre 2026 non esistono
+  ancora: nessuno dei due prodotti è pronto.
 
-**How to apply:** il gate resta **prima** del primo push pubblico, perché da quel momento
-`plugins/` esce com'è scritto. Il censimento del 18 settembre 2026 elencava tre residui — lo
-username `ntomason` in `templates/owner/environment.json`, la configurazione ReforgIA intera in
-`templates/project/project.json`, e 35 occorrenze di `C:/dev/ReforgIA/src` nei banchi `--self-check`
-degli hook. **Sono stati ripuliti tutti e tre**, verificato il 19 settembre 2026: i due template
-portano segnaposto, e i banchi girano su un `c:/dev/progetto` inventato.
+**Why:** per Daiku conta la forma breve `owner/repo`, che entrambi gli host accettano solo per
+GitHub — `/plugin marketplace add owner/repo` su Claude Code, `codex plugin marketplace add
+owner/repo` su Codex. Un GitLab richiederebbe l'URL git completo su tutti e due, e allungherebbe
+le istruzioni di installazione senza dare nulla in cambio. Lo sviluppo non ha bisogno della forma
+breve: sta su GitHub per avere una sede sola. Il suo nome non è `daiku` perché quel nome spetta al
+repository pubblico dello stesso account.
 
-Il gate quindi non è più una lista di cose da fare ma un **controllo da rifare**, perché un residuo
-nuovo entra con qualunque consegna: `grep -rin "reforgia\|<username>\|c:/dev/" plugins/daiku/`
-prima di pubblicare, e ogni occorrenza va guardata — un path di questa macchina finito in un
-template o in un banco di prova è esattamente ciò che il gate esiste per fermare.
+**How to apply:** il gate resta **prima** del primo push pubblico di ciascun prodotto, perché da
+quel momento ciò che sta sotto `plugins/` o `extensions/kaji/` esce com'è scritto. Il gate non è
+una lista di cose da fare ma un **controllo da rifare**, perché un residuo nuovo entra con
+qualunque consegna: `grep -rin "reforgia\|<username>\|c:/dev/" plugins/daiku/` (e lo stesso su
+`extensions/kaji/`) prima di pubblicare, e ogni occorrenza va guardata — un path di questa
+macchina finito in un template, in un banco di prova o in una fixture è esattamente ciò che il
+gate esiste per fermare. Per Kaji vale in più: le fixture di `test/fixtures/` nascono da file
+reali di Claude e Codex, e vanno redatte prima di entrare.
 
-Nota pratica finché il pacchetto vive solo qui: installare da un repository privato richiede
-credenziali git sulla macchina di chi installa. Per provare il pacchetto in locale conviene un marketplace da
-path, che non passa da git.
+Nota pratica finché i prodotti vivono solo qui: installare Daiku da un repository privato richiede
+credenziali git sulla macchina di chi installa. Per provare il pacchetto in locale conviene un
+marketplace da path, che non passa da git.

@@ -22,7 +22,7 @@ riga `name:`, il nome lo dà il file) e i rimandi fra contratti.
 omonimia: nel prodotto quei contratti si chiamano `research` (raccolta, con il riordino delegato
 a `study`), `new-feature` e `develop-feature`, dove
 il cantiere ha ancora `studia-libreria`, `studia-problema` e `deliver-feature`. I rename sono stati
-scritti solo nel prodotto, che è l'unico albero pubblicato; riportarli qui è una decisione a parte,
+scritti solo nel prodotto, che è l'albero che si pubblica; riportarli qui è una decisione a parte,
 che non è stata presa.
 
 **Why:** è una derivazione dei contratti di `plugins/daiku/skills/`, non una copia, perché tre

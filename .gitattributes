@@ -3,10 +3,10 @@
 # `text=auto` da solo normalizzerebbe a LF *dentro* il repository ma lascerebbe
 # `core.autocrlf` — qui vale `true` nel config locale — riscrivere i file in CRLF sul disco.
 # Non basta, perché lo script di pubblicazione copia i file **dal working tree**: con CRLF sul
-# disco finirebbero CRLF nel repository pubblico, che è l'artefatto che l'utente riceve.
+# disco finirebbero CRLF nei repository pubblici, che sono l'artefatto che l'utente riceve.
 #
-# `eol=lf` scavalca `core.autocrlf` e tiene LF su entrambi i lati. Il pacchetto è fatto di .md,
-# .json e .mjs: nessuno di questi ha bisogno di CRLF, su nessun sistema.
+# `eol=lf` scavalca `core.autocrlf` e tiene LF su entrambi i lati. I due prodotti sono fatti di
+# .md, .json, .mjs e .ts: nessuno di questi ha bisogno di CRLF, su nessun sistema.
 #
 # Se un giorno entra un .bat o un .cmd, quello va marcato `eol=crlf` a parte: sono gli unici
 # file che CRLF lo pretendono davvero.

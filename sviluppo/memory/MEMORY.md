@@ -4,8 +4,9 @@ Indice delle memorie del progetto. Una riga per file, nessun contenuto qui dentr
 
 - [Alberatura del pacchetto](alberatura-pacchetto.md) — cosa contiene ogni cartella e a cosa serve, i nomi che si somigliano e non c'entrano, le tre regole di collocazione
 - [Il corpus di sviluppo](corpus-di-sviluppo.md) — i contratti in `.claude/` sono una derivazione di quelli del prodotto: in cosa divergono, perché non si toccano, e su quale premessa sono rimasti indietro
-- [Si pubblica solo il prodotto](si-pubblica-solo-il-prodotto.md) — due repository: qui si sviluppa con tutto dentro, su GitHub si pubblica un albero generato dallo script
-- [Pubblicazione su GitHub](pubblicazione-su-github.md) — perché il repo pubblico va su GitHub e non su GitLab, e cosa ripulire prima di crearlo
+- [Si pubblica solo il prodotto](si-pubblica-solo-il-prodotto.md) — tre repository: qui si sviluppa con tutto dentro, su GitHub si pubblicano Daiku e Kaji come alberi generati dagli script
+- [Il monorepo Daiku + Kaji](monorepo-daiku-kaji.md) — due prodotti autonomi nello stesso repository: dove sta ciascuno, cosa condividono, e la regola che nessuno legge i file dell'altro
+- [Pubblicazione su GitHub](pubblicazione-su-github.md) — i tre repository stanno su GitHub, lo sviluppo privato è daiku-kaji-dev, e cosa ricontrollare prima di pubblicare
 - [La memoria vive nel repo](memoria-nel-repo.md) — perché `autoMemoryDirectory` non si versiona e va riscritto su ogni macchina
 - [Il frontmatter di una skill va quotato](frontmatter-skill-va-quotato.md) — il guasto silenzioso che svuota i metadati di una SKILL.md
 - [init scrive il file di istruzioni](init-scrive-le-istruzioni.md) — il divieto ribaltato il 19 settembre 2026, le tre cose che lo contengono, e l'inglese di tutto ciò che init deposita

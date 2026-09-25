@@ -5,8 +5,11 @@ comportamento e criteri di accettazione; questo file definisce **come** costruir
 moduli, i contratti e le decisioni tecniche con il loro falsificatore.
 
 Macchina di partenza del documento originale: Node 22.23.2, npm 10.9.8, VS Code 1.139.0,
-repository GitLab locale. Il primo target resta una **VS Code extension TypeScript impacchettata in
-VSIX**, senza marketplace obbligatorio.
+repository di sviluppo privato su GitHub, condiviso con Daiku. Il primo target resta una **VS Code
+extension TypeScript impacchettata in VSIX**, senza marketplace obbligatorio.
+
+Tutti i path di questo documento — `src/`, `test/`, `package.json` — sono relativi alla radice del
+prodotto, `extensions/kaji/`, che diventa la radice del repository pubblico di Kaji.
 
 Il cambiamento architetturale principale rispetto al progetto precedente è uno solo, ma sposta tutti
 i confini:
@@ -42,7 +45,7 @@ i confini:
 | P19 | Limits | **finestre arbitrarie, mai 5h/7d hardcoded** | alto |
 | P20 | Logging | **LogOutputChannel strutturato, redaction obbligatoria** | alto |
 | P21 | i18n | **italiano centralizzato, nessun framework l10n iniziale** | poco |
-| P22 | CI | **un job GitLab: check + package + fixture tests** | poco |
+| P22 | CI | **un job GitHub Actions: check + package + fixture tests** | poco |
 | P23 | Runtime deps | **budget piccolo, ogni dipendenza con motivo** | medio |
 
 ---
@@ -1289,8 +1292,7 @@ Ogni nuova runtime dependency deve dire:
 ## 30. package.json / manifest
 
 Working name ancora da decidere; non fissare definitivamente `publisher.name` finché il rename non è
-scelto. Per il repository attuale il VSIX locale può mantenere l'identità esistente durante lo
-sviluppo.
+scelto. Durante lo sviluppo il VSIX locale può mantenere l'identità di lavoro.
 
 Contributions previste:
 
@@ -1612,7 +1614,8 @@ Catalog/pricing sono input non fidato anche se arrivano da sito ufficiale.
 
 ## 41. CI
 
-`.gitlab-ci.yml`, un job iniziale:
+`.github/workflows/kaji.yml` nel repository di sviluppo, un job iniziale con
+`working-directory: extensions/kaji`, lanciato solo quando cambia qualcosa sotto quel path:
 
 ```text
 node:22

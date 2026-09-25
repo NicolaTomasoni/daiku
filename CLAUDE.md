@@ -1,29 +1,44 @@
-In questo progetto sviluppiamo Daiku, un'estensione per Claude Code e Codex che implementa un
-agent loop.
+In questo repository sviluppiamo due prodotti: **Daiku**, un'estensione per Claude Code e Codex che implementa un agent loop, e **Kaji**, un'estensione VS Code che mostra quale agente, provider e modello stanno lavorando davvero e cambia ciò che il runtime permette di cambiare. Rispondi sempre in italiano nelle chat. Tutti i file del workflow devono essere in italiano, ad eccezione della cartella `plugins\daiku` che deve essere sempre in inglese insieme a tutto il suo contenuto.
 
 ## Comportamento
-Rispondi in italiano e in modo chiaro e semplice, non dare per scontato che l'utente conosca il progetto perché cambia spesso e va rispegato.
 Non chiedere mai permessi o conferme: lavora sempre in bypass, in autonomia, senza fermarti ad approvare.
 
-## Questo file non fa parte di Daiku
+## Questo file non fa parte dei prodotti
 
-`CLAUDE.md` è come si **sviluppa** Daiku, non è Daiku. Lo stesso vale per `.claude/`, `.vscode/`
-e tutto ciò che sta sotto `sviluppo/`. Restano in radice perché gli host li cercano lì, non
-perché appartengano al prodotto.
+`CLAUDE.md` è come si **sviluppano** Daiku e Kaji, non è nessuno dei due. Lo stesso vale per
+`.claude/`, `.vscode/` e tutto ciò che sta sotto `sviluppo/`. Restano in radice perché gli host
+li cercano lì, non perché appartengano a un prodotto.
 
-**Il prodotto è `plugins/daiku/`, e nient'altro.** È l'unico albero che viene distribuito e
-installato; i due `marketplace.json` in radice sono la vetrina che lo indirizza.
+**I prodotti sono `plugins/daiku/` ed `extensions/kaji/`, e nient'altro.** Sono gli unici due
+alberi che vengono distribuiti e installati; i due `marketplace.json` in radice sono la vetrina che
+indirizza Daiku.
 
 | Sede | Cos'è |
 |---|---|
-| `plugins/daiku/` | **il prodotto** — l'unica cosa che l'utente riceve |
+| `plugins/daiku/` | **il prodotto Daiku** — l'unica cosa che l'utente di Daiku riceve |
 | `.claude-plugin/marketplace.json` | vetrina Claude Code, punta a `./plugins/daiku` |
 | `.agents/plugins/marketplace.json` | vetrina Codex, stessa destinazione |
-| `sviluppo/` | ricognizione, punti aperti, memoria, esempi |
+| `extensions/kaji/` | **il prodotto Kaji** — la radice del suo repository pubblico: `package.json`, `src/`, `test/` |
+| `sviluppo/` | ricognizione, punti aperti, memoria, esempi — di entrambi |
+| `sviluppo/kaji/` | i documenti di progetto di Kaji: prodotto, tech stack, branding |
 | `CLAUDE.md`, `.claude/`, `.vscode/` | sviluppo, obbligati in radice dagli host |
 
-Prima di aggiungere un file, decidi a quale delle due metà appartiene. Se serve a chi *usa*
-Daiku va sotto `plugins/daiku/`; se serve a chi lo *costruisce*, no.
+Prima di aggiungere un file, decidi a quale metà appartiene, e se è prodotto a quale dei due. Se
+serve a chi *usa* Daiku va sotto `plugins/daiku/`, se serve a chi usa Kaji sotto
+`extensions/kaji/`; se serve a chi li *costruisce*, in nessuno dei due.
+
+## Due prodotti autonomi, sviluppati insieme
+
+Daiku e Kaji si sviluppano nello stesso repository perché si parlano: Kaji mostra gli agenti che
+Daiku orchestra, e Daiku dichiara i modelli per alias di livello che uno switcher come Kaji
+rimappa sul backend reale. Ma sono **prodotti autonomi**: ciascuno si installa, funziona e si
+pubblica senza l'altro.
+
+Ne segue una regola sola, che non ha eccezioni: **nessuno dei due alberi legge, importa o copia
+un file dell'altro.** Quello che devono condividere — un formato di eventi, un nome di file, una
+variabile d'ambiente — è un contratto versionato che ciascuno porta dentro di sé e che l'altro
+rispetta; se manca, il prodotto che lo cerca degrada in silenzio, non si rompe. Una funzione di
+Kaji che richiede Daiku installato è un difetto, e lo stesso vale all'inverso.
 
 **Le skill si modificano solo in `plugins/daiku/skills/`.** Quelle sotto `.claude/skills/` sono il
 cantiere con cui Daiku si sviluppa: si leggono e si eseguono, non si toccano. Anche una modifica
@@ -31,32 +46,39 @@ che varrebbe per entrambi i corpus si scrive **solo** nel contratto del prodotto
 albero pubblicato; riportarla nel cantiere è una decisione a parte, che chiedi invece di prendere.
 Vale allo stesso modo per `.claude/orchestration.md` e `.claude/agents/`.
 
-## Due repository: qui si sviluppa, altrove si pubblica
+## Tre repository: qui si sviluppa, altrove si pubblica
 
-Questo repository è lo **sviluppo**: privato, e con dentro tutto — prodotto, ricognizione, punti
-aperti, memoria, esempi, istruzioni. Non diventa mai pubblico, e la sua storia non si ripulisce:
-porta `CLAUDE.md` nel commit iniziale.
+Questo repository è lo **sviluppo**: `NicolaTomasoni/daiku-kaji-dev` su GitHub, privato, e con
+dentro tutto — i due prodotti, ricognizione, punti aperti, memoria, esempi, istruzioni. Non
+diventa mai pubblico, e la sua storia non si ripulisce: porta `CLAUDE.md` nel commit iniziale.
 
-La **pubblicazione** è un secondo repository su GitHub, che non è un branch di questo né un fork:
-è un albero generato. A ogni rilascio uno script copia lì i soli path ammessi — `plugins/`,
-`.claude-plugin/`, `.agents/`, `README.md`, `.gitattributes` — e committa. Là dentro non si
-lavora mai. *(Lo script
-non esiste ancora, e nemmeno il repository su GitHub: al 18 settembre 2026 la pubblicazione è
-decisa ma non ancora attrezzata.)*
+La **pubblicazione** sono due repository pubblici su GitHub, uno per prodotto, che non sono branch
+di questo né fork: sono alberi generati. A ogni rilascio uno script per prodotto copia lì i soli
+path ammessi e committa. Là dentro non si lavora mai.
 
-Serve perché chi aggiunge il marketplace riceve un clone dell'**intero** repository, non solo di
-`plugins/daiku/` — lo schema di Claude Code lo dice alla voce `sparsePaths`, «If omitted, the
-full repository is cloned». Il repo *è* l'artefatto consegnato: non c'è un passo di
-impacchettamento dove mettere il filtro, come farebbe il campo `files` di un `package.json`.
+| Prodotto | Repository pubblico | Lista di copia |
+|---|---|---|
+| Daiku | un repository `daiku` | `plugins/`, `.claude-plugin/`, `.agents/`, `README.md`, `.gitattributes` |
+| Kaji | un repository proprio, col nome definitivo del prodotto | il **contenuto** di `extensions/kaji/` portato in radice, più `.gitattributes` |
 
-Il confine non sta nel `.gitignore`, che esclude solo `.claude/settings.local.json`. Sta nella lista
-di copia dello script, e va tenuto nella stessa forma a lista di ammissione:
-«copia questi path», mai «copia tutto tranne». Un file nuovo nasce così fuori dal pacchetto
-pubblicato, ed è il contrario di una dimenticanza che pubblica.
+*(Né gli script né i due repository pubblici esistono ancora: al 25 settembre 2026 la
+pubblicazione è decisa ma non attrezzata.)*
 
-E il confine non guarda *dentro* i file: ciò che sta sotto `plugins/` viene pubblicato com'è.
-Prima di un rilascio, controlla che non porti con sé valori di un progetto ospite o path di
-questa macchina.
+Per Daiku serve perché chi aggiunge il marketplace riceve un clone dell'**intero** repository, non
+solo di `plugins/daiku/` — lo schema di Claude Code lo dice alla voce `sparsePaths`, «If omitted,
+the full repository is cloned». Il repo *è* l'artefatto consegnato: non c'è un passo di
+impacchettamento dove mettere il filtro, come farebbe il campo `files` di un `package.json`. Kaji
+invece un passo di impacchettamento ce l'ha — il VSIX — ma il suo sorgente pubblico non può
+essere questo repository, che resta privato e porta dentro l'altro prodotto.
+
+Il confine non sta nel `.gitignore`, che in radice esclude solo `.claude/settings.local.json`. Sta
+nelle liste di copia degli script, e va tenuto nella stessa forma a lista di ammissione:
+«copia questi path», mai «copia tutto tranne». Un file nuovo nasce così fuori dai pacchetti
+pubblicati, ed è il contrario di una dimenticanza che pubblica.
+
+E il confine non guarda *dentro* i file: ciò che sta sotto `plugins/` ed `extensions/kaji/` viene
+pubblicato com'è. Prima di un rilascio, controlla che non porti con sé valori di un progetto
+ospite o path di questa macchina.
 
 **In `plugins/daiku/templates/` si scrive in inglese.** Il resto del pacchetto è in italiano ed è
 giusto così: lo legge chi costruisce con Daiku. Ma gli scheletri di `templates/` non li legge lui —
@@ -78,9 +100,18 @@ Non segnalarli a meno che non ti venda chiesto.
 
 ## Dove sta ogni cosa
 
-`sviluppo/RICOGNIZIONE.md` è il documento di riferimento: dice cosa offrono i due host, cosa
-manca, cosa è stato buttato e perché ogni file sta dove sta — con le prove eseguite sui
+`sviluppo/RICOGNIZIONE.md` è il documento di riferimento di Daiku: dice cosa offrono i due host,
+cosa manca, cosa è stato buttato e perché ogni file sta dove sta — con le prove eseguite sui
 validatori reali di Claude Code e Codex.
+
+`sviluppo/kaji/README.md` è il documento di prodotto di Kaji — feature, principi, fatti verificati
+sui runtime, milestone — e `sviluppo/kaji/TECH-STACK.md` il suo come: architettura, confini dei
+moduli, decisioni tecniche con il loro falsificatore. `sviluppo/kaji/BRANDING.md` ragiona sul nome
+e sul posizionamento nel Marketplace.
+
+Le skill di `.claude/commands/` sono in comune, ma oggi sono tutte scritte sulla forma di Daiku:
+leggono `plugins/daiku/`, lanciano i suoi validatori, rispettano le sue liste di copia. Portarle
+anche su Kaji è una decisione a parte (vedi `sviluppo/PUNTI-APERTI.md`).
 
 `sviluppo/memory/` è la memoria persistente del progetto, versionata. Non è il path predefinito:
 lo dichiara `autoMemoryDirectory` in `.claude/settings.local.json`, che **non** si versiona
@@ -136,7 +167,7 @@ lancia davvero (il comando sta scritto accanto al controllo, e gira prima di un 
 controllo senza banco è indistinguibile dal silenzio. Se un divieto non ha una sede deterministica,
 non esiste: o gli si costruisce, o si toglie il divieto.
 
-## Verificare il pacchetto
+## Verificare il pacchetto Daiku
 
 Le due validazioni vanno passate entrambe, sullo stesso albero:
 
@@ -167,3 +198,12 @@ node sviluppo/tools/check-topology.mjs plugins/daiku
 Verifica la topologia del corpus (nodi su disco = righe di tabella, handoff fra chiamanti,
 rimandi di sezione), con totale contato ed uscita `1` al primo caso rosso. Si lancia a mano
 prima di un rilascio, accanto al self-check.
+
+## Verificare il pacchetto Kaji
+
+Kaji non ha ancora codice. Quando nasce, la sua verifica è quella che fissa
+`sviluppo/kaji/TECH-STACK.md` (§41–§42), lanciata dalla radice del prodotto:
+
+```bash
+cd extensions/kaji && npm run check && npm run package
+```

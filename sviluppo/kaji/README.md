@@ -1,10 +1,14 @@
 # agent-router-extension — documento di prodotto
 
-> **Nome di lavoro.** Il repository di partenza si chiama `claude-code-router-extension`, ma il
-> prodotto descritto qui non è più solo per Claude Code: supporta **Claude Code e Codex** attraverso
-> adapter separati, con un core comune. Prima del primo release pubblico va deciso il nome definitivo;
-> fino ad allora `CCR` resta il prefisso dei comandi per non introdurre un rename cosmetico mentre
-> l'architettura è ancora in costruzione.
+> **Nome di lavoro.** Il prodotto si chiama **Kaji** finché non ha un nome definitivo, e non è solo
+> per Claude Code: supporta **Claude Code e Codex** attraverso adapter separati, con un core comune.
+> Prima del primo release pubblico va deciso il nome definitivo (vedi `BRANDING.md`); fino ad allora
+> `CCR` resta il prefisso dei comandi per non introdurre un rename cosmetico mentre l'architettura è
+> ancora in costruzione.
+>
+> **Dove vive.** Kaji si sviluppa nel monorepo privato di Daiku: il prodotto sta in
+> `extensions/kaji/`, questi documenti in `sviluppo/kaji/`. È un prodotto autonomo — si installa,
+> funziona e si pubblica senza Daiku, in un repository pubblico suo.
 
 Documento rigenerato il **24 settembre 2026** prima di iniziare lo sviluppo. Sostituisce il README
 precedente: conserva i vincoli già verificati, incorpora le decisioni emerse successivamente e
