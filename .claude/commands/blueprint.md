@@ -31,7 +31,7 @@ Argomenti: `$ARGUMENTS`
 - Se le decisioni nel documento sono più d'una, raccogli **tutte** le scelte (una per decisione)
   prima di generare il brief, e **verifica che siano reciprocamente coerenti**. Se sono
   incompatibili, segnalalo e chiedi come risolvere.
-- Con la cartella ricevi anche `sviluppo/memory/MEMORY.md` e i **path** delle memorie che il
+- Con la cartella ricevi anche `.docs/memory/MEMORY.md` e i **path** delle memorie che il
   perimetro tocca, da aprire prima di decidere (§4.1 di `.claude/orchestration.md`). Se il chiamante
   non te li passa, apri l'indice e scegli tu: un brief che ignora un fatto già accertato lo fa
   riscoprire all'esecutore a sue spese.
@@ -46,7 +46,7 @@ questi, perché un brief che non li ha letti produce task che non reggono:
   più il confine e non c'è nessuna lista di ammissione da aggiornare. Un task che crea un file fuori
   da `plugins/` va detto esplicitamente; un task che ne crea uno dentro **pubblica**, e il brief deve
   dirlo.
-- **`sviluppo/RICOGNIZIONE.md`** — i fatti verificati sui due host. Se il piano tocca manifest,
+- **`.docs/RICOGNIZIONE.md`** — i fatti verificati sui due host. Se il piano tocca manifest,
   marketplace, frontmatter di una skill o collocazione di un file, il capitolo 3 dice già cosa i
   validatori accettano e rifiutano.
 - **I file che la soluzione tocca**, letti davvero. Il documento di decisione è ad alta astrazione

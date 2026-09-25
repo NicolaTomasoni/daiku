@@ -365,7 +365,7 @@ const CASI = [
   // --- lavorare normalmente nel cantiere: permesso
   ['git status nel repo', bash('git status'), false],
   ['gate del cantiere', bash('claude plugin validate plugins/daiku'), false],
-  ['scrivere un file di sviluppo', scrive('C:/dev/Daiku/sviluppo/note.md'), false],
+  ['scrivere un file di sviluppo', scrive('C:/dev/Daiku/.docs/note.md'), false],
   ['modificare una skill del prodotto', modifica('C:/dev/Daiku/plugins/daiku/skills/init/SKILL.md'), false],
 
   // --- esecuzione del target: negato, in ogni forma

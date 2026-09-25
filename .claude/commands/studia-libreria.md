@@ -1,11 +1,11 @@
 ---
-description: 'Studia una libreria, una tecnologia o un host dalle fonti reali e produce un md di appunti operativi in sviluppo/appunti-lib'
+description: 'Studia una libreria, una tecnologia o un host dalle fonti reali e produce un md di appunti operativi in .docs/appunti-lib'
 argument-hint: '[nome libreria/tecnologia/host]'
 ---
 
 Studia in autonomia una libreria, una tecnologia o un host dalle **fonti reali** (specifiche di
 prima parte su disco, docs ufficiali, repo, package registry) e produci un **unico file markdown di
-appunti operativi** in `sviluppo/appunti-lib/`. Lavora in **due passaggi**: prima raccogli in
+appunti operativi** in `.docs/appunti-lib/`. Lavora in **due passaggi**: prima raccogli in
 append, poi riorganizzi.
 
 Serve a colmare i buchi di conoscenza del modello — cutoff, tecnologie giovani, API in evoluzione —
@@ -22,11 +22,11 @@ L'argomento è il **nome** di ciò che va studiato (es. `codex plugin`, `claude 
 
 - Se `$ARGUMENTS` è vuoto, **chiedi** cosa studiare e fermati finché non lo ricevi.
 - Deriva uno **slug** kebab-case dal nome (es. `codex plugin` → `codex-plugin`). Il file target è
-  `sviluppo/appunti-lib/<slug>.md`. **Un solo md per tecnologia.**
-- Se `sviluppo/appunti-lib/<slug>.md` **esiste già**, non ripartire da zero: leggilo, tratta il
+  `.docs/appunti-lib/<slug>.md`. **Un solo md per tecnologia.**
+- Se `.docs/appunti-lib/<slug>.md` **esiste già**, non ripartire da zero: leggilo, tratta il
   lavoro come un **aggiornamento/estensione** (colma i buchi, aggiorna la versione, aggiungi ciò
   che manca) e poi riorganizza. Non duplicare ciò che c'è già.
-- Crea la cartella `sviluppo/appunti-lib/` se non esiste.
+- Crea la cartella `.docs/appunti-lib/` se non esiste.
 
 ## La regola che vale solo qui: la prima parte batte il web
 
@@ -48,7 +48,7 @@ Quando una pagina web e un validatore su disco dicono cose diverse, **ha ragione
 e il disallineamento si scrive negli appunti: è successo già una volta, con la sezione «Field
 guide» che mostrava `"hooks": "./hooks.json"` in un manifest che il validatore rifiuta.
 
-Prima di aprire il browser, guarda se `sviluppo/RICOGNIZIONE.md` risponde già: il capitolo 3
+Prima di aprire il browser, guarda se `.docs/RICOGNIZIONE.md` risponde già: il capitolo 3
 raccoglie prove eseguite sui validatori reali di entrambi gli host, con la data. Se risponde e ti
 sembra superato, verificalo — non riscriverlo a memoria.
 
@@ -106,7 +106,7 @@ ancora dell'ordine.
      release, **fidati della release** e segnala il disallineamento nel file.
    - Registra **versione esatta + data di rilascio + data odierna di raccolta**.
 
-2. **Crea (o apri) il file** `sviluppo/appunti-lib/<slug>.md`. Se nuovo, scrivi un header minimo:
+2. **Crea (o apri) il file** `.docs/appunti-lib/<slug>.md`. Se nuovo, scrivi un header minimo:
    titolo, riga con fonte primaria + versione + data, nota sul cutoff del modello, e una sezione
    «Meta e fonti» con gli URL e i path trovati e le convenzioni (`[da verificare]`, «verbatim»).
 
@@ -169,6 +169,6 @@ verbatim.
 
 Al termine, riferisci in sintesi: il path del file prodotto, la versione e la data di ciò che hai
 studiato, i blocchi coperti, e i punti rimasti `[da verificare]` — sono i posti dove non fidarti
-prima di controllare. Se hai trovato un fatto che smentisce `sviluppo/RICOGNIZIONE.md`, **dillo
+prima di controllare. Se hai trovato un fatto che smentisce `.docs/RICOGNIZIONE.md`, **dillo
 esplicitamente**: quel documento è la base su cui poggiano le decisioni del pacchetto, e una sua
 riga superata vale più di dieci righe di appunti nuovi.

@@ -20,7 +20,7 @@ l'unico modo di vederla è rivedere i fix.
 ## Il perimetro di questo progetto
 
 **Scope: `plugins/daiku/`, e nient'altro.** Nessun file esterno entra nei finder o nei fix, anche se
-modificato, non tracciato o citato nelle review-notes. `CLAUDE.md`, `sviluppo/` e `.claude/` sono di
+modificato, non tracciato o citato nelle review-notes. `CLAUDE.md`, `.docs/` e `.claude/` sono di
 `update-memory`, che il contratto di commit delega da sé.
 
 Cosa c'è dentro quel perimetro, perché i finder guardino la cosa giusta:
@@ -99,7 +99,7 @@ resta alcun file, fermati**: non c'è nulla da rivedere, dillo e chiudi.
    un `HEAD` ricalcolato. I fix che applichi entrano nel diff: se ricalcolassi la base a ogni giro,
    lo scope si sposterebbe sotto i piedi al ciclo.
 
-2. **Apri il ledger**: `sviluppo/runtime/review/review-ledger-<BASE breve>-<HHMMSS di avvio>.json`
+2. **Apri il ledger**: `.docs/runtime/review/review-ledger-<BASE breve>-<HHMMSS di avvio>.json`
    (le prime sette cifre dello SHA, l'orario di avvio), creando la cartella se non esiste — alla
    prima review di questo repository non c'è. È il file che rende economici i giri successivi. Il nome porta baseline e orario perché più review possono girare nella stessa
    sessione. La sede è **stabile**: un file su disco, non uno stato che scade con la sessione.
@@ -211,7 +211,7 @@ Nel prompt di ciascun finder metti **solo ciò che cambia**, già risolto:
 - il livello di **effort** del ciclo;
 - dal giro 2: **applicati** e **scartati** dei giri precedenti, letti dal ledger;
 - `CLAUDE.md`, e — se il diff tocca contratti, manifest o collocazione di file —
-  `sviluppo/RICOGNIZIONE.md`: sono le due fonti contro cui si misura una violazione, e un finder che
+  `.docs/RICOGNIZIONE.md`: sono le due fonti contro cui si misura una violazione, e un finder che
   non le ha citerà regole che non esistono;
 - il vincolo di **sola lettura**, ripetuto: l'agent `finder` non ha Edit né Write, ma ha `Bash`, e
   lì il confine non è imposto da nessuno.
@@ -254,7 +254,7 @@ proprio: quello che deve fare sta qui, e nel prompt glielo passi per intero.
   `cambiamento`, `descrizione`;
 - gli **applicati dei giri precedenti** dal ledger (`file`, `simbolo`, `ancora`, `cosa`);
 - lo scope del giro e la `BASE`;
-- `CLAUDE.md` e `sviluppo/memory/MEMORY.md` più i path delle memorie che lo scope tocca, da aprire
+- `CLAUDE.md` e `.docs/memory/MEMORY.md` più i path delle memorie che lo scope tocca, da aprire
   prima di decidere (§4.1 di `.claude/orchestration.md`);
 - il vincolo di perimetro: **scrive solo sotto `plugins/daiku/`**, mai `git add`, mai `git commit`,
   mai `git push`.
@@ -398,8 +398,8 @@ attende il ritorno del figlio come fa l'host.
 file.
 
 Poi gira i comandi della §7 nell'ordine che quella sezione dichiara, selezionandoli con la sua
-condizione: l'elenco ricalcolato dice se il perimetro tocca `plugins/daiku/hooks/` e se ci sono file
-nuovi. **Riporta l'esito reale di ciascuno**, compresi i totali `checks` dei banchi e l'esito di
+condizione: l'elenco ricalcolato dice se il perimetro tocca `plugins/daiku/hooks/`, se tocca testo
+che arriva al modello e se ci sono file nuovi. **Riporta l'esito reale di ciascuno**, compresi i totali `checks` dei banchi e l'esito di
 ogni `check-ignore`: sono le due cose che un verde nudo non dice.
 
 **Correggi da te solo ciò che è meccanico**, dentro l'elenco ricalcolato e a significato invariato:
@@ -491,7 +491,7 @@ portare due commit distinti e l'ultimo non è quello del codice.
    marketplace.
 
 3. **Memoria e documentazione non sono un tuo compito né un compito dell'owner.** Il vincolo «solo
-   `plugins/daiku/`» resta: `CLAUDE.md` e `sviluppo/` sono competenza di `update-memory`, che
+   `plugins/daiku/`» resta: `CLAUDE.md` e `.docs/` sono competenza di `update-memory`, che
    `commit` delega **sempre**. Quindi **non chiudere mai con un promemoria** del tipo «ricordati di
    aggiornare la ricognizione»: una riga che gira quel lavoro a chi legge non lo rende più sicuro —
    lo rende solo probabile che non avvenga.

@@ -61,7 +61,7 @@ scelto è `null`.
   "verdetto": "<la sintesi di apertura della revisione scettica, o null allo stadio tecnico>",
   "fix_applicati": ["<file e cosa hai corretto, uno per fix della Fase 2>"],
   "decisioni": "<la lista della Fase 3 verbatim in markdown, oppure, allo stadio tecnico, titolo e opzione consigliata di ogni decision card>",
-  "punti_aperti_toccati": ["<il numero e il titolo di ogni voce di sviluppo/PUNTI-APERTI.md che questa cartella tocca>"],
+  "punti_aperti_toccati": ["<il numero e il titolo di ogni voce di .docs/PUNTI-APERTI.md che questa cartella tocca>"],
   "aperto": ["<cosa resta da decidere, o quale dato mancava per decidere davvero>"]
 }
 ```
@@ -74,7 +74,7 @@ una lista riassunta è una lista a cui l'owner risponde con meno di quanto hai s
 Argomenti: `$ARGUMENTS`
 
 Il primo argomento è **una sola cartella**, come path relativo dalla radice del repository o
-assoluto — normalmente `sviluppo/nuovi-sviluppi/<slug>/`. Può seguire una clausola tipo «analizza
+assoluto — normalmente `.docs/nuovi-sviluppi/<slug>/`. Può seguire una clausola tipo «analizza
 solo <sottoinsieme>».
 
 - Se `$ARGUMENTS` è vuoto, **chiedi** quale cartella usare. Non procedere a vuoto.
@@ -91,17 +91,17 @@ solo <sottoinsieme>».
 
 Prima di analizzare, apri:
 
-1. **`sviluppo/PUNTI-APERTI.md`** — le decisioni che l'owner non ha ancora preso. Se una decisione
+1. **`.docs/PUNTI-APERTI.md`** — le decisioni che l'owner non ha ancora preso. Se una decisione
    che stai per porre **è** uno di quei punti, non chiuderla: portala come decisione, con il
    riferimento al numero, e mettila in `punti_aperti_toccati`. Una decisione di quella lista chiusa
    dentro una cartella di lavoro è una decisione presa da te al posto suo.
-2. **`sviluppo/RICOGNIZIONE.md`** — i fatti verificati sui due host, con le prove eseguite e la
+2. **`.docs/RICOGNIZIONE.md`** — i fatti verificati sui due host, con le prove eseguite e la
    data. Un'opzione che quel documento ha già dimostrato impossibile (un manifest Codex che porta
    `hooks`, una skill di sola consultazione dichiarata nel frontmatter) non è un'opzione: citala
    come vincolo, non come strada.
 3. **`CLAUDE.md`** — gli invarianti di sviluppo: la divisione fra prodotto e sviluppo, la regola di
    pubblicazione, come si verifica il pacchetto.
-4. **`sviluppo/memory/MEMORY.md`** e le memorie che l'area tocca. Se il chiamante non te le passa,
+4. **`.docs/memory/MEMORY.md`** e le memorie che l'area tocca. Se il chiamante non te le passa,
    apri l'indice e scegli tu — sei il nodo che apre lo stadio decisionale, quindi quei path non te
    li passa nessuno, e un fatto già accertato che non hai letto lo riapri senza accorgertene.
 
@@ -221,7 +221,7 @@ Regole: 2–4 opzioni per decisione, **mutuamente esclusive**, ciascuna autosuff
 gravità; chiudi invitando a rispondere nel formato `1A, 2B, ...` — ammesse risposte libere che
 prevalgono sulle opzioni proposte.
 
-Se una decisione coincide con un punto di `sviluppo/PUNTI-APERTI.md`, **dillo nella riga del
+Se una decisione coincide con un punto di `.docs/PUNTI-APERTI.md`, **dillo nella riga del
 problema** con il suo numero: l'owner deve poter vedere che sta rispondendo lì a una domanda che
 aveva già messo in lista, e che la risposta va riportata anche in quel file.
 
@@ -234,7 +234,7 @@ Quando l'owner risponde:
 - **chiudi ogni decisione in `0.5. studio-strategico.md`**, dove è scritta: l'opzione scelta, la
   data, e dove è stata recepita. Le opzioni scartate restano — servono a chi un domani chiede perché
   non si è fatto altrimenti;
-- se una decisione chiudeva un punto di `sviluppo/PUNTI-APERTI.md`, **aggiorna anche quel file**:
+- se una decisione chiudeva un punto di `.docs/PUNTI-APERTI.md`, **aggiorna anche quel file**:
   la voce esce dalla lista con la risposta e la data. Una lista di decisioni aperte che contiene
   decisioni già prese smette di essere letta;
 - se una risposta è una direttiva libera, prevale sulle opzioni: applicala;

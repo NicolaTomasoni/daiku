@@ -24,8 +24,8 @@ Daiku*).
   sul **branch corrente dell'albero principale**: è l'owner ad aprire un branch, se vuole isolare
   una consegna. **La regola non ha una motivazione scritta**, ed è dichiarato qui perché non la si
   scambi per una dimenticanza: a un worktree di questo repository non mancherebbe niente —
-  conterrebbe anche `CLAUDE.md`, `sviluppo/` e questo corpus, che il repository traccia come il
-  prodotto. La decisione è dell'owner (`sviluppo/PUNTI-APERTI.md`, voce 5).
+  conterrebbe anche `CLAUDE.md`, `.docs/` e questo corpus, che il repository traccia come il
+  prodotto. La decisione è dell'owner.
 
 ## Le sedi di questo progetto
 
@@ -38,14 +38,16 @@ Ogni path è **relativo alla radice del repository** (`C:/dev/Daiku`), con separ
 | `.claude/orchestration.md` | questo file |
 | `.claude/commands/<nome>.md` | i contratti di sviluppo; un subagent ne riceve il **path**, non il nome |
 | `.claude/agents/finder.md` | il subagent a toolset ristretto dei finder di `/review` |
-| `sviluppo/RICOGNIZIONE.md` | il documento di riferimento: i due host, cosa manca, perché ogni file sta dove sta |
-| `sviluppo/PUNTI-APERTI.md` | le decisioni ancora da prendere |
-| `sviluppo/memory/` + `sviluppo/memory/MEMORY.md` | la memoria persistente e il suo indice |
-| `sviluppo/nuovi-sviluppi/<slug>/` | la cartella di un lavoro, con i file numerati `0.`–`5.` ◦ |
-| `sviluppo/appunti-lib/<slug>.md` | gli appunti che `studia-libreria` deposita ◦ |
-| `sviluppo/consegne.md` | il registro append-only delle consegne di `deliver-feature` ◦ |
-| `sviluppo/runtime/review/` | i ledger dei giri di `review`, uno per ciclo ◦ |
-| `sviluppo/esempi/reforgia/` | dominio e politiche di ReforgIA, come esempio compilato |
+| `.docs/RICOGNIZIONE.md` | il documento di riferimento: i due host, cosa manca, perché ogni file sta dove sta |
+| `.docs/PUNTI-APERTI.md` | le decisioni ancora da prendere |
+| `.docs/memory/` + `.docs/memory/MEMORY.md` | la memoria persistente e il suo indice |
+| `.docs/nuovi-sviluppi/<slug>/` | la cartella di un lavoro, con i file numerati `0.`–`5.` ◦ |
+| `.docs/appunti-lib/<slug>.md` | gli appunti che `studia-libreria` deposita ◦ |
+| `.docs/consegne.md` | il registro append-only delle consegne di `deliver-feature` ◦ |
+| `.docs/runtime/review/` | i ledger dei giri di `review`, uno per ciclo ◦ |
+| `.docs/esempi/reforgia/` | dominio e politiche di ReforgIA, come esempio compilato |
+| `.docs/tools/` | gli strumenti di chi sviluppa: `check-topology.mjs` per il gate, `repo-intelligence/` |
+| `.docs/audit/` | i report del prompt audit, con il diff che propongono |
 
 Le sedi marcate **◦ non esistono ancora**: le crea il contratto che le usa, al primo uso. Non sono
 un'omissione da riparare a mano — una cartella vuota non dice niente a nessuno, e un registro vuoto
@@ -119,15 +121,15 @@ rende un passo ripetibile.
    tua conversazione.
 
    **Memoria pertinente.** A un passo che scrive, o che decide cosa scrivere, passi anche
-   `sviluppo/memory/MEMORY.md` e i **path** delle memorie che il suo perimetro tocca — quelle che
+   `.docs/memory/MEMORY.md` e i **path** delle memorie che il suo perimetro tocca — quelle che
    hai già in mano, scelte sull'indice — con l'istruzione di aprirle prima di lavorare. Non
    riassumerle nel prompt: un fatto riassunto diverge dal suo file al primo aggiornamento. Se
    nessuna memoria è pertinente, passi solo l'indice. È il canale per cui i fatti non deducibili
    dal repository raggiungono chi parte da zero.
 
    **Documenti di riferimento.** Per un lavoro che tocca la forma del pacchetto, i due host o la
-   collocazione di un file, al prompt si aggiunge `sviluppo/RICOGNIZIONE.md` — e
-   `sviluppo/PUNTI-APERTI.md` quando il lavoro rischia di decidere per conto proprio qualcosa che
+   collocazione di un file, al prompt si aggiunge `.docs/RICOGNIZIONE.md` — e
+   `.docs/PUNTI-APERTI.md` quando il lavoro rischia di decidere per conto proprio qualcosa che
    è già in quella lista. Un subagent che non li ha riscopre a sue spese prove già eseguite sui
    validatori reali, e nel caso peggiore chiude da solo una decisione che è dell'owner.
 
@@ -192,8 +194,8 @@ contenuto vive nel file del nodo, che resta l'unico posto in cui si modifica.
 
 | Nodo | Chi lo invoca | Riceve già risolto | Restituisce | Ri-delega |
 |---|---|---|---|---|
-| `studia-libreria` | owner | nome della tecnologia | appunti in `sviluppo/appunti-lib/` | sì — ricerca per blocco tematico, foglie |
-| `studia-problema` | owner | descrizione del problema | `0. problem.md` in `sviluppo/nuovi-sviluppi/<slug>/` | sì — ricerca per area, foglie, e `decision-doc` alla chiusura |
+| `studia-libreria` | owner | nome della tecnologia | appunti in `.docs/appunti-lib/` | sì — ricerca per blocco tematico, foglie |
+| `studia-problema` | owner | descrizione del problema | `0. problem.md` in `.docs/nuovi-sviluppi/<slug>/` | sì — ricerca per area, foglie, e `decision-doc` alla chiusura |
 | `decision-doc` | owner, `studia-problema` § *Passa il testimone* | cartella del problema, eventuale sottoinsieme da analizzare; da `studia-problema` anche il documento già scritto e le memorie pertinenti | `0.5. studio-strategico.md` oppure `1. decision-doc.md` sul disco, e come figlio il blocco di § *Modalità di invocazione* del suo file | no |
 | `blueprint` | `deliver-feature` fase 1 | cartella con `1. decision-doc.md`, soluzione scelta verbatim, memorie pertinenti | § *Cosa restituisci* del suo file | no |
 | `execute` | `deliver-feature` fase 2 | cartella con `2. blueprint.md`, memorie pertinenti | § *Cosa restituisci* del suo file | no |
@@ -240,7 +242,7 @@ comando:
 ```bash
 claude plugin validate plugins/daiku
 python ~/.codex/skills/.system/plugin-creator/scripts/validate_plugin.py plugins/daiku
-node sviluppo/tools/check-topology.mjs plugins/daiku
+node .docs/tools/check-topology.mjs plugins/daiku
 node plugins/daiku/hooks/self-check.mjs
 ```
 
@@ -264,9 +266,37 @@ Un file nuovo che **non** è ignorato si pubblica al prossimo commit; uno che lo
 chi installa. Nessuno dei due è un errore in sé — è un fatto, e va riportato nell'esito del gate,
 perché è l'unica cosa irreversibile di tutta la catena.
 
+E, **per i file del diff sotto `plugins/daiku/` che arrivano al modello come testo** — ogni `.md`
+(skill, contratti, README, `agents/`), gli scheletri di `templates/`, le stringhe che gli hook
+restituiscono all'agente — il prompt audit della skill `claude-api`:
+
+```text
+/claude-api prompt-audit <quei file>
+```
+
+Gira in sola lettura: si chiede il report, non si applica il diff che propone. Il modello di
+riferimento è quello a cui risolvono gli alias `opus`/`sonnet` del pacchetto. Al subagent si passano,
+insieme al comando, le quattro regole di questo progetto che l'audit da solo non conosce:
+
+- un divieto che ha il suo gemello deterministico (hook, validatore, banco) o che protegge git, dati o
+  sicurezza **è portante**: si può chiederne una forma più piana, mai la rimozione;
+- **togliere vuol dire togliere** (`CLAUDE.md`): un testo che racconta cosa c'era prima, quando è
+  stato tolto o come si chiamava — date, «no longer», «used to», «as before» — è un rilievo;
+- i residui di ReforgIA non si segnalano;
+- gli scheletri di `templates/` sono prompt di ogni progetto utente, e si leggono come tali.
+
+**Conta solo ciò che il diff ha scritto.** Un rilievo ad alta confidenza su righe **aggiunte o
+modificate** dal diff rende il gate **rosso**, con posizione, evidenza e riscrittura proposta nel
+`gate_detail`: è testo nuovo che nasce già datato, e il ciclo non si riapre per correggerlo. I
+rilievi a media e bassa confidenza sulle stesse righe entrano nel `gate_detail` senza cambiare il
+colore. Quelli su righe che il diff non ha toccato non sono di questo diff: se ne riporta solo il
+numero.
+
 **Quali comandi girano.** I due validatori e la topologia girano **sempre**, perché
 guardano l'albero intero. Il comando dei banchi gira **solo se il perimetro tocca
 `plugins/daiku/hooks/` o `plugins/daiku/architect/`**. Il `check-ignore` gira **solo se il diff ha introdotto file nuovi**.
+Il prompt audit gira **solo se il diff tocca testo per il modello sotto `plugins/daiku/`**: una
+review su un altro prodotto di questo repository non lo lancia.
 
 ### Cosa questo gate non copre
 
@@ -274,11 +304,11 @@ Si dichiara qui perché un controllo assente e un controllo passato si leggono u
 questa è l'unica riga che li distingue.
 
 **La prosa dei contratti la legge la topologia, per le tre proprietà meccaniche.** Il
-verificatore `sviluppo/tools/check-topology.mjs` — Node senza dipendenze, radice passata per
+verificatore `.docs/tools/check-topology.mjs` — Node senza dipendenze, radice passata per
 argomento — controlla che i nodi su disco siano tutti e soli le righe della tabella di §3 di
 `contracts/orchestration.md`, che ogni contratto passato a un subagent compaia fra i chiamanti
 della propria riga, e che ogni rimando `§ *X*` trovi davvero la sua intestazione. Vive fuori dal
-pacchetto, in `sviluppo/tools/`, e gira nel gate come i validatori. Ciò che non copre — un rimando
+pacchetto, in `.docs/tools/`, e gira nel gate come i validatori. Ciò che non copre — un rimando
 che esiste ma è attribuito al file sbagliato, uno schema di ritorno divergente fra nodo e
 chiamante — lo prende **il finder di `review`**, ed è il motivo per cui la prima delle sue cinque
 famiglie è «rimandi che non risolvono». (Un verificatore precedente era stato **rimosso il 18
@@ -295,12 +325,12 @@ si risolve con un'installazione, non con una consegna.
 ## 8. Il gruppo memoria/doc
 
 Nel prodotto, gli artefatti non-codice — memoria, istruzioni, documento tecnico — vanno in un
-commit distinto dopo quello di feature. **Qui vale lo stesso**: `CLAUDE.md`, tutto `sviluppo/` e la
+commit distinto dopo quello di feature. **Qui vale lo stesso**: `CLAUDE.md`, tutto `.docs/` e la
 memoria sono versionati come il prodotto, quindi c'è un indice in cui metterli e una storia da cui
 recuperarli.
 
 **I gruppi sono tre, e ognuno ha la sua sede**: codice (`plugins/`), memoria e documentazione
-(`CLAUDE.md`, `sviluppo/**`), versione (i due `plugin.json`). `commit` li committa in quest'ordine.
+(`CLAUDE.md`, `.docs/**`), versione (i due `plugin.json`). `commit` li committa in quest'ordine.
 `deliver-feature` fa lo stesso, con **una** differenza dichiarata: il commit del gruppo
 memoria/documentazione è la sua **ultima** fase, dopo il report — perché il report scrive ancora, e
 il registro delle consegne è di quel gruppo.
@@ -310,7 +340,7 @@ il registro delle consegne è di quel gruppo.
 > da correggere — non una deroga da applicare.
 
 Il giorno in cui il repository diventa pubblico, questa sezione è una delle cose da rileggere
-(`sviluppo/memory/pubblicazione-su-github.md`).
+(`.docs/memory/pubblicazione-su-github.md`).
 
 ## 9. Divieti
 

@@ -90,7 +90,7 @@
         "-ExecutionPolicy",
         "Bypass",
         "-File",
-        "${workspaceFolder}/sviluppo/scripts/new-project.ps1"
+        "${workspaceFolder}/.docs/scripts/new-project.ps1"
       ],
       "problemMatcher": [],
       "presentation": { "reveal": "always", "panel": "shared" }

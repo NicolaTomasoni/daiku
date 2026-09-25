@@ -88,7 +88,7 @@ Default-deny, con due sole eccezioni:
 
 Senza la seconda il presidio negherebbe il proprio banco, e un presidio che non si può provare non è
 un presidio. La versione con questa correzione è in
-`sviluppo/nuovi-sviluppi/repo-intelligence/allegati/guardia-target-corretto.mjs`; va copiata a mano
+`.docs/nuovi-sviluppi/repo-intelligence/allegati/guardia-target-corretto.mjs`; va copiata a mano
 (vedi § *Difetti aperti*).
 
 ## Il banco
@@ -116,11 +116,11 @@ oppure togli temporaneamente il blocco `hooks` da `settings.json`.
 ## Difetti aperti
 
 1. **Il banco non è lanciabile nella versione in esercizio.** `node … guardia-target.mjs --self-check`
-   viene negato, perché il comando nomina un file protetto. Correzione pronta e verificata (`32/32`)
+   viene negato, perché il comando nomina un file protetto. Correzione pronta e verificata (`41/41`)
    in `allegati/guardia-target-corretto.mjs`. Da applicare **fuori dalla sessione agente**:
 
    ```powershell
-   Copy-Item sviluppo/nuovi-sviluppi/repo-intelligence/allegati/guardia-target-corretto.mjs .claude/hooks/guardia-target.mjs -Force
+   Copy-Item .docs/nuovi-sviluppi/repo-intelligence/allegati/guardia-target-corretto.mjs .claude/hooks/guardia-target.mjs -Force
    node .claude/hooks/guardia-target.mjs --self-check
    ```
 

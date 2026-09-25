@@ -1,5 +1,5 @@
 ---
-description: 'Passo obbligatorio prima del commit: allinea CLAUDE.md, sviluppo/memory/, RICOGNIZIONE.md e PUNTI-APERTI.md al diff di plugins/daiku appena consegnato. Delta minimo, nessuna scrittura se il diff non la giustifica, nessun commit.'
+description: 'Passo obbligatorio prima del commit: allinea CLAUDE.md, .docs/memory/, RICOGNIZIONE.md e PUNTI-APERTI.md al diff di plugins/daiku appena consegnato. Delta minimo, nessuna scrittura se il diff non la giustifica, nessun commit.'
 argument-hint: '[commit o range, opzionale — default: il diff in index]'
 ---
 
@@ -16,7 +16,7 @@ congelato; **manuale**, in chat su un commit o un range specifico.
 ## Il tuo perimetro è nell'indice, ma non sei tu a committarlo
 
 Il `.gitignore` esclude soltanto `.claude/settings.local.json`: i file del tuo perimetro —
-`CLAUDE.md`, `sviluppo/**` — sono **nell'indice** come il prodotto, e la storia li conserva
+`CLAUDE.md`, `.docs/**` — sono **nell'indice** come il prodotto, e la storia li conserva
 (`.claude/orchestration.md` §8).
 
 **Resti comunque tu a non committare.** Il tuo mestiere è scrivere sul disco; a mettere in stage e a
@@ -61,9 +61,9 @@ Quattro sedi, quattro mestieri. Un fatto che sta nella sede sbagliata non è un 
 | Sede | Cosa ci va | Cosa NON ci va |
 |---|---|---|
 | **`CLAUDE.md`** | gli invarianti di chi sviluppa Daiku: la divisione fra prodotto e sviluppo, la regola di pubblicazione, come si verifica il pacchetto, come ci si comporta | dettaglio su un singolo contratto, fatti che cambiano con una consegna |
-| **`sviluppo/RICOGNIZIONE.md`** | i **fatti verificati**: cosa offrono i due host, cosa manca, cosa si è buttato e perché ogni file sta dove sta — ciascuno con la prova eseguita e la data | intenzioni, decisioni ancora aperte, opinioni |
-| **`sviluppo/PUNTI-APERTI.md`** | le decisioni che l'owner non ha ancora preso | tutto ciò che è già deciso: quando una voce si chiude, esce da qui |
-| **`sviluppo/memory/`** | i fatti **non deducibili** dal repository: perché una cosa è come è, cosa l'owner ha deciso, cosa si è già provato e non funziona | ciò che si legge dal codice, dai contratti o da `git log` |
+| **`.docs/RICOGNIZIONE.md`** | i **fatti verificati**: cosa offrono i due host, cosa manca, cosa si è buttato e perché ogni file sta dove sta — ciascuno con la prova eseguita e la data | intenzioni, decisioni ancora aperte, opinioni |
+| **`.docs/PUNTI-APERTI.md`** | le decisioni che l'owner non ha ancora preso | tutto ciò che è già deciso: quando una voce si chiude, esce da qui |
+| **`.docs/memory/`** | i fatti **non deducibili** dal repository: perché una cosa è come è, cosa l'owner ha deciso, cosa si è già provato e non funziona | ciò che si legge dal codice, dai contratti o da `git log` |
 
 **Il `README.md` del pacchetto non è tuo.** `plugins/daiku/README.md` sta sotto il perimetro del
 prodotto: se una consegna cambia ciò che il pacchetto offre, quel file lo aggiorna l'esecutore,
@@ -73,7 +73,7 @@ il documento del pacchetto in mezzo al racconto di chi lo costruisce.
 
 ## La forma della memoria di questo progetto
 
-Una memoria è **un file, un fatto**, in `sviluppo/memory/`, con questo frontmatter:
+Una memoria è **un file, un fatto**, in `.docs/memory/`, con questo frontmatter:
 
 ```markdown
 ---
@@ -96,7 +96,7 @@ I quattro tipi:
   `git log`. Le date relative si convertono in assolute.
 - **`reference`** — puntatori a risorse esterne: URL, ticket, dashboard.
 
-**L'indice.** `sviluppo/memory/MEMORY.md` porta **una riga per memoria** e nessun contenuto:
+**L'indice.** `.docs/memory/MEMORY.md` porta **una riga per memoria** e nessun contenuto:
 `- [Titolo](file.md) — gancio`. Si aggiorna **nella stessa modifica** in cui una memoria nasce,
 viene rinominata, spostata o fusa. Un indice che non nomina un file è un file che nessuno apre.
 
@@ -151,13 +151,13 @@ che vale la pena scrivere, non un errore.
    - **`CLAUDE.md`** — solo se è cambiato un invariante valido in ogni sessione: la divisione fra
      prodotto e sviluppo, la regola di pubblicazione, come si verifica il pacchetto, dove sta una
      cosa. Mai dettaglio su un singolo contratto.
-   - **`sviluppo/RICOGNIZIONE.md`** — se una prova eseguita durante la consegna ha confermato o
+   - **`.docs/RICOGNIZIONE.md`** — se una prova eseguita durante la consegna ha confermato o
      **smentito** una sua riga. Una riga smentita è la modifica più preziosa che tu possa fare: quel
      documento è la base su cui poggiano le decisioni del pacchetto. Aggiorna con l'esito verbatim e
      la data.
-   - **`sviluppo/PUNTI-APERTI.md`** — se la consegna ha chiuso una di quelle decisioni, la voce esce
+   - **`.docs/PUNTI-APERTI.md`** — se la consegna ha chiuso una di quelle decisioni, la voce esce
      con la risposta e la data. Se ne ha aperta una nuova che è dell'owner, entra.
-   - **`sviluppo/memory/`** — segui § *La forma della memoria di questo progetto* alla lettera:
+   - **`.docs/memory/`** — segui § *La forma della memoria di questo progetto* alla lettera:
      leggi `MEMORY.md` per intero, individua il file più vicino, classifica, aggiorna o fondi, e
      **aggiorna `MEMORY.md` nella stessa modifica** se crei, rinomini, sposti o fondi una memoria.
 
@@ -170,7 +170,7 @@ che vale la pena scrivere, non un errore.
 5. **Salva in UTF-8** con gli accenti italiani intatti.
 
 6. **Verifica quello che hai scritto**: `MEMORY.md` ha una riga per ogni file di
-   `sviluppo/memory/`, e ogni riga punta a un file che esiste. È un `ls` contro una lettura, e
+   `.docs/memory/`, e ogni riga punta a un file che esiste. È un `ls` contro una lettura, e
    costa dieci secondi.
 
 7. **Restituisci** — in chat se manuale, come blocco JSON se invocato dentro una catena. È lo schema
@@ -204,5 +204,5 @@ che vale la pena scrivere, non un errore.
 Questa skill fa quattro cose: ispeziona il diff della consegna, decide quali artefatti di sviluppo
 quel diff giustifica, li aggiorna con il delta minimo, e riporta l'esito. Non fa audit del corpus
 intero, non tocca `plugins/daiku/` né l'indice di git, non committa nulla, non anticipa piani futuri
-— quelli restano in `sviluppo/nuovi-sviluppi/` — e non revoca da sola un fatto dell'owner in
+— quelli restano in `.docs/nuovi-sviluppi/` — e non revoca da sola un fatto dell'owner in
 conflitto: quello si segnala, non si cancella.

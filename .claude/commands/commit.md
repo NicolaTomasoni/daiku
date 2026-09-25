@@ -9,7 +9,7 @@ Crea commit dei file indicati. Se non ne vengono indicati, committa lo stage cor
 ## Cosa è committabile in questo repository
 
 Il `.gitignore` esclude **soltanto** `.claude/settings.local.json`, che non deve stare in nessun git.
-**Tutto il resto è nell'indice**, prodotto e sviluppo insieme: `CLAUDE.md`, `sviluppo/`, `.claude/`,
+**Tutto il resto è nell'indice**, prodotto e sviluppo insieme: `CLAUDE.md`, `.docs/`, `.claude/`,
 `.vscode/`.
 
 Il confine di ciò che si pubblica **non passa da qui**, ed è per questo che il file è così corto:
@@ -24,7 +24,7 @@ settembre 2026.
 | Gruppo | Cosa | Committabile |
 |---|---|---|
 | **codice** | tutto ciò che il diff tocca sotto `plugins/`, più le due vetrine in radice se le tocca | sì |
-| **memoria e documentazione** | `CLAUDE.md`, `sviluppo/**`, `.claude/**` — tutto il cantiere: memoria, ricognizione, punti aperti, contratti di sviluppo, registro delle consegne | sì, in un commit proprio |
+| **memoria e documentazione** | `CLAUDE.md`, `.docs/**`, `.claude/**` — tutto il cantiere: memoria, ricognizione, punti aperti, contratti di sviluppo, registro delle consegne | sì, in un commit proprio |
 | **versione** | `plugins/daiku/.claude-plugin/plugin.json` e `plugins/daiku/.codex-plugin/plugin.json`, quando il numero cambia | sì, in un commit proprio |
 
 Il gruppo memoria/documentazione **si committa**, e in un commit proprio: raccoglie ciò che
@@ -158,7 +158,7 @@ un commit.
    - **Senza parametri**: committa lo stage corrente.
 
 3. **Separa i gruppi.** Partiziona in **tre**: **codice** (tutto sotto `plugins/`, più le vetrine in
-   radice se toccate), **memoria e documentazione** (`CLAUDE.md`, `sviluppo/**`) e **versione** (i
+   radice se toccate), **memoria e documentazione** (`CLAUDE.md`, `.docs/**`) e **versione** (i
    due `plugin.json`, se il numero cambia). Verifica che nulla di ciò che stai per committare stia
    fuori da quei tre gruppi: se ci finisce, fermati e chiedi — un path che non sai collocare o è una
    pubblicazione che non hai deciso, o è una sede di questo repository che nessuno ha ancora

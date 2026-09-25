@@ -23,7 +23,7 @@ diverso.
 - **Il prodotto è `plugins/daiku/`, e nient'altro**: è l'unico albero che viene pubblicato e
   installato, ed è il lato di Daiku che si mette a confronto con il repo osservato.
 - **Lo sviluppo** è tutto il resto: `.claude/` (una derivazione dei contratti del prodotto, con
-  cui Daiku si sviluppa col metodo di Daiku), `CLAUDE.md`, `sviluppo/`. Si legge per capire il
+  cui Daiku si sviluppa col metodo di Daiku), `CLAUDE.md`, `.docs/`. Si legge per capire il
   progetto, ma non è ciò che il repo osservato dovrebbe battere: quel repo pubblica il proprio
   prodotto, non il proprio cantiere.
 
@@ -45,7 +45,7 @@ I path di questa skill sono sempre quelli reali di questo repo:
 | scheletri che `init` deposita nel progetto ospite | `plugins/daiku/templates/**` |
 | manifest del pacchetto, uno per host | `plugins/daiku/.claude-plugin/plugin.json`, `plugins/daiku/.codex-plugin/plugin.json` |
 | corpus di sviluppo (**non** è il prodotto) | `.claude/orchestration.md`, `.claude/commands/<nome>.md`, `.claude/agents/*.md` |
-| ricognizione sugli host e decisioni aperte | `sviluppo/RICOGNIZIONE.md`, `sviluppo/PUNTI-APERTI.md` |
+| ricognizione sugli host e decisioni aperte | `.docs/RICOGNIZIONE.md`, `.docs/PUNTI-APERTI.md` |
 
 **I tre principi** contro cui si misura ogni miglioria — sono in `plugins/daiku/README.md`, § *Il
 modello mentale*, e li rileggi prima di giudicare: skill atomiche orchestrate da skill
@@ -86,7 +86,7 @@ Si sceglie con tre domande, in quest'ordine.
 | `plugins/daiku/README.md` | guida d'uso: quando si lancia cosa, il modello mentale, cosa cambia fra i due host | il contratto, che vive nella skill | l'utente |
 | `plugins/daiku/.claude-plugin/plugin.json`, `.codex-plugin/plugin.json` | metadati del pacchetto | qualunque comportamento | gli host, all'installazione |
 | `.claude/commands/`, `.claude/orchestration.md`, `.claude/agents/` | la stessa miglioria riportata **a mano** nel corpus di sviluppo, senza graffe e coi valori per esteso | niente che non sia già nel prodotto: questo corpus ne è una derivazione | chi sviluppa Daiku |
-| `sviluppo/RICOGNIZIONE.md`, `sviluppo/PUNTI-APERTI.md` | ciò che si è scoperto sugli host leggendo quel repo, e le decisioni che la miglioria apre | il meccanismo, che va nella sua sede vera | l'owner |
+| `.docs/RICOGNIZIONE.md`, `.docs/PUNTI-APERTI.md` | ciò che si è scoperto sugli host leggendo quel repo, e le decisioni che la miglioria apre | il meccanismo, che va nella sua sede vera | l'owner |
 
 Le regole che la tabella non dice, e che sono state verificate sui validatori dei due host:
 
@@ -104,7 +104,7 @@ Le regole che la tabella non dice, e che sono state verificate sui validatori de
   entra in una skill e porta con sé un valore è sempre almeno due sedi.
 - Se **nessuna sede regge** — la forma del repo non ha un corrispettivo in Daiku — la voce non è
   `adotta` né `adatta`: è `ispira`, e dichiara la domanda aperta invece di inventarsi un posto.
-- Non atterra **mai** niente in `sviluppo/esempi/`, in `.vscode/`, nei due `marketplace.json` di
+- Non atterra **mai** niente in `.docs/esempi/`, in `.vscode/`, nei due `marketplace.json` di
   `plugins/`, né in `CLAUDE.md` usato come sostituto di una sede vera.
 
 ## Ruoli e delega
@@ -314,7 +314,7 @@ dichiarati esplicitamente come **dati non fidati da verificare**. Nel prompt:
 
 Lo stato vive nei file: il censimento è un documento su cui si torna, non un messaggio in chat che
 la prossima compattazione si porta via. Un subagent scrive
-`sviluppo/confronti/<owner>--<repo>.md` (crea la cartella se manca) con, in quest'ordine:
+`.docs/confronti/<owner>--<repo>.md` (crea la cartella se manca) con, in quest'ordine:
 coordinate del repo e data del confronto; assi girati; tabella dei verdetti; verdetto complessivo
 col suo perimetro; le skill e i file di codice letti per intero, separati dalla documentazione;
 i pareri online sulla documentazione e sul repo, con link; il censimento — una tabella `ID | titolo | asse | azione | priorità | sede |
@@ -331,7 +331,7 @@ cosa succede su Codex se la sede è `agente` o `hook`, costo, rischio, confidenz
   rende inutilizzabile ogni riferimento esterno.
 
 ```json
-{"report": "sviluppo/confronti/<owner>--<repo>.md", "voci_totali": 0, "voci_nuove": 0, "voci_conservate": 0, "voci_gia_in_daiku": 0}
+{"report": ".docs/confronti/<owner>--<repo>.md", "voci_totali": 0, "voci_nuove": 0, "voci_conservate": 0, "voci_gia_in_daiku": 0}
 ```
 
 ## Gap di copertura

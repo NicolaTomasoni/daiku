@@ -12,7 +12,7 @@ esiste uno script che lo faccia al posto tuo.
 
 **Sulla working tree principale, sul branch corrente.** Questo corpus non usa worktree
 (`.claude/orchestration.md`, § *Questo corpus non è il prodotto*). **La regola non ha una
-motivazione scritta**: è un punto aperto, non una conclusione (`sviluppo/PUNTI-APERTI.md`, voce 5).
+motivazione scritta**: è un punto aperto, non una conclusione (`.docs/PUNTI-APERTI.md`, voce 5).
 
 Conseguenze da tenere presenti, perché sono il prezzo di questa scelta:
 
@@ -36,7 +36,7 @@ sostituisce, li incatena.
 Argomenti: `$ARGUMENTS` — `<cartella> <soluzione scelta>`.
 
 - **`<cartella>`** — path della cartella, relativo alla radice del repository o assoluto.
-  `sviluppo/nuovi-sviluppi/<slug>` è il caso comune. Verificala sul filesystem: deve esistere e
+  `.docs/nuovi-sviluppi/<slug>` è il caso comune. Verificala sul filesystem: deve esistere e
   contenere `1. decision-doc.md`. Se manca, fermati e dillo.
 - **`<soluzione scelta>`** — la passi al brief verbatim. Se è ambigua rispetto al decision-doc
   (decisione o opzione inesistente), apri il documento, mostra le opzioni e chiedi — non indovinare.
@@ -92,9 +92,9 @@ Subagent che produce il brief. Nel prompt:
 
 - leggi per intero `.claude/commands/blueprint.md` e segui quel contratto alla lettera;
 - cartella `<cartella>` (contiene `1. decision-doc.md`), soluzione scelta `<verbatim>`;
-- `CLAUDE.md` e `sviluppo/RICOGNIZIONE.md`, da caricare prima di costruire il piano: gli invarianti
+- `CLAUDE.md` e `.docs/RICOGNIZIONE.md`, da caricare prima di costruire il piano: gli invarianti
   di sviluppo e i fatti verificati sui due host sono ciò contro cui un task regge o non regge;
-- `sviluppo/memory/MEMORY.md` e i path delle memorie che il perimetro tocca, da aprire prima di
+- `.docs/memory/MEMORY.md` e i path delle memorie che il perimetro tocca, da aprire prima di
   decidere (§4.1 di `.claude/orchestration.md`);
 - se `<cartella>/2. blueprint.md` esiste già, **non** rieseguire il brief: restituisci `ok: true`
   col path esistente;
@@ -115,7 +115,7 @@ Subagent esecutore. Nel prompt:
   base-ref reale);
 - applicalo alla cartella `<cartella>`; carica `CLAUDE.md`;
 - il perimetro di scrittura è `plugins/daiku/`, più i soli file che il brief elenca uno per uno;
-- `sviluppo/memory/MEMORY.md` e i path delle memorie pertinenti, da aprire prima di scrivere;
+- `.docs/memory/MEMORY.md` e i path delle memorie pertinenti, da aprire prima di scrivere;
 - non chiedere nulla all'owner; fermati solo davanti a un blocco reale (azione distruttiva non
   giustificata o contraddizione insanabile).
 
@@ -139,7 +139,7 @@ da qui — dove hai in testa il brief, l'esecuzione e ciò che ti aspetti — è
 di sé che il fan-out esiste per evitare.
 
 Se stai **riprendendo** un lavoro la cui review era già partita, passale il path del ledger che
-trovi in `sviluppo/runtime/review/` con il `base` di questo lavoro **e** con `item` uguale a
+trovi in `.docs/runtime/review/` con il `base` di questo lavoro **e** con `item` uguale a
 `<cartella>`: riparte dal giro successivo invece di ripagare l'intero triage. I due campi si
 guardano insieme, e **se i candidati restano più di uno, o se il ledger non porta `item`, non ne
 passi nessuno**.
@@ -309,7 +309,7 @@ il nodo `commit` segue: la fase 7 scrive ancora, e il suo file è di quel gruppo
 
 ### 7. Report — ruolo **worker**
 
-Subagent che appende (creando il file se non esiste) a `sviluppo/consegne.md`, **in coda** — mai
+Subagent che appende (creando il file se non esiste) a `.docs/consegne.md`, **in coda** — mai
 sovrascrivere o riformattare ciò che c'è già.
 
 È l'unica fase che deve riportare campi prodotti da **altre quattro**, e un subagent in contesto
@@ -317,7 +317,7 @@ fresco non ne ricava nessuno da solo. Nel prompt vanno quindi **già risolti**, 
 ricostruirli a memoria fa cadere per prime proprio le righe che dicono cosa la consegna **non** ha
 fatto. Nel prompt:
 
-- il path su cui appendere, `sviluppo/consegne.md`, e il vincolo dell'append in coda;
+- il path su cui appendere, `.docs/consegne.md`, e il vincolo dell'append in coda;
 - `<cartella>` e la **soluzione consegnata**, verbatim: è lui a distillarla, non tu;
 - dalla **fase 1**: il campo `pubblica` del brief;
 - dalla **fase 3**: `gate` e `gate_detail`, `uscita`, `finder_mancati`, `indipendenza` e
@@ -345,12 +345,12 @@ Un solo blocco:
 Paragrafi separati da una riga vuota. Chiaro e sintetico: si deve capire lo stato in 30 secondi.
 
 ```json
-{"ok": true, "report_path": "sviluppo/consegne.md", "detail": "<se ok=false, il motivo: file non scrivibile, append fallito>"}
+{"ok": true, "report_path": ".docs/consegne.md", "detail": "<se ok=false, il motivo: file non scrivibile, append fallito>"}
 ```
 
 È l'ultima fase e nessuno decide più niente sul suo esito, ma il blocco serve lo stesso: un report
 che non è stato scritto è l'unica traccia della consegna che sparisce — e qui più che altrove,
-perché `sviluppo/consegne.md` è il registro delle consegne di questo repository: se una voce non
+perché `.docs/consegne.md` è il registro delle consegne di questo repository: se una voce non
 c'è, quella consegna non è mai avvenuta per chi la cerca. Se `ok` è `false`, riportalo in chat con il
 motivo.
 
@@ -362,14 +362,14 @@ e arriva qui e non nella fase 6 per una ragione sola: la fase 7 scrive ancora, e
 consegne è di questo gruppo.
 
 **Cosa ci entra.** Tutto ciò che questa consegna ha scritto **fuori** da `plugins/` — è il gruppo
-memoria e documentazione di `.claude/commands/commit.md`, che comprende `CLAUDE.md`, `sviluppo/**` e
+memoria e documentazione di `.claude/commands/commit.md`, che comprende `CLAUDE.md`, `.docs/**` e
 `.claude/**` — e nient'altro:
 
 - i `files` che la fase 5b ha elencato, e i file che ha creato;
 - gli artefatti della consegna nella cartella dell'item: il brief, le note di review, il report della
   review, il rapporto di allineamento;
-- il ledger del ciclo, sotto `sviluppo/runtime/review/`;
-- `sviluppo/consegne.md`, dove la fase 7 ha appena appeso;
+- il ledger del ciclo, sotto `.docs/runtime/review/`;
+- `.docs/consegne.md`, dove la fase 7 ha appena appeso;
 - i file fuori dal pacchetto che il **brief** ha elencato uno per uno, se il piano ne prevedeva.
 
 **Non ci entra nient'altro.** Un path sporco che nessuna fase di questa consegna ha nominato non è
@@ -409,7 +409,7 @@ report e in `reason`.
 1. **In chat, poche righe**: stato finale (`VERDE` | `VERDE_CON_DECISIONI` | `BLOCCATO` |
    `interrotta`), SHA se committato, i file nuovi che da adesso si pubblicano, e i file di sviluppo
    che la fase 8 ha committato. Il dettaglio — gate, voci da confermare, decisioni rimaste — è già in
-   `sviluppo/consegne.md`: **non ripeterlo**, rimanda al file.
+   `.docs/consegne.md`: **non ripeterlo**, rimanda al file.
 
 2. **Chiudi sempre con il blocco a contratto**, così chi ti ha invocato lo legge senza interpretare
    la prosa. Nessun campo si omette: a valore assente si scrive `null`.
@@ -425,7 +425,7 @@ report e in `reason`.
      "docs_commit_sha": "<sha o null>",
      "sviluppo_files": ["<path fuori da plugins/ che la fase 8 ha committato>"],
      "confirm_with_owner": ["<le voci della fase 5b, verbatim>"],
-     "report_path": "sviluppo/consegne.md",
+     "report_path": ".docs/consegne.md",
      "sporco": ["<path rimasti non committati sotto plugins/, se lo stato è BLOCCATO o interrotta>"],
      "reason": "<solo se BLOCCATO o interrotta: il motivo esatto>"
    }

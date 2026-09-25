@@ -6,7 +6,7 @@ Non chiedere mai permessi o conferme: lavora sempre in bypass, in autonomia, sen
 ## Questo file non fa parte dei prodotti
 
 `CLAUDE.md` è come si **sviluppano** Daiku e Kaji, non è nessuno dei due. Lo stesso vale per
-`.claude/`, `.vscode/` e tutto ciò che sta sotto `sviluppo/`. Restano in radice perché gli host
+`.claude/`, `.vscode/` e tutto ciò che sta sotto `.docs/`. Restano in radice perché gli host
 li cercano lì, non perché appartengano a un prodotto.
 
 **In radice non entra nessun file di prodotto.** Ci stanno solo le sedi di sviluppo e due
@@ -19,9 +19,8 @@ pubblico di quel prodotto: si copia tutta e sola, così com'è.
 | `plugins/.claude-plugin/marketplace.json` | vetrina Claude Code, punta a `./daiku` |
 | `plugins/.agents/plugins/marketplace.json` | vetrina Codex, stessa destinazione |
 | `plugins/daiku/` | il pacchetto Daiku — ciò che gli host installano |
-| `extensions/kaji/` | **Kaji** — la radice del suo repository pubblico: `package.json`, `src/`, `test/` |
-| `sviluppo/` | ricognizione, punti aperti, memoria, esempi, appunti — di entrambi |
-| `sviluppo/kaji/` | i documenti di progetto di Kaji: prodotto, tech stack, branding |
+| `extensions/kaji/` | **Kaji** — la radice del suo repository pubblico: `package.json`, `src/`, `test/`, e i documenti di progetto `README.md`, `TECH-STACK.md`, `BRANDING.md` |
+| `.docs/` | ricognizione, punti aperti, memoria, esempi, appunti, strumenti — di entrambi |
 | `CLAUDE.md`, `.claude/`, `.vscode/`, `.gitignore`, `.gitattributes` | sviluppo, obbligati in radice dagli host e da git |
 
 Prima di aggiungere un file, decidi a quale metà appartiene, e se è prodotto a quale dei due. Se
@@ -106,20 +105,20 @@ Non segnalarli a meno che non ti venda chiesto.
 
 ## Dove sta ogni cosa
 
-`sviluppo/RICOGNIZIONE.md` è il documento di riferimento di Daiku: dice cosa offrono i due host,
+`.docs/RICOGNIZIONE.md` è il documento di riferimento di Daiku: dice cosa offrono i due host,
 cosa manca, cosa è stato buttato e perché ogni file sta dove sta — con le prove eseguite sui
 validatori reali di Claude Code e Codex.
 
-`sviluppo/kaji/README.md` è il documento di prodotto di Kaji — feature, principi, fatti verificati
-sui runtime, milestone — e `sviluppo/kaji/TECH-STACK.md` il suo come: architettura, confini dei
-moduli, decisioni tecniche con il loro falsificatore. `sviluppo/kaji/BRANDING.md` ragiona sul nome
+`extensions/kaji/README.md` è il documento di prodotto di Kaji — feature, principi, fatti verificati
+sui runtime, milestone — e `extensions/kaji/TECH-STACK.md` il suo come: architettura, confini dei
+moduli, decisioni tecniche con il loro falsificatore. `extensions/kaji/BRANDING.md` ragiona sul nome
 e sul posizionamento nel Marketplace.
 
 Le skill di `.claude/commands/` sono in comune, ma oggi sono tutte scritte sulla forma di Daiku:
 leggono `plugins/daiku/`, lanciano i suoi validatori, rispettano le sue liste di copia. Portarle
-anche su Kaji è una decisione a parte (vedi `sviluppo/PUNTI-APERTI.md`).
+anche su Kaji è una decisione a parte (vedi `.docs/PUNTI-APERTI.md`).
 
-`sviluppo/memory/` è la memoria persistente del progetto, versionata. Non è il path predefinito:
+`.docs/memory/` è la memoria persistente del progetto, versionata. Non è il path predefinito:
 lo dichiara `autoMemoryDirectory` in `.claude/settings.local.json`, che **non** si versiona
 perché Claude Code ignora quella chiave quando arriva da un file committato. Su una macchina
 nuova va riscritto, altrimenti la memoria torna silenziosamente sotto `~/.claude/projects/`.
@@ -128,7 +127,7 @@ nuova va riscritto, altrimenti la memoria torna silenziosamente sotto `~/.claude
 
 Un refactor non finisce quando il pacchetto è coerente: finisce quando **anche la memoria lo è**.
 Ogni volta che rinomini una cartella o una skill, sposti un file, cambi cosa entra in git o
-ribalti una scelta di struttura, riapri `sviluppo/memory/` e correggi ogni memoria che parla di
+ribalti una scelta di struttura, riapri `.docs/memory/` e correggi ogni memoria che parla di
 ciò che hai toccato — insieme a `RICOGNIZIONE.md` e `PUNTI-APERTI.md`, che invecchiano allo stesso
 modo.
 
@@ -152,7 +151,7 @@ storia», niente buchi nella numerazione da spiegare, niente frase che dice dove
 quel file domani non deve sapere che prima c'era dell'altro: per lui quella cosa **non è mai
 esistita**.
 
-Vale in ogni sede: i contratti del prodotto, `.claude/`, i documenti di `sviluppo/`, la memoria, i
+Vale in ogni sede: i contratti del prodotto, `.claude/`, i documenti di `.docs/`, la memoria, i
 commenti nel codice. Vale anche per il *perché* di una scelta: se la ragione è caduta, si riscrive
 la ragione o si toglie la frase — non si racconta che una volta la ragione era un'altra. E vale
 anche quando il buco è scomodo: un identificatore che si sfasa, un rimando che punta altrove. Il
@@ -198,7 +197,7 @@ Lancia insieme i banchi di prova dei quattro hook e quello del valutatore determ
 (`plugins/daiku/architect/`), stampa il totale contato ed esce `1` al primo caso rosso.
 
 ```bash
-node sviluppo/tools/check-topology.mjs plugins/daiku
+node .docs/tools/check-topology.mjs plugins/daiku
 ```
 
 Verifica la topologia del corpus (nodi su disco = righe di tabella, handoff fra chiamanti,
@@ -208,7 +207,7 @@ prima di un rilascio, accanto al self-check.
 ## Verificare il pacchetto Kaji
 
 Kaji non ha ancora codice. Quando nasce, la sua verifica è quella che fissa
-`sviluppo/kaji/TECH-STACK.md` (§41–§42), lanciata dalla radice del prodotto:
+`extensions/kaji/TECH-STACK.md` (§41–§42), lanciata dalla radice del prodotto:
 
 ```bash
 cd extensions/kaji && npm run check && npm run package

@@ -1,10 +1,10 @@
 ---
-description: 'Studia un problema di Daiku leggendo il pacchetto e i documenti di riferimento, produce 0. problem.md in sviluppo/nuovi-sviluppi/<slug>/ e chiude delegando decision-doc su quella cartella'
+description: 'Studia un problema di Daiku leggendo il pacchetto e i documenti di riferimento, produce 0. problem.md in .docs/nuovi-sviluppi/<slug>/ e chiude delegando decision-doc su quella cartella'
 argument-hint: '<descrizione problema>'
 ---
 
 Studia un problema di Daiku leggendo il pacchetto e i documenti di riferimento, e producendo un
-documento di analisi strutturato in `sviluppo/nuovi-sviluppi/<slug>/0. problem.md`.
+documento di analisi strutturato in `.docs/nuovi-sviluppi/<slug>/0. problem.md`.
 
 **La skill precede decision-doc, e lo chiama:** serve a capire e documentare un problema prima di
 passare alle decisioni, e quando il documento è scritto passa il testimone a `decision-doc` su
@@ -28,16 +28,16 @@ Se `$ARGUMENTS` è vuoto, **chiedi** quale problema studiare.
 Questo repository ha già scritto molto di sé, e un'indagine che lo ignora riscopre a proprie spese
 prove già eseguite — o, peggio, chiude da sola una decisione che è dell'owner.
 
-1. **`sviluppo/PUNTI-APERTI.md`** — le decisioni ancora da prendere. Se il tuo problema è uno di
+1. **`.docs/PUNTI-APERTI.md`** — le decisioni ancora da prendere. Se il tuo problema è uno di
    quei punti, **dillo in apertura del documento e non deciderlo**: il tuo mestiere è istruirlo,
    non chiuderlo.
-2. **`sviluppo/RICOGNIZIONE.md`** — il documento di riferimento: cosa offrono i due host, cosa
+2. **`.docs/RICOGNIZIONE.md`** — il documento di riferimento: cosa offrono i due host, cosa
    manca, cosa si butta e perché ogni file sta dove sta, con le prove eseguite sui validatori
    reali e la data. Un gap che il capitolo 5 ha già censito non è una tua scoperta; una prova che
    il capitolo 8 ha già eseguito non si rifà a memoria.
 3. **`CLAUDE.md`** — gli invarianti di chi sviluppa Daiku: la divisione fra prodotto e sviluppo, la
    regola di pubblicazione, come si verifica il pacchetto.
-4. **`sviluppo/memory/MEMORY.md`** e le memorie che l'area del problema tocca. Se il chiamante te
+4. **`.docs/memory/MEMORY.md`** e le memorie che l'area del problema tocca. Se il chiamante te
    ne passa i path, sono quelli; altrimenti li scegli tu sull'indice. Un gap che una memoria ha già
    chiuso non è un gap, e un fatto che l'owner ha già accertato non si riapre qui.
 
@@ -58,7 +58,7 @@ Un problema che non cade in nessuna di queste è un segnale: o è di sviluppo e 
 
 ## Obiettivo del documento
 
-Produrre un **unico file markdown** `sviluppo/nuovi-sviluppi/<slug>/0. problem.md` che:
+Produrre un **unico file markdown** `.docs/nuovi-sviluppi/<slug>/0. problem.md` che:
 
 1. **Descrive il problema** in modo chiaro e circostanziato
 2. **Documenta com'è fatto oggi** il pacchetto nell'area coinvolta
@@ -79,7 +79,7 @@ Il documento **non propone soluzioni** — quelle arrivano in `1. decision-doc.m
    - uno **slug** kebab-case per la cartella (es. `rimandi-fra-contratti`,
      `check-contratti-radice-sbagliata`).
 
-2. **Crea la cartella** `sviluppo/nuovi-sviluppi/<slug>/` se non esiste.
+2. **Crea la cartella** `.docs/nuovi-sviluppi/<slug>/` se non esiste.
    - Verifica che non esista già una cartella con lo stesso slug.
    - Se esiste, chiedi conferma all'owner prima di sovrascrivere.
 
@@ -112,7 +112,7 @@ costruito così. Un gap dimostrato da un esito verbatim vale dieci righe di ragi
 
 ### 3. Scrivi il documento
 
-Crea `sviluppo/nuovi-sviluppi/<slug>/0. problem.md` con questa struttura:
+Crea `.docs/nuovi-sviluppi/<slug>/0. problem.md` con questa struttura:
 
 ```markdown
 # <Titolo del problema> — il problema
@@ -181,11 +181,11 @@ zero:
 
 - il **contratto da leggere**: `.claude/commands/decision-doc.md`, per intero, prima di agire,
   nella modalità *Da `studia-problema`* che quel file dichiara;
-- l'**input risolto**: la cartella `sviluppo/nuovi-sviluppi/<slug>/` e, dentro, il `0. problem.md`
+- l'**input risolto**: la cartella `.docs/nuovi-sviluppi/<slug>/` e, dentro, il `0. problem.md`
   che hai appena scritto — è già il documento base, non c'è nulla da concatenare;
-- i **documenti di riferimento**: `CLAUDE.md`, `sviluppo/RICOGNIZIONE.md` e, se il problema tocca
-  una decisione già in lista, `sviluppo/PUNTI-APERTI.md`;
-- la **memoria pertinente**: `sviluppo/memory/MEMORY.md` e i **path** delle memorie che hai aperto,
+- i **documenti di riferimento**: `CLAUDE.md`, `.docs/RICOGNIZIONE.md` e, se il problema tocca
+  una decisione già in lista, `.docs/PUNTI-APERTI.md`;
+- la **memoria pertinente**: `.docs/memory/MEMORY.md` e i **path** delle memorie che hai aperto,
   con l'istruzione di aprirle prima di lavorare. Sono le stesse che hanno delimitato la tua
   indagine: senza, o le riapre da capo o riapre un fatto che l'owner ha già chiuso;
 - il **vincolo di perimetro**: scrive solo dentro quella cartella, e non committa né fa push;
@@ -219,7 +219,7 @@ Riferisci in sintesi:
 - il path del file prodotto e l'area in cui hai collocato il problema;
 - i tagli d'indagine coperti e le prove che hai eseguito, con il loro esito;
 - i gap identificati;
-- se il problema tocca un punto di `sviluppo/PUNTI-APERTI.md`, **quale** — e che non l'hai deciso;
+- se il problema tocca un punto di `.docs/PUNTI-APERTI.md`, **quale** — e che non l'hai deciso;
 - l'esito della delega: lo stadio che `decision-doc` ha scelto e perché, il file che ha prodotto o
   aggiornato e, se ne è uscita una lista di decisioni, la lista **verbatim**, con l'invito a
   rispondere rilanciando `decision-doc` sulla cartella in forma compatta (`1A, 2B, ...`). Se la

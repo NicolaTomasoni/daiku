@@ -54,7 +54,7 @@ modifica, e a divergere per prima è sempre la riga che qualcuno ha aggiunto dop
 
 ### 3. Violazioni degli invarianti dichiarati
 
-Si citano con la regola esatta, e la regola sta in `CLAUDE.md` o in `sviluppo/RICOGNIZIONE.md`. Le
+Si citano con la regola esatta, e la regola sta in `CLAUDE.md` o in `.docs/RICOGNIZIONE.md`. Le
 ricorrenti:
 
 - **un modello nominato dentro una skill.** Una skill dichiara un **ruolo**; il modello lo risolve
@@ -104,7 +104,7 @@ confine di git **non guarda dentro i file**. Sono rilievi, e gravi:
 
 Al 18 settembre 2026 il pacchetto ne porta già di noti — i due template non svuotati, i banchi
 `--self-check` con path cablati. **Quelli sono preesistenti e non si segnalano**: sono già censiti
-in `sviluppo/memory/pubblicazione-su-github.md`. Si segnala ciò che il diff **aggiunge**.
+in `.docs/memory/pubblicazione-su-github.md`. Si segnala ciò che il diff **aggiunge**.
 
 ## Cosa NON segnalare
 
@@ -179,7 +179,7 @@ Vale tutto ciò che sta sopra — le cinque famiglie e la lista dei falsi positi
 2. **Leggi il diff**: `gh pr diff <N>`, più titolo e descrizione della PR, che dicono l'intento
    dell'autore.
 
-3. **Carica gli invarianti**: il `CLAUDE.md` in radice, e `sviluppo/RICOGNIZIONE.md` se il diff
+3. **Carica gli invarianti**: il `CLAUDE.md` in radice, e `.docs/RICOGNIZIONE.md` se il diff
    tocca manifest, skill o collocazione di file. Sono le due fonti contro cui si cita una
    violazione.
 

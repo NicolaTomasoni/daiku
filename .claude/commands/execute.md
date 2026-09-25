@@ -23,7 +23,7 @@ Argomenti: `$ARGUMENTS`
 - Cerca `2. blueprint.md` nella cartella. Se non c'è con quel nome, cerca un equivalente; se ne
   trovi più d'uno o nessuno, **chiedi** quale usare. Questo — insieme alla cartella mancante — è
   l'**unico** momento in cui è lecito chiedere: da qui in poi l'esecuzione è autonoma.
-- Con la cartella ricevi anche `sviluppo/memory/MEMORY.md` e i **path** delle memorie che il
+- Con la cartella ricevi anche `.docs/memory/MEMORY.md` e i **path** delle memorie che il
   perimetro tocca, da aprire prima di scrivere (§4.1 di `.claude/orchestration.md`). Se il chiamante
   non te li passa, apri l'indice e scegli tu.
 
@@ -31,7 +31,7 @@ Argomenti: `$ARGUMENTS`
 
 **Scrivi solo sotto `plugins/daiku/`**, salvo i file che il brief elenca uno per uno nella propria
 sezione *Vincoli e perimetro*. Fuori da lì non si tocca niente «già che ci sono»: `CLAUDE.md`,
-`sviluppo/` e `.claude/` sono di altri passi, e `.claude/commands/` in particolare è una derivazione
+`.docs/` e `.claude/` sono di altri passi, e `.claude/commands/` in particolare è una derivazione
 di questo corpus che non si riallinea da sola.
 
 Due fatti del repository che valgono a ogni task:
