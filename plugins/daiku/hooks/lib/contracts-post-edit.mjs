@@ -27,12 +27,11 @@
  * the writing of a contract halfway costs more than the defect being closed. The report
  * arrives as context, and whoever just wrote decides.
  *
- * **And it runs nothing.** That is the difference from the previous round, where point 4 launched
- * `node <file> --self-check` on the freshly written `.mjs`. It looked handy and was not: starting
- * a file *because it appeared* means running code nobody has reviewed yet, bypassing both the
- * confirmation the host asks before launching a command and the hash approval Codex demands
- * precisely for hooks. A hook that says "run the bench" and a hook that runs it alone have the same
- * diagnostic value and a very different risk perimeter.
+ * **And it runs nothing.** Point 4 does not launch `node <file> --self-check` on the freshly
+ * written `.mjs`: starting a file *because it appeared* means running code nobody has reviewed yet,
+ * bypassing both the confirmation the host asks before launching a command and the hash approval
+ * Codex demands precisely for hooks. A hook that says "run the bench" and a hook that runs it alone
+ * have the same diagnostic value and a very different risk perimeter.
  *
  * No gate on `.daiku/`, and that is deliberate: this hook denies nothing to anybody, and a
  * YAML frontmatter silently emptying is a fault even for whoever does not have Daiku.
@@ -73,7 +72,7 @@ export function plan(rel) {
   // markdown and have nothing to say on a `.mjs`.
   //
   // The perimeter is **any** `hooks/` folder inside the root, with or without `lib/`,
-  // because the real seats are three and the previous shape covered only one: `.codex/hooks/`
+  // because the real seats are three: `.codex/hooks/`
   // in the Codex guest project, `hooks/lib/` in a package under development,
   // `.claude/hooks/` in a project hooking the guards on its own. On Claude Code,
   // with Daiku installed as a package, the guards are not in the project at all: they run
@@ -346,7 +345,7 @@ function selfCheck() {
   check('the reminder says why: a broken hook stays silent', !!reminder && reminder.includes('fail-open'));
   check('the reminder recalls the Codex approval', !!reminder && reminder.includes('hash'));
   check(
-    'no environment can run anything: there is no launcher anymore',
+    'no environment can run anything: there is no launcher',
     typeof REAL_ENV.run === 'undefined'
   );
 

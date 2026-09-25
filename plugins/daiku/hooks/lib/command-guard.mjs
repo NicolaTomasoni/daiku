@@ -901,7 +901,7 @@ const CASES = [
   ['.daiku/ denies with no switches all the same: it has none', 'git add .daiku/project.json', ROOT_CWD, 'deny', '.daiku/', CTX_BARE],
   ['a worktree outside the declared pool is not watched', 'rm -rf c:/dev/elsewhere/docs', ROOT_CWD, 'allow', '', CTX_FULL],
 
-  // --- the cd that moves the base, the shape that used to slip through ------------------
+  // --- the cd that moves the base on the same line ------------------------------------
   ['cd on the same line, then rm on a junction', 'cd /c/dev/wt/wt-1 && rm -rf node_modules', ROOT_CWD, 'deny', 'crosses a Windows link'],
   ['cd on the same line, then pnpm install in the worktree', 'cd /c/dev/wt/wt-1 && pnpm install', ROOT_CWD, 'deny', 'virtualStoreDir'],
   ['cd via Set-Location, then Remove-Item on the junction', 'Set-Location C:/dev/wt/wt-1; Remove-Item -Recurse -Force node_modules', ROOT_CWD, 'deny', 'crosses a Windows link'],

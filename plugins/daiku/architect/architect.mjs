@@ -27,8 +27,7 @@
  *
  * **The root always arrives as an argument**, in both modes, and is never derived
  * from this file's position on disk: a program that deduces its own root is correct
- * until the first move of the tree and wrong in silence — which is precisely how the
- * verifier that used to run on this corpus died. Verdict mode does not read the root;
+ * until the first move of the tree and wrong in silence. Verdict mode does not read the root;
  * it requires it all the same, because a single invocation form is one thing to get
  * wrong once. It is the bench that uses it, to read the contracts it compares itself
  * against.
@@ -72,9 +71,8 @@ import { join } from 'node:path';
  * them: the node and **who invokes it**. `owner` stands for the human, and is the
  * only caller that is not a node.
  *
- * This constant is the seat of the order from here on: the table of §3 still *shows*
- * the graph to whoever reads a contract, but it no longer declares it — §3 calls
- * itself its reflection. The bench refuses a divergence in either direction — a node
+ * This constant is the seat of the order: the table of §3 *shows* the graph to whoever
+ * reads a contract, but does not declare it — §3 calls itself its reflection. The bench refuses a divergence in either direction — a node
  * the script does not carry, a row with no node, a caller on one side and not on the
  * other.
  */

@@ -50,7 +50,6 @@ precision, but use judgement on trivial tasks.
 - Turn the task into verifiable criteria; for bugs and validations prefer a test that reproduces
   the behaviour.
 - Report failing tests, skipped checks and limits you hit faithfully.
-- For multi-step tasks, lay out a short plan with a check per step; not needed for trivial changes.
 
 ## Hard rules
 

@@ -84,10 +84,9 @@ can reach because they run *before* there is a chain:
 
 Everything else — `decision-doc`, `develop-feature`, `update-memory`, `blueprint`, `execute`,
 `finder-prompt`, `applier`, `arch-check`, `perf`, `test-coverage`, `study` — is an **internal contract**: a
-subagent receives it as a *path to read*, not as a skill to invoke. The first three became so
-on 19 September 2026, and each already has who opens it: `decision-doc` and `develop-feature`
-are opened by `new-feature`, `update-memory` is opened by `commit`, on every invocation. `study` became one
-with the split from `research`, which opens it on every invocation for reordering. An internal contract
+subagent receives it as a *path to read*, not as a skill to invoke. `decision-doc` and
+`develop-feature` are opened by `new-feature`, `update-memory` by `commit` on every invocation, and
+`study` by `research` on every invocation, for reordering. An internal contract
 **asks the owner nothing** and has no `argument-hint`: it returns a genuine choice in its own
 block, and whoever called it carries it into the chat (§ *Ask the owner*).
 
@@ -146,29 +145,23 @@ rebuilding the graph from the caller's prose.
 
 **A new arc is declared in the program, and its row here follows it.** Connecting a node to a
 caller that did not have it means declaring the arc in `GRAPH` of
-`plugins/daiku/architect/architect.mjs` and updating its row — the callers, the input it now
+`architect/architect.mjs` and updating its row — the callers, the input it now
 receives resolved, the permission that the invocation passes it — in the same change that writes
 the arc. A row left un-updated is an
 arc that exists in the prompts' code and exists nowhere readable: it is the form in which a node's permission ends up depending on who calls it without anyone
 having decided so.
 
-**And today this table is the reflection of a program, not its seat.** The order lives in
-`plugins/daiku/architect/architect.mjs`: that program carries the graph above as its own data and
+**This table reflects a program; it is not the program's seat.** The order lives in
+`architect/architect.mjs`: that program carries the graph above as its own data and
 answers, given the entry point and the artefacts already on disk, which phases remain. The table
-still **shows** the graph to whoever reads a contract — no row is deleted and no name changes —
-but it no longer **declares** it: where a skill used to restate the sequence, it asks the evaluator
-and follows the verdict.
+**shows** the graph to whoever reads a contract, but does not **declare** it: a skill that needs
+the sequence asks the evaluator and follows the verdict.
 
-**A machine compares the two.** `node plugins/daiku/hooks/self-check.mjs` launches the bench of
+**A machine compares the two.** `node hooks/self-check.mjs` launches the bench of
 `architect/` together with the benches of the four hooks, and that bench reads this file, extracts
 the rows above, and refuses a divergence in either direction — a node the program does not carry, a
-row with no node on disk, a caller on one side and not on the other. The three properties this
-section has always declared stay with the verifier that lives **outside** the package,
-`sviluppo/tools/check-topology.mjs`, run by hand and in the release gate beside the two validators.
-A verifier existed once and **was removed on 18 September 2026** because it resolved its own root by
-position on disk, and at the first tree reorganisation it stopped finding the corpus without its
-output saying so: the verifier that replaced it and the evaluator both take their root as an
-argument, for that reason. Neither of them promises more than a command already executes.
+row with no node on disk, a caller on one side and not on the other. The evaluator takes its root
+as an argument, never by position on disk, so a reorganised tree cannot silently lose the corpus.
 
 ## 4. Delegation
 
@@ -263,12 +256,8 @@ Rules valid on every host:
    field simply does not reach the decider — who keeps deciding, with less information than
    exists, with nothing signalling the loss.
 
-   **Validation clause.** A step's return block is validated before use: if the block is missing,
-   or a required field is absent or malformed, the step has failed — it is relaunched **exactly
-   once**, with the identical prompt; if it still does not come back, the outcome the hosting
-   skill declares for that case applies. Whoever consumes a block **cites** the declaring file
-   and never recopies its schema; if it deliberately reads only a subset, it declares which
-   fields it ignores and why. A malformed intermediate block is treated as a missing block: a
+   **Validation.** A step's return block is validated before use against the fields its node
+   declares: a required field absent or malformed counts as a missing block, and a
    string that is not the expected block is a block that did not come back. The machine-readable
    form of every block lives in `schemas/blocks.json`, which declares required and optional
    fields: the prose of the node stays the normative schema, the JSON file is its checkable
@@ -384,7 +373,6 @@ they are looked up, are §8 of `contracts/project-contract.md`.
 No key is mandatory besides `contract`: for everything else the degradation of
 §6 of `contracts/project-contract.md` applies.
 
-**The current form is 2.** It rose from `1` on 19 September 2026, when the role called
-`giudice` became `judge`: the `hosts.<host>.models.giudice` key no longer exists, and a file
-left at form `1` still carries that one — the `judge` role's model would not resolve,
+**The current form is 2.** A file at form `1` declares the judge's model under
+`hosts.<host>.models.giudice`, a key no skill reads: the `judge` role's model would not resolve,
 without anything saying so. It is exactly the case the number exists to make recognisable.

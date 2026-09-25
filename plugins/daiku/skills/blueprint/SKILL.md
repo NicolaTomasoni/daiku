@@ -51,7 +51,7 @@ The argument indicates the **folder** (where `1. decision-doc.md` lives) and **w
 
 7. **Summarise in chat** in a few lines: the chosen solution and the tasks of the plan in order. The detail lives in the file.
 
-8. **Stop here.** Do not execute the plan and do not launch any executor: whoever invoked you opens `execute` on the same folder, and it is the next phase of its sequence, not a command somebody must remember to type.
+8. **Stop here.** Do not execute the plan and do not launch any executor: whoever invoked you opens `execute` on the same folder as the next phase of its sequence.
 
 ## Structure of the produced file (`2. blueprint.md`)
 

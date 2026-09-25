@@ -29,7 +29,7 @@ changes with it.
 
 A rule may carry an **optional machine-readable block**: the same invariant, restated so
 `arch-check` verifies it without interpreting the prose. When the block is present and its
-folders cover the scope, the block is what gets checked; otherwise the prose is, as before.
+folders cover the scope, the block is what gets checked; otherwise the prose is.
 The block is a convention, never an obligation — a rule without it stays a fully valid rule.
 
 ```markdown
@@ -48,8 +48,4 @@ layers:
 - `deny_imports` lists forbidden import fragments, as path substrings — not resolved
   modules — so the check stays a grep, in every language.
 
-The name `policies/` is not a fancy synonym for `rules/`: on Codex, `rules/` is already a host
-security concept — Starlark files governing command execution — and reusing that name would
-collide two things that have nothing to do with each other.
-
-Shape, citation convention and the degradation rule live in `contracts/project-contract.md`.
+Shape, citation convention and the degradation rule live in the Daiku package, in its `contracts/project-contract.md`.

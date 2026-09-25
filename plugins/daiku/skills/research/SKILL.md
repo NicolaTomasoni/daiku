@@ -37,7 +37,7 @@ You reach the same contract in two ways. Your caller **chooses** the mode by cit
 
 > Applies only in `owner`.
 
-In `owner` start from `$ARGUMENTS` alone: resolve the technology, ask when it is missing, cover the technology's full surface. Once collection is complete call `study` for reordering and then deliver the file per § *Final output*. No chat, no summary.
+In `owner` start from `$ARGUMENTS` alone: resolve the technology, ask when it is missing, cover the technology's full surface. Once collection is complete call `study` for reordering and then deliver the file per § *Final output*.
 
 **Your outcome is only the reordered file's path, nothing else**: do not open a working folder, do not propose a feature. The notes stand alone, and whoever asked for them decides if and when they will become something — if needed, `new-feature` will find them again, rereading them from `{paths.lib_notes}/` without repeating the collection.
 
@@ -152,7 +152,7 @@ Your caller opens the file you give: if it is still raw they see it by themselve
 
 > Applies only in `owner`.
 
-**From owner**, return only the reordered file's path in `{paths.lib_notes}/<slug>.md`. No chat, no summary, no block.
+**From owner**, end with the reordered file's path in `{paths.lib_notes}/<slug>.md`: that path is the outcome, and the content lives in the file.
 
 > Applies only in `from-new-feature`.
 

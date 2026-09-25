@@ -10,7 +10,7 @@ You receive a folder containing the material of a problem (notes, documents, cod
 2. **Act accordingly** — either refine `0. problem.md` with a sceptical revision and lay the numbered strategic decisions in `0.5. strategic-study.md`, or produce/update `1. decision-doc.md` with technical decision cards ready for execution.
 3. **Deliver the decisions to whoever will bring them to the owner** — you return them in your block, numbered and in full, and when the answers come back you incorporate them in the document hosting them. You do not ask them yourself: you have no channel to the owner, and § *Invocation modes* says whose task that is.
 
-**Every stage leaves a document.** A study stopping at direction is not a half study: it is the work of that level, and it is worth as much as the technical one. As long as it lived only in chat it died with the session, and the folder was left with no trace of the judgement that had stopped it there.
+**Every stage leaves a document.** A study stopping at direction is not a half study: it is the work of that level, and it is worth as much as the technical one. A judgement that lives only in chat dies with the session; the document is what tells the folder why the study stopped where it did.
 
 The sense of the skill: you reason like an exhaustive and sceptical senior engineer; the user reads at the top abstract decisions with pros and cons (at whatever stage) and decides without having to enter the details.
 
@@ -93,7 +93,7 @@ Everything arrives from the prompt of whoever invoked you, already resolved: **a
 - **Merge first, read after.** The reference files in the folder must first be concatenated into a single problem description file (see procedure, point 2), then read from there. They are the problem material, not an optional context: skip nothing in silence.
 - **Full reading, never sampled**: every file must be read in full before writing a single finding or a single decision.
 - If a document declares its own facts "verified against" a source present in the repo (notes, adapter, code), **verify the load-bearing claims by sampling** against that source — a load-bearing claim without corroboration is a finding, not a note.
-- Open `{memory.index}` and the memories the problem area touches before analysing: it is the channel of §4.1 of `contracts/orchestration.md`. If the caller does not pass them to you, open the index and choose yourself — you are the node opening the chain, so nobody passes those paths to you, and a decision already closed that you did not read you reopen without noticing.
+- Open `{memory.index}` and the memories the problem area touches before analysing: it is the channel of §4.1 of `contracts/orchestration.md`. If the caller does not pass them to you, open the index and choose yourself — a decision already closed that you did not read you reopen without noticing.
 - Respect the points documents or memory declare **already decided/ascertained/to assume true**: do not raise them again; report them **only** if you find a passage contradicting them.
 
 ## The two stages
@@ -169,7 +169,7 @@ Rules: 2–4 options per decision, **mutually exclusive**, each self-sufficient 
 
 When the answers arrive — from the prompt, in *incorporation* mode —:
 - incorporate **every** decision in `0. problem.md` with surgical modifications, propagating coherence (if a decision overturns a statement repeated elsewhere, correct **all** occurrences);
-- **close every decision in `0.5. strategic-study.md`**, where it is written: the chosen option, the date, and where it was incorporated. The discarded options stay — they serve whoever one day asks why it was not done otherwise. If the document does not exist because the list predates this contract, write it now with the decisions and answers together;
+- **close every decision in `0.5. strategic-study.md`**, where it is written: the chosen option, the date, and where it was incorporated. The discarded options stay — they serve whoever one day asks why it was not done otherwise.
 - if an answer is a free directive, it prevails over the options: apply it;
 - if the user declares an assumption "true, trust me" → do not touch the document; carry it into memory **only through the flow the memory contract authorises** — `.daiku/domain/memory-contract.md`, or `{instructions_file}` if that file does not exist — which is also what gives it the right form and the line in `{memory.index}`; in the summary declare the assumption as a point not to raise again;
 - close with a summary by number: decision → what you wrote and where, plus the list of what possibly remains open.

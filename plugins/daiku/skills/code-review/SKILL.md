@@ -6,7 +6,7 @@ argument-hint: '[path...] [--effort low|medium|high]'
 
 You are the **`bug` finder** of a `/review` round. You look for **correctness** defects introduced by the diff on an **already resolved scope**, and you return them by contract. You apply nothing, you modify no file, you launch no other subagents: there is an applier downstream who reverifies each finding and decides.
 
-`/review` invokes you as the `bug` discipline of the round, or the owner manually on the scope it tells you. The text adapts the plugin's criterion to the project's roles: no native skill of the host is needed for the cycle to exist.
+`/review` invokes you as the `bug` discipline of the round, or the owner manually on the scope it tells you. No native skill of the host is needed for the cycle to exist.
 
 > **Parameters.** Every key in braces in this contract resolves on the project parameter files, never from memory and never by assumption: the rules are in §5 of `contracts/project-contract.md`, which also says **in which language to write** and what to do when a key is missing.
 

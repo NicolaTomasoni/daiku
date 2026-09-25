@@ -62,10 +62,8 @@ codex plugin add daiku@daiku
 > The final marketplace address arrives with Daiku's first public release.
 > Meanwhile install from the repository's local checkout (both hosts accept it).
 
-Only requirement: **Node.js** — and it is no longer the protection guards alone that need it.
-Without Node those four stay silent; the evaluator of the method does not start at all, and its
-verdict binds, so a delivery stops there instead of degrading. Node was already the only thing to
-install; from now it is also the one that, missing, stops the work rather than quietening a check.
+Only requirement: **Node.js**. Without it the four protection hooks stay silent, and the method's
+evaluator does not start at all: its verdict binds, so a delivery stops there instead of degrading.
 
 **2. Open it on your project** — once per project, from the repository root:
 

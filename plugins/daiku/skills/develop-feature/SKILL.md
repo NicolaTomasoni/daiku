@@ -38,7 +38,7 @@ Read `contracts/orchestration.md`: roles, host, how a subagent launches, concurr
 
 ## The evaluator
 
-Four of the classifications below are **not read off this prose any more**: they are asked, and the
+Four of the classifications below are **asked, not read off this prose**, and the
 verdict binds. It is one program, and asking it is one command:
 
 ```bash
@@ -110,8 +110,8 @@ The phases are ordered and not skippable. Each is **one** subagent, with the pro
 **Which phases remain is not read off this file, it is asked.** Before phase 0, ask the evaluator
 (`question: "order"`), passing the entry point, the artefacts already on disk and the `ledger` (or
 `null`): the verdict says where to start and what is left to do, and the sections below are its
-**rendering** — the same sequence, shown to whoever reads a contract, no phase deleted and no name
-changed. They no longer declare it. Two things this does not change: the phases are still ordered and
+**rendering** for whoever reads a contract; the evaluator owns the order. Two things stay here:
+the phases are ordered and
 none is skippable, and the worktree lifecycle of phase 0 still belongs here.
 
 Each block carries the field declaring the outcome of its own phase: `ok` for Brief, Execute and Report, `gate` for Review, `staged` for Stage, `updated` for Memory, `committed` for Commit. **If that field says failure, or if the block does not come back at all, the delivery stops there** (see *Early block*) — an absent block is not interpreted by feel and not rebuilt from the prose of the subagent.
@@ -141,7 +141,7 @@ The **integration branch** is the one the main tree is currently positioned on �
 5. If there is none and they are already `{worktree.max}`: create nothing and do not reuse a dirty one — return `ok: false`.
 
 ```json
-{"ok": true, "worktree": "<name>", "worktree_root": "<path of <pool>/<name>/src>", "detail": "<if ok=false, why>"}
+{"ok": true, "worktree": "<name>", "worktree_root": "<<pool>/<name> plus the technical root's position relative to {repo_root}>", "detail": "<if ok=false, why>"}
 ```
 
 `ok: false` stops the delivery (see *Early block*): `blocked` report, no stage, no commit. A dirty one is not your residue to clean: it is work of another delivery nobody registered. From here on every phase already receives resolved the `<name>`, the work root and the artefacts root.
@@ -188,7 +188,7 @@ If review finds no file under `{code_root}` to review, stop: there is no deliver
 
 ### 4. Decision — you decide it **yourself**, in chat, without subagent
 
-It is a deterministic classification on already structured data: no second judge is needed to re-judge. **And it is not redone here — it is asked.** Call the evaluator with `question: "decision"` and the `review_outcome` block in full; the verdict is `GREEN_COMMITTED`, `GREEN_WITH_POST_DECISIONS` or `BLOCKED_NO_COMMIT`, and `blockers` lists **every** condition that blocks, not the first. The table below is that rule shown to whoever reads it, and it no longer declares it: what remains here is the **consequences**, which are ours and are not a classification — on `BLOCKED_NO_COMMIT` one does not stage, does not align memory, does not commit, and the worktree stays dirty on purpose.
+It is a deterministic classification on already structured data: no second judge is needed to re-judge. **It is asked, not computed here.** Call the evaluator with `question: "decision"` and the `review_outcome` block in full; the verdict is `GREEN_COMMITTED`, `GREEN_WITH_POST_DECISIONS` or `BLOCKED_NO_COMMIT`, and `blockers` lists **every** condition that blocks, not the first. The table below shows that rule to whoever reads it; the evaluator owns it, and what remains here is the **consequences**, which are ours and are not a classification — on `BLOCKED_NO_COMMIT` one does not stage, does not align memory, does not commit, and the worktree stays dirty on purpose.
 
 The review applier already marked each `to_confirm` item with `blocking`, because it had the finding in hand.
 
@@ -217,7 +217,7 @@ The **non**-blocking items are `post_commit_decisions`: they do not stop the com
 
 If the verdict is `unblock`, delegate **one** worker subagent which, in the work root, corrects only the gate findings on the diff lines with an obvious single-solution fix (mechanical lint, format, types), relaunches the gate of the touched area and returns `gate`/`gate_detail`/`needs_tradeoff`. Constraints: no behaviour change, no file outside the reported ones, never stage/commit, and if even a single fix admits two defensible options the subagent leaves it alone and declares it in `needs_tradeoff` instead of guessing.
 
-- If `gate: green` and empty `needs_tradeoff` come back: reclassify with the table (the typical outcome is `GREEN_COMMITTED`) and continue from phase 5 on; the report tells the unblock in a paragraph.
+- If `gate: green` and empty `needs_tradeoff` come back: ask the evaluator again with `question: "decision"` on the updated `review_outcome` block, and continue from phase 5 on unless it returns `BLOCKED_NO_COMMIT`; the report tells the unblock in a paragraph.
 - Otherwise (if `gate` is still `red`, or `needs_tradeoff` is non-empty): `BLOCKED_NO_COMMIT` stays with those blockers, and from here on the paragraph below holds (no stage/memory/commit, dirty and declared worktree).
 
 A single attempt per delivery: if the gate stays red do not relaunch the fix — the second pass is oscillating work, and oscillation is declared, not repeated. This is the only road reopening a `BLOCKED_NO_COMMIT` inside the same delivery: blocking items, forks and missed disciplines are never unblocked this way.
@@ -309,9 +309,9 @@ It is the only phase having to report fields produced by **six others**, and a s
 A single block, at the tail of the review report:
 
 - title `## Delivery`;
-- below, **continuous prose in paragraphs** (never bullet lists, never sub-titles): 2-3 sentences on what was delivered (distill the chosen solution to its essence, do not paste it verbatim); a paragraph on the review outcome (gate and its synthesis in one sentence, plus the limits review declared on itself — missed disciplines, lost independence — if any); a paragraph with final state and commits; if open items remain — blockers, post-commit forks, memory facts to confirm with the owner — a last paragraph summarising them grouped by theme and written **in a simple way**: what is at stake, which are the options and what changes by choosing one or the other, understandable without opening the code. If none remain — the normal case, because review and delivery resolve alone what they know how to resolve — omit that paragraph.
+- below, **continuous prose in paragraphs**: what was delivered (distill the chosen solution to its essence, do not paste it verbatim); a paragraph on the review outcome (gate and its synthesis in one sentence, plus the limits review declared on itself — missed disciplines, lost independence — if any); a paragraph with final state and commits; if open items remain — blockers, post-commit forks, memory facts to confirm with the owner — a last paragraph summarising them grouped by theme and written **in a simple way**: what is at stake, which are the options and what changes by choosing one or the other, understandable without opening the code. If none remain — the normal case, because review and delivery resolve alone what they know how to resolve — omit that paragraph.
 
-Paragraphs separated by an empty line. Clear and synthetic: the state must be understood in 30 seconds.
+Paragraphs separated by an empty line, readable at a glance.
 
 ```json
 {"ok": true, "report_path": "<folder>/5. review-report.md", "detail": "<if ok=false, why/reason: file not writable, append failed>"}
@@ -352,7 +352,7 @@ If Acquisition, Brief or Execute fail, the delivery stops: say so in chat, have 
 
 Every field comes from a phase, and is reported **verbatim** from there — not recomputed from memory: `status` from phase 4 (a conflicting merge of phase 6b reclassifies it `BLOCKED_NO_COMMIT`); `worktree` from phase 0 (`null` if it acquired nothing); `commit_sha` from `committed`/`commit_sha` of phase 6; `merge_sha` from phase 6b (`null` if merge did not start or went into conflict); `memory_updated` from the `updated` field of phase 5b (`false` if the phase was not run); `memory_committed` and `memory_commit_sha` and `version_commit_sha` from phase 6; `reason` from the `detail` of the blocking phase. The delivery does not park — on `BLOCKED_NO_COMMIT` and on `blocked` the worktree stays dirty and the paths are declared in the report and in `reason`.
 
-**`architect_agreement` is the one field that measures the delivery instead of reporting it.** It says whether your own reading of the four asked classifications coincided with the verdict of § *The evaluator*: `match` when they agreed, `divergence` when they did not — and on a divergence the verdict held, which is the case worth reading. It is `null` when the evaluator never ran, and a `null` there is not a fault but a fact to declare. It is the first use of the evaluator to measure Daiku itself: if the two readings always coincide, the evaluator bought little, and knowing that is worth the whole delivery.
+**`architect_agreement` is the one field that measures the delivery instead of reporting it.** It says whether your own reading of the four asked classifications coincided with the verdict of § *The evaluator*: `match` when they agreed, `divergence` when they did not — and on a divergence the verdict held, which is the case worth reading. It is `null` when the evaluator never ran, and a `null` there is not a fault but a fact to declare. It exists to measure the evaluator's value: if the two readings always coincide, the evaluator bought little.
 
 ## Self-deceptions (stop them before they stop you)
 
@@ -365,7 +365,7 @@ Every field comes from a phase, and is reported **verbatim** from there — not 
 | "I commit first and update memory after" | The order is declared: stage → memory → feature commit → doc/memory commit → version/changelog commit. No feature freezes without the artefacts realigned on the **same** diff. |
 | "I add `-A` to the stage, it is more comfortable" | Never: the scope is `{code_root}` and files are listed singly. The second commit has the opposite scope and is exclusive. |
 | "I work on the main tree, it is already there" | Code lives in the worktree acquired at phase 0. On the main tree only merge (6b) and delivery artefacts write. |
-| "The pool is full, I create a sixth / reuse a dirty one" | No: `{worktree.max}` is a cap, not a suggestion. A dirty one is work of another delivery: exit `blocked` and say so. |
+| "The pool is full, I create one more / reuse a dirty one" | No: `{worktree.max}` is a cap, not a suggestion. A dirty one is work of another delivery: exit `blocked` and say so. |
 | "The merge is in conflict, I resolve it by hand" | No: `abort` and `BLOCKED_NO_COMMIT`. A conflict resolved here is code no finder ever saw. The only additive changelog union excepted (6b). |
 | "I use the biggest model, this step looks hard to me" | The model comes from the role declared by the phase, resolved with the rule of §2 of `contracts/orchestration.md`. It is not chosen by feel. |
 | "I summarise gate and to-confirm myself in chat" | They are already in the report. Your summary is state + commits, not a duplicate. |

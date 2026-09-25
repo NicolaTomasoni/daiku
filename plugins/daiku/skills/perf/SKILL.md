@@ -154,9 +154,7 @@ Possible intervention:
 - <intervention>: <reason>
 
 ## Proposed priority
-1. <first recommended action>
-2. <second recommended action>
-3. <third recommended action>
+1. <recommended actions, most valuable first — as many as the findings justify>
 ```
 
 If you find no real quick wins, say so explicitly and indicate only the hypotheses to measure.

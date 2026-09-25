@@ -5,7 +5,7 @@ description: 'Creates commits following the project convention — always aligns
 allowed-tools: Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(git show:*), Bash(git add:*), Bash(git commit:*), Read, Edit, Agent
 ---
 
-Create commits for the files indicated by whoever invokes you — the owner in chat, or the skill delegating to you. **Without indications, the perimeter is everything changed under `{code_root}`**, staged or not, plus the groups that § *Procedure* 3 partitions from there. NEVER run `git push`. `.daiku/` never enters any commit, ever: § *Daiku is never committed*.
+Create commits for the files indicated by whoever invokes you — the owner in chat, or the skill delegating to you. **Without indications, the perimeter is everything changed under `{code_root}`**, staged or not, plus the groups that § *Procedure* 3 partitions from there. Do not run `git push`: the command guard denies it as well. `.daiku/` never enters any commit, ever: § *Daiku is never committed*.
 
 > **Parameters.** Every key in braces in this contract resolves on the project parameter files, never from memory and never by assumption: the rules are in §5 of `contracts/project-contract.md`, which also says **in which language to write** and what to do when a key is missing.
 
@@ -30,7 +30,7 @@ Above the convention, whatever it is, two things hold that do not depend on the 
 
 Before freezing the code in a commit, the non-code artefacts must be realigned **on the same diff**: it is the principle of the `Memory` phase of `develop-feature`, and it holds also when the commit arrives from a standalone review or from hand-made work. No feature enters a commit leaving the artefact behind. This skill does not replicate that contract: it **delegates** it.
 
-**Delegation is a mandatory step and has no exceptions.** Every invocation of this skill runs it: the one closing a review, the one the owner launches by hand on a diff written in chat, the one on a test-only group, on a formatting, on a revert, on a rename. **Always** delegate, without judging first whether the diff "deserves it" — that judgement belongs to `update-memory`, whose first principle is "no unjustified update" and which returns `updated: false` without writing anything when there is nothing to reflect. It costs a subagent returning empty-handed; not delegating costs an artefact left behind inside a commit, where nobody ever finds it again.
+**Delegation is a mandatory step and has no exceptions.** Every invocation of this skill runs it: the one closing a review, the one the owner launches by hand on a diff written in chat, the one on a test-only group, on a formatting, on a revert, on a rename. **Always** delegate, without judging first whether the diff "deserves it" — that judgement belongs to `update-memory`, whose first principle is "no unjustified update" and which returns `updated: false` without writing anything when there is nothing to reflect. It costs a subagent returning empty-handed; not delegating costs an artefact left behind inside a commit, where nobody ever finds it again. In the package there is no periodic revision of the corpus: every commit passing through this step is what keeps it healthy.
 
 **Not even the empty code group skips the step.** If you are committing only memory and documentation, there is no feature diff to reflect and the delegate will return `updated: false` — but its *Additional check* on the stage of `{memory.root}` holds **every run**, and it is precisely the case where it is needed: you are about to freeze memory written by somebody else. Declare it to it in the prompt ("the code group is empty: there is no feature diff, do the check on the stage") and let it decide.
 
@@ -124,12 +124,12 @@ An empty group produces no commit.
 
 **Report to the caller the SHA of every produced commit, saying which group it is of**, as you already do with `confirm_with_owner`: whoever invoked you puts it in a field of its own block and cannot derive it from `git log -1`, which after you returns the last group and not the code one. If you stop between one group and the next, say so explicitly: the sequence is **partial**, not executed.
 
-**Then emit the machine-readable block**, beside the prose above which stays unchanged:
+**Then emit the machine-readable block**, after the prose report:
 
 ```json
 {"commits": [{"group": "code|memory|version", "sha": "<sha>"}], "version_decision": "<the new number with the cycle theme, or no bump and why>"}
 ```
 
-One item per produced group — code, memory/doc, version/changelog, or more if the delegate committed its own group itself; a group that produced no commit has no item. These field names are additive: the prose report and the SHA lines above stay exactly as they are, and no existing key is renamed or removed. The expected form is mirrored in `schemas/blocks.json` (§ *commit*), where this file stays normative on divergence.
+One item per produced group — code, memory/doc, version/changelog, or more if the delegate committed its own group itself; a group that produced no commit has no item. The expected form is mirrored in `schemas/blocks.json` (§ *commit*), where this file stays normative on divergence.
 
 **Never** run `git push`, `git push --force`, or any command writing to the remote. **Never** add the `Co-Authored-By` trailer nor any mention of the agent that generated the work (`Generated with …` or similar) to the commit messages.

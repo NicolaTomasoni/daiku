@@ -18,7 +18,7 @@ The Codex manifest rejects two keys, and they are precisely those two.
 
 And neither host lets a package write in the user project. So the only way is a command the user launches. That command is you.
 
-On **Claude Code** none of this is needed: `plugin.json` declares `hooks`, the `agents/` folder is read from the package, and updating updates both alone.
+On **Claude Code** none of this is needed: the host reads the package's `hooks/hooks.json` and `agents/` folder directly, and updating the package updates both.
 
 ## The hook contract is the same on both hosts
 
@@ -34,7 +34,7 @@ For this the `.mjs` files climb to the git root — `hooks/lib/project-root.mjs`
 
 On Claude Code a role is a file in `agents/`, and the `tools:` line of its frontmatter truly **removes** tools: a `finder` without `Edit` and without `Write` does not write files, because it has nothing to do it with.
 
-On Codex that level does not exist. A `.codex/agents/*.toml` carries `name`, `description` and `developer_instructions`, and the instructions truly reach the subagent — but there is no tool list to restrict, and **`sandbox_mode` declared inside there restricts nothing**: tried on 19 September 2026 on `codex-cli 0.155.0`, a subagent with `sandbox_mode = "read-only"` wrote the file it was asked for, both with the default multi-agent and with `multi_agent_v2`. The Codex sandbox is real — a session launched with `-s read-only` refuses writing — but it is chosen per session, not per role.
+On Codex that level does not exist. A `.codex/agents/*.toml` carries `name`, `description` and `developer_instructions`, and the instructions truly reach the subagent — but there is no tool list to restrict, and **`sandbox_mode` declared inside there restricts nothing**: a subagent with `sandbox_mode = "read-only"` still writes files, both with the default multi-agent and with `multi_agent_v2`. The Codex sandbox is real — a session launched with `-s read-only` refuses writing — but it is chosen per session, not per role.
 
 Two rules follow for you:
 
@@ -63,7 +63,7 @@ The two coincide almost always. When they **do not** coincide, installation stil
 
 You know it from where you are running: do not ask it.
 
-On **Claude Code**: you write nothing. Declare the package already carries the four hooks and the two roles, updating with it, and that for this project there is no gesture to make. Close here. Do not hook those same four hooks a second time from `.claude/settings.json`: the package already hooks them, and the user would find every guard run twice.
+On **Claude Code**: you write nothing. Declare the package already carries its hooks and the subagent roles of its `agents/` folder, updating with it, and that for this project there is no gesture to make. Close here. Do not hook those same four hooks a second time from `.claude/settings.json`: the package already hooks them, and the user would find every guard run twice.
 
 On **Codex**: continue.
 

@@ -89,15 +89,9 @@ of a file, the presence or absence of an area. Three prohibitions, in order of s
 
 No key is mandatory besides `contract`: everything else is subject to §6.
 
-### 4.1 What a hook used to read and no longer reads
+### 4.1 The key a hook reads
 
-Until 21 September 2026 two keys lit two branches of the command guard —
-`guardrails.deny_push` and `guardrails.deny_no_verify`. That day the owner removed them: an
-agent is never left free to push or to skip commit hooks, so there is nothing
-to declare. The keys no longer exist in the table above; a `project.json` still
-carrying them has two extra lines nobody looks at, not a defect.
-
-A single JSON-driven branch remains: the worktree one, lit by `worktree.pool` — a declared pool
+The command guard reads one key, `worktree.pool`, which lights its worktree branch: a declared pool
 *is* the declaration that those directories belong to Daiku. The guard's other four branches
 (junction, `.daiku/`, `--no-verify`, push) deny on every project that opened Daiku,
 with no switch. `hooks/README.md` carries the full branch table.
@@ -145,10 +139,8 @@ copied verbatim:
 > when a key is missing.
 ```
 
-**It was an eight-line block, repeated in every skill.** It shrank to one line because eight
-identical lines in twelve files are twelve copies diverging at the first change, and because what
-they said is exactly the content of this section: a reference reaches it without
-duplicating it. Whoever reads the skill opens one more file; whoever changes the rule opens only one.
+**It is one line, not a restatement of this section,** because identical copies in every skill
+diverge at the first change: a reference reaches the rules without duplicating them. Whoever reads the skill opens one more file; whoever changes the rule opens only one.
 
 **Which of the two files a key resolves from** need not be said by the skill:
 
@@ -221,7 +213,7 @@ degrades silently. Better a declared default answer, visible and changeable, tha
 absent file nobody knows they must write.
 
 **The default stays domain, it does not become method.** The skill keeps asking the question and not
-knowing the answer: if you delete the file, the §6 degradation applies exactly as before.
+knowing the answer: if you delete the file, the §6 degradation applies exactly as if no default had ever existed.
 What travels is a *plausible* answer, not a *binding* one.
 
 **A default exists only where it makes sense.** A role whose answer depends on the stack or
@@ -246,7 +238,7 @@ A policy **may** also carry an optional `layers:` frontmatter block restating an
 in machine-readable form — `name`, the `folders` it applies to, and the `deny_imports`
 fragments forbidden there. When the block is present and its folders cover the scope, readers
 verify the block instead of interpreting the prose; when absent or malformed, they verify the
-prose as before. The block is a convention, never an obligation: a policy without it stays a
+prose. The block is a convention, never an obligation: a policy without it stays a
 fully valid policy, and no check reports a missing block.
 
 ### 5.5 The language — read here once, not repeated in every skill
@@ -323,20 +315,7 @@ a skill that gets it wrong. It is the intended direction.
   every project, then the skills reading the new form. Until that round is closed,
   updating the skills is no longer atomic — which is why the number exists.
 
-The current form is **2**. It rose from `1` when `memory_catalogs` became `memory.catalogs`,
-beside `memory.root` and `memory.index` which did not exist before: a skill written on form
-`1` would look for the old key and not find it, which is exactly the case the number
-exists to make recognisable.
-
-**And it stayed `2` on 19 September 2026**, when `memory.catalogs` was removed: only
-`memory-review` read it, which that day was deleted from the package, and after it no
-skill cited it any more. It is the fourth rule's case above, and it is written here because whoever
-applies the first one mechanically would expect a `3`.
-
-**And it stayed `2` on 21 September 2026**, when `guardrails.deny_push` and
-`guardrails.deny_no_verify` were removed: after removal no skill cited them any more —
-the guard reading them is not a skill — and it is the same case. A `project.json` still
-carrying them does not read badly: it has two lines nobody looks at.
+The current form is **2**.
 
 ## 8. Project or environment — in which of the two files
 

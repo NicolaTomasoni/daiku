@@ -9,12 +9,12 @@ the first time `/init` runs, and never touches them again: no package update ove
 changed. If a default does not suit you, rewrite it. If you delete it, the skill that cites it
 degrades and says so — it does not break.
 
-Shape, citation convention and the degradation rule live in `contracts/project-contract.md`.
+Shape, citation convention and the degradation rule live in the Daiku package, in its `contracts/project-contract.md`.
 
 ## The roles this package's skills cite
 
 None is mandatory: a skill that does not find its domain file **does less** and declares it in its
-report (§6 of the contract). This table says which question each file answers — the answer is not
+report (§6 of the package's project contract). This table says which question each file answers — the answer is not
 here, and that is the point.
 
 | Role | Which question it answers | Who asks | Default |
@@ -37,4 +37,4 @@ default there would be an invention dressed up as a rule, and the right thing is
 missing until you write it.
 
 A new role appears when a new skill asks a new question: add the row here and the citation in the
-skill, in the form of §5.4 of the contract — never the content inside the skill.
+skill, in the form of §5.4 of the package's project contract — never the content inside the skill.

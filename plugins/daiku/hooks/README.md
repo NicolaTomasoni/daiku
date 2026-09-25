@@ -20,7 +20,7 @@ The policy an agent cannot remove lives in the host's **managed settings**: abov
 every other source, and unwritable by an unelevated process. A hook does not override them — the
 documentation says so explicitly: a hook's decision does not override a permission rule.
 
-These three sit below that line and cover something else: **distraction**. Gestures that
+These four sit below that line and cover something else: **distraction**. Gestures that
 cost lost work and that no prefix rule can recognise, because that rule
 matches the start of a line and does not enter `sh -c`.
 
@@ -56,7 +56,7 @@ and the ban holds in any case — which is why it is not declared. Same for
 freedom. Wherever a ban can have a deterministic seat, it always has one — never trust an
 LLM.
 
-The other three are decisions of whoever keeps the repository, and Daiku does not presume them. It is §6 of
+The worktree pool is a decision of whoever keeps the repository, and Daiku does not presume it. It is §6 of
 `contracts/project-contract.md` — *what the JSON does not declare does not exist* — applied to a
 hook instead of a skill.
 

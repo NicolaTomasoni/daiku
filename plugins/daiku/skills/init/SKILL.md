@@ -22,7 +22,7 @@ The **technical root** is the directory the skills run from, the one carrying th
 
 - With an argument, it is that. Without an argument, it is the current directory.
 - Then run exactly `git -C "<technical root>" rev-parse --show-toplevel`, on both hosts and both shells. Do not choose another command and do not add checks around it: the exit code is the verdict, and its stdout is the repository root you reuse at *Step 2*.
-- If the exit code is not `0`, stop here with exactly these two lines and nothing else: `Cannot initialise Daiku here: <technical root> is not inside a Git repository.` on the first line, `Not written: nothing was written.` on the second. No check line, no `fatal:` output, no how-to-`git init`, no relaunch instructions: you do not initialise a repository in place of the user.
+- If the exit code is not `0`, stop here with exactly these two lines and nothing else: `Cannot initialise Daiku here: <technical root> is not inside a Git repository.` on the first line, `Not written: nothing was written.` on the second. You do not initialise a repository in place of the user.
 - If `.daiku/` already exists, it is not an error: continue in **completion** mode (see *Idempotence*).
 
 ## Where the skeletons stand
@@ -54,7 +54,7 @@ They are two questions, not one, because they are two different audiences (§5.5
 
 They concern **the future**, not this run: neither changes one line of what you are about to write, which is in English however they answer. Ask them just the same, and before everything else, because they end up in `project.json` and because the report you close with is the first text they apply to.
 
-**Ask bare, with no preamble.** Use `AskUserQuestion` with two questions: `Chat language` — `Which language for chat replies, summaries, reports and method documents?` — and `Commit language` — `Which language for commit messages and changelog entries?` Options in both: Italiano, English, Other. You may mark one option as recommended from what you read (`README.md` and the instructions file for chat, `git log --oneline -30` for commits), but do not write why: no observed sources, no empty-repo explanation, no note about which `.md` files are not source. The question text stays as above, nothing else.
+**Ask bare, with no preamble.** Use `AskUserQuestion` with two questions: `Chat language` — `Which language for chat replies, summaries, reports and method documents?` — and `Commit language` — `Which language for commit messages and changelog entries?` Options in both: Italiano, English, Other. You may mark one option as recommended from what you read (`README.md` and the instructions file for chat, `git log --oneline -30` for commits); the question text stays exactly as above, with nothing added.
 
 If the user does not answer — because you are running inside a chain, or because the session has no interactive channel — **do not invent**: leave the two keys out of `project.json` and list them among the things to fill in. §5.5 already declares what happens without them, and a silent default here is worse than their absence.
 
@@ -118,7 +118,7 @@ Copy **all** files of each skeleton, without modifying them: `templates/project/
 Inside there are two different things, and distinguishing them is worth it:
 
 - **The README of each** is the convention of the folder: how a domain file is named, what a policy file must have in the frontmatter. It is not merit content.
-- **The already written domain skeletons** — today `commit-convention.md`, tomorrow perhaps others — are **defaults**, not package rules. You lay them down and it ends there: from that moment they belong to the user, and your idempotence guarantees no relaunch ever rewrites them (§5.4 of `contracts/project-contract.md`).
+- **The domain skeletons that arrive already written** — every file of `templates/project/domain/` other than its README — are **defaults**, not package rules. You lay them down and it ends there: from that moment they belong to the user, and your idempotence guarantees no relaunch ever rewrites them (§5.4 of `contracts/project-contract.md`).
 
 **Do not invent a domain file the package does not carry**, and do not deduce policies from the architecture you glimpsed. A default written by whoever built Daiku is a declared proposal, which is seen and changed; a file you write now is your ten-minute impression disguised as a rule, and nobody would ever know how to distinguish the two things.
 
@@ -171,7 +171,7 @@ catch. Report the recheck file by file, in one line each.
 
 ### 7. Carry the host memory into the repository — only on Claude Code
 
-On **Codex this step does not exist**, and not because nobody got there yet: there the agent memory is not made of files but of a database in the user home (`~/.codex/memories_1.sqlite`), built by consolidating past sessions, and there is no key moving its seat. Do not try, write nothing under `.codex/` for this reason, and do not report it as something missing from that project: it is a difference between the two hosts. The corpus of `{memory.root}` exists there just the same and `update-memory` writes it at every commit; only the host does not put anything of its own in.
+On **Codex this step does not exist**: there the agent memory is not made of files but of a database in the user home (`~/.codex/memories_1.sqlite`), built by consolidating past sessions, and there is no key moving its seat. Do not try, write nothing under `.codex/` for this reason, and do not report it as something missing from that project: it is a difference between the two hosts. The corpus of `{memory.root}` exists there just the same and `update-memory` writes it at every commit; only the host does not put anything of its own in.
 
 On **Claude Code**, instead, the memory the agent writes itself ends up by default in `~/.claude/projects/<project>/memory/`: outside the repository, invisible in a `git diff`, shared with nobody and lost at the first machine change. Your task is to carry it inside, where it is seen — and committed together with the rest, except when it stands under `.daiku/` (point 5). Five things, in this order:
 

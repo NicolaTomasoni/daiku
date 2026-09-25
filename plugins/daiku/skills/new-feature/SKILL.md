@@ -10,15 +10,9 @@ You are the node **opening** a work and not leaving it halfway. You receive a na
 
 > **Parameters.** Every key in braces in this contract resolves on the project parameter files, never from memory and never by assumption: the rules are in §5 of `contracts/project-contract.md`, which also says **in which language to write** and what to do when a key is missing.
 
-## When to use it, and when to use the others
+## When to use it
 
-| Where you start from | What you launch |
-|---|---|
-| an idea or a problem, and on disk there is still nothing | **this one** |
-| a folder already carrying hand-written raw material (notes, requirements, constraints) | `decision-doc <folder>` |
-| a folder with `1. decision-doc.md` already resolved | `develop-feature <folder> <solution>` |
-
-The three do not overlap: this skill is the only one starting from the **code** instead of a document, and it is the only one opening the folder.
+Use it when you start from an idea or a problem and there is nothing on disk yet. It is the only entry point that starts from the **code** instead of a document, and the only one that opens the folder; `decision-doc` and `develop-feature` are its internal phases, never launched on their own.
 
 ## Before starting
 
@@ -160,7 +154,7 @@ The point-6 block declares the `stage`. If it was `strategic`, incorporation clo
 
 The technical decisions are closed: `1. decision-doc.md` exists and its cards have an answer. Delegate the whole delivery to a subagent running `skills/develop-feature/SKILL.md`, with the folder and the **chosen solution** — for each decision the id and text of the option the owner chose, as they wrote them. For a card they did not answer, `A` holds, which by contract is the recommended one, without asking.
 
-From there on the sequence is its own and you do not rewrite it here — and it is not recited here either: **it is asked**. Call `architect/architect.mjs` — the evaluator that `skills/develop-feature/SKILL.md` § *The evaluator* declares — with `question: "order"`, `entry: "new-feature"` and `present` (the artefacts already on disk), the input that section declares, and its verdict says which phases remain. What this section used to list — brief, execution, review rounds, gate, decision, memory and documentation alignment, commit and merge — is that sequence's **rendering**, and it no longer declares it. **Do not launch yourself `blueprint`, `execute`, `/review` or `/commit`**: they are the phases of `develop-feature`, and chaining them from here means keeping two copies diverging at the first modification.
+From there on the sequence is its own and you do not rewrite it here — and it is not recited here either: **it is asked**. Call `architect/architect.mjs` — the evaluator that `skills/develop-feature/SKILL.md` § *The evaluator* declares — with `question: "order"`, `entry: "new-feature"` and `present` (the artefacts already on disk), the input that section declares, and its verdict says which phases remain. **Do not launch yourself `blueprint`, `execute`, `/review` or `/commit`**: they are the phases of `develop-feature`, and chaining them from here means keeping two copies diverging at the first modification.
 
 The expected outcome is the block that contract declares in its own § *Outcome*, in full. Report it: its `status` is yours.
 
