@@ -1,58 +1,58 @@
-# agent-router-extension — tech stack e architettura
+# Kaji — tech stack and architecture
 
-Documento rigenerato il **24 settembre 2026**. Accompagna `README.md`: il README definisce prodotto,
-comportamento e criteri di accettazione; questo file definisce **come** costruirlo, i confini dei
-moduli, i contratti e le decisioni tecniche con il loro falsificatore.
+Document regenerated on **September 24, 2026**. It accompanies `README.md`: the README defines the
+product, its behavior and its acceptance criteria; this file defines **how** to build it, the module
+boundaries, the contracts and the technical decisions together with their falsifier.
 
-Macchina di partenza del documento originale: Node 22.23.2, npm 10.9.8, VS Code 1.139.0,
-repository di sviluppo privato su GitHub, condiviso con Daiku. Il primo target resta una **VS Code
-extension TypeScript impacchettata in VSIX**, senza marketplace obbligatorio.
+Starting machine of the original document: Node 22.23.2, npm 10.9.8, VS Code 1.139.0, private
+development repository on GitHub, shared with Daiku. The first target remains a **TypeScript VS
+Code extension packaged as a VSIX**, with no mandatory marketplace.
 
-Tutti i path di questo documento — `src/`, `test/`, `package.json` — sono relativi alla radice del
-prodotto, `extensions/kaji/`, che diventa la radice del repository pubblico di Kaji.
+All paths in this document — `src/`, `test/`, `package.json` — are relative to the product root,
+`extensions/kaji/`, which becomes the root of Kaji's public repository.
 
-Il cambiamento architetturale principale rispetto al progetto precedente è uno solo, ma sposta tutti
-i confini:
+The main architectural change compared to the previous project is a single one, but it moves every
+boundary:
 
-> **il core non è Claude-specifico. Claude Code e Codex sono `RuntimeAdapter`; DeepSeek, OpenAI,
-> Anthropic, GLM, MiMo ecc. sono `ProviderAdapter`. UI, catalogo, pricing, usage, cost, limits,
-> change detection e preset esistono una volta sola.**
+> **the core is not Claude-specific. Claude Code and Codex are `RuntimeAdapter`s; DeepSeek, OpenAI,
+> Anthropic, GLM, MiMo etc. are `ProviderAdapter`s. UI, catalog, pricing, usage, cost, limits,
+> change detection and presets exist only once.**
 
 ---
 
-## 1. Decisioni prese
+## 1. Decisions made
 
-| | Punto | Decisione | Se sbagliamo, si paga |
+| | Point | Decision | If we get it wrong, the cost is |
 |---|---|---|---|
-| P1 | Architettura | **core + runtime adapters + provider adapters** | **altissimo** |
-| P2 | Bundler | **esbuild** | poco |
-| P3 | Bundle | **CommonJS**, `vscode` external | medio |
-| P4 | TypeScript | **strict + noUncheckedIndexedAccess + exactOptionalPropertyTypes** | medio |
-| P5 | Test | **Vitest + contract fixtures**, integration harness solo con bug concreto | medio |
-| P6 | Lint/format | **Biome + ESLint solo regole typed** | poco |
-| P7 | File watch | **VS Code RelativePattern + rescan di riconciliazione** | alto |
-| P8 | Scritture | **queue per path + atomic rename + retry** | alto |
-| P9 | JSONC Claude | **jsonc-parser, surgical edits** | alto |
-| P10 | TOML Codex | **parser per validazione + surgical text patch limitato** | alto |
-| P11 | HTTP | **fetch globale + AbortSignal**, ETag/Last-Modified | poco |
-| P12 | Scraping pricing | **parser provider-specifico, fail closed, no browser/headless** | medio |
-| P13 | Storage | **product state fuori dai repo; SecretStorage master; bridge stabile su disco** | alto |
-| P14 | Sidecar | **CommonJS puro, zero dipendenze, materializzato** | alto |
-| P15 | Codex structured access | **app-server JSON-RPC solo dove compra un contratto stabile** | medio |
-| P16 | Catalog cache | **snapshot candidate → validate → atomic promote LKG** | alto |
-| P17 | Change detection | **diff semantico versionato, non diff del JSON grezzo** | medio |
-| P18 | Pricing engine | **rule engine deterministico, no provider-if nel core** | alto |
-| P19 | Limits | **finestre arbitrarie, mai 5h/7d hardcoded** | alto |
-| P20 | Logging | **LogOutputChannel strutturato, redaction obbligatoria** | alto |
-| P21 | i18n | **italiano centralizzato, nessun framework l10n iniziale** | poco |
-| P22 | CI | **un job GitHub Actions: check + package + fixture tests** | poco |
-| P23 | Runtime deps | **budget piccolo, ogni dipendenza con motivo** | medio |
+| P1 | Architecture | **core + runtime adapters + provider adapters** | **very high** |
+| P2 | Bundler | **esbuild** | low |
+| P3 | Bundle | **CommonJS**, `vscode` external | medium |
+| P4 | TypeScript | **strict + noUncheckedIndexedAccess + exactOptionalPropertyTypes** | medium |
+| P5 | Tests | **Vitest + contract fixtures**, integration harness only with a concrete bug | medium |
+| P6 | Lint/format | **Biome + ESLint typed rules only** | low |
+| P7 | File watch | **VS Code RelativePattern + reconciliation rescan** | high |
+| P8 | Writes | **per-path queue + atomic rename + retry** | high |
+| P9 | Claude JSONC | **jsonc-parser, surgical edits** | high |
+| P10 | Codex TOML | **parser for validation + limited surgical text patch** | high |
+| P11 | HTTP | **global fetch + AbortSignal**, ETag/Last-Modified | low |
+| P12 | Pricing scraping | **provider-specific parser, fail closed, no browser/headless** | medium |
+| P13 | Storage | **product state outside repos; SecretStorage master; stable bridge on disk** | high |
+| P14 | Sidecar | **pure CommonJS, zero dependencies, materialized** | high |
+| P15 | Codex structured access | **app-server JSON-RPC only where it buys a stable contract** | medium |
+| P16 | Catalog cache | **candidate snapshot → validate → atomic promote LKG** | high |
+| P17 | Change detection | **versioned semantic diff, not a raw JSON diff** | medium |
+| P18 | Pricing engine | **deterministic rule engine, no provider-if in the core** | high |
+| P19 | Limits | **arbitrary windows, never hardcoded 5h/7d** | high |
+| P20 | Logging | **structured LogOutputChannel, mandatory redaction** | high |
+| P21 | i18n | **centralized English, no initial l10n framework** | low |
+| P22 | CI | **one GitHub Actions job: check + package + fixture tests** | low |
+| P23 | Runtime deps | **small budget, every dependency with a reason** | medium |
 
 ---
 
-## 2. P1 — L'architettura che evita la duplicazione Claude/Codex
+## 2. P1 — The architecture that avoids Claude/Codex duplication
 
-### 2.1 I livelli
+### 2.1 The layers
 
 ```text
 extension.ts
@@ -91,8 +91,9 @@ extension.ts
         └── ...
 ```
 
-Il core **non importa `vscode` e non legge direttamente file di runtime**. Riceve DTO normalizzati e
-restituisce decisioni pure. È la condizione che rende possibile scrivere centinaia di test rapidi.
+The core **does not import `vscode` and does not read runtime files directly**. It receives
+normalized DTOs and returns pure decisions. This is the condition that makes it possible to write
+hundreds of fast tests.
 
 ### 2.2 RuntimeAdapter
 
@@ -121,7 +122,7 @@ export interface RuntimeAdapter {
 }
 ```
 
-`RuntimeCapabilities` dichiara la verità invece di spargere `if runtime === "codex"` nella UI:
+`RuntimeCapabilities` declares the truth instead of scattering `if runtime === "codex"` across the UI:
 
 ```ts
 type RuntimeCapabilities = {
@@ -154,23 +155,23 @@ export interface ProviderAdapter {
 }
 ```
 
-Un provider può non avere `fetchPricing`: in quel caso il cost meter resta `unavailable` o usa una
-tabella manuale/bundled marcata come tale.
+A provider may lack `fetchPricing`: in that case the cost meter stays `unavailable` or uses a
+manual/bundled table marked as such.
 
-### 2.4 Regola anti-duplicazione
+### 2.4 Anti-duplication rule
 
-Un modulo runtime **può** sapere che DeepSeek usa `base_url`; non può calcolare il prezzo DeepSeek.
-Un modulo provider **può** sapere il prezzo e `/models`; non può sapere come si scrive
+A runtime module **may** know that DeepSeek uses `base_url`; it cannot compute the DeepSeek price.
+A provider module **may** know the price and `/models`; it cannot know how to write
 `.claude/settings.local.json`.
 
-Se una feature richiede entrambe le conoscenze, è un application service che orchestra due adapter.
+If a feature requires both kinds of knowledge, it is an application service orchestrating two adapters.
 
-*Falsificato da:* una capability fondamentale che non può essere espressa senza introdurre molti
-branch runtime/provider nel core. In quel caso si estende il contratto; non si copia il modulo.
+*Falsified by:* a fundamental capability that cannot be expressed without introducing many
+runtime/provider branches into the core. In that case the contract is extended; the module is not copied.
 
 ---
 
-## 3. Layout sorgente
+## 3. Source layout
 
 ```text
 src/
@@ -275,7 +276,7 @@ test/
 
 ## 4. P2/P3 — esbuild + CommonJS
 
-Confermata la scelta del documento originale.
+The choice of the original document is confirmed.
 
 ```text
 esbuild src/extension.ts
@@ -287,16 +288,16 @@ esbuild src/extension.ts
   --outfile=dist/extension.js
 ```
 
-Niente minify: il VSIX resta locale e stack trace leggibili valgono più di qualche KB.
+No minify: the VSIX stays local, and readable stack traces are worth more than a few KB.
 
-`tsc --noEmit` è separato: esbuild transpila, non type-checka.
+`tsc --noEmit` is separate: esbuild transpiles, it does not type-check.
 
-Nessun modulo nativo. Il runtime Node dell'Extension Host cambia con VS Code ed è inutile legarsi
-all'ABI per un prodotto che può essere tutto TypeScript/JS.
+No native modules. The Extension Host's Node runtime changes with VS Code, and there is no point in
+tying ourselves to the ABI for a product that can be entirely TypeScript/JS.
 
 ---
 
-## 5. P4 — TypeScript rigoroso
+## 5. P4 — Strict TypeScript
 
 ```jsonc
 {
@@ -315,69 +316,70 @@ all'ABI per un prodotto che può essere tutto TypeScript/JS.
 }
 ```
 
-Questa codebase è piena di dati opzionali provenienti da versioni runtime diverse. La differenza fra
-“campo assente” e “false/zero” è semantica:
+This codebase is full of optional data coming from different runtime versions. The difference
+between “absent field” and “false/zero” is semantic:
 
-- effort assente ≠ effort low;
-- `rate_limits` assente ≠ 0% usato;
-- price bucket assente ≠ gratis;
-- `cacheWriteInput` assente ≠ 0 token scritti;
-- transport assente ≠ transport non ancora verificato.
+- absent effort ≠ low effort;
+- absent `rate_limits` ≠ 0% used;
+- absent price bucket ≠ free;
+- absent `cacheWriteInput` ≠ 0 tokens written;
+- absent transport ≠ transport not yet verified.
 
-`exactOptionalPropertyTypes` è quindi più importante ora che nel disegno Claude-only.
+`exactOptionalPropertyTypes` therefore matters more now than in the Claude-only design.
 
 ---
 
-## 6. P5 — Strategia di test
+## 6. P5 — Test strategy
 
-### 6.1 Piramide
+### 6.1 Pyramid
 
 ```text
-molti     pure unit tests
+many      pure unit tests
           fixture/contract tests
-pochi     adapter filesystem tests
-pochissimi F5 real-runtime smoke tests
+few       adapter filesystem tests
+very few  F5 real-runtime smoke tests
 ```
 
 ### 6.2 Vitest
 
-Vitest resta il runner: TS nativo, watch rapido, mock semplice, snapshot utili per normalized DTO e
-change diff.
+Vitest remains the runner: native TS, fast watch, simple mocking, useful snapshots for normalized
+DTOs and change diffs.
 
 ### 6.3 Contract fixture tests
 
-Sono il nuovo pezzo più importante. Conserviamo fixture **redatte** di:
+They are the most important new piece. We keep **redacted** fixtures of:
 
-- payload Claude statusLine di più versioni;
-- righe transcript Claude duplicate;
-- rollout Codex `session_meta`, `token_count`, compact, rate limits;
-- output app-server `model/list` e account limits;
+- Claude statusLine payloads from several versions;
+- duplicated Claude transcript lines;
+- Codex rollouts `session_meta`, `token_count`, compact, rate limits;
+- app-server `model/list` output and account limits;
 - DeepSeek `/models`;
-- HTML/markdown pricing DeepSeek;
-- pagine pricing con struttura intenzionalmente rotta.
+- DeepSeek pricing HTML/markdown;
+- pricing pages with intentionally broken structure.
 
-Ogni adapter ha una suite “old fixture still parses”. L'aggiornamento di un runtime non deve
-costringerci a testare sempre contro rete reale per scoprire che un campo si è spostato.
+Every adapter has an “old fixture still parses” suite. A runtime update must not force us to always
+test against the real network to find out that a field has moved.
 
-### 6.4 No integration harness VS Code all'inizio
+### 6.4 No VS Code integration harness at the start
 
-La decisione originale resta valida: `@vscode/test-cli` si aggiunge quando esiste un bug che unit +
-F5 non riescono a coprire. L'interazione critica è con Claude/Codex installati e autenticati sulla
-macchina reale; un Extension Host pulito rischia di testare la cosa sbagliata.
+The original decision still holds: `@vscode/test-cli` is added when there is a bug that unit + F5
+cannot cover. The critical interaction is with Claude/Codex installed and authenticated on the real
+machine; a clean Extension Host risks testing the wrong thing.
 
-### 6.5 Smoke checklist automatizzabile
+### 6.5 Automatable smoke checklist
 
-`npm run smoke:fixtures` non tocca runtime reali. `npm run smoke:local` può invece essere un comando
-manuale che verifica presenza file, permessi, app-server e comandi senza modificare settings.
+`npm run smoke:fixtures` does not touch real runtimes. `npm run smoke:local`, instead, can be a
+manual command that checks file presence, permissions, app-server and commands without modifying
+settings.
 
 ---
 
-## 7. P6 — Biome + ESLint typed
+## 7. P6 — Biome + typed ESLint
 
-Biome: format, import, regole generali. ESLint + typescript-eslint: solo regole che richiedono il
+Biome: format, imports, general rules. ESLint + typescript-eslint: only rules that require the
 type checker.
 
-Minimo:
+Minimum:
 
 ```text
 @typescript-eslint/no-floating-promises
@@ -385,27 +387,27 @@ Minimo:
 @typescript-eslint/await-thenable
 ```
 
-È un progetto pieno di watcher, fetch, child process, code e rename: una Promise persa è un difetto
-reale.
+It is a project full of watchers, fetches, child processes, queues and renames: a lost Promise is a
+real defect.
 
 ---
 
-## 8. P7 — Watcher: eventi veloci + riconciliazione periodica
+## 8. P7 — Watcher: fast events + periodic reconciliation
 
-Il documento originale usava `workspace.createFileSystemWatcher` con `RelativePattern` assoluto per
-file fuori dal workspace. Resta la prima scelta, ma con Codex c'è un motivo in più per non trattare
-l'evento filesystem come fonte di verità: le sessioni sono in directory annidate per data e possono
-essere create mentre VS Code è aperto.
+The original document used `workspace.createFileSystemWatcher` with an absolute `RelativePattern`
+for files outside the workspace. It remains the first choice, but with Codex there is one more
+reason not to treat the filesystem event as the source of truth: sessions live in directories nested
+by date and can be created while VS Code is open.
 
 ### 8.1 Claude
 
 ```text
-<CLAUDE_CONFIG_DIR|~/.claude>/ccr/state/*.json
+<CLAUDE_CONFIG_DIR|~/.claude>/kaji/state/*.json
 <claude project sessions>/*.jsonl
 ```
 
-Watcher non ricorsivo sulle directory sessione note; quando statusLine porta `transcript_path`, si
-aggancia il file esatto.
+Non-recursive watcher on the known session directories; when statusLine carries `transcript_path`,
+the exact file is hooked.
 
 ### 8.2 Codex
 
@@ -413,35 +415,35 @@ aggancia il file esatto.
 ~/.codex/sessions/**/*.jsonl
 ```
 
-`RelativePattern(Uri.file(codexSessions), '**/*.jsonl')` come hot path.
+`RelativePattern(Uri.file(codexSessions), '**/*.jsonl')` as the hot path.
 
 ### 8.3 Reconciliation loop
 
-Ogni 30–60 secondi mentre esiste una sessione attiva, un rescan leggero confronta:
+Every 30–60 seconds while an active session exists, a lightweight rescan compares:
 
-- file noti;
+- known files;
 - mtime/size;
-- session IDs attive.
+- active session IDs.
 
-Questo non è polling “al posto” del watcher; è la rete di sicurezza per eventi persi su Windows,
-WSL, mount o directory create dinamicamente.
+This is not polling “instead of” the watcher; it is the safety net for events lost on Windows,
+WSL, mounts or dynamically created directories.
 
-Nessuna lettura completa: si conserva offset + inode/file identity dove possibile.
+No full read: offset + inode/file identity are kept where possible.
 
-*Falsificato da:* carico misurabile su home con migliaia di sessioni. In quel caso si mantiene un
-indice per giorno corrente e si scansionano solo directory recenti.
+*Falsified by:* measurable load on homes with thousands of sessions. In that case an index for the
+current day is kept and only recent directories are scanned.
 
 ---
 
-## 9. P8 — Tutte le scritture passano da fsx
+## 9. P8 — All writes go through fsx
 
-### 9.1 Queue per path
+### 9.1 Per-path queue
 
 ```ts
 Map<CanonicalPath, Promise<void>>
 ```
 
-Ogni read-modify-write sullo stesso path è serializzato. Path diversi restano paralleli.
+Every read-modify-write on the same path is serialized. Different paths stay parallel.
 
 ### 9.2 Atomic write
 
@@ -452,103 +454,103 @@ same-dir temp
 → rename
 ```
 
-Retry bounded su `EPERM`, `EBUSY`, `EACCES`: 25/50/100/200 ms. Errori strutturali come `ENOSPC`,
-`EXDEV`, `EISDIR` non vengono mascherati.
+Bounded retry on `EPERM`, `EBUSY`, `EACCES`: 25/50/100/200 ms. Structural errors such as `ENOSPC`,
+`EXDEV`, `EISDIR` are not masked.
 
-### 9.3 File aperto in VS Code
+### 9.3 File open in VS Code
 
-Se un file utente è aperto in editor, preferire `workspace.applyEdit` quando è sicuro farlo, così
-l'utente vede la modifica e può fare undo. Le cache interne non passano da editor.
+If a user file is open in an editor, prefer `workspace.applyEdit` when it is safe to do so, so that
+the user sees the change and can undo it. Internal caches do not go through the editor.
 
 ---
 
 ## 10. P9 — Claude JSONC
 
-`jsonc-parser` resta dipendenza runtime necessaria. Nessun `JSON.stringify` sui settings utente.
+`jsonc-parser` remains a necessary runtime dependency. No `JSON.stringify` on user settings.
 
-Invarianti:
+Invariants:
 
-1. parse originale;
-2. `modify()` una proprietà per volta;
-3. apply sul testo corretto;
-4. preservare commenti e formatting;
-5. scrittura atomica;
-6. test con commenti di riga, blocco, trailing e chiavi sconosciute.
+1. parse the original;
+2. `modify()` one property at a time;
+3. apply on the correct text;
+4. preserve comments and formatting;
+5. atomic write;
+6. tests with line, block and trailing comments and unknown keys.
 
-Moduli diversi **non** scrivono lo stesso JSONC: `claude/config.ts` possiede i settings Claude.
+Different modules do **not** write the same JSONC: `claude/config.ts` owns the Claude settings.
 
 ---
 
-## 11. P10 — Codex TOML senza distruggere il file
+## 11. P10 — Codex TOML without destroying the file
 
-La difficoltà nuova è che TOML non ha un equivalente piccolo e maturo di `jsonc-parser` che faccia
-surgical edit preservando ogni commento e layout con l'API che ci serve.
+The new difficulty is that TOML has no small, mature equivalent of `jsonc-parser` that performs
+surgical edits preserving every comment and layout with the API we need.
 
-Decisione: separare **parse/validate** da **edit**.
+Decision: separate **parse/validate** from **edit**.
 
 ### 11.1 Parser
 
-Una piccola libreria TOML runtime serve per validare il documento prima e dopo la patch. La scelta
-concreta viene pin-nata nel `package-lock`; il requisito è:
+A small runtime TOML library is used to validate the document before and after the patch. The
+concrete choice is pinned in the `package-lock`; the requirement is:
 
-- puro JS, bundlabile;
-- zero moduli nativi;
+- pure JS, bundlable;
+- zero native modules;
 - TOML 1.0;
-- parse affidabile;
-- dimensione accettabile.
+- reliable parsing;
+- acceptable size.
 
-La libreria **non** viene usata per riserializzare il file.
+The library is **not** used to reserialize the file.
 
-### 11.2 Editor chirurgico
+### 11.2 Surgical editor
 
-`codex/toml-edit.ts` supporta inizialmente solo le operazioni che il prodotto necessita:
+`codex/toml-edit.ts` initially supports only the operations the product needs:
 
 ```text
 set top-level scalar: model
 set top-level scalar: model_reasoning_effort
 set top-level scalar: service_tier
-set/remove top-level scalar: model_provider   [solo user config]
-insert/remove managed provider block          [solo se posseduto da noi]
+set/remove top-level scalar: model_provider   [user config only]
+insert/remove managed provider block          [only if owned by us]
 ```
 
-Per chiavi preesistenti cerca la definizione top-level reale ignorando commenti/stringhe e sostituisce
-solo il value span. Per strutture che non sa editare con certezza, **rifiuta** e apre il file con un
-messaggio, non riserializza.
+For pre-existing keys it looks for the real top-level definition, ignoring comments/strings, and
+replaces only the value span. For structures it cannot edit with certainty, it **refuses** and opens
+the file with a message; it does not reserialize.
 
-### 11.3 Blocchi posseduti
+### 11.3 Owned blocks
 
-Configurazioni provider generate dall'estensione usano marker commentati:
+Provider configurations generated by the extension use commented markers:
 
 ```toml
-# agent-router:begin provider deepseek
+# kaji:begin provider deepseek
 [model_providers.deepseek]
 name = "DeepSeek"
 base_url = "https://api.deepseek.com"
 wire_api = "responses"
 # ...
-# agent-router:end provider deepseek
+# kaji:end provider deepseek
 ```
 
-Prima di crearli:
+Before creating them:
 
-- parse TOML;
-- verificare che `model_providers.deepseek` non esista già fuori dal blocco;
-- se esiste, **non prendere possesso**: usare la configurazione utente e mostrarla come unmanaged.
+- parse the TOML;
+- verify that `model_providers.deepseek` does not already exist outside the block;
+- if it exists, **do not take ownership**: use the user configuration and show it as unmanaged.
 
-Dopo ogni patch: parse di nuovo. Se non valida, non promuovere il temp file.
+After every patch: parse again. If it is not valid, do not promote the temp file.
 
-### 11.4 Project denylist Codex
+### 11.4 Codex project denylist
 
-`model_provider` e `model_providers` non vengono mai scritti in `.codex/config.toml`; Codex li
-ignora per sicurezza. Solo user-level `~/.codex/config.toml`, con conferma esplicita dello scope.
+`model_provider` and `model_providers` are never written into `.codex/config.toml`; Codex ignores
+them for security. Only user-level `~/.codex/config.toml`, with explicit confirmation of the scope.
 
 ---
 
-## 12. P11 — fetchx: una sola rete per cataloghi e pricing
+## 12. P11 — fetchx: a single network layer for catalogs and pricing
 
-Node 22 fornisce `fetch`; nessuna dipendenza HTTP.
+Node 22 provides `fetch`; no HTTP dependency.
 
-Wrapper comune:
+Common wrapper:
 
 ```ts
 fetchJson(url, {
@@ -560,24 +562,24 @@ fetchJson(url, {
 })
 ```
 
-Caratteristiche:
+Characteristics:
 
 - `AbortSignal.timeout()`;
-- size limit prima del parse;
+- size limit before parsing;
 - `If-None-Match` / `If-Modified-Since`;
-- status/body limitati nei log;
-- nessun retry per credential/model probes che devono fallire in fretta;
-- retry con jitter solo per catalog/pricing refresh idempotenti;
-- redirect limitato;
-- HTTPS richiesto salvo endpoint custom esplicitamente localhost/private.
+- status/body truncated in logs;
+- no retry for credential/model probes that must fail fast;
+- retry with jitter only for idempotent catalog/pricing refreshes;
+- limited redirects;
+- HTTPS required unless the custom endpoint is explicitly localhost/private.
 
-Mai loggare Authorization o URL con query secret.
+Never log Authorization or URLs with a secret in the query.
 
 ---
 
-## 13. P12 — Pricing scraping senza browser
+## 13. P12 — Pricing scraping without a browser
 
-Niente Playwright, Puppeteer o webview nascosta. Sarebbe una build pipeline sproporzionata.
+No Playwright, Puppeteer or hidden webview. It would be a disproportionate build pipeline.
 
 ### 13.1 Provider-specific parser
 
@@ -588,42 +590,42 @@ interface PricingSourceParser {
 }
 ```
 
-Per DeepSeek il parser cerca la tabella ufficiale e normalizza:
+For DeepSeek the parser looks for the official table and normalizes:
 
 - model ID;
-- unità 1M token;
+- 1M-token unit;
 - cache hit;
 - cache miss;
 - output;
 - peak/off-peak;
-- schedule UTC.
+- UTC schedule.
 
-### 13.2 Nessun DOM dependency all'inizio
+### 13.2 No DOM dependency at the start
 
-Il primo parser lavora sul testo server-rendered con un estrattore HTML piccolo e fixture reali.
-Poiché la pipeline è fail-closed e conserva last-known-good, una modifica HTML produce “refresh
-failed”, non prezzi sbagliati.
+The first parser works on the server-rendered text with a small HTML extractor and real fixtures.
+Since the pipeline is fail-closed and keeps last-known-good, an HTML change produces “refresh
+failed”, not wrong prices.
 
-`cheerio`/parser DOM diventa dipendenza pre-approvata **solo** se le fixture dimostrano che l'HTML è
-troppo instabile per il parser piccolo.
+`cheerio`/a DOM parser becomes a pre-approved dependency **only** if the fixtures prove that the HTML
+is too unstable for the small parser.
 
-### 13.3 Non seguire marketing text come fonte primaria
+### 13.3 Do not follow marketing text as the primary source
 
-Se la pagina ha JSON embedded o tabella strutturata stabile, preferire quella. Mai estrarre un prezzo
-da un paragrafo casuale quando esiste una tabella.
+If the page has embedded JSON or a stable structured table, prefer that. Never extract a price from
+a random paragraph when a table exists.
 
 ---
 
-## 14. P13 — Layout su disco
+## 14. P13 — On-disk layout
 
-Serve distinguere dati del prodotto da dati dei runtime.
+Product data must be distinguished from runtime data.
 
 ### 14.1 Product state
 
-Percorso stabile indipendente dal runtime:
+Stable path independent of the runtime:
 
 ```text
-~/.agent-router/
+~/.kaji/
   catalog/
     current.json
     history/
@@ -640,44 +642,43 @@ Percorso stabile indipendente dal runtime:
   diagnostics/
 ```
 
-Il nome definitivo della directory segue il nome definitivo del prodotto; finché non viene deciso,
-il codice deve centralizzarlo in una sola costante e supportare migrazione.
+The directory name lives in a single constant in the code.
 
 ### 14.2 Runtime-owned integration state
 
-Solo ciò che il runtime richiede nel proprio config root:
+Only what the runtime requires in its own config root:
 
 ```text
-<CLAUDE_CONFIG_DIR|~/.claude>/ccr/
+<CLAUDE_CONFIG_DIR|~/.claude>/kaji/
   statusline-wrap.json
   state/<session>.json
 
 ~/.codex/
-  # config.toml resta di Codex; nessun secondo database nostro qui
+  # config.toml remains Codex's; no second database of ours here
 ```
 
-Il bridge eseguibile può vivere in `~/.agent-router/bridge`; i settings runtime puntano a un path
-assoluto.
+The executable bridge can live in `~/.kaji/bridge`; the runtime settings point to an absolute
+path.
 
-### 14.3 SecretStorage e materializzazione
+### 14.3 SecretStorage and materialization
 
-`context.secrets` è il master per segreti gestiti dall'estensione. Se un runtime deve leggerli da un
-processo esterno, si materializzano in `~/.agent-router/materialized-keys/<provider>` con permessi
-più restrittivi possibile.
+`context.secrets` is the master for secrets managed by the extension. If a runtime must read them
+from an external process, they are materialized in `~/.kaji/materialized-keys/<provider>` with the
+most restrictive permissions possible.
 
-Direzione one-way:
+One-way direction:
 
 ```text
 SecretStorage → materialized file
 ```
 
-Se SecretStorage è vuoto e il file esiste, non importare/sovrascrivere automaticamente: proporre
-import esplicito.
+If SecretStorage is empty and the file exists, do not import/overwrite automatically: offer an
+explicit import.
 
 ### 14.4 Codex native auth
 
-Se l'utente ha già configurato l'autenticazione Codex nativa, non duplicare il segreto. Il provider
-adapter marca credential ownership:
+If the user has already configured native Codex authentication, do not duplicate the secret. The
+provider adapter marks credential ownership:
 
 ```text
 runtime-native
@@ -686,85 +687,85 @@ external-env
 unknown
 ```
 
-`extension-managed` è l'unico caso in cui usiamo il nostro key-helper/materialization.
+`extension-managed` is the only case in which we use our key-helper/materialization.
 
 ---
 
 ## 15. P14 — Sidecar
 
-Due classi:
+Two classes:
 
 ### 15.1 `key-helper.js`
 
-- CommonJS puro;
-- zero dipendenze;
-- legge un solo file locale;
-- stampa token e nient'altro;
-- timeout non necessario perché non fa rete;
-- exit non-zero su file mancante/permessi;
-- nessun log stdout.
+- pure CommonJS;
+- zero dependencies;
+- reads a single local file;
+- prints the token and nothing else;
+- no timeout needed because it does no networking;
+- non-zero exit on missing file/permissions;
+- no stdout logging.
 
-Claude lo usa via `apiKeyHelper`; Codex può usarlo tramite `model_providers.<id>.auth.command` quando
-scegliamo di gestire la credenziale con SecretStorage.
+Claude uses it via `apiKeyHelper`; Codex can use it through `model_providers.<id>.auth.command` when
+we choose to manage the credential with SecretStorage.
 
-Questa è una delle riduzioni di duplicazione più utili: **lo stesso helper serve entrambi i runtime**.
+This is one of the most useful duplication reductions: **the same helper serves both runtimes**.
 
 ### 15.2 `event-sink.js`
 
-Hook/runtime sidecar opzionale che riceve JSON su stdin e lo scrive in una coda/file state del
-prodotto. Deve essere genericissimo:
+Optional hook/runtime sidecar that receives JSON on stdin and writes it into a product queue/state
+file. It must be extremely generic:
 
 ```text
 stdin bytes → envelope(runtime,event,timestamp) → atomic append/write
 ```
 
-Niente parsing business, niente rete, niente dipendenze.
+No business parsing, no networking, no dependencies.
 
 ### 15.3 Node path
 
-Il path assoluto di `node` viene risolto all'attivazione. Non assumere che il processo runtime abbia
-lo stesso PATH della shell da cui è partito VS Code.
+The absolute path of `node` is resolved at activation. Do not assume that the runtime process has
+the same PATH as the shell VS Code was launched from.
 
 ---
 
-## 16. Adapter Claude
+## 16. Claude adapter
 
-### 16.1 Fonti
+### 16.1 Sources
 
-Priorità osservativa:
+Observational priority:
 
 ```text
 statusLine state → transcript → config fallback
 ```
 
-### 16.2 Tee statusLine
+### 16.2 statusLine tee
 
-Opt-in esplicito. Sequenza installazione:
+Explicit opt-in. Installation sequence:
 
-1. leggere comando originale;
-2. salvare backup verbatim;
-3. materializzare tee;
-4. scrivere wrapper;
-5. test di roundtrip;
-6. solo allora segnare “linked”.
+1. read the original command;
+2. save a verbatim backup;
+3. materialize the tee;
+4. write the wrapper;
+5. roundtrip test;
+6. only then mark it “linked”.
 
-Disinstallazione inversa; il backup è l'ultima cosa cancellata.
+Uninstallation in reverse order; the backup is the last thing deleted.
 
-Il tee:
+The tee:
 
-- legge stdin una volta;
-- salva payload per session ID;
-- passa lo stesso stdin al comando originale;
-- propaga stdout/stderr/exit code secondo contratto;
-- non interpreta cost/pricing/usage.
+- reads stdin once;
+- saves the payload per session ID;
+- passes the same stdin to the original command;
+- propagates stdout/stderr/exit code according to the contract;
+- does not interpret cost/pricing/usage.
 
 ### 16.3 Transcript
 
-Reader incrementale con offset e dedupe `message.id`/fingerprint. Non somma ogni riga assistant.
+Incremental reader with offset and `message.id`/fingerprint dedupe. It does not sum every assistant line.
 
 ### 16.4 Config
 
-`claude/config.ts` espone operazioni semantiche:
+`claude/config.ts` exposes semantic operations:
 
 ```ts
 setProjectProviderTransport(...)
@@ -774,56 +775,56 @@ updateOwnedPickerRows(...)
 restoreNoOverride(...)
 ```
 
-Nessun altro modulo manipola JSONC.
+No other module manipulates JSONC.
 
 ### 16.5 Restart ladder
 
-1. comando runtime discoverable se affidabile;
-2. restart session via meccanismo ufficiale disponibile;
-3. `workbench.action.reloadWindow` solo come fallback grosso;
-4. badge `da riavviare`.
+1. discoverable runtime command, if reliable;
+2. session restart via the available official mechanism;
+3. `workbench.action.reloadWindow` only as a heavy fallback;
+4. `restart needed` badge.
 
-Gli ID comando non sono hardcoded senza discovery/test.
+Command IDs are not hardcoded without discovery/tests.
 
 ---
 
-## 17. Adapter Codex
+## 17. Codex adapter
 
-### 17.1 Fonti
+### 17.1 Sources
 
 ```text
-hooks/app-server structured event   [quando installato/attivo]
+hooks/app-server structured event   [when installed/active]
 → rollout JSONL
 → config
 ```
 
 ### 17.2 Session matching
 
-Il file rollout ha `session_meta.payload.cwd`. L'adapter normalizza path/case/symlink con cautela e
-associa la sessione alla workspace folder più specifica.
+The rollout file has `session_meta.payload.cwd`. The adapter normalizes path/case/symlinks with care
+and associates the session with the most specific workspace folder.
 
-Non usare `state_5.sqlite` come fonte primaria: esistono bug in cui indice e rollout divergono,
-specialmente WSL. Il transcript/rollout è il record osservato; il DB può essere diagnostica.
+Do not use `state_5.sqlite` as the primary source: there are bugs in which index and rollout
+diverge, especially on WSL. The transcript/rollout is the observed record; the DB can be diagnostics.
 
 ### 17.3 TokenCount accumulator
 
-Preferire `total_token_usage` cumulativo:
+Prefer the cumulative `total_token_usage`:
 
 ```ts
 delta = currentTotal - previousTotal
 ```
 
-Se uguale: nessun nuovo consumo anche se l'evento è nuovo. Se minore:
+If equal: no new consumption even if the event is new. If lower:
 
-- nuovo segmento/reset/resume;
-- non sottrarre dal totale già accumulato;
-- log debug con session/version.
+- new segment/reset/resume;
+- do not subtract from the total already accumulated;
+- debug log with session/version.
 
-`last_token_usage` serve al tooltip “ultimo turno”, non al totale sessione.
+`last_token_usage` serves the “last turn” tooltip, not the session total.
 
 ### 17.4 Rate limits
 
-Normalizzazione di:
+Normalization of:
 
 - primary;
 - secondary;
@@ -832,11 +833,11 @@ Normalizzazione di:
 - individual spend control;
 - plan type.
 
-Il parser deve tollerare campi nuovi. Unknown limit → `kind: other`, non errore.
+The parser must tolerate new fields. Unknown limit → `kind: other`, not an error.
 
 ### 17.5 Hooks
 
-Installazione opt-in nel primo milestone delle notifiche. Hook interessati:
+Opt-in installation in the first notifications milestone. Relevant hooks:
 
 ```text
 SessionStart
@@ -848,18 +849,18 @@ Stop
 Interrupt
 ```
 
-Gli hook scrivono solo eventi nel nostro sink; **non** approvano/negano permission. La feature è
-osservativa, non policy engine.
+The hooks only write events into our sink; they do **not** approve/deny permissions. The feature is
+observational, not a policy engine.
 
 ### 17.6 app-server
 
-Usarlo per operazioni dove il contratto strutturato giustifica il subprocess:
+Use it for operations where the structured contract justifies the subprocess:
 
 - `model/list`;
-- account/rate limits on-demand/refresh lento;
-- eventuali future API session-safe.
+- account/rate limits on demand/slow refresh;
+- any future session-safe APIs.
 
-Wrapper JSON-RPC:
+JSON-RPC wrapper:
 
 ```text
 spawn codex app-server
@@ -867,23 +868,22 @@ spawn codex app-server
 → request
 → timeout
 → graceful shutdown
-→ kill bounded se non esce
+→ bounded kill if it does not exit
 ```
 
-Non tenere un daemon permanente nel primo release. Cache risultato; un `model/list` non giustifica
-un processo sempre vivo.
+Do not keep a permanent daemon in the first release. Cache the result; a `model/list` does not
+justify an always-alive process.
 
 ### 17.7 Provider scope
 
-`model_provider`/`model_providers` solo user config. L'UI deve chiamare l'operazione
-`applyMachineProvider`, non `applyProjectProvider`: il nome del metodo impedisce di dimenticare lo
-scope.
+`model_provider`/`model_providers` user config only. The UI must call the `applyMachineProvider`
+operation, not `applyProjectProvider`: the method name prevents forgetting the scope.
 
 ---
 
-## 18. Provider DeepSeek
+## 18. DeepSeek provider
 
-È il provider di riferimento perché esercita quasi tutte le capability.
+It is the reference provider because it exercises almost every capability.
 
 ### 18.1 Transports
 
@@ -900,70 +900,70 @@ scope.
 }
 ```
 
-Il supporto Codex/Responses è documentato ufficialmente da DeepSeek.
+Codex/Responses support is officially documented by DeepSeek.
 
 ### 18.2 Model discovery
 
-`GET https://api.deepseek.com/models` con Bearer. Response limit piccolo, schema:
+`GET https://api.deepseek.com/models` with Bearer. Small response, schema:
 
 ```ts
 { object: "list", data: [{ id, object: "model", owned_by }] }
 ```
 
-Discovery non riempie da sola context/vision/effort; questi metadata vengono mergeati dal catalogo
-bundled o da fonti ufficiali e marcati con source distinta.
+Discovery alone does not fill in context/vision/effort; these metadata are merged from the bundled
+catalog or from official sources and marked with a distinct source.
 
 ### 18.3 Probe
 
-Per verificare runtime compatibility:
+To verify runtime compatibility:
 
-- Claude transport: richiesta Anthropic minima;
-- Codex transport: Responses API minima.
+- Claude transport: minimal Anthropic request;
+- Codex transport: minimal Responses API request.
 
-Il probe non parte automaticamente per ogni refresh se costa: nuovi modelli entrano come
-`candidate`, il probe viene schedulato solo secondo preferenza/consenso.
+The probe does not start automatically on every refresh if it costs money: new models come in as
+`candidate`, and the probe is scheduled only according to preference/consent.
 
 ### 18.4 Pricing
 
-Parser official page. Snapshot attuale usato soltanto come fixture test, non come hardcode runtime.
-La fixture contiene anche il schedule peak/off-peak per testare il rule engine.
+Official page parser. The current snapshot is used only as a test fixture, not as a runtime hardcode.
+The fixture also contains the peak/off-peak schedule to test the rule engine.
 
 ---
 
-## 19. Provider OpenAI / runtime Codex
+## 19. OpenAI provider / Codex runtime
 
-Distinguere due casi:
+Two cases must be distinguished:
 
 ### 19.1 ChatGPT-authenticated Codex
 
-Il costo API non rappresenta il “costo dell'abbonamento”. Mostrare:
+The API cost does not represent the "cost of the subscription". Show:
 
-- token;
+- tokens;
 - context;
 - primary/secondary limits;
-- credits/spend controls se esposti;
-- plan type se esposto.
+- credits/spend controls if exposed;
+- plan type if exposed.
 
-Non trasformare token in dollari salvo una voce esplicita “equivalente API list price” disabilitata
-di default, perché semanticamente può confondere.
+Do not convert tokens into dollars, except for an explicit "API list price equivalent" entry disabled
+by default, because semantically it can be confusing.
 
-### 19.2 API-key OpenAI/custom Responses
+### 19.2 OpenAI API key/custom Responses
 
-Qui il pricing API può produrre un costo. Il rule engine deve supportare:
+Here API pricing can produce a cost. The rule engine must support:
 
 - cached input;
 - cache writes;
 - output;
-- soglie di contesto quando il modello le prevede;
+- context thresholds when the model has them;
 - service tier.
 
-Se la versione Codex non persiste una dimensione tariffata, confidence = `estimated`.
+If the Codex version does not persist a billed dimension, confidence = `estimated`.
 
 ---
 
 ## 20. P16 — Cache/snapshot store
 
-Ogni risorsa remota è un envelope:
+Every remote resource is an envelope:
 
 ```ts
 type SnapshotEnvelope<T> = {
@@ -977,15 +977,15 @@ type SnapshotEnvelope<T> = {
 };
 ```
 
-File:
+Files:
 
 ```text
 current.json          last-known-good
-candidate.tmp         mai letto dalla UI
+candidate.tmp         never read by the UI
 history/<hash>.json   bounded
 ```
 
-Promotion atomica solo dopo:
+Atomic promotion only after:
 
 ```text
 network ok
@@ -994,15 +994,15 @@ schema ok
 semantic validation ok
 ```
 
-304 aggiorna `fetchedAt` metadata senza creare change event semantico.
+304 updates the `fetchedAt` metadata without creating a semantic change event.
 
 ---
 
-## 21. P17 — Change detection semantico
+## 21. P17 — Semantic change detection
 
-Non confrontare JSON stringificato. Normalizzare, ordinare e confrontare chiavi significative.
+Do not compare stringified JSON. Normalize, sort and compare the meaningful keys.
 
-### 21.1 Modelli
+### 21.1 Models
 
 Identity: `(provider, model.id)`.
 
@@ -1016,11 +1016,11 @@ ModelChange =
   | { type: "retirement"; before?; after? };
 ```
 
-Label/order changes non devono sembrare model add/remove.
+Label/order changes must not look like model add/remove.
 
 ### 21.2 Pricing
 
-Le tariffe diventano canonical rules ordinate. Diff rilevante:
+Rates become sorted canonical rules. Relevant diff:
 
 - rate changed;
 - bucket added/removed;
@@ -1030,19 +1030,19 @@ Le tariffe diventano canonical rules ordinate. Diff rilevante:
 
 ### 21.3 Limits
 
-Due livelli separati:
+Two separate levels:
 
 ```text
-LimitStructureSnapshot  → per change detection
-LimitUsageSnapshot      → per live UI
+LimitStructureSnapshot  → for change detection
+LimitUsageSnapshot      → for live UI
 ```
 
-`usedPercent` non entra nella struttura. `windowMinutes`, ID, kind, credits/spend availability sì.
+`usedPercent` does not go into the structure. `windowMinutes`, ID, kind, credits/spend availability do.
 
 ### 21.4 Seen state
 
-Ogni change set ha ID hash. `changes/seen.json` registra cosa l'utente ha già visto; non usare il
-solo timestamp, perché clock change e rollback non devono ripresentare spam.
+Every change set has a hash ID. `changes/seen.json` records what the user has already seen; do not use
+the timestamp alone, because clock changes and rollbacks must not bring the spam back.
 
 ---
 
@@ -1059,7 +1059,7 @@ type PricingRule = {
 };
 ```
 
-Conditions supportano al minimo:
+Conditions support at least:
 
 ```text
 time schedule UTC
@@ -1069,24 +1069,24 @@ region
 model alias/version
 ```
 
-### 22.2 Determinismo
+### 22.2 Determinism
 
-`calculateCost(snapshot, usage, facts)` è pure: nessuna rete, nessun clock globale. Il timestamp viene
-passato. Testare esattamente il secondo prima/dopo una fascia peak.
+`calculateCost(snapshot, usage, facts)` is pure: no network, no global clock. The timestamp is
+passed in. Test exactly the second before/after a peak window.
 
-### 22.3 Precisione numerica
+### 22.3 Numeric precision
 
-Usare integer token counts e calcolo in micro-dollar/nano-dollar integer quando pratico, oppure una
-rappresentazione decimal controllata. Non accumulare migliaia di turni in binary float senza test di
-errore.
+Use integer token counts and computation in integer micro-dollars/nano-dollars when practical, or a
+controlled decimal representation. Do not accumulate thousands of turns in binary float without error
+tests.
 
-Per l'UI, arrotondare solo alla fine.
+For the UI, round only at the end.
 
 ---
 
 ## 23. P19 — Limits engine
 
-Normalizzazione:
+Normalization:
 
 ```ts
 type LimitWindow = {
@@ -1101,27 +1101,27 @@ type LimitWindow = {
 
 ### Burn rate
 
-Serve una serie temporale breve in memoria/disk cache:
+A short time series is needed in the memory/disk cache:
 
 ```text
 (timestamp, usedPercent, limitId)
 ```
 
-Proiezione solo se:
+Projection only if:
 
-- almeno 3 campioni;
-- finestra/reset identity coerente;
-- percentuale monotona nel segmento;
-- slope positiva;
-- nessun reset fra i campioni.
+- at least 3 samples;
+- consistent window/reset identity;
+- monotonic percentage within the segment;
+- positive slope;
+- no reset between samples.
 
-Se reset timestamp cambia, la serie si spezza.
+If the reset timestamp changes, the series breaks.
 
 ---
 
 ## 24. Session state reducer
 
-Gli adapter emettono eventi; la UI non legge direttamente file.
+Adapters emit events; the UI does not read files directly.
 
 ```ts
 RuntimeEvent =
@@ -1137,10 +1137,10 @@ RuntimeEvent =
   | RuntimeError;
 ```
 
-Un reducer produce `LiveSessionState` per workspace folder. Questo evita race fra statusLine,
-transcript e watcher.
+A reducer produces `LiveSessionState` per workspace folder. This avoids races between statusLine,
+transcript and watcher.
 
-Regola timestamp/source priority:
+Timestamp/source priority rule:
 
 ```text
 structured live runtime event
@@ -1149,35 +1149,35 @@ structured live runtime event
 > catalog fallback
 ```
 
-Ma un evento vecchio più autorevole non sovrascrive un evento nuovo: ogni field mantiene
-`observedAt` e `source`.
+But an older, more authoritative event does not overwrite a newer event: every field keeps
+`observedAt` and `source`.
 
 ---
 
-## 25. Concorrenza
+## 25. Concurrency
 
 ### 25.1 Refresh coalescing
 
-Un refresh provider già in volo viene condiviso:
+A provider refresh already in flight is shared:
 
 ```ts
 Map<RefreshKey, Promise<Result>>
 ```
 
-Dieci finestre VS Code non devono fare dieci fetch `/models` simultanei.
+Ten VS Code windows must not make ten simultaneous `/models` fetches.
 
 ### 25.2 Cross-window
 
-Il primo milestone non implementa IPC fra extension host diversi. La cache atomica su disco + ETag
-rende innocuo che due finestre facciano refresh. Promotion usa rename; history usa content hash.
+The first milestone does not implement IPC between different extension hosts. The atomic on-disk cache
++ ETag makes it harmless for two windows to refresh. Promotion uses rename; history uses content hash.
 
-### 25.3 Scritture config
+### 25.3 Config writes
 
-Queue per path vale per tutte le finestre solo nel processo corrente; cross-process la scrittura
-atomica evita file parziali ma non una lost update read-modify-write fra processi. Prima di rename si
-rilegge mtime/hash: se è cambiato da quando abbiamo letto, abort + retry del merge sul nuovo testo.
+The per-path queue applies to all windows only within the current process; cross-process, the atomic
+write avoids partial files but not a read-modify-write lost update between processes. Before the
+rename, mtime/hash is re-read: if it changed since we read it, abort + retry the merge on the new text.
 
-Questa compare-and-retry è necessaria ora che due finestre possono gestire gli stessi config globali.
+This compare-and-retry is necessary now that two windows can manage the same global configs.
 
 ---
 
@@ -1185,60 +1185,60 @@ Questa compare-and-retry è necessaria ora che due finestre possono gestire gli 
 
 ### Status bar
 
-Un solo `StatusBarItem` per finestra, segue editor/workspace folder attiva.
+A single `StatusBarItem` per window, following the active editor/workspace folder.
 
-Testo generato da un pure `renderStatusbarModel(LiveSessionState, Preferences)`.
+Text generated by a pure `renderStatusbarModel(LiveSessionState, Preferences)`.
 
-Nessuna logica filesystem nella UI.
+No filesystem logic in the UI.
 
 ### Tooltip
 
-`MarkdownString`, solo dati non sensibili. Link solo verso comandi VS Code o fonti ufficiali già
-note; non includere token/base URL privati completi se possono rivelare infrastruttura.
+`MarkdownString`, only non-sensitive data. Links only to VS Code commands or already known official
+sources; do not include full private tokens/base URLs if they can reveal infrastructure.
 
 ### QuickPick
 
-`createQuickPick` quando servono refresh in place e back navigation. Ogni row porta un `action`
-discriminated union, non closure anonime difficili da testare.
+`createQuickPick` when in-place refresh and back navigation are needed. Every row carries an `action`
+discriminated union, not anonymous closures that are hard to test.
 
 ---
 
-## 27. Diagnostica
+## 27. Diagnostics
 
-Comando `CCR: Verifica installazione` restituisce una matrice:
+The `Kaji: Verify installation` command returns a matrix:
 
 ```text
 Claude Code
-  installato              ✓
-  config leggibile         ✓
+  installed               ✓
+  config readable          ✓
   statusLine bridge        ✓
   transcript               ✓
   SecretStorage/material   ✓
 
 Codex
-  installato               ✓
+  installed                ✓
   config layers            ✓
   rollout                  ✓
   app-server               ✓
-  hooks                    non collegati
+  hooks                    not linked
 
 Providers
-  DeepSeek /models         ✓  2 modelli
-  DeepSeek pricing         ✓  aggiornato 2h fa
+  DeepSeek /models         ✓  2 models
+  DeepSeek pricing         ✓  updated 2h ago
   OpenAI catalog           ✓  account/runtime catalog
 ```
 
-Output Channel conserva dettagli. La UI mostra risultato compatto.
+The Output Channel keeps the details. The UI shows a compact result.
 
-Mai fare probe a pagamento nel comando diagnostica senza pulsante/consenso distinto.
+Never run paid probes in the diagnostics command without a distinct button/consent.
 
 ---
 
-## 28. Logging e redaction
+## 28. Logging and redaction
 
-`LogOutputChannel` con livelli.
+`LogOutputChannel` with levels.
 
-Helper obbligatorio:
+Mandatory helpers:
 
 ```ts
 redact(value)
@@ -1246,72 +1246,72 @@ redactHeaders(headers)
 redactUrl(url)
 ```
 
-Pattern sensibili:
+Sensitive patterns:
 
 - Authorization;
 - api keys;
 - materialized key path content;
 - query token;
-- prompt/transcript text nei log normali.
+- prompt/transcript text in normal logs.
 
-Si possono loggare IDs modello, status HTTP, byte count, source, timings, file path locali quando
-necessari alla diagnostica. Un flag debug esplicito può aumentare metadata, **mai** segreti.
+Model IDs, HTTP status, byte count, source, timings and local file paths may be logged when needed
+for diagnostics. An explicit debug flag can increase metadata, **never** secrets.
 
 ---
 
-## 29. Dipendenze runtime
+## 29. Runtime dependencies
 
-### Approvate
+### Approved
 
-1. **`jsonc-parser`** — editing JSONC preserving comments.
-2. **una libreria TOML parser pura JS** — validazione Codex config; scelta finale durante bootstrap,
-   con lockfile e bundle-size check.
+1. **`jsonc-parser`** — JSONC editing preserving comments.
+2. **a pure-JS TOML parser library** — Codex config validation; final choice during bootstrap,
+   with lockfile and bundle-size check.
 
-### Non necessarie inizialmente
+### Not needed initially
 
-- HTTP client: `fetch` globale;
+- HTTP client: global `fetch`;
 - watcher: VS Code API;
-- JSON schema runtime framework: validatori scritti per DTO piccoli o generated lightweight;
-- HTML browser parser: parser provider-specifico + fixture;
-- decimal big library: prima provare integer micro/nano-dollar helpers;
-- chokidar: solo se RelativePattern + reconcile perde eventi misurati;
-- cheerio: solo se pricing parser senza DOM è dimostrabilmente fragile.
+- runtime JSON schema framework: hand-written validators for small DTOs or generated lightweight;
+- HTML browser parser: provider-specific parser + fixture;
+- big decimal library: first try integer micro/nano-dollar helpers;
+- chokidar: only if RelativePattern + reconcile loses measured events;
+- cheerio: only if the DOM-less pricing parser is demonstrably fragile.
 
-### Gate per nuova dipendenza
+### Gate for a new dependency
 
-Ogni nuova runtime dependency deve dire:
+Every new runtime dependency must state:
 
-1. quale codice elimina;
-2. quale classe di bug evita;
+1. what code it eliminates;
+2. what class of bugs it prevents;
 3. bundle cost;
-4. manutenzione/ESM/native risk;
-5. prova concreta che il codice piccolo interno non basta.
+4. maintenance/ESM/native risk;
+5. concrete proof that small internal code is not enough.
 
 ---
 
 ## 30. package.json / manifest
 
-Working name ancora da decidere; non fissare definitivamente `publisher.name` finché il rename non è
-scelto. Durante lo sviluppo il VSIX locale può mantenere l'identità di lavoro.
+The product is called Kaji: `name` is `kaji`, `displayName` and `description` follow
+`BRANDING.md`.
 
-Contributions previste:
+Planned contributions:
 
 ```text
 commands
-  ccr.openPicker
-  ccr.changeModel
-  ccr.changeProvider
-  ccr.manageKeys
-  ccr.addProvider
-  ccr.refreshCatalogs
-  ccr.showChanges
-  ccr.managePresets
-  ccr.linkClaudeStatusLine
-  ccr.unlinkClaudeStatusLine
-  ccr.linkCodexHooks
-  ccr.unlinkCodexHooks
-  ccr.verifyInstallation
-  ccr.showLog
+  kaji.openPicker
+  kaji.changeModel
+  kaji.changeProvider
+  kaji.manageKeys
+  kaji.addProvider
+  kaji.refreshCatalogs
+  kaji.showChanges
+  kaji.managePresets
+  kaji.linkClaudeStatusLine
+  kaji.unlinkClaudeStatusLine
+  kaji.linkCodexHooks
+  kaji.unlinkCodexHooks
+  kaji.verifyInstallation
+  kaji.showLog
 
 configuration
   refresh.catalogTtlHours
@@ -1327,31 +1327,30 @@ configuration
   providers.visible
 ```
 
-Le chiavi API e le definizioni provider private **non** stanno in `contributes.configuration`.
+API keys and private provider definitions do **not** live in `contributes.configuration`.
 
-Baseline del manifest durante lo sviluppo:
+Manifest baseline during development:
 
 ```text
 engines.vscode    ^1.139.0
-@types/vscode     1.139.0 esatto
+@types/vscode     1.139.0 exact
 main              ./dist/extension.js
 activationEvents  ["onStartupFinished"]
 ```
 
-`publisher` resta necessario a `vsce package` anche senza marketplace: durante lo sviluppo si può
-mantenere la stringa identitaria esistente e rinominarla insieme al package solo quando viene deciso
-il nome definitivo. Nessun token/publisher account di marketplace è necessario per il VSIX locale.
+`publisher` is still required by `vsce package` even without a marketplace; `name` and `publisher`
+follow the product name, Kaji. No marketplace token/publisher account is needed for the local VSIX.
 
-`.vscodeignore` esclude `src/`, test, fixture non necessarie al runtime, config di sviluppo e
-`node_modules/` quando le dipendenze runtime sono correttamente bundlate. Il package viene creato
-con `vsce package --no-dependencies`; avere anche `node_modules` nel VSIX sarebbe una seconda copia
-del codice.
+`.vscodeignore` excludes `src/`, tests, fixtures not needed at runtime, development config and
+`node_modules/` when the runtime dependencies are correctly bundled. The package is created
+with `vsce package --no-dependencies`; also having `node_modules` in the VSIX would be a second copy
+of the code.
 
-`vscode:prepublish` esegue `npm run check` prima della build/package: il VSIX non deve poter essere
-creato da un albero che fallisce typecheck, lint o test.
+`vscode:prepublish` runs `npm run check` before the build/package: it must not be possible to create
+the VSIX from a tree that fails typecheck, lint or tests.
 
-Activation: `onStartupFinished` resta ragionevole perché la status bar deve esistere presto, ma il
-network refresh è deferred: activation non aspetta Internet.
+Activation: `onStartupFinished` remains reasonable because the status bar must exist early, but the
+network refresh is deferred: activation does not wait for the Internet.
 
 ---
 
@@ -1368,7 +1367,7 @@ load preferences
 → return
 ```
 
-Dopo activation, task non bloccanti:
+After activation, non-blocking tasks:
 
 ```text
 stale catalog refresh
@@ -1376,13 +1375,13 @@ stale pricing refresh
 app-server capability probe cached
 ```
 
-Target: niente fetch nella critical path visibile.
+Target: no fetch in the visible critical path.
 
 ---
 
 ## 32. Auto-refresh state machine
 
-Per ogni source:
+For each source:
 
 ```text
 fresh
@@ -1406,10 +1405,10 @@ Metadata:
 }
 ```
 
-Backoff, per esempio 1m → 5m → 30m → 2h, resettato da successo o refresh manuale.
+Backoff, for example 1m → 5m → 30m → 2h, reset by a success or a manual refresh.
 
-La status bar non mostra errori refresh transitori. `showChanges`/diagnostics mostra “pricing stale
-18h” se supera una soglia utile.
+The status bar does not show transient refresh errors. `showChanges`/diagnostics shows "pricing stale
+18h" if it exceeds a useful threshold.
 
 ---
 
@@ -1435,7 +1434,7 @@ no deletion
 new model compatibility = candidate until probe
 ```
 
-Fixture C rimuove `deepseek-v4-pro`:
+Fixture C removes `deepseek-v4-pro`:
 
 ```text
 model.removed/deprecated
@@ -1508,48 +1507,48 @@ reset timestamp changes backwards → anomaly candidate
 
 ---
 
-## 36. Contract di compatibilità versioni
+## 36. Version compatibility contract
 
-Ogni RuntimeAdapter dichiara:
+Every RuntimeAdapter declares:
 
 ```ts
 supportsVersion(version: string): "supported" | "unknown-newer" | "too-old";
 ```
 
-Non bloccare automaticamente `unknown-newer`: parse tolerant + diagnostics. Bloccare solo quando
-manca una capability minima certa.
+Do not automatically block `unknown-newer`: tolerant parse + diagnostics. Block only when a certain
+minimum capability is missing.
 
-Snapshot/include source runtime version per poter spiegare bug dopo update.
+Snapshots include the source runtime version so that bugs after an update can be explained.
 
-Codex catalog: **mai** prendere `models.json` da `main` e imporlo a un client vecchio; è già
-esistito un mismatch schema/client. Usare il catalogo del client installato o un formato provider
-specificamente compatibile.
+Codex catalog: **never** take `models.json` from `main` and impose it on an old client; a schema/client
+mismatch has already happened. Use the installed client's catalog or a provider format that is
+specifically compatible.
 
 ---
 
-## 37. TOML/provider Codex: strategia DeepSeek
+## 37. Codex TOML/provider: DeepSeek strategy
 
-DeepSeek pubblica una configurazione Codex ufficiale che crea un model catalog JSON e provider
-Responses. La nostra integrazione deve seguire quella semantica, ma con ownership esplicita.
+DeepSeek publishes an official Codex configuration that creates a JSON model catalog and a Responses
+provider. Our integration must follow those semantics, but with explicit ownership.
 
-Flusso iniziale:
+Initial flow:
 
-1. leggere user Codex config;
-2. se DeepSeek già configurato: adottare come unmanaged, non riscrivere;
-3. se assente e l'utente chiede setup: creare provider block owned;
-4. generare/aggiornare **solo** il catalogo DeepSeek posseduto da noi in un file dedicato;
-5. puntare `model_catalog_json` solo quando la configurazione risultante è compatibile col client
-   corrente;
-6. dopo update Codex, `verifyInstallation` rivalida il catalogo prima di riscriverlo.
+1. read the user Codex config;
+2. if DeepSeek is already configured: adopt it as unmanaged, do not rewrite it;
+3. if absent and the user asks for setup: create an owned provider block;
+4. generate/update **only** the DeepSeek catalog we own, in a dedicated file;
+5. point `model_catalog_json` only when the resulting configuration is compatible with the current
+   client;
+6. after a Codex update, `verifyInstallation` revalidates the catalog before rewriting it.
 
-Se il client espone un remote model catalog stabile/documentato per custom provider, migrare a quello
-e smettere di generare file locale. Fino ad allora non dipendere da feature `main` non documentate.
+If the client exposes a stable/documented remote model catalog for custom providers, migrate to it
+and stop generating the local file. Until then, do not depend on undocumented `main` features.
 
 ---
 
 ## 38. Fallback engine
 
-Il core produce una proposta, non scrive file direttamente:
+The core produces a proposal, it does not write files directly:
 
 ```ts
 type FallbackDecision = {
@@ -1561,14 +1560,14 @@ type FallbackDecision = {
 };
 ```
 
-Il RuntimeAdapter valida se `to` è applicabile a scope sicuro. Su Codex, cross-provider automatico
-ritorna constraint `machine-scope-provider` e viene degradato ad ask/notify.
+The RuntimeAdapter validates whether `to` is applicable to a safe scope. On Codex, automatic
+cross-provider returns the `machine-scope-provider` constraint and is downgraded to ask/notify.
 
 ---
 
 ## 39. Preset schema
 
-Versionato:
+Versioned:
 
 ```json
 {
@@ -1591,31 +1590,31 @@ Versionato:
 }
 ```
 
-Mai base URL privati per default export; se l'utente esporta un provider custom, chiedere se
-includere endpoint/metadata non segreti.
+Never private base URLs in the default export; if the user exports a custom provider, ask whether to
+include non-secret endpoint/metadata.
 
 ---
 
-## 40. Sicurezza dei parser remoti
+## 40. Remote parser security
 
-Catalog/pricing sono input non fidato anche se arrivano da sito ufficiale.
+Catalog/pricing are untrusted input even when they come from an official site.
 
 - max response bytes;
 - no eval;
 - no dynamic import;
 - no HTML script execution;
-- URL allowlist per source builtin;
-- custom source richiede configurazione utente;
-- strings remote non diventano Markdown trusted;
-- labels escapeate in tooltip/QuickPick;
-- nessun path scritto a partire da model ID senza sanitizzazione.
+- URL allowlist for builtin sources;
+- custom source requires user configuration;
+- remote strings do not become trusted Markdown;
+- labels escaped in tooltip/QuickPick;
+- no path written from a model ID without sanitization.
 
 ---
 
 ## 41. CI
 
-`.github/workflows/kaji.yml` nel repository di sviluppo, un job iniziale con
-`working-directory: extensions/kaji`, lanciato solo quando cambia qualcosa sotto quel path:
+`.github/workflows/kaji.yml` in the development repository, one initial job with
+`working-directory: extensions/kaji`, run only when something under that path changes:
 
 ```text
 node:22
@@ -1641,92 +1640,92 @@ esbuild
 vsce package --no-dependencies
 ```
 
-VSIX artifact. Nessun publish token.
+VSIX artifact. No publish token.
 
-In più, test deterministici devono forzare timezone UTC per pricing schedule; test UI/local time
-separati.
+In addition, deterministic tests must force the UTC timezone for the pricing schedule; UI/local time
+tests are separate.
 
 ---
 
 ## 42. Release checklist
 
-1. check verde;
-2. fixture current runtime aggiornate solo se cambiamento compreso;
-3. F5 sul profilo reale;
+1. check green;
+2. current runtime fixtures updated only if the change is understood;
+3. F5 on the real profile;
 4. Claude: model switch, statusLine bridge, key helper;
 5. Codex: model switch, rollout parse, app-server read;
 6. catalog refresh offline/online;
-7. pricing parser su fixture + rete manuale;
-8. file config comment preservation;
-9. install VSIX reale;
-10. uninstall/reinstall non deve lasciare settings runtime irripristinabili.
+7. pricing parser on fixture + manual network;
+8. config file comment preservation;
+9. real VSIX install;
+10. uninstall/reinstall must not leave unrecoverable runtime settings.
 
 ---
 
-## 43. Le prove bloccanti prima di implementare feature ricche
+## 43. The blocking proofs before implementing rich features
 
-Ordine consigliato:
+Recommended order:
 
 ### A. Runtime foundations
 
-1. Claude project settings nel pannello.
+1. Claude project settings in the panel.
 2. Claude live model switch.
-3. Claude statusLine nel pannello.
-4. Codex project `model` nel pannello.
-5. Codex rollout matching per `cwd`.
-6. Codex hook Stop/PermissionRequest nella IDE extension.
-7. Codex app-server model/list e rate limits.
+3. Claude statusLine in the panel.
+4. Codex project `model` in the panel.
+5. Codex rollout matching by `cwd`.
+6. Codex Stop/PermissionRequest hook in the IDE extension.
+7. Codex app-server model/list and rate limits.
 
 ### B. Cross-provider
 
 8. DeepSeek Claude Anthropic.
 9. DeepSeek Codex Responses.
-10. una sola credenziale extension-managed usata da entrambi attraverso key-helper, se la policy
-    scelta lo prevede.
+10. a single extension-managed credential used by both through key-helper, if the chosen policy
+    provides for it.
 
 ### C. Live data
 
-11. `/models` refresh e diff.
-12. pricing parse e LKG.
-13. cost parity su turni noti.
-14. limits normalized su Claude e Codex.
+11. `/models` refresh and diff.
+12. pricing parse and LKG.
+13. cost parity on known turns.
+14. normalized limits on Claude and Codex.
 
 ### D. Failure modes
 
-15. rete offline;
-16. HTML pricing cambiato;
-17. JSONL truncato mentre lo leggiamo;
-18. config modificato da altra finestra durante la scrittura;
-19. runtime aggiornato con campo sconosciuto;
-20. sessione attiva su modello ritirato dal catalogo.
+15. network offline;
+16. pricing HTML changed;
+17. JSONL truncated while we read it;
+18. config modified by another window during the write;
+19. runtime updated with an unknown field;
+20. active session on a model retired from the catalog.
 
 ---
 
 ## 44. Definition of done per adapter
 
-Un RuntimeAdapter non è “supportato” perché compila. È supportato quando:
+A RuntimeAdapter is not "supported" because it compiles. It is supported when:
 
-- detect non modifica niente;
-- config read distingue source/scope;
-- apply restituisce esito verificabile;
-- observe sopravvive a restart/resume;
-- usage non duplica;
-- limits degradano a unavailable;
-- una versione runtime più nuova con campi extra non rompe il parser;
-- diagnostics spiega i prerequisiti mancanti;
-- uninstall bridge è reversibile.
+- detect modifies nothing;
+- config read distinguishes source/scope;
+- apply returns a verifiable outcome;
+- observe survives restart/resume;
+- usage does not duplicate;
+- limits degrade to unavailable;
+- a newer runtime version with extra fields does not break the parser;
+- diagnostics explains the missing prerequisites;
+- uninstall bridge is reversible.
 
-Un ProviderAdapter non è “supportato” finché:
+A ProviderAdapter is not "supported" until:
 
-- almeno un transport è verificato end-to-end;
-- model discovery ha fallback;
-- pricing, se dichiarato, ha fixture + LKG;
-- un nuovo model ID non causa crash;
-- un model rimosso non cancella config utente.
+- at least one transport is verified end-to-end;
+- model discovery has a fallback;
+- pricing, if declared, has fixture + LKG;
+- a new model ID does not cause a crash;
+- a removed model does not delete user config.
 
 ---
 
-## 45. Riferimenti tecnici verificati il 24/09/2026
+## 45. Technical references verified on September 24, 2026
 
 ### VS Code / Node
 
@@ -1781,7 +1780,7 @@ Un ProviderAdapter non è “supportato” finché:
 - OpenAI API pricing:
   https://developers.openai.com/api/docs/pricing
 
-### Edge cases che hanno influenzato il disegno
+### Edge cases that shaped the design
 
 - Codex project-local provider denylist:
   https://github.com/openai/codex/blob/main/codex-rs/config/src/loader/mod.rs
@@ -1796,14 +1795,14 @@ Un ProviderAdapter non è “supportato” finché:
 
 ---
 
-## 46. La regola finale
+## 46. The final rule
 
-Il progetto precedente aveva una regola corretta: **leggere lo stato dal runtime invece di tenere una
-copia mentale del runtime**. Con due runtime e fonti remote la regola diventa ancora più importante:
+The previous project had a correct rule: **read the state from the runtime instead of keeping a
+mental copy of the runtime**. With two runtimes and remote sources the rule becomes even more important:
 
-> configurazione, session state, catalogo remoto, pricing e limiti sono sorgenti esterne che possono
-> cambiare indipendentemente dall'estensione. Il codice deve normalizzarle, conservarne provenance e
-> timestamp, validarle e degradare esplicitamente quando non le conosce.
+> configuration, session state, remote catalog, pricing and limits are external sources that can
+> change independently of the extension. The code must normalize them, keep their provenance and
+> timestamp, validate them and degrade explicitly when it does not know them.
 
-La cosa da evitare non è un errore visibile. È un numero molto convincente che in realtà appartiene
-alla sessione, al prezzo o al limite sbagliato.
+The thing to avoid is not a visible error. It is a very convincing number that actually belongs
+to the wrong session, price or limit.

@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /**
- * Gate di avvio di /repo-intelligence: verifica la toolchain prima che una corsa parta.
+ * Gate di avvio di /studia-sorgente: verifica la toolchain prima che una corsa parta.
  *
  * Attrezzo di sviluppo di questo repository, non del pacchetto: vive fuori da `plugins/`, non
  * si pubblica, non si installa in nessun progetto e non gira mai da un hook. Si lancia a mano,
  * dall'orchestratore del comando (Passo 0) o da chi vuole solo controllare la macchina:
  *
- *   node .docs/tools/repo-intelligence/check-toolchain.mjs plugins/daiku
+ *   node .docs/tools/studia-sorgente/check-toolchain.mjs plugins/daiku
  *
  * La radice di Daiku arriva sempre per argomento, mai dedotta dalla posizione di questo file o
  * dalla cwd. Uscita `2` con la usage se manca; altrimenti stampa un JSON contato
@@ -18,7 +18,7 @@
  * Non contiene, né lancia, nessun comando d'installazione: quando `opensrc` o `graphify`
  * mancano, il rosso rimanda l'installazione all'owner, a mano.
  *
- *   node .docs/tools/repo-intelligence/check-toolchain.mjs --self-check
+ *   node .docs/tools/studia-sorgente/check-toolchain.mjs --self-check
  */
 
 import { spawnSync } from 'node:child_process';
@@ -77,7 +77,7 @@ function checkTool(name, label, searchPath) {
       ok: false,
       versione: null,
       binario: null,
-      detail: `${label} non trovato sul PATH: installalo tu, a mano (vedi .claude/commands/repo-intelligence.md, sezione Prerequisiti)`,
+      detail: `${label} non trovato sul PATH: installalo tu, a mano (vedi .claude/commands/studia-sorgente.md, sezione Prerequisiti)`,
     };
   }
   const { ok, output } = runVersion(execPath);
@@ -297,7 +297,7 @@ function runSelfCheck() {
     if (!ok) failed.push(detail ? `${name}: ${detail}` : name);
   }
 
-  const base = mkdtempSync(join(tmpdir(), 'ri-check-toolchain-'));
+  const base = mkdtempSync(join(tmpdir(), 'ss-check-toolchain-'));
   try {
     // Senza argomento: usage su stderr, uscita 2. L'unico spawn del proprio file.
     const noArg = spawnSync(process.execPath, [THIS_FILE], { encoding: 'utf-8', timeout: 15000 });

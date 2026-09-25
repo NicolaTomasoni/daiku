@@ -13,7 +13,7 @@ pacchetto. Produce un **censimento**: ogni miglioria con la sua evidenza, la **s
 cui atterrerebbe e una proposta. Decidere e implementare è di una richiesta successiva e
 presidiata.
 
-Per leggere il **source reale** di un progetto o di una dipendenza, con un grafo interrogabile e un piano di adozione, c'è `.claude/commands/repo-intelligence.md`: quel comando legge il source reale del target e ne ricava un piano d'adozione, senza eseguirne niente — la misura del metodo di Daiku sui quattro assi è di questo comando.
+Per leggere il **source reale** di un progetto o di una dipendenza, con un grafo interrogabile e un piano di adozione, c'è `.claude/commands/studia-sorgente.md`: quel comando legge il source reale del target e ne ricava un piano d'adozione, senza eseguirne niente — la misura del metodo di Daiku sui quattro assi è di questo comando.
 
 ## Dove vivono le cose in questo repo
 

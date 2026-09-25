@@ -105,14 +105,12 @@ Every fix is recorded with two anchors surviving later rounds:
 
 ### The two signals are verified, not accepted
 
-`severe` is a merit judgement and stays with the applier: nobody else has in hand the context to give it. `on_previous_fix` and `oscillation` do not — they are **measurements on strings**, and you do them after every round, before emitting the verdict. It is the same asymmetry holding the cycle: whoever wrote the fixes is not the source of the signal deciding whether somebody will reread them.
+`severe` is a merit judgement and stays with the applier: nobody else has in hand the context to give it. `on_previous_fix` and `oscillation` do not — they are **measurements on strings**, made after every round, before the verdict. It is the same asymmetry holding the cycle: whoever wrote the fixes is not the source of the signal deciding whether somebody will reread them.
 
-With the ledger in hand, both cost one command:
+- **`oscillation`** is measured by the evaluator, not by you: does a fix of the round — applied, or suppressed by the applier and listed in its `oscillation` field — carry an `anchor` already recorded for the same `file` and `symbol` in a round **earlier than the one of the last fix** on that site? It is a string comparison on the ledger, and the identity of a fix is already defined so (§ *How a fix is identified*). The `round` question of § *When to run another round* runs it; your part is writing the round in the ledger in full, the applier's `oscillation` items included — without their anchors the only stop condition of the cycle would stay a self-declaration of the step being verified.
+- **`on_previous_fix`** is yours, because it needs the disk: does the `anchor` of a fix of a previous round no longer appear in its file (`git grep -F '<anchor>' -- <file>` empty), or does it fall among the lines the new fix touched. Both cases say one correction rewrote another.
 
-- **`oscillation`**: for each new fix, does `anchor` coincide with one already recorded for the same `file` and `symbol` in a round **earlier than the one of the last fix**? It is a string comparison on the ledger, and the identity of a fix is already defined so (§ *How a fix is identified*). The comparison also runs on the items of the applier `oscillation` field, carrying the two anchors of every fix it suppressed: those fixes are not among `applied` precisely because they were not applied, and without their anchors the only stop condition of the cycle would stay a self-declaration of the step you verify. Its items enter the round ledger like the others.
-- **`on_previous_fix`**: does the `anchor` of a fix of a previous round no longer appear in its file (`git grep -F '<anchor>' -- <file>` empty), or does it fall among the lines the new fix touched. Both cases say one correction rewrote another.
-
-If your verification and the applier block diverge, **yours holds**: annotate the deviation in the ledger next to the fix, because an applier systematically not seeing them is itself a finding. Rule 2 of § *When to run another round* reads the verified values, not the declared ones.
+If a measurement and the applier block diverge, **the measurement holds**: write the verified `on_previous_fix` in the ledger and annotate the deviation next to the fix, because an applier systematically not seeing them is itself a finding. The evaluator reads the ledger, so it reads the verified values, not the declared ones.
 
 ## The cycle
 
@@ -205,9 +203,13 @@ For the others only where the second failure ends changes, because the three ste
 
 ### When to run another round
 
-The round count is not decided before starting — it is decided by watching what the round just produced. After each round, in order:
+The round count is not decided before starting — it is decided by watching what the round just produced.
 
-0. **Detected oscillation** → exit, and the exit is `oscillation`. It comes before all because it is the only one able to hide behind another: the applier suppresses the oscillating fix, the round applied drop to zero, and rule 1 would declare `fixed-point` — that is the clean exit — on a cycle bouncing the same line. Its block `oscillation` field reports it, and you verify it on the ledger like the other two signals (§ *The two signals are verified, not accepted*).
+**Which rule applies is asked, not judged here.** After each round, with the round written in the ledger, call `architect/architect.mjs` — the evaluator that `skills/develop-feature/SKILL.md` § *The evaluator* declares — with `question: "round"`, the `ledger` and `rounds_cap` (the `N` of `--rounds N`, or `null`). Its verdict is the exit of § *Exits* — `fixed-point`, `oscillation`, `rounds-truncated`, `rounds-exhausted` — or `continue`, or `merit` when only rule 3's merit verdict can decide: then you weigh it, write the motivated line in the ledger, and ask again with `merit: "continue"` or `merit: "stop"`, which turns into `continue`, `diminishing-returns` or a cap exit. The round's `verdict` in the ledger is `continue` when the answer is `continue`, and `stop` on every exit. The rules are listed below for whoever reads this contract; the evaluator owns their order and their arithmetic, and the merit verdict alone stays yours.
+
+In order:
+
+0. **Detected oscillation** → exit, and the exit is `oscillation`. It comes before all because it is the only one able to hide behind another: the applier suppresses the oscillating fix, the round applied drop to zero, and rule 1 would declare `fixed-point` — that is the clean exit — on a cycle bouncing the same line. The applier's `oscillation` field reports it, and the evaluator measures it on the ledger (§ *The two signals are verified, not accepted*).
 1. **Zero applied fixes** → fixed point, exit. It is the clean exit.
 2. **At least three severe fixes** → another round, without discussing. A perimeter containing three real defects contained enough to still contain more, and you just wrote the code correcting them.
 3. **Otherwise, merit verdict** — you emit it, in one motivated line in the ledger, and it weighs **what** was applied, never how much:
@@ -223,7 +225,7 @@ Exit at the **first** occurring, and declare which:
 
 1. **`fixed-point`** — the round applied zero fixes.
 2. **`diminishing-returns`** — negative merit verdict at rule 3.
-3. **`oscillation`** — the applier detected, before applying (the criterion is in its contract), that the outgoing `anchor` for a fix coincides with one already recorded in the ledger for the same `file` and `symbol` in a round earlier than the one of the last fix: its JSON `oscillation` field reports it with the two anchors, and **you verify it on the ledger** like the other two signals (§ *The two signals are verified, not accepted*) — if your verification and its block diverge, yours holds. Do not apply further: two rounds bouncing the same line are not converging. Stop and report both versions. Be careful not to confuse it with `on_previous_fix`, which is the healthy and frequent case — a fix correcting another *moving forward*; here instead one goes back.
+3. **`oscillation`** — the applier detected, before applying (the criterion is in its contract), that the outgoing `anchor` for a fix coincides with one already recorded in the ledger for the same `file` and `symbol` in a round earlier than the one of the last fix: its JSON `oscillation` field reports it with the two anchors, and **the evaluator measures it on the ledger** (§ *The two signals are verified, not accepted*) — if the measurement and its block diverge, the measurement holds. Do not apply further: two rounds bouncing the same line are not converging. Stop and report both versions. Be careful not to confuse it with `on_previous_fix`, which is the healthy and frequent case — a fix correcting another *moving forward*; here instead one goes back.
 4. **`rounds-truncated`** — you reached the explicit `--rounds N` cap passed by hand. You truncate: you know what you are delivering, it is not an anomaly.
 5. **`rounds-exhausted`** — you reached, without an explicit `--rounds N`, the guardrail at **6**. It is not a budget to spend: getting there is an anomaly, because it means you are still far from fixed point on code you wrote yourself. Report it as such, with the list of the severe of the last round.
 

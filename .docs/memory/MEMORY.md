@@ -16,4 +16,4 @@ Indice delle memorie del progetto. Una riga per file, nessun contenuto qui dentr
 - [I guardrail nascono spenti](guardrail-nascono-spenti.md) — un hook del pacchetto nega solo ciò che il progetto dichiara, e non esegue mai un file appena scritto
 - [I punti di ingresso del prodotto](punti-ingresso-prodotto.md) — i sette entry point in due gruppi, e tutto il resto che è contratto interno
 - [Il confine degli identificatori](confine-degli-identificatori.md) — cosa si può rinominare nel pacchetto e cosa no: non conta il tipo del nome, conta chi lo legge
-- [Il valutatore deterministico](valutatore-deterministico.md) — il prodotto ha un programma che possiede l'ordine della catena e risponde a sei domande meccaniche: il verdetto vincola, e il banco è l'unica difesa
+- [Il valutatore deterministico](valutatore-deterministico.md) — il prodotto ha un programma che possiede l'ordine della catena e risponde a nove domande meccaniche: il verdetto vincola, e il banco è l'unica difesa

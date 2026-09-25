@@ -1,6 +1,6 @@
 ---
 name: guardrail-nascono-spenti
-description: "la guardia nega sempre push, --no-verify, commit di .daiku/ e nuovi file fuori sede, e solo il pool si dichiara; nessun hook esegue un file perché è appena comparso"
+description: "la guardia nega sempre push, --no-verify, commit di .daiku/, commit firmati da Claude o Codex e nuovi file fuori sede, e solo il pool si dichiara; nessun hook esegue un file perché è appena comparso"
 metadata: 
   node_type: memory
   type: project
@@ -17,7 +17,9 @@ e sulle scritture non negano niente e non leggono nemmeno la riga — questo res
 negano sempre, senza interruttore: i commit che contengono `.daiku/`, `git push` e `git commit
 -n`/`--no-verify`. Dal 23 settembre 2026 nega sempre, senza interruttore, anche la creazione di un
 nuovo file fuori dalle sedi dichiarate (`edit-guard.mjs`: modificare un file esistente resta sempre
-lecito, così i ritocchi a mano del proprietario non si bloccano mai). L'unico ramo che resta spento finché il progetto non lo accende è il pool dei
+lecito, così i ritocchi a mano del proprietario non si bloccano mai). Dal 25 settembre 2026 nega sempre,
+senza interruttore, anche il `git commit` il cui messaggio accredita l'agente — un `Co-Authored-By`
+che nomina Claude o Codex, o una riga `Generated with` — in `-m`, `--trailer`, heredoc o file `-F`. L'unico ramo che resta spento finché il progetto non lo accende è il pool dei
 worktree, con `{worktree.pool}`. La rimozione ricorsiva che attraversa una junction di Windows non
 ha mai avuto interruttore: non è una policy ma un fatto del sistema operativo.
 

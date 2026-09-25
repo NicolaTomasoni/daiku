@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /**
- * Gate di chiusura di /repo-intelligence: verifica a macchina una corsa già depositata su file.
+ * Gate di chiusura di /studia-sorgente: verifica a macchina una corsa già depositata su file.
  *
  * Attrezzo di sviluppo di questo repository, non del pacchetto: vive fuori da `plugins/`, non si
  * pubblica, non si installa in nessun progetto e non gira mai da un hook. Si lancia a mano,
  * dall'orchestratore del comando (Passo 9) o da chi vuole solo controllare una corsa già scritta:
  *
- *   node .docs/tools/repo-intelligence/check-run.mjs .docs/repo-intelligence/<slug> plugins/daiku
+ *   node .docs/tools/studia-sorgente/check-run.mjs .docs/studia-sorgente/<slug> plugins/daiku
  *
  * Entrambi gli argomenti sono obbligatori e arrivano sempre per riga di comando, mai dedotti
  * dalla posizione di questo file o dalla cwd. Senza uno dei due: usage su stderr, uscita `2`.
@@ -15,10 +15,10 @@
  * dentro `--self-check`, che crea le proprie fixture in `os.tmpdir()` (repo git compreso) e le
  * cancella alla fine. Non contiene, né lancia, nessun comando d'installazione.
  *
- *   node .docs/tools/repo-intelligence/check-run.mjs --self-check
+ *   node .docs/tools/studia-sorgente/check-run.mjs --self-check
  *
  * Verifica la forma esatta di `run.json`, di `1. daiku-comparison.md` e di `2. evidence-ledger.md`
- * come la descrive `.claude/commands/repo-intelligence.md` § *I file di una corsa*: la stessa
+ * come la descrive `.claude/commands/studia-sorgente.md` § *I file di una corsa*: la stessa
  * forma vive scritta due volte, nella prosa del contratto e nel parser qui sotto, ed è l'unico
  * punto in cui le due devono combaciare alla lettera.
  */
@@ -369,7 +369,7 @@ function runSelfCheck() {
     if (!ok) failed.push(detail ? `${name}: ${detail}` : name);
   }
 
-  const base = mkdtempSync(join(tmpdir(), 'ri-check-run-'));
+  const base = mkdtempSync(join(tmpdir(), 'ss-check-run-'));
   try {
     // Senza argomenti: usage, uscita 2. L'unico spawn del proprio file.
     const noArgs = spawnSync(process.execPath, [THIS_FILE], { encoding: 'utf-8', timeout: 15000 });
@@ -468,7 +468,7 @@ function runSelfCheck() {
     // Caso verde: corsa completa e coerente.
     {
       const dir = buildFakeRepo();
-      const cartella = join(dir, '.docs', 'repo-intelligence', 'npm--fixture');
+      const cartella = join(dir, '.docs', 'studia-sorgente', 'npm--fixture');
       writeRun(dir, cartella, { comparisonRows: [rowFor(schedaAdottaOk)], schedeFields: [schedaAdottaOk] });
       const res = runChecks(cartella, 'plugins/daiku', { repoOverride: dir, radiciNonEseguibili: [join(dir, 'analysis-root').replace(/\\/g, '/')], gitStatusCorrente: [] });
       record('caso-verde-nessun-fallito', res.failed.length === 0, res.failed.join(' | '));
@@ -477,7 +477,7 @@ function runSelfCheck() {
     // Scheda "adotta" senza licenza -> rosso.
     {
       const dir = buildFakeRepo();
-      const cartella = join(dir, '.docs', 'repo-intelligence', 'npm--fixture');
+      const cartella = join(dir, '.docs', 'studia-sorgente', 'npm--fixture');
       const scheda = { ...schedaAdottaOk, licenza: undefined };
       writeRun(dir, cartella, { comparisonRows: [rowFor(scheda)], schedeFields: [scheda] });
       const res = runChecks(cartella, 'plugins/daiku', { repoOverride: dir, radiciNonEseguibili: [join(dir, 'analysis-root').replace(/\\/g, '/')], gitStatusCorrente: [] });
@@ -487,7 +487,7 @@ function runSelfCheck() {
     // Scarta senza "Perché no" -> rosso.
     {
       const dir = buildFakeRepo();
-      const cartella = join(dir, '.docs', 'repo-intelligence', 'npm--fixture');
+      const cartella = join(dir, '.docs', 'studia-sorgente', 'npm--fixture');
       const scheda = { id: 'RI-002', titolo: 'Esempio scartato', azione: 'scarta', priorita: 'bassa', classificazione: 'ABSENT', modo: 'no-action', evidenza: 'EV-001', sede: 'nessuna', blast: 'low', costo: 'basso', confidenza: 'LOW' };
       writeRun(dir, cartella, { comparisonRows: [], schedeFields: [scheda] });
       const res = runChecks(cartella, 'plugins/daiku', { repoOverride: dir, radiciNonEseguibili: [join(dir, 'analysis-root').replace(/\\/g, '/')], gitStatusCorrente: [] });
@@ -497,7 +497,7 @@ function runSelfCheck() {
     // "## Da riprendere" non è la prima sezione -> rosso.
     {
       const dir = buildFakeRepo();
-      const cartella = join(dir, '.docs', 'repo-intelligence', 'npm--fixture');
+      const cartella = join(dir, '.docs', 'studia-sorgente', 'npm--fixture');
       writeRun(dir, cartella, { comparisonRows: [rowFor(schedaAdottaOk)], schedeFields: [schedaAdottaOk] });
       const comparisonPath = join(cartella, '1. daiku-comparison.md');
       const original = readFileSync(comparisonPath, 'utf-8');
@@ -509,7 +509,7 @@ function runSelfCheck() {
     // "## Da riprendere" fuori ordine di priorità -> rosso.
     {
       const dir = buildFakeRepo();
-      const cartella = join(dir, '.docs', 'repo-intelligence', 'npm--fixture');
+      const cartella = join(dir, '.docs', 'studia-sorgente', 'npm--fixture');
       const bassa = { ...schedaAdottaOk, id: 'RI-001', priorita: 'bassa' };
       const alta = { ...schedaAdottaOk, id: 'RI-002', priorita: 'alta' };
       writeRun(dir, cartella, { comparisonRows: [rowFor(bassa), rowFor(alta)], schedeFields: [bassa, alta] });
@@ -520,7 +520,7 @@ function runSelfCheck() {
     // Un EV citato dalla scheda ma assente dal ledger -> rosso.
     {
       const dir = buildFakeRepo();
-      const cartella = join(dir, '.docs', 'repo-intelligence', 'npm--fixture');
+      const cartella = join(dir, '.docs', 'studia-sorgente', 'npm--fixture');
       const scheda = { ...schedaAdottaOk, evidenza: 'EV-999' };
       writeRun(dir, cartella, { comparisonRows: [rowFor(scheda)], schedeFields: [scheda] });
       const res = runChecks(cartella, 'plugins/daiku', { repoOverride: dir, radiciNonEseguibili: [join(dir, 'analysis-root').replace(/\\/g, '/')], gitStatusCorrente: [] });
@@ -530,7 +530,7 @@ function runSelfCheck() {
     // daiku.radice diversa dall'argomento -> rosso.
     {
       const dir = buildFakeRepo();
-      const cartella = join(dir, '.docs', 'repo-intelligence', 'npm--fixture');
+      const cartella = join(dir, '.docs', 'studia-sorgente', 'npm--fixture');
       writeRun(dir, cartella, { runJsonOverrides: { daikuRadice: 'plugins/altro' }, comparisonRows: [rowFor(schedaAdottaOk)], schedeFields: [schedaAdottaOk] });
       const res = runChecks(cartella, 'plugins/daiku', { repoOverride: dir, radiciNonEseguibili: [join(dir, 'analysis-root').replace(/\\/g, '/')], gitStatusCorrente: [] });
       record('radice-diversa-rosso', res.failed.some((f) => f.startsWith('run-json:daiku-radice-coincide')), res.failed.join(' | '));
@@ -539,7 +539,7 @@ function runSelfCheck() {
     // sorgente.path fuori dalla radice di analisi -> rosso.
     {
       const dir = buildFakeRepo();
-      const cartella = join(dir, '.docs', 'repo-intelligence', 'npm--fixture');
+      const cartella = join(dir, '.docs', 'studia-sorgente', 'npm--fixture');
       writeRun(dir, cartella, { runJsonOverrides: { sorgentePathOverride: join(dir, 'fuori-radice', 'fixture').replace(/\\/g, '/') }, comparisonRows: [rowFor(schedaAdottaOk)], schedeFields: [schedaAdottaOk] });
       const res = runChecks(cartella, 'plugins/daiku', { repoOverride: dir, radiciNonEseguibili: [join(dir, 'analysis-root').replace(/\\/g, '/')], gitStatusCorrente: [] });
       record('sorgente-fuori-radice-rosso', res.failed.some((f) => f.startsWith('run-json:sorgente-sotto-radice-analisi')), res.failed.join(' | '));
@@ -548,7 +548,7 @@ function runSelfCheck() {
     // grafo.comando senza --code-only -> rosso.
     {
       const dir = buildFakeRepo();
-      const cartella = join(dir, '.docs', 'repo-intelligence', 'npm--fixture');
+      const cartella = join(dir, '.docs', 'studia-sorgente', 'npm--fixture');
       writeRun(dir, cartella, { runJsonOverrides: { comando: 'graphify extract <path> --out <dir>' }, comparisonRows: [rowFor(schedaAdottaOk)], schedeFields: [schedaAdottaOk] });
       const res = runChecks(cartella, 'plugins/daiku', { repoOverride: dir, radiciNonEseguibili: [join(dir, 'analysis-root').replace(/\\/g, '/')], gitStatusCorrente: [] });
       record('comando-senza-code-only-rosso', res.failed.some((f) => f.startsWith('run-json:grafo-comando-code-only')), res.failed.join(' | '));
@@ -557,7 +557,7 @@ function runSelfCheck() {
     // grafo.comando con "install" -> rosso.
     {
       const dir = buildFakeRepo();
-      const cartella = join(dir, '.docs', 'repo-intelligence', 'npm--fixture');
+      const cartella = join(dir, '.docs', 'studia-sorgente', 'npm--fixture');
       // La stringa evita di deragliare nella forma esatta che self-check.mjs vieta altrove
       // (`graphify … install`): qui basta la sotto-stringa "install" per collaudare la regola di
       // check-run.mjs, che è un semplice `comando.includes('install')`.
@@ -569,7 +569,7 @@ function runSelfCheck() {
     // File toccato fuori dalla cartella della corsa -> rosso.
     {
       const dir = buildFakeRepo();
-      const cartella = join(dir, '.docs', 'repo-intelligence', 'npm--fixture');
+      const cartella = join(dir, '.docs', 'studia-sorgente', 'npm--fixture');
       writeRun(dir, cartella, { comparisonRows: [rowFor(schedaAdottaOk)], schedeFields: [schedaAdottaOk] });
       const res = runChecks(cartella, 'plugins/daiku', {
         repoOverride: dir,
@@ -583,12 +583,12 @@ function runSelfCheck() {
     // passare per "dentro" la cartella della corsa: il confine vuole lo slash, come `sottoRadice`.
     {
       const dir = buildFakeRepo();
-      const cartella = join(dir, '.docs', 'repo-intelligence', 'npm--fixture');
+      const cartella = join(dir, '.docs', 'studia-sorgente', 'npm--fixture');
       writeRun(dir, cartella, { comparisonRows: [rowFor(schedaAdottaOk)], schedeFields: [schedaAdottaOk] });
       const res = runChecks(cartella, 'plugins/daiku', {
         repoOverride: dir,
         radiciNonEseguibili: [join(dir, 'analysis-root').replace(/\\/g, '/')],
-        gitStatusCorrente: ['?? .docs/repo-intelligence/npm--fixture-vecchia/x.txt'],
+        gitStatusCorrente: ['?? .docs/studia-sorgente/npm--fixture-vecchia/x.txt'],
       });
       record('cartella-sorella-prefisso-non-passa', res.failed.some((f) => f.startsWith('scrittura:solo-nella-cartella-corsa')), res.failed.join(' | '));
     }
@@ -596,7 +596,7 @@ function runSelfCheck() {
     // File nuovo sotto plugins/ -> rosso sul divieto specifico "niente-sotto-plugins".
     {
       const dir = buildFakeRepo();
-      const cartella = join(dir, '.docs', 'repo-intelligence', 'npm--fixture');
+      const cartella = join(dir, '.docs', 'studia-sorgente', 'npm--fixture');
       writeRun(dir, cartella, { comparisonRows: [rowFor(schedaAdottaOk)], schedeFields: [schedaAdottaOk] });
       const res = runChecks(cartella, 'plugins/daiku', {
         repoOverride: dir,
@@ -609,7 +609,7 @@ function runSelfCheck() {
     // run.json mancante -> rosso, e i controlli a valle non si eseguono a vuoto.
     {
       const dir = buildFakeRepo();
-      const cartella = join(dir, '.docs', 'repo-intelligence', 'npm--fixture');
+      const cartella = join(dir, '.docs', 'studia-sorgente', 'npm--fixture');
       writeRun(dir, cartella, { comparisonRows: [rowFor(schedaAdottaOk)], schedeFields: [schedaAdottaOk], skipRunJson: true });
       const res = runChecks(cartella, 'plugins/daiku', { repoOverride: dir, radiciNonEseguibili: [join(dir, 'analysis-root').replace(/\\/g, '/')], gitStatusCorrente: [] });
       record('run-json-mancante-rosso', res.failed.some((f) => f.startsWith('run-json:esiste')), res.failed.join(' | '));
@@ -618,7 +618,7 @@ function runSelfCheck() {
     // run.json con una chiave mancante -> rosso.
     {
       const dir = buildFakeRepo();
-      const cartella = join(dir, '.docs', 'repo-intelligence', 'npm--fixture');
+      const cartella = join(dir, '.docs', 'studia-sorgente', 'npm--fixture');
       writeRun(dir, cartella, { comparisonRows: [rowFor(schedaAdottaOk)], schedeFields: [schedaAdottaOk] });
       const runJsonPath = join(cartella, 'run.json');
       const runJsonObj = JSON.parse(readFileSync(runJsonPath, 'utf-8'));
@@ -631,7 +631,7 @@ function runSelfCheck() {
     // toolchain.opensrc vuoto -> rosso.
     {
       const dir = buildFakeRepo();
-      const cartella = join(dir, '.docs', 'repo-intelligence', 'npm--fixture');
+      const cartella = join(dir, '.docs', 'studia-sorgente', 'npm--fixture');
       writeRun(dir, cartella, { comparisonRows: [rowFor(schedaAdottaOk)], schedeFields: [schedaAdottaOk] });
       const runJsonPath = join(cartella, 'run.json');
       const runJsonObj = JSON.parse(readFileSync(runJsonPath, 'utf-8'));
@@ -644,7 +644,7 @@ function runSelfCheck() {
     // toolchain.graphify vuoto -> rosso.
     {
       const dir = buildFakeRepo();
-      const cartella = join(dir, '.docs', 'repo-intelligence', 'npm--fixture');
+      const cartella = join(dir, '.docs', 'studia-sorgente', 'npm--fixture');
       writeRun(dir, cartella, { comparisonRows: [rowFor(schedaAdottaOk)], schedeFields: [schedaAdottaOk] });
       const runJsonPath = join(cartella, 'run.json');
       const runJsonObj = JSON.parse(readFileSync(runJsonPath, 'utf-8'));
@@ -657,7 +657,7 @@ function runSelfCheck() {
     // toolchain.opensrc.binario vuoto, versione presente -> rosso (l'altra metà della condizione).
     {
       const dir = buildFakeRepo();
-      const cartella = join(dir, '.docs', 'repo-intelligence', 'npm--fixture');
+      const cartella = join(dir, '.docs', 'studia-sorgente', 'npm--fixture');
       writeRun(dir, cartella, { comparisonRows: [rowFor(schedaAdottaOk)], schedeFields: [schedaAdottaOk] });
       const runJsonPath = join(cartella, 'run.json');
       const runJsonObj = JSON.parse(readFileSync(runJsonPath, 'utf-8'));
@@ -670,7 +670,7 @@ function runSelfCheck() {
     // toolchain.graphify.versione vuoto, binario presente -> rosso (l'altra metà della condizione).
     {
       const dir = buildFakeRepo();
-      const cartella = join(dir, '.docs', 'repo-intelligence', 'npm--fixture');
+      const cartella = join(dir, '.docs', 'studia-sorgente', 'npm--fixture');
       writeRun(dir, cartella, { comparisonRows: [rowFor(schedaAdottaOk)], schedeFields: [schedaAdottaOk] });
       const runJsonPath = join(cartella, 'run.json');
       const runJsonObj = JSON.parse(readFileSync(runJsonPath, 'utf-8'));
@@ -683,7 +683,7 @@ function runSelfCheck() {
     // grafo.nodi = 0 -> rosso.
     {
       const dir = buildFakeRepo();
-      const cartella = join(dir, '.docs', 'repo-intelligence', 'npm--fixture');
+      const cartella = join(dir, '.docs', 'studia-sorgente', 'npm--fixture');
       writeRun(dir, cartella, { runJsonOverrides: { nodi: 0 }, comparisonRows: [rowFor(schedaAdottaOk)], schedeFields: [schedaAdottaOk] });
       const res = runChecks(cartella, 'plugins/daiku', { repoOverride: dir, radiciNonEseguibili: [join(dir, 'analysis-root').replace(/\\/g, '/')], gitStatusCorrente: [] });
       record('grafo-nodi-zero-rosso', res.failed.some((f) => f.startsWith('run-json:grafo-nodi-positivo')), res.failed.join(' | '));
@@ -692,7 +692,7 @@ function runSelfCheck() {
     // "0. study.md" assente -> rosso.
     {
       const dir = buildFakeRepo();
-      const cartella = join(dir, '.docs', 'repo-intelligence', 'npm--fixture');
+      const cartella = join(dir, '.docs', 'studia-sorgente', 'npm--fixture');
       writeRun(dir, cartella, { comparisonRows: [rowFor(schedaAdottaOk)], schedeFields: [schedaAdottaOk] });
       rmSync(join(cartella, '0. study.md'));
       const res = runChecks(cartella, 'plugins/daiku', { repoOverride: dir, radiciNonEseguibili: [join(dir, 'analysis-root').replace(/\\/g, '/')], gitStatusCorrente: [] });
@@ -702,7 +702,7 @@ function runSelfCheck() {
     // "1. daiku-comparison.md" assente -> rosso.
     {
       const dir = buildFakeRepo();
-      const cartella = join(dir, '.docs', 'repo-intelligence', 'npm--fixture');
+      const cartella = join(dir, '.docs', 'studia-sorgente', 'npm--fixture');
       writeRun(dir, cartella, { comparisonRows: [rowFor(schedaAdottaOk)], schedeFields: [schedaAdottaOk] });
       rmSync(join(cartella, '1. daiku-comparison.md'));
       const res = runChecks(cartella, 'plugins/daiku', { repoOverride: dir, radiciNonEseguibili: [join(dir, 'analysis-root').replace(/\\/g, '/')], gitStatusCorrente: [] });
@@ -712,7 +712,7 @@ function runSelfCheck() {
     // "2. evidence-ledger.md" assente -> rosso.
     {
       const dir = buildFakeRepo();
-      const cartella = join(dir, '.docs', 'repo-intelligence', 'npm--fixture');
+      const cartella = join(dir, '.docs', 'studia-sorgente', 'npm--fixture');
       writeRun(dir, cartella, { comparisonRows: [rowFor(schedaAdottaOk)], schedeFields: [schedaAdottaOk] });
       rmSync(join(cartella, '2. evidence-ledger.md'));
       const res = runChecks(cartella, 'plugins/daiku', { repoOverride: dir, radiciNonEseguibili: [join(dir, 'analysis-root').replace(/\\/g, '/')], gitStatusCorrente: [] });
@@ -722,7 +722,7 @@ function runSelfCheck() {
     // Ledger con ID duplicato -> rosso.
     {
       const dir = buildFakeRepo();
-      const cartella = join(dir, '.docs', 'repo-intelligence', 'npm--fixture');
+      const cartella = join(dir, '.docs', 'studia-sorgente', 'npm--fixture');
       const ledgerDup = `# Ledger\n\n${LEDGER_HEADER}| EV-001 | target | src/index.js | riga 10 | estratto | VERIFIED |\n| EV-001 | daiku | plugins/daiku/skills/x/SKILL.md | — | estratto | VERIFIED |\n`;
       writeRun(dir, cartella, { comparisonRows: [rowFor(schedaAdottaOk)], schedeFields: [schedaAdottaOk], ledger: ledgerDup });
       const res = runChecks(cartella, 'plugins/daiku', { repoOverride: dir, radiciNonEseguibili: [join(dir, 'analysis-root').replace(/\\/g, '/')], gitStatusCorrente: [] });
@@ -732,7 +732,7 @@ function runSelfCheck() {
     // Ledger con "lato" fuori insieme -> rosso.
     {
       const dir = buildFakeRepo();
-      const cartella = join(dir, '.docs', 'repo-intelligence', 'npm--fixture');
+      const cartella = join(dir, '.docs', 'studia-sorgente', 'npm--fixture');
       const ledgerBadLato = `# Ledger\n\n${LEDGER_HEADER}| EV-001 | targetX | src/index.js | riga 10 | estratto | VERIFIED |\n`;
       writeRun(dir, cartella, { comparisonRows: [rowFor(schedaAdottaOk)], schedeFields: [schedaAdottaOk], ledger: ledgerBadLato });
       const res = runChecks(cartella, 'plugins/daiku', { repoOverride: dir, radiciNonEseguibili: [join(dir, 'analysis-root').replace(/\\/g, '/')], gitStatusCorrente: [] });
@@ -742,7 +742,7 @@ function runSelfCheck() {
     // Ledger con "verifica" fuori insieme -> rosso.
     {
       const dir = buildFakeRepo();
-      const cartella = join(dir, '.docs', 'repo-intelligence', 'npm--fixture');
+      const cartella = join(dir, '.docs', 'studia-sorgente', 'npm--fixture');
       const ledgerBadVerifica = `# Ledger\n\n${LEDGER_HEADER}| EV-001 | target | src/index.js | riga 10 | estratto | BOGUS |\n`;
       writeRun(dir, cartella, { comparisonRows: [rowFor(schedaAdottaOk)], schedeFields: [schedaAdottaOk], ledger: ledgerBadVerifica });
       const res = runChecks(cartella, 'plugins/daiku', { repoOverride: dir, radiciNonEseguibili: [join(dir, 'analysis-root').replace(/\\/g, '/')], gitStatusCorrente: [] });
@@ -752,7 +752,7 @@ function runSelfCheck() {
     // Due schede con lo stesso ID -> rosso.
     {
       const dir = buildFakeRepo();
-      const cartella = join(dir, '.docs', 'repo-intelligence', 'npm--fixture');
+      const cartella = join(dir, '.docs', 'studia-sorgente', 'npm--fixture');
       const schedaDup = { ...schedaAdottaOk, titolo: 'Duplicato' };
       writeRun(dir, cartella, { comparisonRows: [rowFor(schedaAdottaOk)], schedeFields: [schedaAdottaOk, schedaDup] });
       const res = runChecks(cartella, 'plugins/daiku', { repoOverride: dir, radiciNonEseguibili: [join(dir, 'analysis-root').replace(/\\/g, '/')], gitStatusCorrente: [] });
@@ -762,7 +762,7 @@ function runSelfCheck() {
     // Scheda con Azione fuori insieme -> rosso.
     {
       const dir = buildFakeRepo();
-      const cartella = join(dir, '.docs', 'repo-intelligence', 'npm--fixture');
+      const cartella = join(dir, '.docs', 'studia-sorgente', 'npm--fixture');
       const schedaBadAzione = { ...schedaAdottaOk, azione: 'invalido' };
       writeRun(dir, cartella, { comparisonRows: [], schedeFields: [schedaBadAzione] });
       const res = runChecks(cartella, 'plugins/daiku', { repoOverride: dir, radiciNonEseguibili: [join(dir, 'analysis-root').replace(/\\/g, '/')], gitStatusCorrente: [] });
@@ -772,7 +772,7 @@ function runSelfCheck() {
     // Scheda con Priorità fuori insieme -> rosso.
     {
       const dir = buildFakeRepo();
-      const cartella = join(dir, '.docs', 'repo-intelligence', 'npm--fixture');
+      const cartella = join(dir, '.docs', 'studia-sorgente', 'npm--fixture');
       const schedaBadPriorita = { ...schedaAdottaOk, priorita: 'invalido' };
       writeRun(dir, cartella, { comparisonRows: [], schedeFields: [schedaBadPriorita] });
       const res = runChecks(cartella, 'plugins/daiku', { repoOverride: dir, radiciNonEseguibili: [join(dir, 'analysis-root').replace(/\\/g, '/')], gitStatusCorrente: [] });
@@ -782,7 +782,7 @@ function runSelfCheck() {
     // Scheda con Classificazione fuori insieme -> rosso.
     {
       const dir = buildFakeRepo();
-      const cartella = join(dir, '.docs', 'repo-intelligence', 'npm--fixture');
+      const cartella = join(dir, '.docs', 'studia-sorgente', 'npm--fixture');
       const schedaBadClassificazione = { ...schedaAdottaOk, classificazione: 'invalido' };
       writeRun(dir, cartella, { comparisonRows: [], schedeFields: [schedaBadClassificazione] });
       const res = runChecks(cartella, 'plugins/daiku', { repoOverride: dir, radiciNonEseguibili: [join(dir, 'analysis-root').replace(/\\/g, '/')], gitStatusCorrente: [] });
@@ -792,7 +792,7 @@ function runSelfCheck() {
     // Scheda con Modo di adozione fuori insieme -> rosso.
     {
       const dir = buildFakeRepo();
-      const cartella = join(dir, '.docs', 'repo-intelligence', 'npm--fixture');
+      const cartella = join(dir, '.docs', 'studia-sorgente', 'npm--fixture');
       const schedaBadModo = { ...schedaAdottaOk, modo: 'invalido' };
       writeRun(dir, cartella, { comparisonRows: [], schedeFields: [schedaBadModo] });
       const res = runChecks(cartella, 'plugins/daiku', { repoOverride: dir, radiciNonEseguibili: [join(dir, 'analysis-root').replace(/\\/g, '/')], gitStatusCorrente: [] });
@@ -802,7 +802,7 @@ function runSelfCheck() {
     // Scheda con Blast radius fuori insieme -> rosso.
     {
       const dir = buildFakeRepo();
-      const cartella = join(dir, '.docs', 'repo-intelligence', 'npm--fixture');
+      const cartella = join(dir, '.docs', 'studia-sorgente', 'npm--fixture');
       const schedaBadBlast = { ...schedaAdottaOk, blast: 'invalido' };
       writeRun(dir, cartella, { comparisonRows: [], schedeFields: [schedaBadBlast] });
       const res = runChecks(cartella, 'plugins/daiku', { repoOverride: dir, radiciNonEseguibili: [join(dir, 'analysis-root').replace(/\\/g, '/')], gitStatusCorrente: [] });
@@ -812,7 +812,7 @@ function runSelfCheck() {
     // Scheda con Costo fuori insieme -> rosso.
     {
       const dir = buildFakeRepo();
-      const cartella = join(dir, '.docs', 'repo-intelligence', 'npm--fixture');
+      const cartella = join(dir, '.docs', 'studia-sorgente', 'npm--fixture');
       const schedaBadCosto = { ...schedaAdottaOk, costo: 'invalido' };
       writeRun(dir, cartella, { comparisonRows: [], schedeFields: [schedaBadCosto] });
       const res = runChecks(cartella, 'plugins/daiku', { repoOverride: dir, radiciNonEseguibili: [join(dir, 'analysis-root').replace(/\\/g, '/')], gitStatusCorrente: [] });
@@ -822,7 +822,7 @@ function runSelfCheck() {
     // Scheda con Confidenza fuori insieme -> rosso.
     {
       const dir = buildFakeRepo();
-      const cartella = join(dir, '.docs', 'repo-intelligence', 'npm--fixture');
+      const cartella = join(dir, '.docs', 'studia-sorgente', 'npm--fixture');
       const schedaBadConfidenza = { ...schedaAdottaOk, confidenza: 'invalido' };
       writeRun(dir, cartella, { comparisonRows: [], schedeFields: [schedaBadConfidenza] });
       const res = runChecks(cartella, 'plugins/daiku', { repoOverride: dir, radiciNonEseguibili: [join(dir, 'analysis-root').replace(/\\/g, '/')], gitStatusCorrente: [] });
@@ -832,7 +832,7 @@ function runSelfCheck() {
     // Classificazione ALREADY_PRESENT senza "Equivalente in Daiku" -> rosso.
     {
       const dir = buildFakeRepo();
-      const cartella = join(dir, '.docs', 'repo-intelligence', 'npm--fixture');
+      const cartella = join(dir, '.docs', 'studia-sorgente', 'npm--fixture');
       const schedaAlreadyPresent = { ...schedaAdottaOk, classificazione: 'ALREADY_PRESENT' };
       writeRun(dir, cartella, { comparisonRows: [rowFor(schedaAlreadyPresent)], schedeFields: [schedaAlreadyPresent] });
       const res = runChecks(cartella, 'plugins/daiku', { repoOverride: dir, radiciNonEseguibili: [join(dir, 'analysis-root').replace(/\\/g, '/')], gitStatusCorrente: [] });
@@ -842,7 +842,7 @@ function runSelfCheck() {
     // "Da riprendere" cita un ID senza scheda corrispondente -> rosso.
     {
       const dir = buildFakeRepo();
-      const cartella = join(dir, '.docs', 'repo-intelligence', 'npm--fixture');
+      const cartella = join(dir, '.docs', 'studia-sorgente', 'npm--fixture');
       writeRun(dir, cartella, {
         comparisonRows: ['| RI-999 | Fantasma | adotta | alta | plugins/daiku/skills/esempio/SKILL.md |'],
         schedeFields: [schedaAdottaOk],
@@ -854,7 +854,7 @@ function runSelfCheck() {
     // "Da riprendere" cita una scheda con azione diversa da adotta/adatta -> rosso.
     {
       const dir = buildFakeRepo();
-      const cartella = join(dir, '.docs', 'repo-intelligence', 'npm--fixture');
+      const cartella = join(dir, '.docs', 'studia-sorgente', 'npm--fixture');
       const schedaIspira = { ...schedaAdottaOk, azione: 'ispira', titolo: 'Solo ispirazione' };
       writeRun(dir, cartella, { comparisonRows: [rowFor(schedaIspira)], schedeFields: [schedaIspira] });
       const res = runChecks(cartella, 'plugins/daiku', { repoOverride: dir, radiciNonEseguibili: [join(dir, 'analysis-root').replace(/\\/g, '/')], gitStatusCorrente: [] });
@@ -866,7 +866,7 @@ function runSelfCheck() {
     {
       const dir = buildFakeRepo();
       rmSync(join(dir, '.claude', 'guardia-target.json'));
-      const cartella = join(dir, '.docs', 'repo-intelligence', 'npm--fixture');
+      const cartella = join(dir, '.docs', 'studia-sorgente', 'npm--fixture');
       writeRun(dir, cartella, { comparisonRows: [rowFor(schedaAdottaOk)], schedeFields: [schedaAdottaOk] });
       const res = runChecks(cartella, 'plugins/daiku', { repoOverride: dir, gitStatusCorrente: [] });
       record('presidio-illeggibile-rosso', res.failed.some((f) => f.startsWith('presidio-letto')), res.failed.join(' | '));

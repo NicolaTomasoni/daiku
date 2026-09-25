@@ -92,8 +92,8 @@ No key is mandatory besides `contract`: everything else is subject to §6.
 ### 4.1 The key a hook reads
 
 The command guard reads one key, `worktree.pool`, which lights its worktree branch: a declared pool
-*is* the declaration that those directories belong to Daiku. The guard's other four branches
-(junction, `.daiku/`, `--no-verify`, push) deny on every project that opened Daiku,
+*is* the declaration that those directories belong to Daiku. The guard's other five branches
+(junction, `.daiku/`, `--no-verify`, push, agent attribution) deny on every project that opened Daiku,
 with no switch. `hooks/README.md` carries the full branch table.
 
 ### 4.2 The key the host reads

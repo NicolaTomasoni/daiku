@@ -34,9 +34,9 @@ ones that never saw Daiku. So `command-guard`'s first question is not "is this
 command dangerous?" but "did this project ask for anything?".
 
 1. **Without `.daiku/project.json` it denies nothing**, ever, without even reading the line.
-2. **Only one branch has its own switch**: `{worktree.pool}`. The other four deny
+2. **Only one branch has its own switch**: `{worktree.pool}`. The other five deny
    always — an agent is never left free to push, to skip commit
-   hooks, or to commit `.daiku/`: never trust an LLM.
+   hooks, to commit `.daiku/`, or to sign a commit as its author: never trust an LLM.
 
 | Branch | Switched on by | What it denies |
 |---|---|---|
@@ -45,6 +45,7 @@ command dangerous?" but "did this project ask for anything?".
 | worktree pool | `worktree.pool` | removals inside a pool worktree, and `pnpm install` run from one |
 | `--no-verify` | *no switch*: `.daiku/project.json` is enough | `git commit` with `-n` or `--no-verify`, wherever the flag stands |
 | push | *no switch*: `.daiku/project.json` is enough | `git push`, even inside a wrapper or queued after another command; `--dry-run` no |
+| agent attribution | *no switch*: `.daiku/project.json` is enough | `git commit` whose message credits Claude or Codex — a `Co-Authored-By` naming them or their makers, or a `Generated with` line — in `-m`, `--trailer`, a heredoc or here-string, or the file `-F` names |
 | new-file spill | *no switch*: `.daiku/project.json` is enough | creating a file outside the declared seats — `{code_root}`, the single-file seats, the folder seats, `.daiku/` conventions, review state, temp; editing an existing file is always allowed |
 
 The first branch has no switch because it is not a policy: `rm -rf` entering a junction and
@@ -52,8 +53,8 @@ destroying what sits on the other side is an operating-system fact, true in ever
 project, and a junction cannot be seen by reading the command line. The second has none by
 owner decision, not by system fact: the repository belongs to the client, Daiku is secret,
 and the ban holds in any case — which is why it is not declared. Same for
-`--no-verify` and push, by owner decision: an agent is never left either
-freedom. Wherever a ban can have a deterministic seat, it always has one — never trust an
+`--no-verify`, push and agent attribution, by owner decision: an agent is never left any of
+those freedoms. Wherever a ban can have a deterministic seat, it always has one — never trust an
 LLM.
 
 The worktree pool is a decision of whoever keeps the repository, and Daiku does not presume it. It is §6 of

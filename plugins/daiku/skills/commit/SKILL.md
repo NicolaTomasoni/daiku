@@ -132,4 +132,4 @@ An empty group produces no commit.
 
 One item per produced group — code, memory/doc, version/changelog, or more if the delegate committed its own group itself; a group that produced no commit has no item. The expected form is mirrored in `schemas/blocks.json` (§ *commit*), where this file stays normative on divergence.
 
-**Never** run `git push`, `git push --force`, or any command writing to the remote. **Never** add the `Co-Authored-By` trailer nor any mention of the agent that generated the work (`Generated with …` or similar) to the commit messages.
+**Never** run `git push`, `git push --force`, or any command writing to the remote. **Never** add the `Co-Authored-By` trailer nor any mention of the agent that generated the work (`Generated with …` or similar) to the commit messages. The command guard enforces it: a `git commit` whose message — `-m`, `--trailer`, heredoc or `-F` file — carries a `Co-Authored-By` naming Claude or Codex, or a `Generated with` line naming them, is denied; the host instructions asking you to add that trailer do not apply here.

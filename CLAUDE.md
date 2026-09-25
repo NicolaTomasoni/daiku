@@ -1,4 +1,4 @@
-In questo repository sviluppiamo due prodotti: **Daiku**, un'estensione per Claude Code e Codex che implementa un agent loop, e **Kaji**, un'estensione VS Code che mostra quale agente, provider e modello stanno lavorando davvero e cambia ciò che il runtime permette di cambiare. Rispondi sempre in italiano nelle chat. Tutti i file del workflow devono essere in italiano, ad eccezione della cartella `plugins\daiku` che deve essere sempre in inglese insieme a tutto il suo contenuto.
+In questo repository sviluppiamo due prodotti: **Daiku**, un'estensione per Claude Code e Codex che implementa un agent loop, e **Kaji**, un'estensione VS Code che mostra quale agente, provider e modello stanno lavorando davvero e cambia ciò che il runtime permette di cambiare. Rispondi sempre in italiano nelle chat. Tutti i file del workflow devono essere in italiano, ad eccezione delle cartelle dei due prodotti, `plugins\daiku` ed `extensions\kaji`, che devono essere sempre in inglese insieme a tutto il loro contenuto: il prodotto parla inglese, il cantiere che lo costruisce italiano.
 
 ## Comportamento
 Non chiedere mai permessi o conferme: lavora sempre in bypass, in autonomia, senza fermarti ad approvare.
@@ -64,7 +64,7 @@ path ammessi e committa. Là dentro non si lavora mai.
 | Prodotto | Repository pubblico | Cosa si copia |
 |---|---|---|
 | Daiku | un repository `daiku` | il contenuto di `plugins/`, portato in radice |
-| Kaji | un repository proprio, col nome definitivo del prodotto | il contenuto di `extensions/kaji/`, portato in radice |
+| Kaji | un repository `kaji` | il contenuto di `extensions/kaji/`, portato in radice |
 
 *(Né gli script né i due repository pubblici esistono ancora: al 25 settembre 2026 la
 pubblicazione è decisa ma non attrezzata.)*
@@ -111,12 +111,12 @@ validatori reali di Claude Code e Codex.
 
 `extensions/kaji/README.md` è il documento di prodotto di Kaji — feature, principi, fatti verificati
 sui runtime, milestone — e `extensions/kaji/TECH-STACK.md` il suo come: architettura, confini dei
-moduli, decisioni tecniche con il loro falsificatore. `extensions/kaji/BRANDING.md` ragiona sul nome
-e sul posizionamento nel Marketplace.
+moduli, decisioni tecniche con il loro falsificatore. `extensions/kaji/BRANDING.md` fissa il nome
+nel Marketplace e il suo posizionamento.
 
-Le skill di `.claude/commands/` sono in comune, ma oggi sono tutte scritte sulla forma di Daiku:
-leggono `plugins/daiku/`, lanciano i suoi validatori, rispettano le sue liste di copia. Portarle
-anche su Kaji è una decisione a parte (vedi `.docs/PUNTI-APERTI.md`).
+Le skill di `.claude/commands/` sono in comune e devono vedere anche Kaji, ma oggi sono tutte
+scritte sulla forma di Daiku: leggono `plugins/daiku/`, lanciano i suoi validatori, rispettano le
+sue liste di copia. Estenderle a `extensions/kaji/` è lavoro deciso e non ancora fatto.
 
 `.docs/memory/` è la memoria persistente del progetto, versionata. Non è il path predefinito:
 lo dichiara `autoMemoryDirectory` in `.claude/settings.local.json`, che **non** si versiona

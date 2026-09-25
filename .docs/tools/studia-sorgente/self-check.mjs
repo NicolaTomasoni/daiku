@@ -6,7 +6,7 @@
  * pubblica, non si installa in nessun progetto e non gira mai da un hook. Si lancia a mano, prima
  * di un rilascio o dopo aver toccato uno dei due fratelli:
  *
- *   node .docs/tools/repo-intelligence/self-check.mjs
+ *   node .docs/tools/studia-sorgente/self-check.mjs
  *
  * Non prende nessun argomento: `check-toolchain.mjs --self-check` e `check-run.mjs --self-check`
  * sanno collaudarsi da soli, con le proprie fixture in `os.tmpdir()`, e non hanno bisogno di una

@@ -19,7 +19,7 @@
  *    branch switched off — §6 of `contracts/project-contract.md`, *what the JSON does not declare
  *    does not exist*.
  *
- * There are five branches, in three families.
+ * There are six branches, in three families.
  *
  * **An operating-system fact**, on in every Daiku project because it depends on
  * no choice of whoever works:
@@ -46,17 +46,21 @@
  *     while here the push is recognised even inside a wrapper, behind a `sudo` or
  *     queued after another command. Push stays a manual gesture of the owner. `--dry-run`
  *     is not: it pushes nothing.
+ *  5. **A commit crediting the agent.** A `Co-Authored-By` trailer naming Claude or
+ *     Codex, or a `Generated with` line, in the message — `-m`, `--trailer`, a heredoc
+ *     feeding `-F -`, or the file `-F` names. The history carries only whoever owns the work.
  *
  * **A project policy**, off until the JSON switches it on:
  *
- *  5. **The worktree pool** (`{worktree.pool}`). Inside a pool worktree a
+ *  6. **The worktree pool** (`{worktree.pool}`). Inside a pool worktree a
  *     removal carries away uncommitted files without recovery, and `pnpm install` rewrites
  *     the shared `node_modules` `virtualStoreDir`, leaving the
  *     root installation inconsistent. No declared pool, neither check.
  *
  * Where the host has a system `deny`, that stays the real door for 3 and 4: absolute, and
  * no source below can remove it. The two branches here close the shapes prefix
- * matching does not see, and that is why they live here and not there.
+ * matching does not see, and that is why they live here and not there. Branch 5 has no
+ * host rule at all: a permission rule matches the command, never the message inside it.
  *
  * **One shape is not enough.** The shell accepts the same gesture written many ways,
  * and the guard must know them all: a leading `cd` changing the base of
@@ -76,7 +80,7 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import { lstatSync } from 'node:fs';
+import { lstatSync, readFileSync } from 'node:fs';
 import { isAbsolute, join, resolve } from 'node:path';
 import { invokedDirectly, projectRoot } from './project-root.mjs';
 import { REAL_READS, loadContext, fakeContext, isInside } from './daiku-config.mjs';
@@ -490,10 +494,10 @@ function pathGuard(line, cwd, env, ctx, depth = 0) {
 
 // --- git guard -----------------------------------------------------------
 //
-// Four branches behind the project gate, and a single switch in the whole file.
+// Five branches behind the project gate, and a single switch in the whole file.
 // The gate stays: without `.daiku/project.json` this project has not opened Daiku, and the
-// guard does not even read the line. Behind the gate, push, `--no-verify` and `.daiku/`
-// commits are denied **always** — an agent is never left any of these
+// guard does not even read the line. Behind the gate, push, `--no-verify`, `.daiku/`
+// commits and commits crediting the agent are denied **always** — an agent is never left any of these
 // freedoms, and never trusting an LLM is the rule saying so (see `CLAUDE.md`). The only
 // thing the project declares is the worktree pool.
 //
@@ -569,6 +573,67 @@ function pushGuard(line) {
     };
   }
   return null;
+}
+
+/** A line of a commit message attributing the work to the agent that wrote it: a
+ * `Co-Authored-By` trailer naming Claude or Codex — or their makers, which is how the
+ * hosts sign it (`noreply@anthropic.com`) — and the `Generated with …` line they append.
+ * The `=` shape is the one `--trailer` accepts. */
+const AGENT_ATTRIBUTION = [
+  /co-authored-by\s*[:=][^\n]*\b(?:claude|codex|anthropic|openai|chatgpt)\b/i,
+  /generated (?:with|by)[^\n]*\b(?:claude|codex)\b/i,
+];
+
+/** The `-F`/`--file` values of a `git commit`: the message read from a file. `-` is
+ * stdin, i.e. the heredoc already in the line. */
+function messageFiles(args) {
+  const files = [];
+  for (let k = 0; k < args.length; k += 1) {
+    const x = args[k];
+    if (x.q) continue;
+    if ((x.t === '-F' || x.t === '--file') && args[k + 1]) {
+      files.push(args[k + 1].t);
+      k += 1;
+    } else if (x.t.startsWith('--file=')) {
+      files.push(x.t.slice('--file='.length));
+    }
+  }
+  return files.filter((f) => f && f !== '-');
+}
+
+/** `git commit` whose message credits Claude or Codex, with no switch.
+ *
+ * The message is read where it stands. The **whole line** is searched, not only the `-m`
+ * values: a heredoc feeding `-F -` and a PowerShell here-string are part of the line and
+ * of no token the tokenizer would recognise as the message, and `--trailer` writes the same
+ * trailer by another road. A message in a file (`-F <file>`) is read from disk, relative to
+ * the session cwd; when the file does not answer, that source is skipped and the line
+ * alone decides — the fail-open contract, proved by the bench.
+ */
+function attributionGuard(line, cwd, env) {
+  const commits = gitInvocations(line).filter((inv) => inv.length && inv[0].t === 'commit');
+  if (!commits.length) return null;
+  const texts = [line];
+  for (const invocation of commits) {
+    for (const file of messageFiles(invocation.slice(1))) {
+      const absolute = resolveTarget(file, cwd);
+      if (!absolute) continue;
+      try {
+        const text = env.readMessage(absolute);
+        if (typeof text === 'string') texts.push(text);
+      } catch {
+        // unreadable file: the line alone decides
+      }
+    }
+  }
+  if (!texts.some((text) => AGENT_ATTRIBUTION.some((pattern) => pattern.test(text)))) return null;
+  return {
+    reason:
+      'the commit message credits the agent that wrote the work — a `Co-Authored-By` ' +
+      'naming Claude or Codex, or a `Generated with` line: the history carries only ' +
+      'whoever owns the work. Drop that line from the message and commit again. See ' +
+      '`skills/commit/SKILL.md`, last paragraph.',
+  };
 }
 
 /** A pathspec naming `.daiku/`, in whatever shape the shell writes it.
@@ -785,6 +850,14 @@ const REAL_ENV = {
       return null;
     }
   },
+  /** The text of a commit-message file; `null` when it does not answer. */
+  readMessage: (path) => {
+    try {
+      return readFileSync(path, 'utf-8');
+    } catch {
+      return null;
+    }
+  },
 };
 
 /** The decision, without leaving the process: what the test bench calls.
@@ -802,6 +875,7 @@ function evaluate(line, cwd, env, ctx) {
     pathGuard(line, cwd, env, ctx) ||
     daikuGuard(line, cwd, env) ||
     commitGuard(line) ||
+    attributionGuard(line, cwd, env) ||
     pushGuard(line)
   );
 }
@@ -860,6 +934,13 @@ function fakeEnv() {
     // By default the `.daiku/` stage is clean: cases proving a dirty stage
     // pass their own seventh element and the loop grafts it below.
     daikuStatus: () => [],
+    // Two commit-message files next to the root, one clean and one signed by the agent.
+    readMessage: (p) =>
+      ({
+        'c:/dev/project/msg-clean.txt': 'feat: add the parser\n',
+        'c:/dev/project/msg-signed.txt':
+          'feat: add the parser\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\n',
+      })[key(p)] ?? null,
   };
 }
 
@@ -950,6 +1031,22 @@ const CASES = [
   ['git add -A passes here: the commit decides', 'git add -A', ROOT_CWD, 'allow', ''],
   ['clean bare git commit', 'git commit -m "docs: x"', ROOT_CWD, 'allow', ''],
 
+  // --- attribution: no commit credits Claude or Codex, in any shape of the message ----
+  ['undeclared attribution is still denied', 'git commit -m "feat: x" -m "Co-Authored-By: Claude <noreply@anthropic.com>"', ROOT_CWD, 'deny', 'credits the agent', CTX_BARE],
+  ['Co-Authored-By Codex in -m', 'git commit -m "fix: y" -m "Co-authored-by: Codex <codex@openai.com>"', ROOT_CWD, 'deny', 'credits the agent'],
+  ['trailer in a Bash heredoc', "git commit -F - <<'EOF'\nfeat: x\n\n- one\n\nCo-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>\nEOF", ROOT_CWD, 'deny', 'credits the agent'],
+  ['trailer in a PowerShell here-string', "git commit -m @'\nfeat: x\n\nCo-Authored-By: Claude <noreply@anthropic.com>\n'@", ROOT_CWD, 'deny', 'credits the agent'],
+  ['--trailer with the = shape', 'git commit -m "x" --trailer "Co-authored-by=Claude <noreply@anthropic.com>"', ROOT_CWD, 'deny', 'credits the agent'],
+  ['Generated with Claude Code', 'git commit -m "feat: x" -m "🤖 Generated with [Claude Code](https://claude.com/claude-code)"', ROOT_CWD, 'deny', 'credits the agent'],
+  ['the signature inside a wrapper', 'bash -c "git commit -m \'x\' -m \'Co-Authored-By: Codex\'"', ROOT_CWD, 'deny', 'credits the agent'],
+  ['the signature in the -F file', 'git commit -F msg-signed.txt', ROOT_CWD, 'deny', 'credits the agent'],
+  ['the signature in the --file= file', 'git commit --file=c:/dev/project/msg-signed.txt', ROOT_CWD, 'deny', 'credits the agent'],
+  ['a clean -F file', 'git commit -F msg-clean.txt', ROOT_CWD, 'allow', ''],
+  ['an -F file that does not exist', 'git commit -F missing.txt', ROOT_CWD, 'allow', ''],
+  ['a human co-author stays allowed', 'git commit -m "x" -m "Co-Authored-By: Mario Rossi <mario@example.com>"', ROOT_CWD, 'allow', ''],
+  ['a message about Claude without a trailer', 'git commit -m "feat: add the Claude hook adapter"', ROOT_CWD, 'allow', ''],
+  ['searching history for the trailer is not a commit', 'git log --grep "Co-Authored-By: Claude"', ROOT_CWD, 'allow', ''],
+
   // --- push: denied where declared, and the shapes that stay allowed -----
   ['bare git push', 'git push', ROOT_CWD, 'deny', 'manual gesture'],
   ['git -C with another tree', 'git -C c:/dev/wt/wt-1 push origin main', ROOT_CWD, 'deny', 'manual gesture'],
@@ -1018,6 +1115,9 @@ function selfCheck() {
     daikuStatus: () => {
       throw new Error('git unreachable');
     },
+    readMessage: () => {
+      throw new Error('filesystem unreachable');
+    },
   };
   // The link and `.daiku/`-stage branches are the ones interrogating disk and git: without
   // those, they allow. The others decide on paths and parameters, which need no disk
@@ -1031,6 +1131,8 @@ function selfCheck() {
     ['git commit -n -m x', ROOT_CWD, 'deny'],
     ['git add .daiku/project.json', ROOT_CWD, 'deny'],
     ['git commit -m x', ROOT_CWD, 'allow'],
+    ['git commit -F msg-signed.txt', ROOT_CWD, 'allow'],
+    ['git commit -m x -m "Co-Authored-By: Claude"', ROOT_CWD, 'deny'],
   ];
   for (const [line, cwd, expected] of brokenEnv) {
     ran += 1;
@@ -1114,6 +1216,14 @@ function selfCheck() {
 //    a fault wearing a protection's looks. Whoever wants coverage declares it. The
 //    `.daiku/` branch is the exception proving the boundary: it has no switch, but it has
 //    the gate — without `.daiku/project.json` it stays off too.
+//  - **A signature the line does not carry**: `git commit --amend --no-edit` or `-C <commit>`
+//    reusing a message that already holds it, `-t <template>`, the editor opened by a
+//    commit without a message, an `-F` file after a `cd` on the same line (it is read
+//    from the session cwd), and `git merge`/`git tag -m`, which are not commits. The
+//    attribution branch reads the message where the line names it, nowhere else.
+//  - **A false positive of the attribution branch**: it searches the whole line, so a
+//    `git commit` chained with an `echo "Co-Authored-By: Claude"` is denied. The remedy
+//    is splitting the line.
 //  - **The owner's terminal**, where this hook does not run at all: there the ban on
 //    `.daiku/` lives in the commit skill text, and no denial enforces it. When a
 //    manual command stages `.daiku/`, an agent's bare `commit` after it

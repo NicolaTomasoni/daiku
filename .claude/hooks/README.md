@@ -5,7 +5,7 @@ pubblicato: lo script di pubblicazione copia il solo contenuto di `plugins/`, e 
 fuori.
 
 Serve a una cosa sola: **impedire che un agente esegua il codice di un repository target**, cioè di
-un repo di terzi preso in analisi da `repo-intelligence`. Un repository di terzi si legge, si
+un repo di terzi preso in analisi da `studia-sorgente`. Un repository di terzi si legge, si
 indicizza e si cita: non si esegue. È l'unico divieto che protegge da un effetto **fuori** dalla
 sessione — uno script di terzi scrive sul filesystem, apre connessioni, lancia altro.
 
@@ -88,7 +88,7 @@ Default-deny, con due sole eccezioni:
 
 Senza la seconda il presidio negherebbe il proprio banco, e un presidio che non si può provare non è
 un presidio. La versione con questa correzione è in
-`.docs/nuovi-sviluppi/repo-intelligence/allegati/guardia-target-corretto.mjs`; va copiata a mano
+`.docs/nuovi-sviluppi/studia-sorgente/allegati/guardia-target-corretto.mjs`; va copiata a mano
 (vedi § *Difetti aperti*).
 
 ## Il banco
@@ -120,7 +120,7 @@ oppure togli temporaneamente il blocco `hooks` da `settings.json`.
    in `allegati/guardia-target-corretto.mjs`. Da applicare **fuori dalla sessione agente**:
 
    ```powershell
-   Copy-Item .docs/nuovi-sviluppi/repo-intelligence/allegati/guardia-target-corretto.mjs .claude/hooks/guardia-target.mjs -Force
+   Copy-Item .docs/nuovi-sviluppi/studia-sorgente/allegati/guardia-target-corretto.mjs .claude/hooks/guardia-target.mjs -Force
    node .claude/hooks/guardia-target.mjs --self-check
    ```
 

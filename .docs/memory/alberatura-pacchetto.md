@@ -26,7 +26,7 @@ perché i due host cercano file con nomi diversi e ignorano quelli dell'altro.
 | `contracts/` | `orchestration.md`, `project-contract.md` | le skill li aprono per path; non sono skill loro stessi |
 | `agents/` | `finder` — l'unico subagent a toolset ristretto | solo Claude Code: Codex lo rifiuta |
 | `hooks/` | il wiring `hooks.json`, i **quattro hook** in `lib/` e i **due moduli** che importano (`project-root.mjs`, `daiku-config.mjs`); accanto, fuori da `lib/`, `self-check.mjs` e `README.md`, che sono di chi sviluppa il pacchetto e non si trasportano | solo Claude Code: su Codex `plugin_hooks` è rimossa |
-| `architect/` | `architect.mjs`: il **valutatore deterministico** — risponde a sei domande meccaniche e tiene l'ordine della catena. Accanto, il suo banco, che `hooks/self-check.mjs` lancia (vedi [[valutatore-deterministico]]) | l'agente, che lo invoca: non è un hook, nessun `hooks.json` lo nomina, e non si installa in un progetto |
+| `architect/` | `architect.mjs`: il **valutatore deterministico** — risponde a nove domande meccaniche e tiene l'ordine della catena. Accanto, il suo banco, che `hooks/self-check.mjs` lancia (vedi [[valutatore-deterministico]]) | l'agente, che lo invoca: non è un hook, nessun `hooks.json` lo nomina, e non si installa in un progetto |
 | `schemas/` | `blocks.json`: lo specchio controllabile dei blocchi di ritorno — la prosa del nodo resta normativa | i controlli scritti a mano e gli umani che scrivono i nodi |
 | `templates/` | gli scheletri che `init` copierà nel progetto ospite | nessuno: non vengono mai letti in place |
 | `.claude-plugin/`, `.codex-plugin/` | i due manifest, uno per host | gli host, all'installazione |
@@ -83,7 +83,7 @@ solo `.gitignore` e `.gitattributes` del repository di sviluppo.
   compilato davvero
 - `tools/check-topology.mjs` — verifica la topologia del corpus, nel gate e a mano prima del
   rilascio; sta qui e non sotto `plugins/` così non viaggia con ciò che si pubblica
-- `tools/repo-intelligence/` — gli attrezzi deterministici del comando `repo-intelligence`
+- `tools/studia-sorgente/` — gli attrezzi deterministici del comando `studia-sorgente`
 
 ## I nomi che si somigliano e non c'entrano niente
 

@@ -1,6 +1,6 @@
 ---
 name: valutatore-deterministico
-description: "Il prodotto ha un valutatore deterministico che possiede l'ordine della catena e risponde a sei domande meccaniche: il verdetto vincola, e il banco è l'unica difesa"
+description: "Il prodotto ha un valutatore deterministico che possiede l'ordine della catena e risponde a nove domande meccaniche: il verdetto vincola, e il banco è l'unica difesa"
 metadata:
   node_type: memory
   type: project
@@ -15,9 +15,11 @@ conversazione, al posto delle tre opzioni che erano in campo — `evaluator/`, `
 `verdicts/` — e **non si rinomina più**: è un path, e dentro le skill lo nominano da fuori (vedi
 [[confine-degli-identificatori]]).
 
-Fa due mestieri: **valuta** le sei classificazioni che i contratti dichiaravano già meccaniche —
-la decisione finale, la chiusura del ciclo, lo sblocco meccanico, la propagazione del fallimento,
-la ripresa, l'ordine — e **possiede l'ordine della catena**: la tabella di §3 di
+Fa due mestieri: **valuta** nove classificazioni meccaniche — la decisione finale, la chiusura del
+ciclo, lo sblocco meccanico, la propagazione del fallimento, la ripresa, l'ordine, il verdetto di
+giro di `review` (`round`), il controllo `layers:` di `arch-check` (`layers`) e la forma di un
+blocco di ritorno contro `schemas/blocks.json` (`block`, oggi usata da `new-feature` sul blocco di
+`decision-doc`) — e **possiede l'ordine della catena**: la tabella di §3 di
 `contracts/orchestration.md` non lo dichiara più, ne è il riflesso, e il banco del valutatore
 rifiuta la divergenza nei due versi.
 
@@ -31,6 +33,12 @@ resto del pacchetto discendono da qui, e sono la parte che conta:
   che manca o è malformato è un errore, mai un `false` implicito, e se non gira la consegna si
   ferma. Conseguenza dichiarata a chi installa: `node` che manca smette di essere un controllo che
   tace e diventa un requisito che ferma il lavoro. Vedi [[guardrail-nascono-spenti]].
+- **Non apre file del progetto.** Quello che sa del disco glielo passa l'agente, in chiaro
+  nell'esito; l'unico file che legge è `schemas/blocks.json` del pacchetto stesso, per `block`.
+  Per questo in `round` il segnale `on_previous_fix`, che richiede `git grep`, resta misurato
+  dall'agente e scritto nel ledger, mentre l'oscillazione, che è un confronto di stringhe sul
+  ledger, la misura il programma; e in `round` il verdetto di merito della regola 3 resta
+  dell'agente, che lo passa come `merit` e il programma lo traduce nell'uscita.
 - **La radice si passa per argomento, mai dedotta dalla posizione.** Un programma che deduce la
   propria radice dal posto in cui si trova è corretto fino al primo spostamento dell'albero e
   sbaglia in silenzio: è esattamente come è morto il verificatore rimosso il 18 settembre 2026.

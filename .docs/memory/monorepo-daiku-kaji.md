@@ -10,8 +10,8 @@ metadata:
 
 Dal 25 settembre 2026 questo repository ospita due prodotti: **Daiku** (`plugins/`, con il
 pacchetto in `plugins/daiku/`) e **Kaji** (`extensions/kaji/`), un'estensione VS Code che mostra quale agente, provider e modello
-stanno lavorando e cambia ciò che il runtime permette di cambiare. Kaji è un nome di lavoro:
-`extensions/kaji/BRANDING.md` propone *Kaname*, e il nome definitivo è un punto aperto.
+stanno lavorando e cambia ciò che il runtime permette di cambiare. Kaji (舵, il timone) è il nome
+definitivo: dà il nome al repository pubblico e il prefisso `Kaji` ai comandi.
 
 Kaji è arrivato con la sua storia (merge `5b2d198`, due commit), dal repository GitLab
 `claude-code-router-extension`. In `extensions/kaji/` per ora ci sono i documenti di progetto
@@ -34,10 +34,11 @@ autonomi**, con repository pubblici separati.
   contratto versionato che ciascuno porta dentro di sé; se l'altro manca, si degrada in silenzio.
   Una funzione di Kaji che richiede Daiku installato è un difetto, e viceversa.
 - Il contratto comune ancora non esiste: la prima forma attesa è lo schema degli eventi degli
-  agenti — Daiku sa ruolo e fase della catena, Kaji sa modello, token e costo. Dove vive e chi lo
-  possiede è un punto aperto.
+  agenti — Daiku sa ruolo e fase della catena, Kaji sa modello, token e costo. Chi lo possiede e
+  come si tiene allineato è una domanda di prodotto di Kaji, e sta nel suo `README.md` alla F17.
 - Resto in comune: `.docs/` (memoria, punti aperti, nuovi sviluppi), `CLAUDE.md`, `.claude/`.
-  Le skill di `.claude/commands/` però sono tutte scritte sulla forma di Daiku; portarle su Kaji è
-  una decisione da chiedere, non da prendere (vedi [[corpus-di-sviluppo]]).
-- La regola d'inglese di `CLAUDE.md` vale per `plugins/daiku/`. Per `extensions/kaji/` la lingua è
-  un punto aperto: `TECH-STACK.md` P21 fissa una UI in italiano, il Marketplace chiede inglese.
+  Le skill di `.claude/commands/` devono vedere anche Kaji, ma sono ancora tutte scritte sulla forma
+  di Daiku: estenderle è lavoro deciso e non fatto (vedi [[corpus-di-sviluppo]]).
+- La lingua segue la stessa regola per i due prodotti: `plugins/daiku/` ed `extensions/kaji/` sono
+  in inglese per intero — documenti di progetto, UI (`TECH-STACK.md` P21) e Marketplace compresi —
+  mentre il cantiere fuori di loro è in italiano.

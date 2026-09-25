@@ -1,91 +1,90 @@
-# agent-router-extension — documento di prodotto
+# Kaji — product document
 
-> **Nome di lavoro.** Il prodotto si chiama **Kaji** finché non ha un nome definitivo, e non è solo
-> per Claude Code: supporta **Claude Code e Codex** attraverso adapter separati, con un core comune.
-> Prima del primo release pubblico va deciso il nome definitivo (vedi `BRANDING.md`); fino ad allora
-> `CCR` resta il prefisso dei comandi per non introdurre un rename cosmetico mentre l'architettura è
-> ancora in costruzione.
+> **Kaji** (舵, the helm) is not only for Claude Code: it supports **Claude Code and Codex** through
+> separate adapters, with a common core. The command prefix is `Kaji`.
 >
-> **Dove vive.** Kaji si sviluppa nel monorepo privato di Daiku: il prodotto sta in
-> `extensions/kaji/`, e questi documenti con lui. È un prodotto autonomo — si installa,
-> funziona e si pubblica senza Daiku, in un repository pubblico suo.
+> **Where it lives.** Kaji is developed in Daiku's private monorepo: the product lives in
+> `extensions/kaji/`, and these documents with it. It is a standalone product — it installs,
+> works and is published without Daiku, in a public repository of its own.
 
-Documento rigenerato il **24 settembre 2026** prima di iniziare lo sviluppo. Sostituisce il README
-precedente: conserva i vincoli già verificati, incorpora le decisioni emerse successivamente e
-aggiunge il supporto a Codex, cataloghi e prezzi auto-aggiornanti, change detection, cost metering,
-limiti di abbonamento, subagenti e notifiche.
+Document regenerated on **24 September 2026** before development began. It replaces the previous
+README: it keeps the constraints already verified, incorporates the decisions that emerged later and
+adds support for Codex, self-updating catalogs and pricing, change detection, cost metering,
+subscription limits, subagents and notifications.
 
-L'idea in una frase:
+The idea in one sentence:
 
-> **una status bar per progetto che sa quale agente, provider e modello stanno lavorando davvero,
-> quanto stanno consumando, quanto costano, quali limiti restano, e consente di cambiare ciò che il
-> runtime permette di cambiare senza nascondere i casi in cui serve un riavvio.**
+> **a per-project status bar that knows which agent, provider and model are actually working,
+> how much they are consuming, how much they cost, which limits remain, and lets you change what the
+> runtime allows to be changed without hiding the cases where a restart is needed.**
 
-Non è un proxy LLM e non sta in mezzo al traffico. I runtime continuano a parlare direttamente con
-i provider. L'estensione osserva e configura i runtime attraverso i meccanismi che essi espongono.
-
----
-
-## 1. Il problema, ora più generale
-
-Il problema di partenza nasce da Claude Code: oggi il backend viene cambiato con uno script
-PowerShell (`~/.claude/llm-switch.ps1`) che riscrive il blocco `env` di
-`~/.claude/settings.json`. La scelta è quindi globale alla macchina, i task VS Code sono copiati a
-mano fra workspace e il passaggio da un progetto all'altro non porta con sé provider e modello.
-
-Il prodotto deve ribaltare quel rapporto: **il progetto descrive l'intenzione**, mentre il runtime
-adapter applica ciò che il runtime consente a quello scope.
-
-Con Codex il problema è simile ma non identico. Codex supporta `.codex/config.toml` per override di
-progetto, ma per motivi di sicurezza ignora a livello progetto `model_provider` e
-`model_providers`: un repository non può decidere dove spedire credenziali o prompt. Il modello e
-l'effort possono essere project-scoped; il provider è machine-local. Questa differenza non va
-nascosta dietro un'astrazione falsa.
-
-Quindi il prodotto non promette “ogni cosa per progetto” in assoluto. Promette invece:
-
-- **intenzione per progetto**: runtime, modello, effort, fallback, preset, preferenze di osservabilità;
-- **applicazione secondo le capability reali del runtime**;
-- **stato vivo separato dallo stato desiderato**;
-- **nessun silenzio** quando desiderato e vivo divergono.
-
-### Principi non negoziabili
-
-1. **Runtime e provider sono due dimensioni diverse.** Claude Code e Codex sono runtime; Anthropic,
-   OpenAI, DeepSeek, GLM, MiMo e altri sono provider.
-2. **Nessun proxy locale.** Se un provider parla il protocollo richiesto dal runtime, il runtime gli
-   parla direttamente. Se non lo parla, il modello non compare per quel runtime.
-3. **I dati osservati battono i dati configurati.** La status bar mostra ciò che la sessione sta
-   davvero usando quando il runtime lo espone.
-4. **Le fonti remote sono aggiornabili, ma mai autoritative senza validazione.** Ogni catalogo o
-   tariffario remoto passa per schema, sanity check, diff e cache last-known-good.
-5. **L'assenza è uno stato.** Quota non disponibile, token non ancora noti, costo stimabile ma non
-   esatto, effort non supportato: si mostrano come tali.
-6. **Nessun segreto nel repository.** Le definizioni sono dati; le credenziali restano nello storage
-   utente/runtime previsto.
-7. **Change detection prima dell'automazione distruttiva.** Un modello che sparisce non viene
-   cancellato dalla configurazione; viene marcato come ritirato/non più pubblicizzato.
+It is not an LLM proxy and does not sit in the middle of the traffic. The runtimes keep talking
+directly to the providers. The extension observes and configures the runtimes through the mechanisms
+they expose.
 
 ---
 
-## 2. Due assi: runtime e provider
+## 1. The problem, now more general
+
+The starting problem comes from Claude Code: today the backend is switched with a PowerShell
+script (`~/.claude/llm-switch.ps1`) that rewrites the `env` block of
+`~/.claude/settings.json`. The choice is therefore global to the machine, the VS Code tasks are
+copied by hand between workspaces, and moving from one project to another does not carry provider
+and model along.
+
+The product must reverse that relationship: **the project describes the intent**, while the runtime
+adapter applies what the runtime allows at that scope.
+
+With Codex the problem is similar but not identical. Codex supports `.codex/config.toml` for
+project overrides, but for security reasons it ignores `model_provider` and `model_providers` at
+project level: a repository cannot decide where to send credentials or prompts. Model and effort
+can be project-scoped; the provider is machine-local. This difference must not be hidden behind a
+false abstraction.
+
+So the product does not promise "everything per project" in absolute terms. It promises instead:
+
+- **per-project intent**: runtime, model, effort, fallback, presets, observability preferences;
+- **application according to the runtime's real capabilities**;
+- **live state separate from desired state**;
+- **no silence** when desired and live diverge.
+
+### Non-negotiable principles
+
+1. **Runtime and provider are two different dimensions.** Claude Code and Codex are runtimes;
+   Anthropic, OpenAI, DeepSeek, GLM, MiMo and others are providers.
+2. **No local proxy.** If a provider speaks the protocol the runtime requires, the runtime talks to
+   it directly. If it does not, the model does not appear for that runtime.
+3. **Observed data beats configured data.** The status bar shows what the session is actually
+   using when the runtime exposes it.
+4. **Remote sources are updatable, but never authoritative without validation.** Every remote
+   catalog or price list goes through schema, sanity checks, diff and last-known-good cache.
+5. **Absence is a state.** Quota not available, tokens not yet known, cost estimable but not
+   exact, effort not supported: they are shown as such.
+6. **No secrets in the repository.** Definitions are data; credentials stay in the intended
+   user/runtime storage.
+7. **Change detection before destructive automation.** A model that disappears is not deleted
+   from the configuration; it is marked as retired/no longer advertised.
+
+---
+
+## 2. Two axes: runtime and provider
 
 ### 2.1 Runtime
 
-Un runtime è il client/agente che esegue il lavoro e decide come leggere configurazione, modelli,
-telemetria e credenziali.
+A runtime is the client/agent that performs the work and decides how to read configuration, models,
+telemetry and credentials.
 
-| Runtime | Config progetto | Config utente | Telemetria principale | Cambio provider per progetto |
+| Runtime | Project config | User config | Main telemetry | Per-project provider switch |
 |---|---|---|---|---|
-| **Claude Code** | `.claude/settings.local.json` / `.claude/settings.json` | `~/.claude/settings.json` | `statusLine` + transcript JSONL | **sì**, tramite `env`, ma richiede un processo nuovo |
-| **Codex** | `.codex/config.toml` in repo trusted | `~/.codex/config.toml` | rollout JSONL + hooks; app-server dove utile | **no nativamente**: `model_provider` e `model_providers` sono machine-local |
+| **Claude Code** | `.claude/settings.local.json` / `.claude/settings.json` | `~/.claude/settings.json` | `statusLine` + transcript JSONL | **yes**, via `env`, but it requires a new process |
+| **Codex** | `.codex/config.toml` in a trusted repo | `~/.codex/config.toml` | rollout JSONL + hooks; app-server where useful | **not natively**: `model_provider` and `model_providers` are machine-local |
 
 ### 2.2 Provider
 
-Un provider descrive modelli, trasporti compatibili, endpoint, capability, discovery e pricing. Lo
-stesso provider può supportare runtime diversi attraverso protocolli diversi.
+A provider describes models, compatible transports, endpoints, capabilities, discovery and pricing.
+The same provider can support different runtimes through different protocols.
 
-Esempio DeepSeek al 24/09/2026:
+DeepSeek example as of 24 September 2026:
 
 ```text
 DeepSeek
@@ -93,13 +92,13 @@ DeepSeek
 └─ Codex       → Responses API → https://api.deepseek.com
 ```
 
-DeepSeek documenta ufficialmente entrambi i formati e una guida dedicata a Codex. Quindi la
-compatibilità non va codificata come proprietà del provider in generale, ma come **transport per
+DeepSeek officially documents both formats and a dedicated guide for Codex. So compatibility must
+not be encoded as a property of the provider in general, but as a **transport per
 runtime**.
 
-### 2.3 Il contratto comune
+### 2.3 The common contract
 
-Il core ragiona su oggetti normalizzati:
+The core reasons about normalized objects:
 
 ```ts
 RuntimeId = "claude" | "codex"
@@ -130,200 +129,202 @@ LiveSession = {
 }
 ```
 
-Il core non sa come Claude scrive JSONC o come Codex legge TOML. Gli adapter sì.
+The core does not know how Claude writes JSONC or how Codex reads TOML. The adapters do.
 
 ---
 
-## 3. Fatti verificati sui runtime
+## 3. Verified facts about the runtimes
 
 ### 3.1 Claude Code
 
-Questi punti restano il fondamento dell'adapter Claude.
+These points remain the foundation of the Claude adapter.
 
-1. I settings hanno più scope e i file di progetto possono contenere `env`; il livello più
-   specifico vince per le chiavi interessate.
-2. Le variabili di ambiente del processo (`ANTHROPIC_BASE_URL`, token, default model per famiglie)
-   sono sostanzialmente **di nascita**: cambiare provider richiede un nuovo processo/sessione.
-3. La chiave `model` e i controlli di effort sono pensati per cambiare durante una sessione; `/model`
-   e `/effort` restano le superfici native.
-4. `apiKeyHelper` è il meccanismo adatto a far leggere a Claude Code una credenziale materializzata
-   fuori dal repository senza mettere il token nel file di progetto.
-5. `modelPicker` e le opzioni custom permettono di far comparire ID non nativi nel picker di Claude;
-   il catalogo dell'estensione deve tracciare solo le righe che possiede.
-6. La `statusLine` riceve JSON su stdin e oggi espone molto più del minimo originariamente usato:
-   `model`, `session_id`, `session_name`, `transcript_path`, `workspace.project_dir`, costo sessione,
-   durata, linee modificate, contesto, usage dell'ultima API call, effort vivo, rate limits,
-   statistiche della prompt cache, PR/MR e worktree.
-7. `context_window.current_usage` contiene `input_tokens`, `output_tokens`,
-   `cache_creation_input_tokens`, `cache_read_input_tokens`. Non serve tokenizzare il testo a mano.
-8. `cost.total_cost_usd` è una **stima client-side** a list price salvo una tabella `modelPricing`;
-   è utile come confronto, non come verità di fatturazione per provider terzi.
-9. `rate_limits` è presente per abbonamenti claude.ai Pro/Max o gateway che espongono spend limit,
-   dopo la prima risposta. Ogni finestra può mancare indipendentemente.
-10. `prompt_cache` include stato warm, hit ratio, richieste, miss, cache write token, cause dei miss e
-    TTL. È un'ottima fonte per “cache health”, non solo per il costo.
-11. Il transcript resta la sorgente per la sequenza delle risposte e l'usage per turno. Le righe
-    possono essere ripersistite: la somma deve deduplicare per identità della risposta, mai per
-    semplice numero di righe.
-12. `claudeCode.claudeProcessWrapper` resta una leva da provare, non un requisito: può iniettare
-    ambiente prima della nascita del processo, ma non risolve da solo lo storage delle credenziali.
+1. Settings have multiple scopes and project files can contain `env`; the most specific level
+   wins for the keys concerned.
+2. The process environment variables (`ANTHROPIC_BASE_URL`, token, default model per family)
+   are essentially **set at birth**: switching provider requires a new process/session.
+3. The `model` key and the effort controls are designed to change during a session; `/model`
+   and `/effort` remain the native surfaces.
+4. `apiKeyHelper` is the right mechanism to let Claude Code read a credential materialized
+   outside the repository without putting the token in the project file.
+5. `modelPicker` and the custom options make non-native IDs appear in Claude's picker;
+   the extension's catalog must track only the rows it owns.
+6. The `statusLine` receives JSON on stdin and today exposes much more than the minimum originally
+   used: `model`, `session_id`, `session_name`, `transcript_path`, `workspace.project_dir`, session
+   cost, duration, lines changed, context, usage of the last API call, live effort, rate limits,
+   prompt cache statistics, PR/MR and worktree.
+7. `context_window.current_usage` contains `input_tokens`, `output_tokens`,
+   `cache_creation_input_tokens`, `cache_read_input_tokens`. There is no need to tokenize the text
+   by hand.
+8. `cost.total_cost_usd` is a **client-side estimate** at list price unless there is a
+   `modelPricing` table; it is useful as a comparison, not as billing truth for third-party
+   providers.
+9. `rate_limits` is present for claude.ai Pro/Max subscriptions or gateways that expose a spend
+   limit, after the first response. Each window can be missing independently.
+10. `prompt_cache` includes warm state, hit ratio, requests, misses, cache write tokens, miss causes
+    and TTL. It is an excellent source for "cache health", not only for cost.
+11. The transcript remains the source for the sequence of responses and per-turn usage. Rows
+    can be re-persisted: the sum must deduplicate by response identity, never by
+    plain row count.
+12. `claudeCode.claudeProcessWrapper` remains a lever to try, not a requirement: it can inject
+    environment before the process is born, but on its own it does not solve credential storage.
 
-Fonti principali: documentazione `settings`, `model-config`, `authentication`, `statusline`,
-`corporate-launcher` di Claude Code, ricontrollate il 24/09/2026.
+Main sources: Claude Code documentation for `settings`, `model-config`, `authentication`,
+`statusline`, `corporate-launcher`, rechecked on 24 September 2026.
 
 ### 3.2 Codex
 
-Codex porta gli stessi concetti, ma con contratti diversi.
+Codex carries the same concepts, but with different contracts.
 
-1. CLI e IDE extension condividono i layer di configurazione: `~/.codex/config.toml` e
-   `.codex/config.toml` di progetto trusted.
-2. La precedenza documentata mette gli override CLI sopra i file progetto, poi profilo, utente,
-   managed e sistema.
-3. Per sicurezza il layer progetto **non può sovrascrivere** `model_provider`, `model_providers`,
-   base URL sensibili, notifiche/telemetria e alcune altre chiavi. Il codice open source ha una
-   denylist esplicita.
-4. Il progetto può comunque impostare `model`, `model_reasoning_effort` e altre preferenze non
-   negate: quindi il cambio modello per progetto è supportabile senza inventare un proxy.
-5. I provider custom parlano `wire_api = "responses"`: Responses è il protocollo supportato per i
-   custom provider.
-6. DeepSeek supporta nativamente Responses API ed espone una guida Codex ufficiale; quindi
-   DeepSeek è supportabile sia da Claude sia da Codex con lo stesso `ProviderDescriptor`, ma due
+1. CLI and IDE extension share the configuration layers: `~/.codex/config.toml` and the
+   `.codex/config.toml` of a trusted project.
+2. The documented precedence puts CLI overrides above project files, then profile, user,
+   managed and system.
+3. For security the project layer **cannot override** `model_provider`, `model_providers`,
+   sensitive base URLs, notifications/telemetry and a few other keys. The open source code has an
+   explicit denylist.
+4. The project can still set `model`, `model_reasoning_effort` and other non-denied
+   preferences: so per-project model switching is supportable without inventing a proxy.
+5. Custom providers speak `wire_api = "responses"`: Responses is the protocol supported for
+   custom providers.
+6. DeepSeek natively supports the Responses API and exposes an official Codex guide; so
+   DeepSeek is supportable by both Claude and Codex with the same `ProviderDescriptor`, but two
    transports.
-7. Le sessioni Codex sono rollout JSONL sotto `~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl`.
-   `session_meta` include almeno `session_id`, `cwd`, `source`, `cli_version`, `model_provider` e
-   altri metadati; questo consente di associare la sessione al progetto.
-8. Gli eventi `token_count` espongono usage cumulativo e dell'ultimo turno: input, cached input,
-   cache-write input nelle versioni correnti, output, reasoning output, total, context window e
-   rate limits quando presenti.
-9. I rate limits Codex sono già strutturati in finestre `primary`/`secondary` con `used_percent`,
-   durata e `resets_at`; possono inoltre esistere credits, spend controls, limiti addizionali e
+7. Codex sessions are rollout JSONL files under `~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl`.
+   `session_meta` includes at least `session_id`, `cwd`, `source`, `cli_version`, `model_provider`
+   and other metadata; this allows associating the session with the project.
+8. The `token_count` events expose cumulative and last-turn usage: input, cached input,
+   cache-write input in current versions, output, reasoning output, total, context window and
+   rate limits when present.
+9. Codex rate limits are already structured in `primary`/`secondary` windows with `used_percent`,
+   duration and `resets_at`; there may also be credits, spend controls, additional limits and
    `plan_type`.
-10. I rollout sono ottimi come sorgente locale per l'HUD, ma non vanno elevati a API stabile per
-    operazioni invasive. Quando serve un contratto strutturato, l'app-server espone schemi e RPC
-    come `model/list` e lettura dei rate limits.
-11. Codex dispone di hook nativi per `SessionStart`, `SessionEnd`, `PermissionRequest`,
-    `SubagentStart`, `SubagentStop`, `Stop`, `Interrupt`, tool use e compact. Questo rende le
-    notifiche “ha bisogno di te / ha finito” più robuste dell'euristica sul transcript.
-12. Il model manager Codex ha catalogo, cache e refresh. L'app-server `model/list` restituisce
-    display name, reasoning efforts, service tiers, input modalities, visibilità, upgrade e data di
-    retirement quando disponibile.
-13. Non conviene parsare automaticamente `codex debug models`: il comando può stampare campi
-    interni molto voluminosi e il formato del catalogo può cambiare fra versioni client. Preferire
-    `model/list`/cache compatibile col client.
+10. Rollouts are an excellent local source for the HUD, but must not be elevated to a stable API for
+    invasive operations. When a structured contract is needed, the app-server exposes schemas and
+    RPCs such as `model/list` and rate limit reading.
+11. Codex has native hooks for `SessionStart`, `SessionEnd`, `PermissionRequest`,
+    `SubagentStart`, `SubagentStop`, `Stop`, `Interrupt`, tool use and compact. This makes the
+    "needs you / finished" notifications more robust than the heuristic on the transcript.
+12. The Codex model manager has a catalog, cache and refresh. The app-server `model/list` returns
+    display name, reasoning efforts, service tiers, input modalities, visibility, upgrade and
+    retirement date when available.
+13. It is not advisable to parse `codex debug models` automatically: the command can print very
+    bulky internal fields and the catalog format can change between client versions. Prefer
+    `model/list`/a cache compatible with the client.
 
-### 3.3 Una conseguenza importante
+### 3.3 An important consequence
 
-**“Provider per progetto” non può essere una feature uniforme.**
+**"Provider per project" cannot be a uniform feature.**
 
-- Claude: possibile, ma alcune variabili richiedono un processo nuovo.
-- Codex: model provider volutamente machine-local; il progetto può scegliere modello/effort, non
-  ridefinire la destinazione delle credenziali.
+- Claude: possible, but some variables require a new process.
+- Codex: model provider deliberately machine-local; the project can choose model/effort, not
+  redefine where credentials go.
 
-Il QuickPick deve quindi mostrare capability, non fingere simmetria:
+The QuickPick must therefore show capabilities, not fake symmetry:
 
 ```text
-Codex · progetto X
-Provider: DeepSeek        [macchina]
-Model:    deepseek-flash  [progetto]
-Effort:   high            [progetto]
+Codex · project X
+Provider: DeepSeek        [machine]
+Model:    deepseek-flash  [project]
+Effort:   high            [project]
 ```
 
-Se l'utente chiede “passa Codex da OpenAI a DeepSeek”, l'estensione modifica il layer utente con
-consenso esplicito e segnala che il cambio interessa **Codex sulla macchina**, non solo quel repo.
+If the user asks "switch Codex from OpenAI to DeepSeek", the extension modifies the user layer with
+explicit consent and flags that the change affects **Codex on the machine**, not only that repo.
 
 ---
 
-## 4. Le feature definitive
+## 4. The definitive features
 
-Le feature sono divise in **Core**, **Live data**, **Automation** e **Convenience**. Tutte usano lo
-stesso modello normalizzato; solo l'adapter runtime cambia.
+The features are divided into **Core**, **Live data**, **Automation** and **Convenience**. All use
+the same normalized model; only the runtime adapter changes.
 
-### F1 — Status bar agent-aware
+### F1 — Agent-aware status bar
 
-Una sola status bar segue il progetto/cartella attiva e mostra il runtime realmente osservato.
-Formato di default, compatto:
+A single status bar follows the active project/folder and shows the runtime actually observed.
+Default format, compact:
 
 ```text
 ◉ Claude · DeepSeek Flash · high · 42 tok/s
 ◉ Codex  · GPT-6 Astra · xhigh · 118K/272K
 ```
 
-Elementi opzionali configurabili: costo sessione, quota più critica, cache state. Non si tenta di
-mettere tutto nella riga; il tooltip è la superficie ricca.
+Optional configurable elements: session cost, most critical quota, cache state. There is no attempt
+to put everything in the line; the tooltip is the rich surface.
 
-**Accettazione:** con più finestre/progetti aperti si capisce a colpo d'occhio chi sta lavorando,
-con quale modello e se c'è un disallineamento.
+**Acceptance:** with several windows/projects open you can tell at a glance who is working,
+with which model and whether there is a mismatch.
 
-### F2 — Tooltip come “Agent HUD”
+### F2 — Tooltip as "Agent HUD"
 
-Il tooltip unifica, quando disponibili:
+The tooltip unifies, when available:
 
-- runtime, provider, model ID e display name;
-- effort dichiarato e vivo;
+- runtime, provider, model ID and display name;
+- declared and live effort;
 - context used / window;
-- token dell'ultimo turno e cumulativi di sessione;
+- last-turn and cumulative session tokens;
 - prompt cache hit ratio / warm / expiry;
-- throughput modello e throughput turno;
-- costo sessione e origine del calcolo;
-- rate-limit / subscription windows con reset;
-- subagenti attivi;
-- desired vs live quando divergono;
-- timestamp dell'ultimo refresh di catalogo e pricing.
+- model throughput and turn throughput;
+- session cost and origin of the calculation;
+- rate-limit / subscription windows with reset;
+- active subagents;
+- desired vs live when they diverge;
+- timestamp of the last catalog and pricing refresh.
 
-### F3 — Picker runtime → provider → modello
+### F3 — Runtime → provider → model picker
 
-Il clic sulla status bar apre un QuickPick coerente con le capability:
+Clicking the status bar opens a QuickPick consistent with the capabilities:
 
-1. runtime attivo o da configurare (`Claude Code`, `Codex`);
-2. provider compatibili con quel runtime;
-3. modelli disponibili per provider e runtime;
-4. effort/service tier quando il runtime li espone.
+1. runtime active or to be configured (`Claude Code`, `Codex`);
+2. providers compatible with that runtime;
+3. models available per provider and runtime;
+4. effort/service tier when the runtime exposes them.
 
-Il menu mostra anche `Nuovo`, `Deprecated`, `Non verificato`, `Richiede restart`, `Solo macchina`.
+The menu also shows `New`, `Deprecated`, `Unverified`, `Requires restart`, `Machine only`.
 
-**Accettazione:** un modello scoperto automaticamente compare senza nuova release dell'estensione.
+**Acceptance:** an automatically discovered model appears without a new release of the extension.
 
-### F4 — Cambio modello con il minimo impatto
+### F4 — Model switch with minimal impact
 
-Il runtime adapter espone `applySelection()` e restituisce uno di questi esiti:
+The runtime adapter exposes `applySelection()` and returns one of these outcomes:
 
 ```ts
 "live" | "session-restart" | "window-reload" | "machine-scope" | "unsupported"
 ```
 
-Claude: cambio modello intra-provider preferibilmente live; cambio provider richiede nuova sessione
-per le variabili di nascita. Codex: modello/effort via config progetto dove supportato; provider via
-config utente con avviso di scope macchina.
+Claude: intra-provider model switch preferably live; provider switch requires a new session
+for the birth variables. Codex: model/effort via project config where supported; provider via
+user config with a machine-scope warning.
 
-**Accettazione:** la UI non dichiara mai “applicato” prima che lo stato vivo confermi la selezione.
+**Acceptance:** the UI never declares "applied" before the live state confirms the selection.
 
-### F5 — Gestione credenziali
+### F5 — Credential management
 
-Claude: master nel `SecretStorage` VS Code, materializzazione fuori dal repo per `apiKeyHelper`.
-Codex: preferire il meccanismo di autenticazione nativo del provider/runtime; per custom provider
-l'estensione può configurare il nome della variabile (`env_key`) ma non scrive segreti nel TOML di
-progetto.
+Claude: master in VS Code `SecretStorage`, materialization outside the repo for `apiKeyHelper`.
+Codex: prefer the native authentication mechanism of the provider/runtime; for custom providers
+the extension can configure the variable name (`env_key`) but does not write secrets into the
+project TOML.
 
-Regola comune: **nessun segreto nel repository e nessun catalogo che contenga token.**
+Common rule: **no secrets in the repository and no catalog containing tokens.**
 
 ### F6 — Throughput
 
-Per Claude si continua a usare l'usage reale del transcript e, quando disponibile,
-`cost.total_api_duration_ms` come denominatore API. Per Codex si usano gli snapshot token del
-rollout con timestamp del turno.
+For Claude we keep using the real usage from the transcript and, when available,
+`cost.total_api_duration_ms` as the API denominator. For Codex we use the rollout's token
+snapshots with the turn timestamp.
 
-Si distinguono due metriche:
+Two metrics are distinguished:
 
-- **model throughput:** output token / tempo API, quando il runtime fornisce un denominatore adatto;
-- **turn throughput:** output token / tempo di parete del turno.
+- **model throughput:** output tokens / API time, when the runtime provides a suitable denominator;
+- **turn throughput:** output tokens / wall-clock time of the turn.
 
-Il tooltip dice quale si sta mostrando. Smoothing esponenziale sul valore visuale.
+The tooltip says which one is being shown. Exponential smoothing on the displayed value.
 
-### F7 — Usage token reale, non stima da tokenizer
+### F7 — Real token usage, not a tokenizer estimate
 
-Il prodotto non ricostruisce i token dal testo quando il runtime ha già l'usage dell'API.
+The product does not reconstruct tokens from the text when the runtime already has the API usage.
 
-Schema comune:
+Common schema:
 
 ```ts
 type Usage = {
@@ -336,30 +337,30 @@ type Usage = {
 };
 ```
 
-Claude mappa `input_tokens`, `cache_read_input_tokens`, `cache_creation_input_tokens`,
-`output_tokens`. Codex mappa i campi `TokenUsage` del rollout/app-server.
+Claude maps `input_tokens`, `cache_read_input_tokens`, `cache_creation_input_tokens`,
+`output_tokens`. Codex maps the `TokenUsage` fields of the rollout/app-server.
 
-**Accettazione:** il totale sessione viene da snapshot deduplicati/cumulativi, non dalla somma
-naive delle righe JSONL.
+**Acceptance:** the session total comes from deduplicated/cumulative snapshots, not from the naive
+sum of JSONL rows.
 
 ### F8 — Context & cache health
 
-Il contesto usa il valore vivo del runtime, non una finestra hardcoded nel catalogo quando la
-telemetria runtime è disponibile. Il catalogo resta il fallback e la fonte per modelli terzi prima
-del primo turno.
+The context uses the runtime's live value, not a window hardcoded in the catalog when runtime
+telemetry is available. The catalog remains the fallback and the source for third-party models
+before the first turn.
 
-Claude aggiunge un vantaggio particolare: `prompt_cache` può mostrare hit ratio, warm state, TTL,
-miss e causa del miss. Il tooltip può quindi dire:
+Claude adds a particular advantage: `prompt_cache` can show hit ratio, warm state, TTL,
+misses and miss cause. The tooltip can therefore say:
 
 ```text
 Context        118K / 1.0M
-Prompt cache   91% hit · warm · scade tra 34m
-Ultimo miss    tools_changed (+2 tool)
+Prompt cache   91% hit · warm · expires in 34m
+Last miss      tools_changed (+2 tool)
 ```
 
-### F9 — Limiti abbonamento / account unificati
+### F9 — Unified subscription / account limits
 
-I limiti non sono modellati come “5h + 7d” hardcoded. Si normalizzano finestre arbitrarie:
+Limits are not modeled as hardcoded "5h + 7d". Arbitrary windows are normalized:
 
 ```ts
 type LimitWindow = {
@@ -372,79 +373,81 @@ type LimitWindow = {
 };
 ```
 
-Claude può fornire `five_hour`, `seven_day` e `spend_limit`. Codex può fornire primary, secondary,
-additional rate limits, credits e spend control, oltre al plan type.
+Claude can provide `five_hour`, `seven_day` and `spend_limit`. Codex can provide primary,
+secondary, additional rate limits, credits and spend control, as well as the plan type.
 
-La UI non assume la durata dal nome: usa `windowMinutes`/`resetsAt` reali quando presenti.
+The UI does not infer the duration from the name: it uses the real `windowMinutes`/`resetsAt` when
+present.
 
-**Accettazione:** se il backend cambia la durata di una finestra o introduce un nuovo limite, il
-parser lo mostra senza richiedere una release.
+**Acceptance:** if the backend changes the duration of a window or introduces a new limit, the
+parser shows it without requiring a release.
 
-### F10 — Alert e burn rate
+### F10 — Alerts and burn rate
 
-Soglie configurabili, di default solo visive; notifiche opt-in:
+Configurable thresholds, visual-only by default; opt-in notifications:
 
-- warning al 75%;
-- critical al 90%;
-- countdown al reset;
-- burn rate: “a questo ritmo la finestra finisce tra ~40 min”.
+- warning at 75%;
+- critical at 90%;
+- countdown to reset;
+- burn rate: "at this pace the window runs out in ~40 min".
 
-La proiezione è marcata esplicitamente come stima. Nessuna equivalenza “token → % abbonamento”: i
-provider possono applicare pesi non pubblici e i contatori runtime restano la fonte autorevole.
+The projection is explicitly marked as an estimate. No "token → subscription %" equivalence:
+providers may apply non-public weights and the runtime counters remain the authoritative source.
 
-### F11 — Fallback reattivo e preventivo
+### F11 — Reactive and preventive fallback
 
-Due modalità:
+Two modes:
 
-- **reattivo:** 401/402/429/timeout o runtime che dichiara quota esaurita;
-- **preventivo:** soglia di quota/burn rate superata prima di una nuova operazione.
+- **reactive:** 401/402/429/timeout or a runtime declaring the quota exhausted;
+- **preventive:** quota/burn rate threshold exceeded before a new operation.
 
-Policy per progetto:
+Per-project policy:
 
 ```text
-manual            → avvisa soltanto
-ask-before-limit  → propone il prossimo provider/modello
-automatic         → commuta se la capability runtime lo consente e la policy lo autorizza
+manual            → only warns
+ask-before-limit  → proposes the next provider/model
+automatic         → switches if the runtime capability allows it and the policy authorizes it
 ```
 
-Su Codex il cambio provider è machine-scope: l'automatico cross-provider è quindi **disabilitato di
-default** finché non esiste un meccanismo sicuro per thread/progetto. Il fallback automatico può
-invece cambiare modello entro lo stesso provider.
+On Codex the provider switch is machine-scope: automatic cross-provider fallback is therefore
+**disabled by default** until a safe per-thread/per-project mechanism exists. Automatic fallback can
+instead switch model within the same provider.
 
 ### F12 — Live model catalog
 
-Questa è una feature centrale, non un comando manuale accessorio.
+This is a central feature, not an accessory manual command.
 
-Ogni provider/runtime può avere una catena di sorgenti:
+Each provider/runtime can have a chain of sources:
 
 ```text
 ModelSource
-1. API/catalogo strutturato ufficiale
+1. official structured API/catalog
 2. runtime-native catalog
-3. parser pagina ufficiale
-4. catalogo bundled
+3. official page parser
+4. bundled catalog
 5. last-known-good cache
 ```
 
-Regole:
+Rules:
 
-- preferire API strutturate allo scraping;
-- fetch con ETag/Last-Modified quando disponibili;
-- TTL configurabile (default 6h);
-- refresh all'attivazione solo se cache stale;
-- refresh manuale sempre disponibile;
-- nessun nuovo modello diventa “verified” senza probe compatibile col runtime;
-- un modello scomparso diventa `deprecated/missing`, non viene eliminato dalle configurazioni.
+- prefer structured APIs to scraping;
+- fetch with ETag/Last-Modified when available;
+- configurable TTL (default 6h);
+- refresh on activation only if the cache is stale;
+- manual refresh always available;
+- no new model becomes "verified" without a probe compatible with the runtime;
+- a model that disappears becomes `deprecated/missing`, it is not removed from configurations.
 
-**DeepSeek:** `GET /models` è la fonte primaria e oggi restituisce `deepseek-flash` e
-`deepseek-v4-pro`. Il catalogo statico serve solo come bootstrap/fallback.
+**DeepSeek:** `GET /models` is the primary source and today returns `deepseek-flash` and
+`deepseek-v4-pro`. The static catalog serves only as bootstrap/fallback.
 
-**Codex/OpenAI:** preferire `model/list` dell'app-server / model manager del client, perché contiene
-reasoning efforts, service tiers, availability, upgrade/retirement e riflette il client/account.
+**Codex/OpenAI:** prefer the app-server's `model/list` / the client's model manager, because it
+contains reasoning efforts, service tiers, availability, upgrade/retirement and reflects the
+client/account.
 
 ### F13 — Pricing auto-update
 
-Il pricing è una sorgente separata dal catalogo modelli.
+Pricing is a source separate from the model catalog.
 
 ```ts
 type PricingSnapshot = {
@@ -460,19 +463,19 @@ type PricingSnapshot = {
 };
 ```
 
-Se non esiste API pricing si può parsare **solo la pagina ufficiale** con parser provider-specifico.
-Lo scraping generico di siti terzi non entra nel prodotto.
+If there is no pricing API, **only the official page** may be parsed, with a provider-specific
+parser. Generic scraping of third-party sites does not enter the product.
 
-DeepSeek dimostra perché servono regole, non quattro numeri: oggi distingue cache hit, cache miss,
-output e fasce peak/off-peak. OpenAI può distinguere input, cached input, cache writes, output,
-contesto corto/lungo e service tier. Il motore deve quindi ricevere usage + timestamp + contesto +
-service tier.
+DeepSeek shows why rules are needed, not four numbers: today it distinguishes cache hit, cache
+miss, output and peak/off-peak bands. OpenAI can distinguish input, cached input, cache writes,
+output, short/long context and service tier. The engine must therefore receive usage + timestamp +
+context + service tier.
 
 ### F14 — Cost meter
 
-Il costo viene calcolato per turno e per sessione quando i dati sono sufficienti.
+Cost is calculated per turn and per session when the data are sufficient.
 
-Stati possibili:
+Possible states:
 
 ```text
 exact-from-observed-usage-and-current-rate
@@ -482,29 +485,29 @@ unavailable
 subscription-not-dollar-metered
 ```
 
-Per API key/provider a consumo si mostra il costo calcolato. Per sessioni Codex/Claude incluse in un
-abbonamento non si convertono artificialmente i token in “dollari spesi dall'abbonamento”: si
-mostrano quota, credits e/o costo API solo se semanticamente corretto.
+For API keys/pay-as-you-go providers the calculated cost is shown. For Codex/Claude sessions
+included in a subscription, tokens are not artificially converted into "dollars spent from the
+subscription": quota, credits and/or API cost are shown only if semantically correct.
 
-Nel tooltip di sviluppo si può confrontare il costo calcolato con il costo runtime-reported per
-scoprire mapping errati.
+In the development tooltip the calculated cost can be compared with the runtime-reported cost to
+uncover wrong mappings.
 
-### F15 — “Cache saved”
+### F15 — "Cache saved"
 
-Quando il provider pubblica prezzi distinti per input cache hit/read e input normale, il motore può
-calcolare anche:
+When the provider publishes distinct prices for cache hit/read input and normal input, the engine
+can also calculate:
 
 ```text
-costo reale input
-costo ipotetico senza cache
-risparmio cache = ipotetico - reale
+actual input cost
+hypothetical cost without cache
+cache savings = hypothetical - actual
 ```
 
-Si presenta come **stima di risparmio a list price**, non come credito reale in fattura.
+It is presented as an **estimate of savings at list price**, not as an actual credit on the invoice.
 
 ### F16 — Change detection
 
-Ogni refresh produce un diff rispetto all'ultimo snapshot valido. Tipi di cambiamento:
+Every refresh produces a diff against the last valid snapshot. Types of change:
 
 ```text
 model.added
@@ -520,42 +523,50 @@ subscription.new-limit
 subscription.plan-changed
 ```
 
-La UI mostra un badge discreto nel picker:
+The UI shows a discreet badge in the picker:
 
 ```text
-✨ 2 novità
-DeepSeek V5 Pro       nuovo modello
-GPT-6 Astra           xhigh → max disponibile
+✨ 2 updates
+DeepSeek V5 Pro       new model
+GPT-6 Astra           xhigh → max available
 DeepSeek Flash        output -12%
-Codex weekly          reset/window modificata
+Codex weekly          reset/window changed
 ```
 
-Per i limiti abbonamento la change detection è **descrittiva**, non interpreta un singolo salto di
-percentuale come cambio contrattuale. Distingue:
+For subscription limits change detection is **descriptive**; it does not interpret a single jump in
+percentage as a contractual change. It distinguishes:
 
-- **schema/policy change:** durata finestra, nuovo bucket, nuovo plan type, nuovo spend control;
-- **usage update:** used percentage che varia normalmente;
-- **anomaly candidate:** reset timestamp che salta all'indietro o contatore incoerente; log e
-  tooltip, non conclusioni sulla causa.
+- **schema/policy change:** window duration, new bucket, new plan type, new spend control;
+- **usage update:** used percentage varying normally;
+- **anomaly candidate:** reset timestamp jumping backwards or an inconsistent counter; log and
+  tooltip, no conclusions about the cause.
 
 ### F17 — Subagent observability
 
-Unificazione di Claude `subagentStatusLine`/telemetria disponibile e Codex hook `SubagentStart` /
-`SubagentStop`.
+Unification of Claude's `subagentStatusLine`/available telemetry and Codex's `SubagentStart` /
+`SubagentStop` hooks.
 
-Status bar: `⛓ 3` quando ci sono subagenti attivi. Tooltip per agente:
+Status bar: `⛓ 3` when there are active subagents. Tooltip per agent:
 
 ```text
 researcher   GPT-6 Astra · high · 18K tok · running
 reviewer     DeepSeek Flash · high · 31K tok · done
 ```
 
-Costo per subagente solo quando l'usage è attribuibile in modo affidabile; altrimenti si mostra il
-totale e si dichiara che non è separabile.
+Cost per subagent only when usage can be reliably attributed; otherwise the total is shown and it
+is stated that it cannot be separated.
+
+**The contract with Daiku.** Daiku orchestrates subagents and knows what Kaji does not see — role
+and phase of the chain — while Kaji knows model, tokens and cost. F17 is the point where the two
+views meet, and the first contract between the two products is the schema of these events. It
+remains to be decided who owns it and how it is kept aligned, under a constraint that is not
+negotiable: neither product reads a file of the other, so each carries its own versioned copy. Kaji
+works in full without Daiku; if Daiku is there, F17 also shows role and phase, otherwise it degrades
+silently to the runtime's view.
 
 ### F18 — Attention notifications
 
-Eventi normalizzati:
+Normalized events:
 
 ```ts
 "turn-started"
@@ -567,14 +578,15 @@ Eventi normalizzati:
 "error"
 ```
 
-Codex usa hook nativi (`PermissionRequest`, `Stop`, `SubagentStart/Stop`). Claude usa prima hook o
-segnali ufficiali se disponibili nel build; transcript/statusLine restano fallback osservativo.
+Codex uses native hooks (`PermissionRequest`, `Stop`, `SubagentStart/Stop`). Claude first uses
+hooks or official signals if available in the build; transcript/statusLine remain the observational
+fallback.
 
-Notifiche desktop/VS Code opt-in e con deduplica. Nessun popup per ogni turno di default.
+Desktop/VS Code notifications opt-in and deduplicated. No popup for every turn by default.
 
-### F19 — Preset nominati e onboarding
+### F19 — Named presets and onboarding
 
-Un preset è portabile e **senza segreti**:
+A preset is portable and **secret-free**:
 
 ```json
 {
@@ -588,22 +600,22 @@ Un preset è portabile e **senza segreti**:
 }
 ```
 
-Comandi: crea, applica, esporta, importa. Alla prima attivazione in un progetto senza configurazione,
-l'estensione offre preset o “segui runtime corrente”, senza scrivere nulla finché l'utente non
-sceglie.
+Commands: create, apply, export, import. On first activation in a project without configuration,
+the extension offers presets or "follow current runtime", without writing anything until the user
+chooses.
 
 ### F20 — Session browser (post-MVP)
 
-Domanda reale, ma non necessaria al primo milestone. I due runtime hanno transcript/session store
-sufficienti a mostrare sessioni recenti per progetto con titolo, modello, data, token e costo. Il
-resume deve però usare un comando/API supportato dal runtime; non si manipolano direttamente DB o
-file di indice per aprire sessioni.
+A real demand, but not necessary for the first milestone. The two runtimes have transcripts/session
+stores sufficient to show recent sessions per project with title, model, date, tokens and cost.
+Resume, however, must use a command/API supported by the runtime; DBs or index files are not
+manipulated directly to open sessions.
 
 ---
 
-## 5. Catalogo: dati, non codice
+## 5. Catalog: data, not code
 
-Il catalogo bundled è il **bootstrap**, non la verità eterna.
+The bundled catalog is the **bootstrap**, not the eternal truth.
 
 ```jsonc
 {
@@ -632,7 +644,7 @@ Il catalogo bundled è il **bootstrap**, non la verità eterna.
 }
 ```
 
-### 5.1 ModelDescriptor normalizzato
+### 5.1 Normalized ModelDescriptor
 
 ```ts
 type ModelDescriptor = {
@@ -654,119 +666,119 @@ type ModelDescriptor = {
 };
 ```
 
-Il catalogo non inventa capability assenti. Un campo sconosciuto resta `undefined`, non `false`.
+The catalog does not invent missing capabilities. An unknown field stays `undefined`, not `false`.
 
 ### 5.2 Merge
 
-Ordine di precedenza:
+Order of precedence:
 
 ```text
-user override esplicito
+explicit user override
 → remote verified current snapshot
 → bundled catalog
-→ historical last-known-good (solo per oggetti spariti, marcati stale)
+→ historical last-known-good (only for vanished objects, marked stale)
 ```
 
-Gli override utente possono rinominare label/colori, aggiungere provider privati e correggere
-metadata, ma non trasformano automaticamente un transport non verificato in verificato.
+User overrides can rename labels/colors, add private providers and correct metadata, but they do
+not automatically turn an unverified transport into a verified one.
 
-### 5.3 Discovery e probe
+### 5.3 Discovery and probe
 
-Un nuovo model ID passa per stati:
+A new model ID goes through states:
 
 ```text
 discovered → metadata-partial → probe-pending → verified
-                               ↘ probe-failed → visible con warning / hidden secondo policy
+                               ↘ probe-failed → visible with warning / hidden according to policy
 ```
 
-Il probe deve essere minimo e rispettare costi: preferire endpoint metadata/capability quando
-esistono; un messaggio reale da 1 token solo quando necessario e con consenso se comporta spesa.
+The probe must be minimal and respect costs: prefer metadata/capability endpoints when they
+exist; a real 1-token message only when necessary and with consent if it incurs spending.
 
 ---
 
-## 6. Auto-update senza auto-corruzione
+## 6. Auto-update without auto-corruption
 
 ### 6.1 Scheduling
 
 Default:
 
-- all'attivazione: usa cache subito;
-- dopo activation: refresh solo se cache > 6h;
-- refresh periodico opzionale durante sessioni lunghe: 6h;
-- refresh manuale: sempre;
-- backoff su rete; nessun retry aggressivo.
+- on activation: use the cache immediately;
+- after activation: refresh only if cache > 6h;
+- optional periodic refresh during long sessions: 6h;
+- manual refresh: always;
+- backoff on network; no aggressive retry.
 
 ### 6.2 Pipeline
 
 ```text
 fetch
-→ limite dimensione risposta
+→ response size limit
 → parse
 → schema validation
 → sanity checks
 → normalize
-→ diff contro snapshot corrente
+→ diff against current snapshot
 → persist snapshot candidate
-→ atomically promote a last-known-good
+→ atomically promote to last-known-good
 → emit change events
 ```
 
-Qualunque fallimento prima della promotion lascia intatto il snapshot precedente.
+Any failure before promotion leaves the previous snapshot intact.
 
-### 6.3 Sanity check pricing
+### 6.3 Pricing sanity checks
 
-Esempi:
+Examples:
 
-- unità positiva e valuta nota;
-- nessun prezzo negativo;
-- nessun salto >100× senza richiedere conferma/log high severity;
-- tutte le fasce orarie coprono o dichiarano il default;
-- `effectiveFrom` non viene inventato se la pagina non lo espone;
-- parser HTML che trova zero righe = fallimento, non “tutti i prezzi sono zero”.
+- positive unit and known currency;
+- no negative price;
+- no jump >100× without requiring confirmation/a high-severity log;
+- all time bands cover or declare the default;
+- `effectiveFrom` is not invented if the page does not expose it;
+- an HTML parser that finds zero rows = failure, not "all prices are zero".
 
-### 6.4 Cronologia locale
+### 6.4 Local history
 
-Conservare gli ultimi N snapshot compatti (default 20) per provider, senza segreti. Serve a:
+Keep the last N compact snapshots (default 20) per provider, without secrets. It serves to:
 
-- spiegare “cosa è cambiato”;
-- rollback diagnostico;
-- non ripresentare lo stesso badge ogni avvio;
-- distinguere una variazione temporanea da una modifica persistente.
+- explain "what changed";
+- diagnostic rollback;
+- not show the same badge again at every startup;
+- distinguish a temporary variation from a persistent change.
 
 ---
 
-## 7. Token, costo e pricing: la semantica corretta
+## 7. Tokens, cost and pricing: the correct semantics
 
-### 7.1 Token vivi vs token cumulativi
+### 7.1 Live tokens vs cumulative tokens
 
-Sono due numeri diversi:
+They are two different numbers:
 
 ```text
-context current usage  → cosa occupa il contesto adesso
-session cumulative     → cosa è stato fatturato/consumato nel tempo
+context current usage  → what occupies the context right now
+session cumulative     → what has been billed/consumed over time
 ```
 
-Dopo compact, resume o cache, non coincidono. La UI deve nominarli correttamente.
+After compact, resume or cache, they do not coincide. The UI must name them correctly.
 
-### 7.2 Deduplica Claude
+### 7.2 Claude deduplication
 
-Il transcript può ripersistire lo stesso messaggio con usage identico. Identificatore preferito:
-`message.id` + eventuale request/prompt identity. Se manca, fingerprint stabile del record rilevante.
-L'offset di lettura evita riletture, ma non sostituisce la deduplica semantica.
+The transcript may re-persist the same message with identical usage. Preferred identifier:
+`message.id` + any request/prompt identity. If missing, a stable fingerprint of the relevant record.
+The read offset avoids re-reads, but does not replace semantic deduplication.
 
-### 7.3 Cumulativi Codex
+### 7.3 Codex cumulatives
 
-Quando Codex fornisce `total_token_usage`, quello è preferibile alla somma degli eventi. Gli eventi
-possono essere riemessi insieme a rate-limit updates. L'adapter tiene l'ultimo totale per sessione e
-calcola delta monotoni; una regressione del totale apre un nuovo segmento (resume/reset/version
-change), non produce token negativi.
+When Codex provides `total_token_usage`, that is preferable to summing events. Events may be
+re-emitted together with rate-limit updates. The adapter keeps the last total per session and
+computes monotonic deltas; a regression of the total opens a new segment (resume/reset/version
+change), it does not produce negative tokens.
 
 ### 7.4 Pricing engine
 
-Il motore non contiene `if provider === ...` nel core. Le regole sono dati/espressioni provider-
-specifiche compilate in una forma comune.
+The engine contains no `if provider === ...` in the core. Rules are provider-specific
+data/expressions compiled into a common form.
 
-Input al calcolo:
+Calculation input:
 
 ```ts
 {
@@ -798,34 +810,34 @@ Output:
 }
 ```
 
-### 7.5 “Esatto” significa esatto rispetto ai dati osservati
+### 7.5 “Exact” means exact with respect to the observed data
 
-Il prodotto può chiamare un costo `exact` soltanto se:
+The product may call a cost `exact` only if:
 
-- tutti i bucket tariffati sono osservabili;
-- il tariffario applicabile al timestamp è noto;
-- eventuali tier/context threshold sono noti;
-- il runtime/provider non nasconde surcharge rilevanti.
+- all billed buckets are observable;
+- the price list applicable at the timestamp is known;
+- any tier/context thresholds are known;
+- the runtime/provider does not hide relevant surcharges.
 
-Altrimenti `estimated`. Questo è importante per OpenAI/Codex: l'evoluzione dei campi cache-write e
-service tier va seguita, e versioni vecchie del runtime possono non persistere tutte le dimensioni.
+Otherwise `estimated`. This matters for OpenAI/Codex: the evolution of the cache-write and
+service tier fields must be tracked, and old runtime versions may not persist every dimension.
 
 ---
 
-## 8. Limiti abbonamento e change detection
+## 8. Subscription limits and change detection
 
-### 8.1 Non hardcodare Plus/Pro/Max
+### 8.1 Do not hardcode Plus/Pro/Max
 
-L'estensione non mantiene una tabella tipo “Plus = X prompt”. I limiti reali possono dipendere da
-modello, periodo, account, workspace, promozioni e policy server-side. Si mostrano i contatori che il
-runtime restituisce.
+The extension does not maintain a table like “Plus = X prompts”. Real limits may depend on
+model, period, account, workspace, promotions and server-side policy. It shows the counters the
+runtime returns.
 
 ### 8.2 Snapshot
 
 ```ts
 type LimitsSnapshot = {
   runtime: RuntimeId;
-  accountHint?: string; // mai email/token; solo label non sensibile se già esposta dal runtime
+  accountHint?: string; // never email/token; only a non-sensitive label if already exposed by the runtime
   planType?: string;
   windows: LimitWindow[];
   credits?: { balance?: string; unlimited?: boolean };
@@ -833,111 +845,111 @@ type LimitsSnapshot = {
 };
 ```
 
-### 8.3 Change detection dei limiti
+### 8.3 Limit change detection
 
-Il diff ignora le normali variazioni di `usedPercent`. Notifica solo mutazioni strutturali:
+The diff ignores normal variations of `usedPercent`. It notifies only structural mutations:
 
-- durata `windowMinutes` diversa;
-- reset policy che cambia in modo persistente;
-- compare/scompare secondary window;
-- nuovo limit ID;
-- cambia `planType`;
-- compare spend control / credits;
-- label di un limit cambia.
+- different `windowMinutes` duration;
+- reset policy changing persistently;
+- secondary window appears/disappears;
+- new limit ID;
+- `planType` changes;
+- spend control / credits appear;
+- a limit's label changes.
 
-Un reset timestamp che cambia da solo può essere un update normale o un bug upstream: viene
-registrato come `anomalyCandidate`, non come “OpenAI/Anthropic ha cambiato contratto”.
+A reset timestamp that changes on its own may be a normal update or an upstream bug: it is
+recorded as `anomalyCandidate`, not as “OpenAI/Anthropic changed the contract”.
 
-### 8.4 Soglie
+### 8.4 Thresholds
 
-Gli alert si calcolano sullo snapshot vivo, non sulla change history. Se il runtime non restituisce
-rate limits, l'estensione non tenta di ricostruirli dai token.
-
----
-
-## 9. Stato, desired state e conflitti
-
-Per ogni progetto esistono tre livelli concettuali:
-
-```text
-DesiredSelection   → ciò che il progetto/preset chiede
-ConfiguredState    → ciò che i file runtime dicono
-ObservedSession    → ciò che la sessione sta davvero usando
-```
-
-La status bar usa `ObservedSession` quando c'è. Se differisce:
-
-```text
-$(debug-restart) Codex · GPT-6 Luna → desiderato Astra
-```
-
-Il tooltip spiega la causa: file modificato ma thread non riavviato, provider machine-scope,
-session resume che mantiene modello precedente, ecc.
+Alerts are computed on the live snapshot, not on the change history. If the runtime does not return
+rate limits, the extension does not try to reconstruct them from tokens.
 
 ---
 
-## 10. Sicurezza e privacy
+## 9. State, desired state and conflicts
 
-- Nessun prompt o transcript viene inviato ai server dell'estensione: non esiste server.
-- Il refresh catalog/pricing chiama solo endpoint configurati/ufficiali del provider e non invia
-  contenuto delle conversazioni.
-- I parser pricing leggono pagine pubbliche senza chiavi quando possibile.
-- Le chiavi non entrano in log, tooltip, snapshot o change history.
-- I transcript sono letti localmente e in modo incrementale.
-- I file runtime non vengono riserializzati distruggendo commenti o formattazione quando esiste un
-  editor strutturale adatto.
-- Le modifiche machine-scope (es. provider Codex) richiedono conferma esplicita e indicazione dello
+For each project there are three conceptual levels:
+
+```text
+DesiredSelection   → what the project/preset asks for
+ConfiguredState    → what the runtime files say
+ObservedSession    → what the session is actually using
+```
+
+The status bar uses `ObservedSession` when present. If it differs:
+
+```text
+$(debug-restart) Codex · GPT-6 Luna → desired Astra
+```
+
+The tooltip explains the cause: file modified but thread not restarted, machine-scope provider,
+session resume keeping the previous model, etc.
+
+---
+
+## 10. Security and privacy
+
+- No prompt or transcript is sent to the extension's servers: there is no server.
+- The catalog/pricing refresh calls only configured/official provider endpoints and sends no
+  conversation content.
+- The pricing parsers read public pages without keys when possible.
+- Keys never enter logs, tooltips, snapshots or change history.
+- Transcripts are read locally and incrementally.
+- Runtime files are not re-serialized destroying comments or formatting when a suitable
+  structural editor exists.
+- Machine-scope changes (e.g. Codex provider) require explicit confirmation and an indication of the
   scope.
-- Nessuna automazione di fallback attraversa account/provider con segreti diversi senza policy
-  esplicita dell'utente.
+- No fallback automation crosses accounts/providers with different secrets without an explicit
+  user policy.
 
 ---
 
-## 11. Cosa non si costruisce
+## 11. What is not built
 
-1. **Proxy/translator generico.** Un modello incompatibile col protocollo del runtime resta fuori.
-2. **Webview dashboard al primo milestone.** Status bar + tooltip + QuickPick + Output Channel sono
-   sufficienti; una webview si giustifica solo se la history/change timeline diventa troppo ricca.
-3. **Billing reconciliation.** Il costo è osservabilità locale, non fattura contabile.
-4. **Scraping arbitrario del web.** Solo API o pagine ufficiali con parser versionato.
-5. **Multi-account Claude automatico** finché il pannello/runtime non espone una leva affidabile.
-6. **Manipolazione diretta di DB Codex per cambiare o resumere thread.** I file/DB si possono leggere
-   per diagnostica solo dove necessario; le azioni passano da config/API/comandi supportati.
-7. **Marketplace obbligatorio.** Il primo ciclo resta VSIX locale; pubblicazione è una decisione
-   separata.
+1. **Generic proxy/translator.** A model incompatible with the runtime's protocol stays out.
+2. **Webview dashboard in the first milestone.** Status bar + tooltip + QuickPick + Output Channel are
+   enough; a webview is justified only if the history/change timeline becomes too rich.
+3. **Billing reconciliation.** Cost is local observability, not an accounting invoice.
+4. **Arbitrary web scraping.** Only APIs or official pages with a versioned parser.
+5. **Automatic Claude multi-account** until the panel/runtime exposes a reliable lever.
+6. **Direct manipulation of the Codex DB to change or resume threads.** Files/DB may be read
+   for diagnostics only where necessary; actions go through supported config/API/commands.
+7. **Mandatory Marketplace.** The first cycle stays a local VSIX; publishing is a separate
+   decision.
 
 ---
 
-## 12. Milestone
+## 12. Milestones
 
-### M0 — Prove bloccanti, prima del prodotto
+### M0 — Blocking tests, before the product
 
-1. Claude: `.claude/settings.local.json` viene rispettato dal pannello VS Code?
-2. Claude: `model` cambia davvero a caldo senza `ANTHROPIC_MODEL` che lo sovrascriva?
-3. Claude: `apiKeyHelper` funziona con Bearer sui provider terzi?
-4. Claude: il pannello VS Code esegue la statusLine? Se no, quali dati restano disponibili via
+1. Claude: is `.claude/settings.local.json` honored by the VS Code panel?
+2. Claude: does `model` really change hot without `ANTHROPIC_MODEL` overriding it?
+3. Claude: does `apiKeyHelper` work with Bearer on third-party providers?
+4. Claude: does the VS Code panel run the statusLine? If not, what data remain available via
    transcript/hooks?
-5. Claude: tee della statusLine conserva stdout, exit code, colori e multi-linea del comando
-   originale?
-6. Claude: identificare il comando più pulito per riavviare una sessione, senza ID hardcoded.
-7. Claude: verificare `claudeProcessWrapper` sul build Windows attuale.
-8. Claude: verificare merge/scope attuale di `modelPicker`, `modelSettings` e effort su modelli terzi.
-9. Codex: `.codex/config.toml` scritto dall'estensione viene applicato dal pannello/IDE alla nuova
-   sessione e come si comporta su thread già aperto?
-10. Codex: confermare percorso/session matching `cwd` e formato `token_count` sul build installato.
-11. Codex: provare hook `PermissionRequest`, `Stop`, `SubagentStart/Stop` dalla IDE extension.
-12. Codex: provare `app-server model/list` e account rate limits senza lasciare processi orfani.
-13. Codex: provider DeepSeek via Responses API usando la configurazione ufficiale.
-14. Catalog: `GET /models` DeepSeek + diff + nuovo model fake in fixture.
-15. Pricing: parser DeepSeek con fixture HTML salvata e fail closed quando cambia struttura.
-16. Cost: confrontare usage/costo CCR con costo runtime/provider su almeno 20 turni.
-17. Limits: verificare primary/secondary Codex e five_hour/seven_day Claude su sessioni reali.
-18. Notifications: evento done/permission produce una sola notifica, non duplicati.
+5. Claude: does the statusLine tee preserve stdout, exit code, colors and multi-line output of the original
+   command?
+6. Claude: identify the cleanest command to restart a session, without hardcoded IDs.
+7. Claude: verify `claudeProcessWrapper` on the current Windows build.
+8. Claude: verify current merge/scope of `modelPicker`, `modelSettings` and effort on third-party models.
+9. Codex: is `.codex/config.toml` written by the extension applied by the panel/IDE to the new
+   session, and how does it behave on an already open thread?
+10. Codex: confirm path/session matching `cwd` and the `token_count` format on the installed build.
+11. Codex: try the `PermissionRequest`, `Stop`, `SubagentStart/Stop` hooks from the IDE extension.
+12. Codex: try `app-server model/list` and account rate limits without leaving orphan processes.
+13. Codex: DeepSeek provider via Responses API using the official configuration.
+14. Catalog: DeepSeek `GET /models` + diff + new fake model in a fixture.
+15. Pricing: DeepSeek parser with a saved HTML fixture and fail closed when the structure changes.
+16. Cost: compare Kaji usage/cost with runtime/provider cost over at least 20 turns.
+17. Limits: verify Codex primary/secondary and Claude five_hour/seven_day on real sessions.
+18. Notifications: a done/permission event produces a single notification, not duplicates.
 
-### M1 — Core usabile ogni giorno
+### M1 — Core usable every day
 
-F1–F9, catalogo bundled, Claude adapter completo, Codex model/usage/limits, Secret handling,
-status bar, picker, test unitari.
+F1–F9, bundled catalog, complete Claude adapter, Codex model/usage/limits, Secret handling,
+status bar, picker, unit tests.
 
 ### M2 — Live catalog + cost
 
@@ -949,136 +961,136 @@ F10–F11, F17–F19: alert, burn rate, fallback, subagent observability, notifi
 
 ### M4 — Convenience
 
-Session browser, timeline dei cambi e eventuale webview solo se serve davvero.
+Session browser, timeline of changes and possibly a webview only if really needed.
 
 ---
 
-## 13. Esperienza prevista
+## 13. Expected experience
 
-### Primo avvio
+### First launch
 
 ```text
-CCR ha trovato:
+Kaji found:
 ✓ Claude Code
 ✓ Codex
 
-Questo progetto non ha un preset CCR.
-[Segui configurazione corrente] [Scegli preset] [Ignora]
+This project has no Kaji preset.
+[Follow current configuration] [Choose preset] [Ignore]
 ```
 
-Nessuna scrittura automatica.
+No automatic writes.
 
-### Nuovo modello scoperto
+### New model discovered
 
 ```text
-$(sparkle) Catalogo aggiornato · 1 novità
+$(sparkle) Catalog updated · 1 new item
 DeepSeek V5 Pro
 
-Compatibilità
+Compatibility
 ✓ Claude Code / Anthropic
 ✓ Codex / Responses
 
-[Prova] [Nascondi novità]
+[Try] [Hide new items]
 ```
 
-Se il probe costa, il pulsante `Prova` chiede consenso prima di inviare la richiesta.
+If the probe costs money, the `Try` button asks for consent before sending the request.
 
-### Prezzo cambiato
+### Price changed
 
 ```text
-DeepSeek Flash · pricing aggiornato
+DeepSeek Flash · pricing updated
 Output peak: $1.20 → $1.05 / 1M
-Fonte: pagina pricing ufficiale
-Valido dal: non dichiarato
+Source: official pricing page
+Valid from: not stated
 ```
 
-Non si riscrive alcuna configurazione.
+No configuration is rewritten.
 
-### Limite critico
+### Critical limit
 
 ```text
-Codex · 5h 92% · reset tra 31m
+Codex · 5h 92% · reset in 31m
 Weekly 54%
 
-[Passa a modello più economico] [Ignora fino al reset]
+[Switch to cheaper model] [Ignore until reset]
 ```
 
-Cross-provider solo se l'azione è compatibile con scope e policy.
+Cross-provider only if the action is compatible with scope and policy.
 
 ---
 
-## 14. Dati correnti verificati il 24 settembre 2026
+## 14. Current data verified on 24 September 2026
 
-Questa sezione è snapshot, non contratto: esiste proprio per essere superata dal live catalog.
+This section is a snapshot, not a contract: it exists precisely to be superseded by the live catalog.
 
 ### DeepSeek
 
-`GET https://api.deepseek.com/models` documenta attualmente:
+`GET https://api.deepseek.com/models` currently documents:
 
 - `deepseek-flash` — DeepSeek V4.1 Flash;
 - `deepseek-v4-pro` — DeepSeek V4 Pro.
 
-La pagina pricing ufficiale dichiara 1M context, output massimo 384K e supporto sia Anthropic API sia
-Responses API per entrambi; `deepseek-flash` supporta vision, V4 Pro no. I prezzi distinguono cache
-hit/miss/output e peak/off-peak. Peak: 01:00–04:00 e 06:00–10:00 UTC lun–ven; off-peak metà del
-peak. Questi valori **non vanno hardcodati come verità permanente**: il parser pricing e il
-snapshot remoto sono il meccanismo corretto.
+The official pricing page states 1M context, 384K maximum output and support for both Anthropic API and
+Responses API for both; `deepseek-flash` supports vision, V4 Pro does not. Prices distinguish cache
+hit/miss/output and peak/off-peak. Peak: 01:00–04:00 and 06:00–10:00 UTC Mon–Fri; off-peak half of
+peak. These values **must not be hardcoded as permanent truth**: the pricing parser and the
+remote snapshot are the correct mechanism.
 
-### Snapshot pricing DeepSeek (solo riferimento del 24/09/2026)
+### DeepSeek pricing snapshot (reference only, 24 September 2026)
 
-I valori sotto servono come fixture e verifica umana del parser, **non** come tabella hardcoded del
-prodotto. Prezzi per 1M token:
+The values below serve as a fixture and for human verification of the parser, **not** as a hardcoded
+product table. Prices per 1M tokens:
 
-| Modello | Fascia | Input cache hit | Input cache miss | Output |
+| Model | Band | Input cache hit | Input cache miss | Output |
 |---|---|---:|---:|---:|
 | `deepseek-flash` | off-peak | $0.003 | $0.15 | $0.60 |
 | `deepseek-flash` | peak | $0.006 | $0.30 | $1.20 |
 | `deepseek-v4-pro` | off-peak | $0.022 | $0.66 | $1.98 |
 | `deepseek-v4-pro` | peak | $0.044 | $1.32 | $3.96 |
 
-Il parser deve estrarre anche la schedule: peak 01:00–04:00 e 06:00–10:00 UTC, lunedì-venerdì;
-le altre ore sono off-peak. Se DeepSeek cambia questa regola, `pricing.schedule-changed` deve essere
-un change event distinto da un semplice cambio di tariffa.
+The parser must also extract the schedule: peak 01:00–04:00 and 06:00–10:00 UTC, Monday–Friday;
+the other hours are off-peak. If DeepSeek changes this rule, `pricing.schedule-changed` must be
+a change event distinct from a simple rate change.
 
-### Snapshot pricing OpenAI (esempio che giustifica il rule engine)
+### OpenAI pricing snapshot (example that justifies the rule engine)
 
-Al 24/09/2026 GPT-5.6 Sol è documentato a $4/1M input, $0.40/1M cached input e $20/1M output
-nel caso base; cache writes 1.25× l'input non cached. Per prompt con oltre 272K input token, il
-modello applica 2× all'input e 1.5× all'output per l'intera richiesta. La pricing page espone inoltre
-colonne short/long context e service/processing variants per famiglie attuali.
+As of 24 September 2026 GPT-5.6 Sol is documented at $4/1M input, $0.40/1M cached input and $20/1M output
+in the base case; cache writes 1.25× the non-cached input. For prompts with more than 272K input tokens, the
+model applies 2× to input and 1.5× to output for the whole request. The pricing page also exposes
+short/long context columns and service/processing variants for current families.
 
-Questo è esattamente il motivo per cui `PricingRule` riceve timestamp, context size e service tier:
-un oggetto `{input, output}` non basta più. Anche questi valori sono snapshot di test, non costanti
-di prodotto.
+This is exactly why `PricingRule` receives timestamp, context size and service tier:
+an `{input, output}` object is no longer enough. These values too are test snapshots, not product
+constants.
 
 ### Codex model catalog
 
-Il catalogo open source corrente contiene metadata strutturati come context window, reasoning
-levels, input modalities, service tiers, availability per piano, upgrade e retirement. L'estensione
-non importa il file `main` direttamente perché schema e client possono divergere: usa il catalogo
-del client installato attraverso il model manager/app-server.
+The current open source catalog contains structured metadata such as context window, reasoning
+levels, input modalities, service tiers, per-plan availability, upgrade and retirement. The extension
+does not import the `main` file directly because schema and client may diverge: it uses the catalog
+of the installed client through the model manager/app-server.
 
 ---
 
-## 15. Migrazione dalla situazione attuale Claude
+## 15. Migration from the current Claude setup
 
-Solo dopo M1 funzionante:
+Only after a working M1:
 
-1. importare le chiavi da `~/.claude/llm-switch.secrets.json` nel SecretStorage; ruotare la chiave
-   già esposta in chiaro dove opportuno;
-2. rimuovere gradualmente il blocco globale `env` da `~/.claude/settings.json` quando i progetti
-   importanti hanno una configurazione locale funzionante;
-3. smettere di usare `llm-switch.ps1`;
-4. cancellare per ultimi i task VS Code duplicati;
-5. lasciare un comando `CCR: diagnostica migrazione` che rilevi residui che potrebbero ancora avere
-   precedenza.
+1. import the keys from `~/.claude/llm-switch.secrets.json` into SecretStorage; rotate the key
+   already exposed in plain text where appropriate;
+2. gradually remove the global `env` block from `~/.claude/settings.json` once the important
+   projects have a working local configuration;
+3. stop using `llm-switch.ps1`;
+4. delete the duplicate VS Code tasks last;
+5. leave a `Kaji: Diagnose migration` command that detects leftovers that could still take
+   precedence.
 
-Codex non richiede una migrazione distruttiva iniziale: l'adapter parte leggendo i layer esistenti e
-scrive solo dopo azione esplicita.
+Codex does not require an initial destructive migration: the adapter starts by reading the existing layers and
+writes only after explicit action.
 
 ---
 
-## 16. Riferimenti verificati il 24/09/2026
+## 16. References verified on 24 September 2026
 
 ### Claude Code
 
@@ -1108,7 +1120,7 @@ scrive solo dopo azione esplicita.
 - Codex integration: https://api-docs.deepseek.com/quick_start/agent_integrations/codex/
 - Change log: https://api-docs.deepseek.com/updates/
 
-### Issue/edge-case utili alla progettazione
+### Issues/edge cases useful for the design
 
 - Codex project-local provider denylist/regression reports:
   https://github.com/openai/codex/issues/21769
@@ -1123,271 +1135,271 @@ scrive solo dopo azione esplicita.
 
 ---
 
-## 17. Criterio di successo
+## 17. Success criterion
 
-Il prodotto ha centrato il problema quando, aprendo un progetto, senza leggere file e senza
-ricordarsi comandi, si può rispondere immediatamente a queste domande:
+The product has hit the problem when, on opening a project, without reading files and without
+remembering commands, these questions can be answered immediately:
 
-1. **Quale agente sta lavorando?**
-2. **Dove sta mandando le richieste?**
-3. **Quale modello/effort sta usando davvero?**
-4. **Quanto contesto e quanti token sta consumando?**
-5. **Quanto costa, quando ha senso parlare di costo?**
-6. **Quanto abbonamento/quota resta e quando si resetta?**
-7. **La cache sta aiutando o si sta ricostruendo?**
-8. **Ci sono subagenti attivi o l'agente sta aspettando me?**
-9. **È uscito un modello, è cambiato un prezzo o una policy di limite senza che io aggiorni
-   l'estensione?**
-10. **Se cambio modello/provider, cosa succede davvero e a quale scope?**
+1. **Which agent is working?**
+2. **Where is it sending requests?**
+3. **Which model/effort is it really using?**
+4. **How much context and how many tokens is it consuming?**
+5. **How much does it cost, when talking about cost makes sense?**
+6. **How much subscription/quota is left and when does it reset?**
+7. **Is the cache helping or being rebuilt?**
+8. **Are there active subagents, or is the agent waiting for me?**
+9. **Has a model come out, has a price or a limit policy changed, without me updating
+   the extension?**
+10. **If I change model/provider, what really happens and at which scope?**
 
-Se una risposta non è conoscibile dal runtime, l'estensione dice “non disponibile”. Quella è una
-feature di affidabilità, non una mancanza da mascherare.
+If an answer is not knowable from the runtime, the extension says “not available”. That is a
+reliability feature, not a shortcoming to be masked.
 
 ---
 
-## 18. Baseline reale della macchina da cui nasce il progetto
+## 18. Real baseline of the machine the project originates from
 
-Questa sezione è deliberatamente concreta. Viene dal documento del 23 settembre 2026 e serve alla
-migrazione; **non è una specifica generale del prodotto**.
+This section is deliberately concrete. It comes from the document of 23 September 2026 and serves the
+migration; **it is not a general product specification**.
 
-### 18.1 Script esistente
+### 18.1 Existing script
 
-`~/.claude/llm-switch.ps1` conosce quattro profili e riscrive il blocco `env` dei settings utente:
+`~/.claude/llm-switch.ps1` knows four profiles and rewrites the `env` block of the user settings:
 
-| Profilo | Endpoint Claude/Anthropic | Modello principale | Side-query/subagent |
+| Profile | Claude/Anthropic endpoint | Main model | Side-query/subagent |
 |---|---|---|---|
-| `claude` | nessun override | `opus[1m]` | default subscription |
+| `claude` | no override | `opus[1m]` | default subscription |
 | `deepseek` | `https://api.deepseek.com/anthropic` | `deepseek-flash` | `deepseek-flash` |
-| `muse` | `https://api.meta.ai` | `muse-spark-1.3-contributor` | stesso |
+| `muse` | `https://api.meta.ai` | `muse-spark-1.3-contributor` | same |
 | `glm` | `https://api.z.ai/api/anthropic` | `glm-5.3[1m]` | `glm-5.3-flash[1m]` |
 
-Tre proprietà del vecchio script non vanno perse durante la migrazione:
+Three properties of the old script must not be lost during the migration:
 
-- usa `ANTHROPIC_AUTH_TOKEN` per i backend Bearer;
-- imposta esplicitamente gli ID reali dei modelli e le variabili per le side-query;
-- imposta le guardie necessarie ai provider terzi, inclusi i limiti di contesto e la disattivazione
-  di beta non supportate quando richiesta dal provider.
+- it uses `ANTHROPIC_AUTH_TOKEN` for Bearer backends;
+- it explicitly sets the real model IDs and the variables for side-queries;
+- it sets the guards needed by third-party providers, including context limits and disabling
+  unsupported betas when required by the provider.
 
-La nuova estensione **non** copia ciecamente queste variabili: il catalogo/transport descriptor
-decide quali sono ancora necessarie per il provider corrente e il runtime corrente.
+The new extension does **not** blindly copy these variables: the catalog/transport descriptor
+decides which are still necessary for the current provider and the current runtime.
 
-### 18.2 Segreti esistenti
+### 18.2 Existing secrets
 
-Il file legacy `~/.claude/llm-switch.secrets.json` contiene tre chiavi (`deepseek`, `glm`, `muse`).
-MiMo e OpenCode Go erano provider candidati senza chiave al momento della ricognizione.
+The legacy file `~/.claude/llm-switch.secrets.json` contains three keys (`deepseek`, `glm`, `muse`).
+MiMo and OpenCode Go were candidate providers without a key at the time of the survey.
 
-Il token DeepSeek risultava anche materializzato in chiaro nel blocco `env` utente. La migrazione
-quindi non è solo “sposta il valore”: è l'occasione per **ruotare** la credenziale già esposta nel
-file, poi rimuovere la copia legacy.
+The DeepSeek token was also materialized in plain text in the user `env` block. The migration
+is therefore not just “move the value”: it is the occasion to **rotate** the credential already exposed in the
+file, then remove the legacy copy.
 
-### 18.3 Stato Claude al 23/09/2026
+### 18.3 Claude state as of 23 September 2026
 
-Il profilo globale attivo era DeepSeek; `ANTHROPIC_MODEL` fissava `deepseek-flash`. Questo è
-esattamente il caso che il prodotto deve eliminare: un override machine-global che impedisce al
-progetto di esprimere la propria scelta e può interferire col cambio modello vivo.
+The active global profile was DeepSeek; `ANTHROPIC_MODEL` pinned `deepseek-flash`. This is
+exactly the case the product must eliminate: a machine-global override that prevents the
+project from expressing its own choice and can interfere with the live model change.
 
-`effortLevel` era `xhigh` mentre la chiave `model` utente conservava ancora un valore Claude: altra
-ragione per separare `ConfiguredState` e `ObservedSession`.
+`effortLevel` was `xhigh` while the user `model` key still held a Claude value: another
+reason to separate `ConfiguredState` and `ObservedSession`.
 
-### 18.4 StatusLine già presente
+### 18.4 StatusLine already present
 
-La macchina aveva già una status line personalizzata che mostrava modello, context usage e rate
-limits. Il bridge dell'estensione deve quindi dimostrare di saper **avvolgere una configurazione
-esistente senza alterarla**, non soltanto funzionare su un'installazione vuota.
+The machine already had a custom status line showing model, context usage and rate
+limits. The extension's bridge must therefore prove it can **wrap an existing configuration
+without altering it**, not merely work on an empty installation.
 
 ### 18.5 Transcript
 
-I transcript Claude reali erano già presenti sotto `~/.claude/projects/.../*.jsonl`, con eventi di
-più tipi (`assistant`, `user`, attachment, queue operation, file-history snapshot e altri). Il reader
-nuovo deve essere tolerant: ai fini dell'usage seleziona gli eventi rilevanti e ignora tipi nuovi
-senza considerarli errori.
+Real Claude transcripts were already present under `~/.claude/projects/.../*.jsonl`, with events of
+several types (`assistant`, `user`, attachment, queue operation, file-history snapshot and others). The new
+reader must be tolerant: for usage purposes it selects the relevant events and ignores new types
+without treating them as errors.
 
 ### 18.6 `switchModelsOnFlag`
 
-Nel settings utente era presente `switchModelsOnFlag: false`. Il significato non era stato
-verificato. Resta una prova esplorativa, non una dipendenza: cercare documentazione/changelog del
-build installato; se non esiste contratto pubblico utile, non usarla.
+The user settings contained `switchModelsOnFlag: false`. Its meaning had not been
+verified. It remains an exploratory test, not a dependency: look for documentation/changelog of the
+installed build; if there is no useful public contract, do not use it.
 
 ---
 
-## 19. Baseline provider portata dal progetto precedente
+## 19. Provider baseline carried over from the previous project
 
-Il live catalog sostituisce l'idea di mantenere per sempre una tabella statica, ma il catalogo bundled
-ha bisogno di un bootstrap. Questa è la baseline storica da **riverificare provider per provider**
-prima del release. Solo DeepSeek è stato ricontrollato sul web il 24/09/2026 durante questa
-riscrittura.
+The live catalog replaces the idea of maintaining a static table forever, but the bundled catalog
+needs a bootstrap. This is the historical baseline to **re-verify provider by provider**
+before release. Only DeepSeek was re-checked on the web on 24 September 2026 during this
+rewrite.
 
-| Provider | Claude transport | Codex transport | Stato bootstrap |
+| Provider | Claude transport | Codex transport | Bootstrap status |
 |---|---|---|---|
-| Anthropic/Claude | nativo | n/a come provider custom del progetto | supportato Claude |
-| DeepSeek | Anthropic API | Responses API | **verificato 24/09** |
-| GLM / Z.ai | Anthropic-compatible | da verificare Responses | bootstrap Claude |
-| Muse | Anthropic-compatible secondo setup esistente | da verificare | bootstrap Claude |
-| MiMo | Anthropic-compatible; endpoint/region dipendenti dal piano | da verificare | bootstrap Claude |
-| OpenCode Go | solo famiglie servite via route Anthropic per Claude | provider/route Codex da verificare | parziale |
+| Anthropic/Claude | native | n/a as a project custom provider | Claude supported |
+| DeepSeek | Anthropic API | Responses API | **verified 24 September** |
+| GLM / Z.ai | Anthropic-compatible | Responses to be verified | Claude bootstrap |
+| Muse | Anthropic-compatible per existing setup | to be verified | Claude bootstrap |
+| MiMo | Anthropic-compatible; plan-dependent endpoint/region | to be verified | Claude bootstrap |
+| OpenCode Go | only families served via the Anthropic route for Claude | Codex provider/route to be verified | partial |
 
 ### 19.1 MiMo
 
-Il documento precedente aveva verificato una distinzione importante: endpoint pay-as-you-go e Token
-Plan usano formati di chiave diversi e il Token Plan è regionale. Il nuovo catalogo deve quindi
-rappresentare **variant/region** come metadata del transport, non creare tre provider con la stessa
-label se l'unica differenza è la regione.
+The previous document had verified an important distinction: the pay-as-you-go endpoint and the Token
+Plan use different key formats, and the Token Plan is regional. The new catalog must therefore
+represent **variant/region** as transport metadata, not create three providers with the same
+label if the only difference is the region.
 
-La discovery deve essere fatta dall'endpoint modelli documentato dal provider, non da una lista
-copiata nel bundle quando è disponibile una fonte strutturata.
+Discovery must be done from the models endpoint documented by the provider, not from a list
+copied into the bundle when a structured source is available.
 
 ### 19.2 OpenCode Go
 
-Il vecchio disegno filtrava i modelli in base al protocollo: Claude Code può usare solo le famiglie
-che Go serve sulla route Anthropic. Questa regola diventa generale:
+The old design filtered models by protocol: Claude Code can only use the families
+that Go serves on the Anthropic route. This rule becomes general:
 
 ```text
-modello disponibile sul provider
-∩ transport compatibile col runtime
-∩ entitlement/account corrente
-= riga mostrata nel picker
+model available on the provider
+∩ transport compatible with the runtime
+∩ current entitlement/account
+= row shown in the picker
 ```
 
-Non mostrare “grigio” un modello che richiederebbe un traduttore di protocollo: non è quasi
-supportato, è un altro prodotto.
+Do not show “greyed out” a model that would require a protocol translator: it is not almost
+supported, it is another product.
 
 ---
 
-## 20. Wizard “Aggiungi provider / modello”
+## 20. “Add provider / model” wizard
 
-Questa feature resta essenziale perché il live catalog non coprirà ogni gateway privato o provider
-nuovo al giorno zero.
+This feature remains essential because the live catalog will not cover every private gateway or new
+provider on day zero.
 
-### 20.1 Entrate
+### 20.1 Entry points
 
-- `CCR: Aggiungi chiave` — provider noto, credenziale mancante;
-- `CCR: Aggiungi modello` — model ID non presente;
-- `CCR: Aggiungi provider` — endpoint nuovo/private gateway.
+- `Kaji: Add key` — known provider, missing credential;
+- `Kaji: Add model` — model ID not present;
+- `Kaji: Add provider` — new endpoint/private gateway.
 
-### 20.2 Passo 1 — Runtime e provider
+### 20.2 Step 1 — Runtime and provider
 
-Prima si sceglie dove deve funzionare:
+First you choose where it must work:
 
 ```text
 Runtime
 ○ Claude Code
 ○ Codex
-○ Entrambi, se il provider ha due transport compatibili
+○ Both, if the provider has two compatible transports
 ```
 
-Poi provider noto o `Nuovo provider…`.
+Then a known provider or `New provider…`.
 
-Per un provider nuovo si chiedono **solo metadata non segreti**:
+For a new provider **only non-secret metadata** is asked:
 
 - label;
-- transport/protocollo per runtime (`anthropic`, `responses`);
+- transport/protocol per runtime (`anthropic`, `responses`);
 - base URL;
-- auth style o meccanismo Codex;
-- eventuale `/models` / model catalog endpoint;
-- eventuale pagina pricing ufficiale.
+- auth style or Codex mechanism;
+- any `/models` / model catalog endpoint;
+- any official pricing page.
 
-### 20.3 Passo 2 — Model discovery
+### 20.3 Step 2 — Model discovery
 
-Se esiste una source strutturata, scaricare l'elenco e far scegliere. Se non esiste:
+If a structured source exists, download the list and let the user choose. If it does not:
 
 - model ID;
 - label;
-- context window se noto;
-- modality/capability se documentata;
-- effort support se documentato.
+- context window if known;
+- modality/capability if documented;
+- effort support if documented.
 
-Un campo non noto resta “sconosciuto”; non chiedere all'utente di indovinare `vision=false`.
+An unknown field stays “unknown”; do not ask the user to guess `vision=false`.
 
-### 20.4 Passo 3 — Credenziale
+### 20.4 Step 3 — Credential
 
-PasswordInput solo quando l'estensione deve possedere la chiave. Se il runtime è già autenticato o
-il provider usa una env var esterna, mostrare `Usa autenticazione esistente`.
+PasswordInput only when the extension must own the key. If the runtime is already authenticated or
+the provider uses an external env var, show `Use existing authentication`.
 
-### 20.5 Passo 4 — Verifica a due stadi
+### 20.5 Step 4 — Two-stage verification
 
-1. **auth/endpoint:** la credenziale arriva al provider;
-2. **model/runtime:** l'ID scelto risponde sul transport effettivamente usato da Claude/Codex.
+1. **auth/endpoint:** the credential reaches the provider;
+2. **model/runtime:** the chosen ID responds on the transport actually used by Claude/Codex.
 
-Una chiave valida non basta a dichiarare “configurato”: un model ID sbagliato è il fallimento più
-facile da rimandare al primo prompt dell'utente.
+A valid key is not enough to declare “configured”: a wrong model ID is the failure most
+easily deferred to the user's first prompt.
 
-### 20.6 Passo 5 — Materializzazione runtime
+### 20.6 Step 5 — Runtime materialization
 
 Claude:
 
-- project selection nei settings locali;
-- apiKeyHelper se extension-managed;
-- picker row/native discovery quando appropriato;
-- side-query model mapping solo se richiesto.
+- project selection in the local settings;
+- apiKeyHelper if extension-managed;
+- picker row/native discovery when appropriate;
+- side-query model mapping only if required.
 
 Codex:
 
-- project `model`/effort quando possibile;
-- provider definition solo user-level;
-- auth command/env secondo ownership;
-- model catalog compatibile col client quando necessario.
+- project `model`/effort when possible;
+- provider definition user-level only;
+- auth command/env according to ownership;
+- model catalog compatible with the client when necessary.
 
-Il wizard presenta esplicitamente lo scope prima di salvare:
+The wizard explicitly presents the scope before saving:
 
 ```text
-Modello: questo progetto
-Provider Codex: tutta la macchina / profilo Codex
-Chiave: storage utente, mai repository
+Model: this project
+Codex provider: the whole machine / Codex profile
+Key: user storage, never the repository
 ```
 
 ---
 
-## 21. Sincronizzazione con i picker nativi
+## 21. Synchronization with the native pickers
 
-Il picker CCR deve funzionare anche quando il picker nativo del runtime non sa ancora nulla del
-modello. La sincronizzazione nativa è comunque desiderabile.
+The Kaji picker must work even when the runtime's native picker does not yet know anything about the
+model. Native synchronization is still desirable.
 
 ### Claude Code
 
-- usare righe `modelPicker` possedute/tracciate quando è il meccanismo più stabile;
-- `ANTHROPIC_CUSTOM_MODEL_OPTION` resta utile per un singolo modello project-scoped;
-- la documentazione corrente espone anche gateway model discovery da `/v1/models` quando la relativa
-  opzione è abilitata: preferire discovery nativa quando il provider/gateway rientra davvero in quel
-  contratto, senza forzarla su endpoint incompatibili;
-- non usare `replaceBuiltInOptions` salvo richiesta esplicita: il default è append/non distruttivo.
+- use owned/tracked `modelPicker` rows when that is the most stable mechanism;
+- `ANTHROPIC_CUSTOM_MODEL_OPTION` remains useful for a single project-scoped model;
+- the current documentation also exposes gateway model discovery from `/v1/models` when the related
+  option is enabled: prefer native discovery when the provider/gateway truly falls within that
+  contract, without forcing it on incompatible endpoints;
+- do not use `replaceBuiltInOptions` unless explicitly requested: the default is append/non-destructive.
 
 ### Codex
 
-- per i modelli OpenAI/ChatGPT usare il model catalog del client (`model/list`), non una copia nostra;
-- per provider custom seguire il formato supportato dal client installato e la configurazione
-  ufficiale del provider;
-- non iniettare il `models.json` di `openai/codex@main` in un Codex vecchio: schema e client possono
-  divergere;
-- se il native picker non è sincronizzabile in sicurezza, **CCR mostra comunque il modello nel proprio
-  picker** e segnala `native picker: non sincronizzato`.
+- for OpenAI/ChatGPT models use the client's model catalog (`model/list`), not our own copy;
+- for custom providers follow the format supported by the installed client and the provider's official
+  configuration;
+- do not inject the `models.json` of `openai/codex@main` into an old Codex: schema and client may
+  diverge;
+- if the native picker cannot be synchronized safely, **Kaji still shows the model in its own
+  picker** and reports `native picker: not synchronized`.
 
-Questa distinzione evita che una feature cosmetica blocchi l'auto-discovery principale.
+This distinction prevents a cosmetic feature from blocking the main auto-discovery.
 
 ---
 
-## 22. Status bar: stati e priorità visiva
+## 22. Status bar: states and visual priority
 
-La riga deve restare leggibile. Ordine di priorità:
+The line must stay readable. Priority order:
 
-1. stato problematico;
+1. problem state;
 2. runtime/model;
 3. effort;
-4. una sola metrica dinamica scelta dall'utente.
+4. a single dynamic metric chosen by the user.
 
-Esempi:
+Examples:
 
-| Stato | Esempio |
+| State | Example |
 |---|---|
-| attivo | `◉ Claude · DeepSeek Flash · high · 42 tok/s` |
+| active | `◉ Claude · DeepSeek Flash · high · 42 tok/s` |
 | Codex | `◉ Codex · GPT-6 Astra · xhigh · 118K/272K` |
-| chiave mancante | `$(key) DeepSeek · chiave mancante` |
-| desired ≠ live | `$(debug-restart) GLM 5.3 · da riavviare` |
-| permission | `$(bell) Codex · attende permesso` |
+| missing key | `$(key) DeepSeek · missing key` |
+| desired ≠ live | `$(debug-restart) GLM 5.3 · restart needed` |
+| permission | `$(bell) Codex · awaiting permission` |
 | working | `$(sync~spin) Claude · DeepSeek Flash` |
-| errore | `$(error) Agent Router` |
-| nessun override | `$(circle-outline) Claude · subscription` |
+| error | `$(error) Agent Router` |
+| no override | `$(circle-outline) Claude · subscription` |
 
-Per quota/costo la riga può essere configurata:
+For quota/cost the line can be configured:
 
 ```text
 ... · $0.18
@@ -1395,75 +1407,75 @@ Per quota/costo la riga può essere configurata:
 ... · cache 91%
 ```
 
-ma il default non supera quattro segmenti. Tutto il resto va nel tooltip.
+but the default does not exceed four segments. Everything else goes in the tooltip.
 
 ---
 
-## 23. Credenziali: dettaglio operativo
+## 23. Credentials: operational detail
 
 ### 23.1 Claude extension-managed
 
-Il vecchio principio resta: `SecretStorage` è canonico, un helper esterno deve leggere una
-materializzazione in chiaro perché il processo Claude non può interrogare lo storage cifrato
-VS Code.
+The old principle stands: `SecretStorage` is canonical, an external helper must read a
+plain-text materialization because the Claude process cannot query VS Code's encrypted
+storage.
 
-Invarianti:
+Invariants:
 
-- file fuori dal repo;
-- permessi più stretti possibile;
-- helper senza rete;
-- nessun `ANTHROPIC_AUTH_TOKEN` residuo che abbia precedenza e zittisca l'helper;
-- riconciliazione all'attivazione;
-- delete esplicito quando si rimuove una chiave dal prodotto.
+- file outside the repo;
+- permissions as tight as possible;
+- helper without network;
+- no leftover `ANTHROPIC_AUTH_TOKEN` taking precedence and silencing the helper;
+- reconciliation on activation;
+- explicit delete when a key is removed from the product.
 
 ### 23.2 Codex
 
-Non imporre SecretStorage se Codex ha già auth funzionante. L'estensione deve sapere **chi possiede la
-credenziale**, altrimenti rischia di creare due fonti di verità.
+Do not impose SecretStorage if Codex already has working auth. The extension must know **who owns the
+credential**, otherwise it risks creating two sources of truth.
 
-Per provider custom che l'utente vuole gestire da CCR, il command-backed auth di Codex permette di
-riusare lo stesso key-helper. Questo va provato end-to-end con il client installato prima di
-promuoverlo a default.
+For custom providers the user wants to manage from Kaji, Codex's command-backed auth allows
+reusing the same key-helper. This must be tested end-to-end with the installed client before
+promoting it to default.
 
-### 23.3 Verifica
+### 23.3 Verification
 
-Salvare una nuova chiave senza provarla è vietato dal wizard, salvo `Salva senza verificare` esplicito
-per endpoint offline/aziendale. In quel caso lo stato è `unverified`, non verde.
-
----
-
-## 24. Prove ereditate dal vecchio piano che restano aperte
-
-Il nuovo M0 le raggruppa, ma queste domande specifiche non vanno perse:
-
-- rimuovere un blocco Claude `env` basta a tornare alla subscription o serve un valore vuoto in
-  qualche build/provider?
-- `claudeCode.environmentVariables` sulla macchina può avere precedenza e interferire?
-- il pannello Claude esegue statusLine con la stessa semantica della CLI?
-- `cost.total_api_duration_ms` cresce in modo abbastanza stabile per il throughput modello?
-- `modelPicker` custom appare nel pannello VS Code, non solo nella CLI?
-- `behavesAs`/capability metadata produce effort/capability sensati per ID terzi?
-- `modelSettings` e gli effort per modello rispettano il merge/scope documentato dal build corrente?
-- ogni provider terzo espone balance/credit in modo strutturato o no?
-- il wrapper di processo Claude funziona sul Windows build reale?
-- il provider custom Codex configurato user-level è rispettato allo stesso modo da CLI e IDE?
-- il native Codex model picker segue il custom provider senza lasciare model/provider incoerenti?
-
-Ogni risposta aggiorna il documento; niente codice “perché probabilmente funziona”.
+Saving a new key without testing it is forbidden by the wizard, except for an explicit `Save without verifying`
+for offline/corporate endpoints. In that case the state is `unverified`, not green.
 
 ---
 
-## 25. Perché queste feature prima dello sviluppo
+## 24. Tests inherited from the old plan that remain open
 
-L'espansione non deve trasformarsi in scope creep. Le feature promosse ora hanno una proprietà in
-comune: **cambiano i confini dei dati**, quindi costerebbero molto di più se aggiunte dopo.
+The new M0 groups them, but these specific questions must not be lost:
 
-- Codex cambia il confine `runtime`.
-- Live catalog cambia il confine `catalogo statico vs sorgente`.
-- Pricing cambia il modello dati dell'usage.
-- Subscription limits impedisce di hardcodare `5h/7d`.
-- Change detection richiede snapshot/history fin dall'inizio.
-- Subagent/notifications richiedono un event model comune.
+- is removing a Claude `env` block enough to go back to the subscription, or is an empty value needed in
+  some build/provider?
+- can `claudeCode.environmentVariables` on the machine take precedence and interfere?
+- does the Claude panel run statusLine with the same semantics as the CLI?
+- does `cost.total_api_duration_ms` grow stably enough for model throughput?
+- does a custom `modelPicker` appear in the VS Code panel, not only in the CLI?
+- does `behavesAs`/capability metadata produce sensible effort/capability for third-party IDs?
+- do `modelSettings` and per-model efforts honor the merge/scope documented by the current build?
+- does each third-party provider expose balance/credit in a structured way or not?
+- does the Claude process wrapper work on the real Windows build?
+- is the user-level Codex custom provider honored in the same way by CLI and IDE?
+- does the native Codex model picker follow the custom provider without leaving model/provider inconsistent?
 
-Il session browser invece può aspettare perché usa dati già raccolti senza cambiare i confini del
-core.
+Every answer updates the document; no code “because it probably works”.
+
+---
+
+## 25. Why these features before development
+
+The expansion must not turn into scope creep. The features promoted now share one
+property: **they change the data boundaries**, so they would cost much more if added later.
+
+- Codex changes the `runtime` boundary.
+- Live catalog changes the `static catalog vs source` boundary.
+- Pricing changes the usage data model.
+- Subscription limits prevent hardcoding `5h/7d`.
+- Change detection requires snapshot/history from the start.
+- Subagent/notifications require a common event model.
+
+The session browser, on the other hand, can wait because it uses data already collected without changing the
+core's boundaries.

@@ -399,10 +399,9 @@ aggiornamento comandato e tutto ciò che non è una skill.
 >
 > **Tornata il 23 settembre 2026** come `.docs/tools/check-topology.mjs`: Node senza
 > dipendenze, radice passata per argomento, esito JSON contato. Verifica proprio le tre proprietà
-> sopra. Prova eseguita il 23 settembre 2026: `node .docs/tools/check-topology.mjs
-> plugins/daiku` → `{"checks":296,"passed":296,"failed":[]}`, uscita `0`. *(Erano 283 lo stesso
-> giorno, prima che il valutatore deterministico crescesse la prosa dei contratti: il totale conta
-> i rimandi di sezione, e citarne di nuovi alza il numero.)*
+> sopra. Prova eseguita il 25 settembre 2026: `node .docs/tools/check-topology.mjs
+> plugins/daiku` → `{"checks":303,"passed":303,"failed":[]}`, uscita `0`. Il totale conta anche i
+> rimandi di sezione, quindi cresce ogni volta che un contratto ne cita uno nuovo.
 >
 > Vive fuori dal pacchetto, in `.docs/tools/`, così non viaggia con ciò che si pubblica.
 
@@ -503,7 +502,7 @@ plugins/                               ← radice del repository pubblico
    │  ├─ orchestration.md                 trasportati da entrambi gli host (§3.3)
    │  └─ project-contract.md
    ├─ architect/architect.mjs          ← il valutatore deterministico: possiede l'ordine della
-   │                                      catena e risponde alle sei domande, con il suo banco
+   │                                      catena e risponde alle nove domande, con il suo banco
    ├─ schemas/blocks.json              ← la forma verificabile dei blocchi di ritorno
    ├─ agents/finder.md                 ← l'unico ruolo; su Codex lo rende `sync-host` in
    │                                      `.codex/agents/*.toml` (§3.6)

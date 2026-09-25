@@ -46,7 +46,8 @@ node <package root>/architect/architect.mjs <package root>
 ```
 
 It reads **one JSON object on stdin** and writes **one JSON object on stdout**; it starts no
-process, talks to no model and opens no file. What it answers:
+process, talks to no model and opens no file of the project — only the package's own
+`schemas/blocks.json`, for the `block` question. What it answers here:
 
 | Question | Where it is used here |
 |---|---|
@@ -62,10 +63,15 @@ entry point) and `present` (the artefacts already on disk) for `order` and `resu
 `resumption` (it says whether the cycle had already closed), the `ledger` (or `null`) for `order`,
 `closing` and `resumption` — for `order` a ledger that exists and is not passed turns into a fork
 for the owner where a verdict was due — and `step` (`{"node": …, "block": …|null, "attempt": 1|2}`)
-for `propagation`. These are the six questions it answers; the two this file does not use — `closing`
-and `resumption` — are the ones `skills/review/SKILL.md` § *Baseline and ledger* and § *Closing*
-ask, with the same keys. A key a question needs and does not find is a loud failure, never a
-guessed value.
+for `propagation`. Three more questions read their own keys: `round` the `ledger`, `rounds_cap`
+(an integer or `null`) and, when asked again, `merit` (`"continue"` or `"stop"`); `layers` the
+`layers` of the opened policies and the `added` lines of the scope; `block` the block's `name` in
+`schemas/blocks.json` and the `block` itself. These are the nine questions it answers; the five this
+file does not use are asked by the contracts that need them, with the same keys — `closing`,
+`resumption` and `round` by `skills/review/SKILL.md` (§ *Closing*, § *Baseline and ledger*, § *When
+to run another round*), `layers` by `skills/arch-check/SKILL.md` § *How you verify*, `block` by
+`skills/new-feature/SKILL.md` § *7. Decisions are asked in chat*. A key a question needs and does
+not find is a loud failure, never a guessed value.
 
 **The root is a path relative to the package** — the folder containing `skills/`, `contracts/` and
 `architect/`, **two levels above this file** — in the same form `init` and `sync-host` already use:
@@ -79,8 +85,9 @@ instruction, not a fact of the harness. Getting it wrong is contained: the comma
 and it is visible, instead of starting and looking in the wrong place.
 
 **The block it returns** is the one `schemas/blocks.json` § *architect* declares, and that is its
-only copy: this file cites it and does not restate it. It always carries all nine fields —
-`ok`, `verdict`, `remaining`, `resume_from`, `blockers`, `retry`, `fallback`, `readings`, `detail` —
+only copy: this file cites it and does not restate it. It always carries all ten fields —
+`ok`, `verdict`, `remaining`, `resume_from`, `blockers`, `retry`, `fallback`, `readings`,
+`violations`, `detail` —
 with `null` or empty where the question does not use them.
 
 **The fields it deliberately ignores** — which §4 point 2 of `contracts/orchestration.md` requires of

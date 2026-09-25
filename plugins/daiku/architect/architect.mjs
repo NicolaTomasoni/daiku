@@ -9,8 +9,10 @@
  * implicit `false`, and there is no fallback `process.exit(0)` anywhere below.
  *
  * It does three things and nothing else: it starts no process, it talks to no model
- * and, **in verdict mode, it opens no file** — everything it needs to know about the
- * disk the agent passes it, because the agent already holds it. The price is
+ * and, **in verdict mode, it opens no file of the project** — everything it needs to
+ * know about the disk the agent passes it, because the agent already holds it. The one
+ * file it does open is the package's own `schemas/blocks.json`, and only for the
+ * `block` question: that is not the project's disk, it is the contract it checks against. The price is
  * declared: a wrong list gives a wrong verdict. It is accepted because a list passed
  * in the clear *ends up in the outcome* and can be inspected, while a `stat` made
  * inside a process leaves no trace.
@@ -27,10 +29,10 @@
  *
  * **The root always arrives as an argument**, in both modes, and is never derived
  * from this file's position on disk: a program that deduces its own root is correct
- * until the first move of the tree and wrong in silence. Verdict mode does not read the root;
- * it requires it all the same, because a single invocation form is one thing to get
- * wrong once. It is the bench that uses it, to read the contracts it compares itself
- * against.
+ * until the first move of the tree and wrong in silence. Verdict mode reads the root only
+ * for the `block` question; it requires it on every question all the same, because a
+ * single invocation form is one thing to get wrong once. The bench uses it to read the
+ * contracts it compares itself against.
  *
  * The prose of what it answers and the block it returns live in the skill hosting it —
  * `skills/develop-feature/SKILL.md § The evaluator` — because the evaluator has no
@@ -43,7 +45,7 @@
  *
  * **Fields of the blocks it consumes that it deliberately does not read**, declared as
  * §4 point 2 of `contracts/orchestration.md` requires, each standing on the road of
- * none of the six questions: `rounds` as a count (the rounds themselves live in the
+ * none of the nine questions: `rounds` as a count (the rounds themselves live in the
  * ledger, and the ledger is what this program reads), `disciplines_round_1`,
  * `independence`, `applied`, `severe`, `on_previous_fix`, `discarded`, `coverage` **of
  * the review block** (the ledger's is read, by the resumption and the readable-ledger
@@ -55,7 +57,7 @@
  *
  * **A case the bench does not cover is a delivery that stops**, not a wrong verdict:
  * the verdict binds, and the bench is the only defence. That is the reason the bench
- * below counts one proof for every row of every table the six questions copy, every
+ * below counts one proof for every row of every table the nine questions copy, every
  * entry point, every case of the ambiguity rule, and every row of the topology table.
  */
 
@@ -166,6 +168,10 @@ const MUTUALLY_EXCLUSIVE = ['1. decision-doc.md', '5. review-report.md'];
 const GATES = ['green', 'red'];
 const EXITS = ['fixed-point', 'diminishing-returns', 'oscillation', 'rounds-truncated', 'rounds-exhausted'];
 const DECISIONS = ['GREEN_COMMITTED', 'GREEN_WITH_POST_DECISIONS', 'BLOCKED_NO_COMMIT'];
+const MERITS = ['continue', 'stop'];
+
+/** The guardrail `skills/review/SKILL.md` § *Exits* sets when no `--rounds N` was passed. */
+const ROUNDS_GUARDRAIL = 6;
 
 /* ------------------------------------------------------------------------- *
  * Input validation — it fails loudly, never an implicit false
@@ -236,7 +242,7 @@ function blockingItems(out) {
  * The answer block
  * ------------------------------------------------------------------------- */
 
-/** Every answer carries all nine fields; what a question does not use is `null` or empty. */
+/** Every answer carries all ten fields; what a question does not use is `null` or empty. */
 function block(fields) {
   return {
     ok: true,
@@ -247,6 +253,7 @@ function block(fields) {
     retry: null,
     fallback: null,
     readings: [],
+    violations: [],
     detail: '',
     ...fields,
   };
@@ -321,7 +328,7 @@ function incoherence(input, question) {
 }
 
 /* ------------------------------------------------------------------------- *
- * The six questions
+ * The nine questions
  * ------------------------------------------------------------------------- */
 
 /** Where in the chain the entry starts, cut at the furthest phase the artefacts prove. */
@@ -533,6 +540,310 @@ function askResumption(input) {
   });
 }
 
+/* ------------------------------------------------------------------------- *
+ * 7. The round verdict — `skills/review/SKILL.md` § *When to run another round*, § *Exits*
+ * ------------------------------------------------------------------------- */
+
+/** An anchor is compared as the ledger defines it: text normalised to single spaces. */
+function anchorOf(value) {
+  return typeof value === 'string' ? value.replace(/\s+/g, ' ').trim() : '';
+}
+
+function roundsOf(ledger) {
+  if (!ledger || typeof ledger !== 'object' || Array.isArray(ledger)) {
+    throw new BadInput('ledger is required: the ledger of this review, with the round just closed as its last');
+  }
+  const rounds = ledger.rounds;
+  if (!Array.isArray(rounds) || !rounds.length) {
+    throw new BadInput('ledger.rounds is required and must hold at least the round just closed');
+  }
+  rounds.forEach((round, index) => {
+    if (!round || typeof round !== 'object') throw new BadInput(`ledger.rounds[${index}] is not a round`);
+    if (round.n !== index + 1) {
+      throw new BadInput(`ledger.rounds[${index}].n must be ${index + 1}, got ${JSON.stringify(round.n)}: rounds are numbered in order, without gaps`);
+    }
+    for (const key of ['applied', 'oscillation']) {
+      if (!Array.isArray(round[key])) throw new BadInput(`ledger.rounds[${index}].${key} is required and must be an array`);
+    }
+    round.applied.forEach((fix, at) => {
+      if (!fix || !nonEmpty(fix.file) || typeof fix.symbol !== 'string' || !nonEmpty(fix.anchor)) {
+        throw new BadInput(`ledger.rounds[${index}].applied[${at}] needs file, symbol and anchor: a fix is identified by them`);
+      }
+      if (index === rounds.length - 1 && (typeof fix.severe !== 'boolean' || typeof fix.on_previous_fix !== 'boolean')) {
+        throw new BadInput(`ledger.rounds[${index}].applied[${at}] needs severe and on_previous_fix as booleans: the verdict of the round reads them`);
+      }
+    });
+  });
+  return rounds;
+}
+
+/**
+ * The oscillation, measured on the ledger and never taken from the applier's word: a fix of
+ * the last round — applied, or suppressed by the applier and listed in its `oscillation`
+ * field — whose anchor coincides with one recorded for the same `file` and `symbol` in a
+ * round earlier than the one of the last fix on that site.
+ */
+function oscillationsOf(rounds) {
+  const last = rounds.length - 1;
+  const candidates = [
+    ...rounds[last].applied.map((fix) => ({ file: fix.file, symbol: fix.symbol, anchor: anchorOf(fix.anchor) })),
+    ...rounds[last].oscillation.map((item) => ({ file: item && item.file, symbol: item && item.symbol, anchor: anchorOf(item && item.current_anchor) })),
+  ];
+  const found = [];
+  for (const candidate of candidates) {
+    if (!candidate.anchor) continue;
+    const prior = [];
+    rounds.slice(0, last).forEach((round, index) => {
+      for (const fix of round.applied) {
+        if (fix.file === candidate.file && fix.symbol === candidate.symbol) prior.push({ index, anchor: anchorOf(fix.anchor) });
+      }
+    });
+    if (!prior.length) continue;
+    const lastFixRound = Math.max(...prior.map((fix) => fix.index));
+    if (prior.some((fix) => fix.index < lastFixRound && fix.anchor === candidate.anchor)) {
+      found.push(`${candidate.file} ${candidate.symbol}: "${candidate.anchor}"`);
+    }
+  }
+  return [...new Set(found)];
+}
+
+function askRound(input) {
+  const rounds = roundsOf(input.ledger);
+  if (!Object.prototype.hasOwnProperty.call(input, 'rounds_cap')) {
+    throw new BadInput('rounds_cap is required: the N of an explicit --rounds N, or null');
+  }
+  const cap = input.rounds_cap;
+  if (cap !== null && !(Number.isInteger(cap) && cap > 0)) {
+    throw new BadInput(`rounds_cap must be null or a positive integer, got ${JSON.stringify(cap)}`);
+  }
+  const merit = input.merit === undefined ? null : input.merit;
+  if (merit !== null && !MERITS.includes(merit)) {
+    throw new BadInput(`merit must be null or one of ${MERITS.join('|')}, got ${JSON.stringify(merit)}`);
+  }
+  const n = rounds.length;
+  const current = rounds[n - 1];
+  const declared = current.oscillation.length;
+
+  // Rule 0 comes before all: a suppressed oscillating fix drops the applied to zero, and
+  // rule 1 would otherwise call a bouncing cycle a fixed point.
+  const oscillations = oscillationsOf(rounds);
+  if (oscillations.length) {
+    return block({
+      verdict: 'oscillation',
+      blockers: oscillations,
+      detail:
+        `rule 0: round ${n} brings back an anchor a later fix on the same site had replaced — ${oscillations.length} ` +
+        `measured on the ledger, ${declared} declared by the applier. Exit oscillation.`,
+    });
+  }
+  const divergence = declared ? ` The applier declared ${declared} oscillations the ledger does not confirm: annotate the deviation.` : '';
+  if (!current.applied.length) {
+    return block({ verdict: 'fixed-point', detail: `rule 1: round ${n} applied zero fixes. Exit fixed-point.${divergence}` });
+  }
+
+  const severe = current.applied.filter((fix) => fix.severe).length;
+  const regressing = current.applied.filter((fix) => fix.on_previous_fix).length;
+  let why;
+  if (severe >= 3) why = `rule 2: ${severe} severe fixes in round ${n}`;
+  else if (regressing) why = `rule 3: ${regressing} fixes rewrite a previous fix (on_previous_fix)`;
+  else if (merit === null) {
+    return block({
+      verdict: 'merit',
+      detail:
+        `rule 3: round ${n} applied ${current.applied.length} fixes, ${severe} severe, none on a previous fix — the ` +
+        'mechanical rules do not decide. Weigh what was applied, write the motivated line in the ledger, and ask again ' +
+        `with merit "continue" or "stop".${divergence}`,
+    });
+  } else if (merit === 'stop') {
+    return block({ verdict: 'diminishing-returns', detail: `rule 3: merit verdict stop on round ${n}. Exit diminishing-returns.${divergence}` });
+  } else why = `rule 3: merit verdict continue on round ${n}`;
+
+  if (cap !== null && n >= cap) {
+    return block({ verdict: 'rounds-truncated', detail: `${why}, but the explicit cap of ${cap} rounds is reached. Exit rounds-truncated.${divergence}` });
+  }
+  if (cap === null && n >= ROUNDS_GUARDRAIL) {
+    return block({
+      verdict: 'rounds-exhausted',
+      detail: `${why}, but the guardrail of ${ROUNDS_GUARDRAIL} rounds is reached without an explicit cap. Exit rounds-exhausted: an anomaly, not a budget.${divergence}`,
+    });
+  }
+  return block({ verdict: 'continue', detail: `${why}: another round.${divergence}` });
+}
+
+/* ------------------------------------------------------------------------- *
+ * 8. The `layers:` check — `skills/arch-check/SKILL.md` § *How you verify*
+ * ------------------------------------------------------------------------- */
+
+/** The pattern form of `paths` and `folders`: `**` crosses folders, `*` and `?` do not. */
+function globToRegExp(pattern) {
+  let out = '';
+  for (let i = 0; i < pattern.length; i += 1) {
+    const c = pattern[i];
+    if (c === '*' && pattern[i + 1] === '*') {
+      i += 1;
+      if (pattern[i + 1] === '/') {
+        i += 1;
+        out += '(?:.*/)?';
+      } else out += '.*';
+    } else if (c === '*') out += '[^/]*';
+    else if (c === '?') out += '[^/]';
+    else out += c.replace(/[.+^${}()|[\]\\]/g, '\\$&');
+  }
+  return new RegExp(`^${out}$`);
+}
+
+/** A `deny_imports` fragment is a path substring: trailing wildcards say "under here", nothing more. */
+function fragmentOf(value) {
+  return typeof value === 'string' ? value.split('\\').join('/').replace(/(\/?\*+)+$/, '').trim() : '';
+}
+
+function slashed(path) {
+  return path.split('\\').join('/');
+}
+
+function askLayers(input) {
+  if (!Array.isArray(input.layers)) {
+    throw new BadInput('layers is required: the layers: blocks of the opened policies, each with its policy file');
+  }
+  if (!Array.isArray(input.added)) {
+    throw new BadInput('added is required: the added lines of the scope, as {"file", "line", "text"}');
+  }
+  input.added.forEach((row, at) => {
+    if (!row || !nonEmpty(row.file) || !Number.isInteger(row.line) || typeof row.text !== 'string') {
+      throw new BadInput(`added[${at}] must be {"file": <path>, "line": <integer>, "text": <string>}`);
+    }
+  });
+  const malformed = [];
+  const violations = [];
+  input.layers.forEach((layer, at) => {
+    const label = layer && nonEmpty(layer.policy) ? `${layer.policy}#${nonEmpty(layer.name) ? layer.name : '?'}` : `layers[${at}]`;
+    const folders = layer && Array.isArray(layer.folders) ? layer.folders.filter(nonEmpty) : [];
+    const fragments = layer && Array.isArray(layer.deny_imports) ? layer.deny_imports.map(fragmentOf).filter(Boolean) : [];
+    if (!layer || !nonEmpty(layer.policy) || !nonEmpty(layer.name) || !folders.length || !fragments.length) {
+      malformed.push(`${label}: malformed — policy, name, folders and deny_imports are all required; verify its prose instead`);
+      return;
+    }
+    const scopes = folders.map((folder) => globToRegExp(slashed(folder)));
+    for (const row of input.added) {
+      const file = slashed(row.file);
+      if (!scopes.some((scope) => scope.test(file))) continue;
+      const fragment = fragments.find((candidate) => row.text.includes(candidate));
+      if (fragment) violations.push({ file, line: row.line, policy: layer.policy, layer: layer.name, fragment, text: row.text });
+    }
+  });
+  return block({
+    verdict: violations.length ? 'violations' : 'clean',
+    blockers: malformed,
+    violations,
+    detail:
+      `${violations.length} added lines carry a fragment their layer denies` +
+      (malformed.length ? `; ${malformed.length} layers are malformed and fall back to the prose.` : '.'),
+  });
+}
+
+/* ------------------------------------------------------------------------- *
+ * 9. The shape of a returned block — `schemas/blocks.json`, plus what its prose adds
+ * ------------------------------------------------------------------------- */
+
+function schemaOf(root, name) {
+  let schema;
+  try {
+    schema = JSON.parse(readFileSync(join(root, 'schemas', 'blocks.json'), 'utf-8'));
+  } catch (error) {
+    throw new BadInput(`schemas/blocks.json cannot be read under the root ${JSON.stringify(root)}: ${error.message}`);
+  }
+  const entry = schema.blocks && schema.blocks[name];
+  if (!entry) throw new BadInput(`unknown block ${JSON.stringify(name)} — it is one of ${Object.keys(schema.blocks || {}).join(', ')}`);
+  return entry;
+}
+
+/** The values at a dotted path; an array on the way is walked item by item. */
+function valuesAt(value, path) {
+  let current = [value];
+  for (const key of path.split('.')) {
+    current = current
+      .flatMap((item) => (Array.isArray(item) ? item : [item]))
+      .filter((item) => item && typeof item === 'object')
+      .map((item) => item[key])
+      .filter((item) => item !== undefined);
+  }
+  return current.flatMap((item) => (Array.isArray(item) ? item : [item]));
+}
+
+/**
+ * What the prose of a producer says and `blocks.json` cannot: required keys and enums are
+ * data, an order of option ids is a rule. One entry per block whose prose carries one.
+ */
+const SHAPES = {
+  // skills/decision-doc/SKILL.md § The block you return, and skills/new-feature/SKILL.md § 7.
+  'decision-doc': (value) => {
+    const wrong = [];
+    if (value.stage === null) wrong.push('stage is null: it is strategic or technical');
+    // A missing key is already reported by the required list: only a present one is judged here.
+    for (const key of ['applied_fixes', 'incorporated', 'open_items']) {
+      if (key in value && !Array.isArray(value[key])) wrong.push(`${key} is not an array — with zero items it is []`);
+    }
+    if (!('decisions' in value) || value.decisions === null) return wrong;
+    if (!Array.isArray(value.decisions)) return [...wrong, 'decisions is neither an array nor null'];
+    value.decisions.forEach((decision, at) => {
+      const where = `decisions[${at}]`;
+      if (!decision || typeof decision !== 'object') {
+        wrong.push(`${where} is not a decision`);
+        return;
+      }
+      for (const key of ['title', 'problem', 'recommended_why']) {
+        if (!nonEmpty(decision[key])) wrong.push(`${where}.${key} is missing or empty`);
+      }
+      if (value.stage === 'technical' && decision.classification !== null) {
+        wrong.push(`${where}.classification must be null at the technical stage`);
+      }
+      if (value.stage === 'strategic' && decision.classification === null) {
+        wrong.push(`${where}.classification is null at the strategic stage`);
+      }
+      const options = decision.options;
+      if (!Array.isArray(options) || options.length < 2 || options.length > 4) {
+        wrong.push(`${where}.options must hold 2 to 4 options`);
+      } else {
+        options.forEach((option, index) => {
+          const id = 'ABCD'[index];
+          if (!option || option.id !== id) wrong.push(`${where}.options[${index}].id must be "${id}": A, B, C, D in order, no letter skipped`);
+          if (!option || !nonEmpty(option.text)) wrong.push(`${where}.options[${index}].text is missing or empty`);
+        });
+      }
+      if (decision.recommended_id !== 'A') wrong.push(`${where}.recommended_id must be "A", got ${JSON.stringify(decision.recommended_id)}`);
+    });
+    return wrong;
+  },
+};
+
+function askBlock(input, root) {
+  if (!nonEmpty(input.name)) throw new BadInput('name is required: the block, as schemas/blocks.json names it');
+  if (!Object.prototype.hasOwnProperty.call(input, 'block')) {
+    throw new BadInput('block is required: what the step returned, parsed — null if nothing came back');
+  }
+  const schema = schemaOf(root, input.name);
+  const value = input.block;
+  let wrong;
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    wrong = [`the step did not return a JSON object (${value === null ? 'null' : Array.isArray(value) ? 'an array' : typeof value})`];
+  } else {
+    wrong = (schema.required || []).filter((key) => !(key in value)).map((key) => `${key} is missing`);
+    for (const [path, domain] of Object.entries(schema.enums || {})) {
+      for (const got of valuesAt(value, path)) {
+        if (got !== null && !domain.includes(got)) wrong.push(`${path} is ${JSON.stringify(got)}, outside ${domain.join('|')}`);
+      }
+    }
+    if (SHAPES[input.name]) wrong.push(...SHAPES[input.name](value));
+  }
+  return block({
+    verdict: wrong.length ? 'invalid' : 'valid',
+    blockers: wrong,
+    detail: wrong.length
+      ? `the ${input.name} block is malformed — ${wrong.length} faults. A malformed block counts as a block that did not come back.`
+      : `the ${input.name} block has the shape its producer declares.`,
+  });
+}
+
 const ASKS = {
   decision: askDecision,
   closing: askClosing,
@@ -540,6 +851,9 @@ const ASKS = {
   propagation: askPropagation,
   resumption: askResumption,
   order: askOrder,
+  round: askRound,
+  layers: askLayers,
+  block: askBlock,
 };
 
 /* ------------------------------------------------------------------------- *
@@ -623,6 +937,7 @@ function matches(got, expect) {
     if (key === 'blockers_length_at_least') return (got.blockers || []).length >= value;
     if (key === 'remaining_starts_with') return (got.remaining || [])[0] === value;
     if (key === 'readings_length') return (got.readings || []).length === value;
+    if (key === 'violations_length') return (got.violations || []).length === value;
     return JSON.stringify(got[key]) === JSON.stringify(value);
   });
 }
@@ -634,6 +949,26 @@ const GREEN = (extra = {}) => ({
   missing_disciplines: [],
   to_confirm: [],
   ...extra,
+});
+
+const FIX = (file, symbol, anchor, severe = false, onPreviousFix = false) => ({
+  file, symbol, anchor, line: 1, what: 'x', severe, on_previous_fix: onPreviousFix,
+});
+const ROUND = (applied, oscillation = []) => ({ applied, oscillation, discarded: [], to_confirm: [], missing_disciplines: [] });
+const LEDGER = (rounds) => ({
+  base: 'abc1234', item: 'x/y', rounds: rounds.map((round, index) => ({ n: index + 1, ...round })),
+  outcome: null, coverage: null, gate: null, gate_detail: null,
+});
+const LAYER = (extra = {}) => ({
+  policy: '.daiku/policies/server.md', name: 'api', folders: ['src/server/api/**'], deny_imports: ['src/server/db/**'], ...extra,
+});
+const DOC = (extra = {}, decision = {}) => ({
+  stage: 'technical', stage_why: 'x', file: 'x/1. decision-doc.md', verdict: null, applied_fixes: [],
+  decisions: [{
+    n: 1, title: 't', problem: 'p', classification: null,
+    options: [{ id: 'A', text: 'a' }, { id: 'B', text: 'b' }], recommended_id: 'A', recommended_why: 'w', ...decision,
+  }],
+  incorporated: [], open_items: [], ...extra,
 });
 
 /**
@@ -807,6 +1142,134 @@ const CASES = [
   { id: 'ambiguity:fork-both-readings-are-defensible', cites: { file: 'skills/review/SKILL.md', section: 'Baseline and ledger' },
     input: { question: 'order', entry: 'new-feature', present: ['4. review-notes.md'], ledger: null },
     expect: { verdict: 'stop', readings_length: 2 } },
+  /* --- question: round — skills/review/SKILL.md § When to run another round, § Exits --- */
+  { id: 'round:rule-1-fixed-point', cites: { file: 'skills/review/SKILL.md', section: 'When to run another round' },
+    input: { question: 'round', rounds_cap: null, ledger: LEDGER([ROUND([])]) },
+    expect: { verdict: 'fixed-point' } },
+  { id: 'round:rule-0-a-suppressed-fix-beats-the-fixed-point', cites: { file: 'skills/review/SKILL.md', section: 'When to run another round' },
+    input: { question: 'round', rounds_cap: null, ledger: LEDGER([ROUND([FIX('a.mjs', 'f', 'x = 1')]), ROUND([FIX('a.mjs', 'f', 'x = 2')]), ROUND([], [{ file: 'a.mjs', symbol: 'f', current_anchor: 'x = 1', previous_anchor: 'x = 2' }])]) },
+    expect: { verdict: 'oscillation', blockers_include: 'a.mjs f' } },
+  { id: 'round:rule-0-an-applied-fix-that-goes-back', cites: { file: 'skills/review/SKILL.md', section: 'Exits' },
+    input: { question: 'round', rounds_cap: null, ledger: LEDGER([ROUND([FIX('a.mjs', 'f', 'x = 1')]), ROUND([FIX('a.mjs', 'f', 'x = 2')]), ROUND([FIX('a.mjs', 'f', 'x = 1')])]) },
+    expect: { verdict: 'oscillation' } },
+  { id: 'round:rule-0-anchors-compare-normalised', cites: { file: 'skills/review/SKILL.md', section: 'How a fix is identified, between one round and the next' },
+    input: { question: 'round', rounds_cap: null, ledger: LEDGER([ROUND([FIX('a.mjs', 'f', 'x  =   1')]), ROUND([FIX('a.mjs', 'f', 'x = 2')]), ROUND([FIX('a.mjs', 'f', 'x = 1')])]) },
+    expect: { verdict: 'oscillation' } },
+  { id: 'round:rule-0-another-symbol-is-another-site', cites: { file: 'skills/review/SKILL.md', section: 'Exits' },
+    input: { question: 'round', rounds_cap: null, ledger: LEDGER([ROUND([FIX('a.mjs', 'f', 'x = 1')]), ROUND([FIX('a.mjs', 'f', 'x = 2')]), ROUND([FIX('a.mjs', 'g', 'x = 1')])]) },
+    expect: { verdict: 'merit' } },
+  { id: 'round:rule-0-the-same-anchor-with-no-fix-in-between-is-not-a-return', cites: { file: 'skills/review/SKILL.md', section: 'Exits' },
+    input: { question: 'round', rounds_cap: null, ledger: LEDGER([ROUND([FIX('a.mjs', 'f', 'x = 1')]), ROUND([FIX('b.mjs', 'g', 'y')]), ROUND([FIX('a.mjs', 'f', 'x = 1')])]) },
+    expect: { verdict: 'merit' } },
+  { id: 'round:rule-0-a-declared-oscillation-the-ledger-does-not-confirm', cites: { file: 'skills/review/SKILL.md', section: 'The two signals are verified, not accepted' },
+    input: { question: 'round', rounds_cap: null, ledger: LEDGER([ROUND([], [{ file: 'a.mjs', symbol: 'f', current_anchor: 'x = 1', previous_anchor: 'x = 2' }])]) },
+    expect: { verdict: 'fixed-point' } },
+  { id: 'round:rule-2-three-severe', cites: { file: 'skills/review/SKILL.md', section: 'When to run another round' },
+    input: { question: 'round', rounds_cap: null, ledger: LEDGER([ROUND([FIX('a.mjs', 'f', '1', true), FIX('a.mjs', 'g', '2', true), FIX('b.mjs', 'h', '3', true)])]) },
+    expect: { verdict: 'continue' } },
+  { id: 'round:rule-3-on-a-previous-fix', cites: { file: 'skills/review/SKILL.md', section: 'When to run another round' },
+    input: { question: 'round', rounds_cap: null, ledger: LEDGER([ROUND([FIX('a.mjs', 'f', '1')]), ROUND([FIX('a.mjs', 'f', '2', false, true)])]) },
+    expect: { verdict: 'continue' } },
+  { id: 'round:rule-3-merit-is-asked', cites: { file: 'skills/review/SKILL.md', section: 'When to run another round' },
+    input: { question: 'round', rounds_cap: null, ledger: LEDGER([ROUND([FIX('a.mjs', 'f', '1', true), FIX('a.mjs', 'g', '2')])]) },
+    expect: { verdict: 'merit' } },
+  { id: 'round:rule-3-merit-stop', cites: { file: 'skills/review/SKILL.md', section: 'Exits' },
+    input: { question: 'round', rounds_cap: null, merit: 'stop', ledger: LEDGER([ROUND([FIX('a.mjs', 'f', '1')])]) },
+    expect: { verdict: 'diminishing-returns' } },
+  { id: 'round:rule-3-merit-continue', cites: { file: 'skills/review/SKILL.md', section: 'When to run another round' },
+    input: { question: 'round', rounds_cap: null, merit: 'continue', ledger: LEDGER([ROUND([FIX('a.mjs', 'f', '1')])]) },
+    expect: { verdict: 'continue' } },
+  { id: 'round:merit-does-not-override-a-mechanical-rule', cites: { file: 'skills/review/SKILL.md', section: 'When to run another round' },
+    input: { question: 'round', rounds_cap: null, merit: 'stop', ledger: LEDGER([ROUND([FIX('a.mjs', 'f', '1', true), FIX('a.mjs', 'g', '2', true), FIX('b.mjs', 'h', '3', true)])]) },
+    expect: { verdict: 'continue' } },
+  { id: 'round:exit-rounds-truncated', cites: { file: 'skills/review/SKILL.md', section: 'Exits' },
+    input: { question: 'round', rounds_cap: 2, ledger: LEDGER([ROUND([FIX('a.mjs', 'f', '1')]), ROUND([FIX('a.mjs', 'f', '2', false, true)])]) },
+    expect: { verdict: 'rounds-truncated' } },
+  { id: 'round:exit-rounds-exhausted', cites: { file: 'skills/review/SKILL.md', section: 'Exits' },
+    input: { question: 'round', rounds_cap: null, ledger: LEDGER([1, 2, 3, 4, 5].map((i) => ROUND([FIX('a.mjs', `f${i}`, `${i}`)])).concat([ROUND([FIX('a.mjs', 'f5', '6', false, true)])])) },
+    expect: { verdict: 'rounds-exhausted' } },
+  { id: 'round:the-guardrail-does-not-stain-a-fixed-point', cites: { file: 'skills/review/SKILL.md', section: 'Exits' },
+    input: { question: 'round', rounds_cap: null, ledger: LEDGER([1, 2, 3, 4, 5].map((i) => ROUND([FIX('a.mjs', `f${i}`, `${i}`)])).concat([ROUND([])])) },
+    expect: { verdict: 'fixed-point' } },
+  { id: 'round:the-guardrail-does-not-stain-a-merit-stop', cites: { file: 'skills/review/SKILL.md', section: 'Exits' },
+    input: { question: 'round', rounds_cap: null, merit: 'stop', ledger: LEDGER([1, 2, 3, 4, 5, 6].map((i) => ROUND([FIX('a.mjs', `f${i}`, `${i}`)]))) },
+    expect: { verdict: 'diminishing-returns' } },
+  { id: 'round:a-cap-above-the-guardrail-replaces-it', cites: { file: 'skills/review/SKILL.md', section: 'Exits' },
+    input: { question: 'round', rounds_cap: 8, merit: 'continue', ledger: LEDGER([1, 2, 3, 4, 5, 6].map((i) => ROUND([FIX('a.mjs', `f${i}`, `${i}`)]))) },
+    expect: { verdict: 'continue' } },
+
+  /* --- question: layers — skills/arch-check/SKILL.md § How you verify --- */
+  { id: 'layers:a-denied-fragment-in-the-layer', cites: { file: 'skills/arch-check/SKILL.md', section: 'How you verify' },
+    input: { question: 'layers', layers: [LAYER()], added: [{ file: 'src/server/api/x.ts', line: 3, text: "import { q } from 'src/server/db/query';" }] },
+    expect: { verdict: 'violations', violations_length: 1 } },
+  { id: 'layers:a-clean-line', cites: { file: 'skills/arch-check/SKILL.md', section: 'How you verify' },
+    input: { question: 'layers', layers: [LAYER()], added: [{ file: 'src/server/api/x.ts', line: 3, text: "import { h } from 'src/server/api/helpers';" }] },
+    expect: { verdict: 'clean', violations_length: 0 } },
+  { id: 'layers:outside-the-layer-folders', cites: { file: 'skills/arch-check/SKILL.md', section: 'How you verify' },
+    input: { question: 'layers', layers: [LAYER()], added: [{ file: 'src/server/db/y.ts', line: 1, text: "import { q } from 'src/server/db/query';" }] },
+    expect: { verdict: 'clean' } },
+  { id: 'layers:a-bare-substring-counts-in-every-language', cites: { file: 'skills/arch-check/SKILL.md', section: 'How you verify' },
+    input: { question: 'layers', layers: [LAYER()], added: [{ file: 'src/server/api/x.py', line: 9, text: 'from src/server/db/query import q' }] },
+    expect: { verdict: 'violations', violations_length: 1 } },
+  { id: 'layers:backslashes-are-normalised', cites: { file: 'skills/arch-check/SKILL.md', section: 'How you verify' },
+    input: { question: 'layers', layers: [LAYER()], added: [{ file: 'src\\server\\api\\x.ts', line: 3, text: "require('src/server/db/query')" }] },
+    expect: { verdict: 'violations', violations_length: 1 } },
+  { id: 'layers:a-single-star-does-not-cross-folders', cites: { file: 'contracts/project-contract.md', section: 'Area policies are found by paths, and may carry layers' },
+    input: { question: 'layers', layers: [LAYER({ folders: ['src/*.ts'] })], added: [{ file: 'src/a/b.ts', line: 1, text: "import 'src/server/db/x'" }] },
+    expect: { verdict: 'clean' } },
+  { id: 'layers:one-finding-per-violating-line', cites: { file: 'skills/arch-check/SKILL.md', section: 'How you verify' },
+    input: { question: 'layers', layers: [LAYER({ deny_imports: ['src/server/db/**', 'src/server/cache'] })], added: [{ file: 'src/server/api/x.ts', line: 3, text: "import 'src/server/db/x'; import 'src/server/cache/y';" }] },
+    expect: { verdict: 'violations', violations_length: 1 } },
+  { id: 'layers:a-malformed-layer-falls-back-to-the-prose', cites: { file: 'skills/arch-check/SKILL.md', section: 'How you verify' },
+    input: { question: 'layers', layers: [LAYER({ deny_imports: [] })], added: [{ file: 'src/server/api/x.ts', line: 3, text: "import 'src/server/db/x'" }] },
+    expect: { verdict: 'clean', blockers_include: 'malformed' } },
+
+  /* --- question: block — skills/decision-doc/SKILL.md § The block you return, skills/new-feature/SKILL.md § 7 --- */
+  { id: 'block:decision-doc-technical', cites: { file: 'skills/decision-doc/SKILL.md', section: 'The block you return' },
+    input: { question: 'block', name: 'decision-doc', block: DOC() },
+    expect: { verdict: 'valid', blockers: [] } },
+  { id: 'block:decision-doc-strategic', cites: { file: 'skills/decision-doc/SKILL.md', section: 'The block you return' },
+    input: { question: 'block', name: 'decision-doc', block: DOC({ stage: 'strategic' }, { classification: 'weakness' }) },
+    expect: { verdict: 'valid' } },
+  { id: 'block:decision-doc-no-decision-left', cites: { file: 'skills/decision-doc/SKILL.md', section: 'The block you return' },
+    input: { question: 'block', name: 'decision-doc', block: DOC({ decisions: null }) },
+    expect: { verdict: 'valid' } },
+  { id: 'block:decision-doc-a-missing-field', cites: { file: 'skills/decision-doc/SKILL.md', section: 'The block you return' },
+    input: { question: 'block', name: 'decision-doc', block: (() => { const value = DOC(); delete value.open_items; return value; })() },
+    expect: { verdict: 'invalid', blockers_include: 'open_items is missing' } },
+  { id: 'block:decision-doc-recommended-is-not-a', cites: { file: 'skills/new-feature/SKILL.md', section: '7. Decisions are asked in chat' },
+    input: { question: 'block', name: 'decision-doc', block: DOC({}, { recommended_id: 'B' }) },
+    expect: { verdict: 'invalid', blockers_include: 'recommended_id' } },
+  { id: 'block:decision-doc-a-skipped-letter', cites: { file: 'skills/new-feature/SKILL.md', section: '7. Decisions are asked in chat' },
+    input: { question: 'block', name: 'decision-doc', block: DOC({}, { options: [{ id: 'A', text: 'a' }, { id: 'C', text: 'c' }] }) },
+    expect: { verdict: 'invalid', blockers_include: 'options[1].id' } },
+  { id: 'block:decision-doc-one-option', cites: { file: 'skills/new-feature/SKILL.md', section: '7. Decisions are asked in chat' },
+    input: { question: 'block', name: 'decision-doc', block: DOC({}, { options: [{ id: 'A', text: 'a' }] }) },
+    expect: { verdict: 'invalid', blockers_include: '2 to 4' } },
+  { id: 'block:decision-doc-five-options', cites: { file: 'skills/new-feature/SKILL.md', section: '7. Decisions are asked in chat' },
+    input: { question: 'block', name: 'decision-doc', block: DOC({}, { options: ['A', 'B', 'C', 'D', 'E'].map((id) => ({ id, text: id })) }) },
+    expect: { verdict: 'invalid', blockers_include: '2 to 4' } },
+  { id: 'block:decision-doc-decisions-not-a-list', cites: { file: 'skills/new-feature/SKILL.md', section: '7. Decisions are asked in chat' },
+    input: { question: 'block', name: 'decision-doc', block: DOC({ decisions: 'see the document' }) },
+    expect: { verdict: 'invalid', blockers_include: 'neither an array nor null' } },
+  { id: 'block:decision-doc-stage-outside-its-domain', cites: { file: 'skills/decision-doc/SKILL.md', section: 'The block you return' },
+    input: { question: 'block', name: 'decision-doc', block: DOC({ stage: 'tactical' }) },
+    expect: { verdict: 'invalid', blockers_include: 'outside' } },
+  { id: 'block:decision-doc-classification-at-the-technical-stage', cites: { file: 'skills/decision-doc/SKILL.md', section: 'The block you return' },
+    input: { question: 'block', name: 'decision-doc', block: DOC({}, { classification: 'weakness' }) },
+    expect: { verdict: 'invalid', blockers_include: 'technical stage' } },
+  { id: 'block:decision-doc-classification-outside-its-domain', cites: { file: 'skills/decision-doc/SKILL.md', section: 'The block you return' },
+    input: { question: 'block', name: 'decision-doc', block: DOC({ stage: 'strategic' }, { classification: 'nice to have' }) },
+    expect: { verdict: 'invalid', blockers_include: 'outside' } },
+  { id: 'block:nothing-came-back', cites: { file: 'contracts/orchestration.md', section: '4. Delegation' },
+    input: { question: 'block', name: 'decision-doc', block: null },
+    expect: { verdict: 'invalid', blockers_length_at_least: 1 } },
+  { id: 'block:another-block-by-its-schema-alone', cites: { file: 'skills/blueprint/SKILL.md', section: 'What you return' },
+    input: { question: 'block', name: 'blueprint', block: { ok: true, brief_path: 'x/2. blueprint.md', detail: '' } },
+    expect: { verdict: 'valid' } },
+  { id: 'block:an-enum-inside-a-list', cites: { file: 'skills/finder-prompt/SKILL.md', section: 'The block you return' },
+    input: { question: 'block', name: 'finder', block: { findings: [{ file: 'a', line: 1, symbol: 'f', confidence: 'certain', change: '', description: '' }] } },
+    expect: { verdict: 'invalid', blockers_include: 'findings.confidence' } },
 ];
 
 /** The input that must be refused loudly. Nothing here is a verdict. */
@@ -820,6 +1283,19 @@ const REJECTED = [
   { id: 'reject:missing-disciplines-not-a-list', input: { question: 'decision', review_outcome: GREEN({ missing_disciplines: 'arch' }) } },
   { id: 'reject:step-absent', input: { question: 'propagation' } },
   { id: 'reject:attempt-outside-the-ceiling', input: { question: 'propagation', step: { node: 'brief', block: null, attempt: 3 } } },
+  { id: 'reject:round-without-ledger', input: { question: 'round', rounds_cap: null } },
+  { id: 'reject:round-with-no-round', input: { question: 'round', rounds_cap: null, ledger: LEDGER([]) } },
+  { id: 'reject:round-cap-absent', input: { question: 'round', ledger: LEDGER([ROUND([])]) } },
+  { id: 'reject:round-cap-not-positive', input: { question: 'round', rounds_cap: 0, ledger: LEDGER([ROUND([])]) } },
+  { id: 'reject:round-merit-outside-its-domain', input: { question: 'round', rounds_cap: null, merit: 'maybe', ledger: LEDGER([ROUND([])]) } },
+  { id: 'reject:round-numbered-with-a-gap', input: { question: 'round', rounds_cap: null, ledger: { base: 'a', item: 'b', rounds: [{ n: 2, applied: [], oscillation: [] }] } } },
+  { id: 'reject:round-fix-without-its-severity', input: { question: 'round', rounds_cap: null, ledger: LEDGER([ROUND([{ file: 'a', symbol: 'f', anchor: 'x' }])]) } },
+  { id: 'reject:layers-absent', input: { question: 'layers', added: [] } },
+  { id: 'reject:added-not-a-list', input: { question: 'layers', layers: [], added: 'x' } },
+  { id: 'reject:added-row-without-its-line', input: { question: 'layers', layers: [], added: [{ file: 'a', text: 'x' }] } },
+  { id: 'reject:block-name-absent', input: { question: 'block', block: {} } },
+  { id: 'reject:block-name-unknown', input: { question: 'block', name: 'invented', block: {} } },
+  { id: 'reject:block-absent', input: { question: 'block', name: 'decision-doc' } },
 ];
 
 function runBench(root) {
@@ -868,12 +1344,27 @@ function runBench(root) {
     check(`phase:${phase.name}`, cites(root, phase.cites), `no heading for '${phase.cites.section}' in ${phase.cites.file}`);
   }
 
+  /* 2b. Every block whose prose rules live in SHAPES is a block schemas/blocks.json declares. */
+  let declared = {};
+  try {
+    declared = JSON.parse(readFileSync(join(root, 'schemas', 'blocks.json'), 'utf-8')).blocks || {};
+  } catch (error) {
+    check('schemas:readable', false, error.message);
+  }
+  for (const name of Object.keys(SHAPES)) {
+    check(`shape:${name}`, Object.prototype.hasOwnProperty.call(declared, name), 'a shape for a block schemas/blocks.json does not declare');
+  }
+  const verdicts = (declared.architect && declared.architect.enums && declared.architect.enums.verdict) || [];
+  for (const verdict of new Set(CASES.map((testCase) => testCase.expect.verdict).filter((value) => typeof value === 'string'))) {
+    check(`schema:verdict:${verdict}`, verdicts.includes(verdict), 'a verdict the program returns and schemas/blocks.json § architect does not list');
+  }
+
   /* 3. One proof per case, each citing the file and section its rule comes from. */
   for (const testCase of CASES) {
     check(`cites:${testCase.id}`, cites(root, testCase.cites), `no heading for '${testCase.cites.section}' in ${testCase.cites.file}`);
     let got;
     try {
-      got = ASKS[testCase.input.question](testCase.input);
+      got = ASKS[testCase.input.question](testCase.input, root);
     } catch (error) {
       check(`case:${testCase.id}`, false, `threw ${error.message}`);
       continue;
@@ -886,7 +1377,7 @@ function runBench(root) {
     let refused = false;
     try {
       const parsed = parseInput(JSON.stringify(rejected.input));
-      ASKS[parsed.question](parsed);
+      ASKS[parsed.question](parsed, root);
     } catch (error) {
       refused = error instanceof BadInput;
     }
@@ -968,7 +1459,7 @@ function main() {
   }
   let answer;
   try {
-    answer = ASKS[input.question](input);
+    answer = ASKS[input.question](input, root);
   } catch (error) {
     die(error instanceof BadInput ? error.message : String(error && error.message));
   }

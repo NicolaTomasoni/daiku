@@ -46,7 +46,7 @@ Ogni path è **relativo alla radice del repository** (`C:/dev/Daiku`), con separ
 | `.docs/consegne.md` | il registro append-only delle consegne di `deliver-feature` ◦ |
 | `.docs/runtime/review/` | i ledger dei giri di `review`, uno per ciclo ◦ |
 | `.docs/esempi/reforgia/` | dominio e politiche di ReforgIA, come esempio compilato |
-| `.docs/tools/` | gli strumenti di chi sviluppa: `check-topology.mjs` per il gate, `repo-intelligence/` |
+| `.docs/tools/` | gli strumenti di chi sviluppa: `check-topology.mjs` per il gate, `studia-sorgente/` |
 | `.docs/audit/` | i report del prompt audit, con il diff che propongono |
 
 Le sedi marcate **◦ non esistono ancora**: le crea il contratto che le usa, al primo uso. Non sono
@@ -169,7 +169,7 @@ sono i due nodi che la §5 dichiara orchestranti **anche quando sono figli** —
 finder, applicatore, gate e commit, e `commit`, che delega l'allineamento a `update-memory`. Ogni
 altro passo delegato è una **foglia**.
 
-Gli altri nodi che ri-delegano — `deliver-feature`, `studia-problema`, `studia-libreria`, `repo-intelligence` — lo fanno
+Gli altri nodi che ri-delegano — `deliver-feature`, `studia-problema`, `studia-libreria`, `studia-sorgente` — lo fanno
 solo come **entry point**, cioè quando li lanci tu: nessuno li invoca mai come figli, e la §5 lo
 dichiara nella colonna *Chi lo invoca*. `code-review` è il caso che tiene insieme le due cose:
 ri-delega quando lo lanci su una pull request, **non** ri-delega quando `review` lo invoca come
@@ -204,7 +204,7 @@ contenuto vive nel file del nodo, che resta l'unico posto in cui si modifica.
 | `update-memory` | owner, `deliver-feature` fase 5b, `commit` § *Allineamento* | diff in index, cartella dell'item dove depositare il proprio artefatto (da `deliver-feature`) | § *Procedura* 7 del suo file | no |
 | `commit` | owner, `review` § *Chiusura* (sempre, salvo `--no-commit`) | perimetro del gruppo codice | § *Procedura* 8 del suo file, in chat | sì — `update-memory` |
 | `deliver-feature` | owner | cartella, soluzione scelta | § *Esito* del suo file | sì — le sue fasi, e `review` come figlio orchestrante |
-| `repo-intelligence` | owner | target (pacchetto, repo o path locale), `--versione`, `--focus`, `--cwd` facoltativi | i documenti in `.docs/repo-intelligence/<slug>/` e § *Esito in chat* del suo file | sì — acquisizione, grafo, lettori, verificatori, confronto, giudice, report; foglie |
+| `studia-sorgente` | owner | target (pacchetto, repo o path locale), `--versione`, `--focus`, `--cwd` facoltativi | i documenti in `.docs/studia-sorgente/<slug>/` e § *Esito in chat* del suo file | sì — acquisizione, grafo, lettori, verificatori, confronto, giudice, report; foglie |
 
 **Un arco nuovo si dichiara qui.** Collegare un nodo a un chiamante che non lo aveva significa
 aggiornare la sua riga — i chiamanti, l'input che ora riceve risolto, il permesso che

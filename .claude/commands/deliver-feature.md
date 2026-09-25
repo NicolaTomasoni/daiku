@@ -11,8 +11,7 @@ esiste uno script che lo faccia al posto tuo.
 ## Dove si lavora
 
 **Sulla working tree principale, sul branch corrente.** Questo corpus non usa worktree
-(`.claude/orchestration.md`, § *Questo corpus non è il prodotto*). **La regola non ha una
-motivazione scritta**: è un punto aperto, non una conclusione (`.docs/PUNTI-APERTI.md`, voce 5).
+(`.claude/orchestration.md`, § *Questo corpus non è il prodotto*).
 
 Conseguenze da tenere presenti, perché sono il prezzo di questa scelta:
 

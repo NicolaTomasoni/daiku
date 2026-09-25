@@ -42,7 +42,7 @@ scelte dell'owner le fanno divergere e non sono reversibili per copia:
   registro delle consegne è di quel gruppo.
 
 Il prodotto ha **diciotto** contratti, questo corpus ne ha **dodici** derivati, su **quattordici**
-comandi: gli altri due, `confronta-repo.md` e `repo-intelligence.md`, sono comandi dell'owner senza
+comandi: gli altri due, `confronta-repo.md` e `studia-sorgente.md`, sono comandi dell'owner senza
 un gemello nel prodotto. Gli otto non derivati sono
 `applier`, `arch-check`, `finder-prompt`, `init`, `perf`,
 `research`, `sync-host`, `test-coverage`. Di questi, `finder-prompt` e `applier` sono stati **assorbiti**

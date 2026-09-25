@@ -102,12 +102,12 @@
     },
     "architect": {
       "producer": "skills/develop-feature/SKILL.md § The evaluator (architect-internal, no producer file)",
-      "required": ["ok", "verdict", "remaining", "resume_from", "blockers", "retry", "fallback", "readings", "detail"],
+      "required": ["ok", "verdict", "remaining", "resume_from", "blockers", "retry", "fallback", "readings", "violations", "detail"],
       "optional": [],
       "enums": {
-        "verdict": ["BLOCKED_NO_COMMIT", "GREEN_COMMITTED", "GREEN_WITH_POST_DECISIONS", "blocked", "commit", "fallback", "proceed", "restart", "resume", "retry", "stop", "unblock"]
+        "verdict": ["BLOCKED_NO_COMMIT", "GREEN_COMMITTED", "GREEN_WITH_POST_DECISIONS", "blocked", "clean", "commit", "continue", "diminishing-returns", "fallback", "fixed-point", "invalid", "merit", "oscillation", "proceed", "restart", "resume", "retry", "rounds-exhausted", "rounds-truncated", "stop", "unblock", "valid", "violations"]
       },
-      "note": "The effective domain of `verdict` depends on `question`: this enum is the union of the six domains, one per question — decision, closing, unblock, propagation, resumption, order — and `verdict` is `null` when the question does not apply, that is `propagation` on a block that came back. `remaining` and `resume_from` are filled by `order` and `resumption` alone; `retry` and `fallback` by `propagation` alone; `readings` by the ambiguity rule alone. Field names of the blocks this one consumes are not renamed on either side: `gate`, `gate_detail`, `outcome`, `missing_disciplines`, `blocking`, `to_confirm`, `base`, `item`, `rounds`, `commit`, `commit_sha`."
+      "note": "The effective domain of `verdict` depends on `question`: this enum is the union of the nine domains, one per question — decision, closing, unblock, propagation, resumption, order, round, layers, block — and `verdict` is `null` when the question does not apply, that is `propagation` on a block that came back. `remaining` and `resume_from` are filled by `order` and `resumption` alone; `retry` and `fallback` by `propagation` alone; `readings` by the ambiguity rule alone; `violations` by `layers` alone, one `{file, line, policy, layer, fragment, text}` per violating line. Field names of the blocks this one consumes are not renamed on either side: `gate`, `gate_detail`, `outcome`, `missing_disciplines`, `blocking`, `to_confirm`, `base`, `item`, `rounds`, `commit`, `commit_sha`."
     },
     "develop-feature-outcome": {
       "producer": "skills/develop-feature/SKILL.md § Outcome",
