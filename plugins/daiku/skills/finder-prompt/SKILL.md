@@ -13,11 +13,12 @@ You do not see the other finders of the round: it is deliberate, and it is the s
 ## What you receive from the caller
 
 - your **discipline** (`bug`, `arch`, `perf`) and, with it, the contract to read;
-- the **round scope**: `BASE` and, from the second round on, the list of files to work on;
+- the **round range**: `from`, `to` and the files — at round 1 `BASE` against the tree the scope photographed, from round 2 the two trees around the previous round's applier — and `work_root`, where Git runs;
 - the **effort** level (`low` | `medium` | `high`);
-- from the second round on: the **applied** and **discarded** of previous rounds, from the ledger.
+- the **ledger path**: from the second round on, the **applied** and **discarded** of previous rounds are read there;
+- the **resolved parameters**: use a key the caller passed as it is, and resolve on §5 of `contracts/project-contract.md` only one it did not pass (§4 point 1 of `contracts/orchestration.md`).
 
-If one of these is missing, **do not choose it yourself and do not ask for it**: return the empty block declaring which input was missing, and whoever invoked you will relaunch you with the right one. A guessed scope is the only thing making two rounds incomparable.
+If one of the first four is missing, **do not choose it yourself and do not ask for it**: return the empty block declaring which input was missing, and whoever invoked you will relaunch you with the right one. A guessed scope is the only thing making two rounds incomparable.
 
 ## Your discipline
 
@@ -31,11 +32,11 @@ If one of these is missing, **do not choose it yourself and do not ask for it**:
 
 1. **Read in full what your `Where it comes from` column indicates, before analysing.** Those contracts declare at home their own **Finder mode**: follow it — it is the part valid here, and it says what of the rest of the file is not run. Load `{instructions_file}` where needed.
 
-2. **Only for `arch`**: the rules to verify live in the invariants of `{instructions_file}` and in the area rules in `.daiku/policies/`. List that folder, read the `paths` frontmatter of each file and **open** those whose patterns cover the scope files. Do not take them as loaded: automatic loading triggers by opening a matching file, not by inspecting a diff. If an opened policy carries a `layers:` block, verify per the `skills/arch-check/SKILL.md` mapping; otherwise verify the prose.
+2. **Only for `arch`**: the rules to verify live in the invariants of `{instructions_file}` and in the area rules in `.daiku/policies/`. The caller passes the policies whose `paths` frontmatter covers the scope files, as the scope measured them: **open** them. Do not take them as loaded: automatic loading triggers by opening a matching file, not by inspecting a diff. If an opened policy carries a `layers:` block, verify per the `skills/arch-check/SKILL.md` mapping; otherwise verify the prose.
 
-3. **Scope**, which is the only thing changing between one round and the next:
-   - **round 1**: `git diff <BASE> -- {code_root}`, and **read every added line in full** before judging;
-   - **rounds ≥2**: `git diff <BASE> -- <the files touched by the applier in the previous round>`. Besides the files, you receive the **applied of the previous round** from the ledger (`file`, `symbol`, `anchor`, `what`): they are your **focus**. Judge the lines of those fixes and what depends on them; the rest of the diff of those files was already judged and is only context. Opening a file outside that list **for context** is licit; judging it is not.
+3. **Scope**, which is the only thing changing between one round and the next: `git diff <from> <to> -- <files>`, run in `work_root`, and **read every added line in full** before judging. The range is tree against tree, so an untracked file shows like any other.
+   - **round 1**: the range is the whole diff of the work.
+   - **rounds ≥2**: the range is only what the applier of the previous round wrote. The **applied of the previous round** in the ledger (`file`, `symbol`, `anchor`, `what`) say why each change is there: they are your **focus**. Judge the lines of the range and what depends on them; the rest of those files was already judged and is only context. Opening a file outside the range **for context** is licit; judging it is not.
 
 4. **The effort level fixes the reading perimeter, not the certainty threshold:**
    - **`low`** — only defects verifiable on the diff alone: compile/parse/import errors, unresolved symbols, logic wrong regardless of input;
@@ -46,7 +47,7 @@ If one of these is missing, **do not choose it yourself and do not ask for it**:
 
 6. **Return only verified findings** on the added lines, never "plausible" ones.
 
-7. **Already judged findings** (from the second round on): you receive the discarded of previous rounds with the reason. Do not repropose them, except for new evidence that the reason was wrong — in that case say so explicitly in the description.
+7. **Already judged findings** (from the second round on): the ledger holds the discarded of previous rounds with the reason. Do not repropose them, except for new evidence that the reason was wrong — in that case say so explicitly in the description.
 
 ## The block you return
 

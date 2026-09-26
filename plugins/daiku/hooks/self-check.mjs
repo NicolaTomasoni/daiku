@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
- * The test benches of the four hooks and of the evaluator, in a single shot.
+ * The test benches of the four hooks and of the two programs in `architect/`, in a single shot.
  *
  * `node hooks/self-check.mjs` from the package root. Exits `0` if every case is
- * green, `1` on the first red, and prints the **counted** total — the sum of what the five
+ * green, `1` on the first red, and prints the **counted** total — the sum of what the six
  * benches really ran, not a number written here.
  *
  * It exists because four fail-open hooks are four ways of staying silent, and a fault in
@@ -15,9 +15,17 @@
  * does not fail open, it fails loudly, and its verdict binds — so a case it does not cover
  * is a delivery that stops, not a wrong verdict. That is why it is launched here too and
  * not only by hand: the promise «the benches run together» is worth more, not less, for the
- * one program whose silence stops work.
+ * one program whose silence stops work. The sixth is `architect/ledger.mjs`, the review's disk
+ * side, which fails loudly for the same reason and whose bench runs real Git on throwaway
+ * repositories under the system temp directory.
  *
- * Its bench lives beside it, in `architect/`, and is **not** replicated under `hooks/lib/`:
+ * **A check nobody saw fail counts as red.** A bench whose rules can be enumerated reports,
+ * beside `{checks, passed, failed}`, a `never_red` list: the rules no fixture of its own ever
+ * turned red. A rule that has only ever passed is indistinguishable from one that cannot fail,
+ * so a non-empty `never_red` turns that bench red here even when `failed` is empty. The
+ * evaluator's bench reports it; a bench that does not is read as before.
+ *
+ * Those two benches live beside their programs, in `architect/`, and are **not** replicated under `hooks/lib/`:
  * that folder is copied into the user's project by `sync-host`, and a verifier replicated
  * in every project is the duplication `contracts/project-contract.md` §8 condemns.
  *
@@ -39,7 +47,7 @@ const LIB = join(HERE, 'lib');
  * The package root, one level above this file. It is derived from this file's position
  * because this file is a development tool the package never installs: it lives beside the
  * manifest, `skills/`, `contracts/` and `architect/`, and nobody reaches it from a project.
- * The root is needed by exactly one bench, the evaluator's, which takes it by argument.
+ * The root is needed by the two benches of `architect/`, which take it by argument.
  */
 const ROOT = join(HERE, '..');
 
@@ -61,12 +69,14 @@ function benches() {
   for (const name of names) {
     found.push({ label: name, file: join(LIB, name), args: ['--self-check'] });
   }
-  const architect = join(ROOT, 'architect', 'architect.mjs');
-  try {
-    readFileSync(architect);
-    found.push({ label: 'architect/architect.mjs', file: architect, args: ['--self-check', ROOT] });
-  } catch (error) {
-    process.stderr.write(`cannot read ${architect}: ${error.message}\n`);
+  for (const program of ['architect.mjs', 'ledger.mjs']) {
+    const file = join(ROOT, 'architect', program);
+    try {
+      readFileSync(file);
+      found.push({ label: `architect/${program}`, file, args: ['--self-check', ROOT] });
+    } catch (error) {
+      process.stderr.write(`cannot read ${file}: ${error.message}\n`);
+    }
   }
   return found;
 }
@@ -91,11 +101,12 @@ function tryOne(bench) {
   } catch {
     return { name: bench.label, status: 'unreadable', detail: outcome.stdout.slice(0, 200) };
   }
+  const neverRed = Array.isArray(report.never_red) ? report.never_red : [];
   return {
     name: bench.label,
-    status: (report.failed || []).length ? 'red' : 'green',
+    status: (report.failed || []).length || neverRed.length ? 'red' : 'green',
     checks: report.checks || 0,
-    failed: report.failed || [],
+    failed: [...(report.failed || []), ...neverRed.map((rule) => `never_red: ${rule} — no fixture turns it red`)],
   };
 }
 

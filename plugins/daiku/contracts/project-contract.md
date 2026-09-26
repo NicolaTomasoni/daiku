@@ -83,6 +83,7 @@ of a file, the presence or absence of an area. Three prohibitions, in order of s
 | `areas` | the set of declared areas; cited thus when a skill **enumerates** them instead of naming one (§5.3) |
 | `areas.<area>.paths` | the paths belonging to the area, each usable as a Git pathspec |
 | `areas.<area>.gate` | the area's gate command: lint, format, type-check, test and package build |
+| `areas.<area>.check_fast` | command checking the given files without writing anything and without running tests — compilation, type-check or lint in read-only mode — fast enough to run after every task and every applied fix |
 | `areas.<area>.lint_fix` | command applying only safe lint fixes to the given files |
 | `areas.<area>.test_targeted` | command running only the given tests |
 | `areas.<area>.coverage` | commands producing the area's coverage measure |

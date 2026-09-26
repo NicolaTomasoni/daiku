@@ -150,11 +150,11 @@ The point-6 block declares the `stage`. If it was `strategic`, incorporation clo
 
 **Only one extra round.** If the second block also comes back `strategic`, the problem is not ready to be executed: stop, report to the owner the verdict and what remains open, and leave the folder as it is. There is no third round, and one does not move to delivery with the direction still under discussion.
 
-### 10. Delivery — `develop-feature`
+### 10. Delivery — `develop-feature`, **worker** role
 
-The technical decisions are closed: `1. decision-doc.md` exists and its cards have an answer. Delegate the whole delivery to a subagent running `skills/develop-feature/SKILL.md`, with the folder and the **chosen solution** — for each decision the id and text of the option the owner chose, as they wrote them. For a card they did not answer, `A` holds, which by contract is the recommended one, without asking.
+The technical decisions are closed: `1. decision-doc.md` exists and its cards have an answer. Delegate the whole delivery to a subagent running `skills/develop-feature/SKILL.md`, on the **worker** role — its order, its decision and its unblock are verdicts of the evaluator, and the judging phases it launches declare their own role — with the folder and the **chosen solution** — for each decision the id and text of the option the owner chose, as they wrote them. For a card they did not answer, `A` holds, which by contract is the recommended one, without asking.
 
-From there on the sequence is its own and you do not rewrite it here — and it is not recited here either: **it is asked**. Call `architect/architect.mjs` — the evaluator that `skills/develop-feature/SKILL.md` § *The evaluator* declares — with `question: "order"`, `entry: "new-feature"` and `present` (the artefacts already on disk), the input that section declares, and its verdict says which phases remain. **Do not launch yourself `blueprint`, `execute`, `/review` or `/commit`**: they are the phases of `develop-feature`, and chaining them from here means keeping two copies diverging at the first modification.
+From there on the sequence is its own and you do not rewrite it here — and it is not recited here either: **it is asked**. Call `architect/architect.mjs` — the evaluator that `skills/develop-feature/SKILL.md` § *The evaluator* declares — with `question: "order"`, `entry: "new-feature"`, `present` (the artefacts already on disk) and `ledger` (the review ledger of this folder in `{paths.review_state}/`, or `null`), the input that section declares, and its verdict says which phases remain. **Do not launch yourself `blueprint`, `execute`, `/review` or `/commit`**: they are the phases of `develop-feature`, and chaining them from here means keeping two copies diverging at the first modification.
 
 The expected outcome is the block that contract declares in its own § *Outcome*, in full. Report it: its `status` is yours.
 

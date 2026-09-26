@@ -13,15 +13,21 @@
     },
     "blueprint": {
       "producer": "skills/blueprint/SKILL.md § What you return",
-      "required": ["ok", "brief_path", "detail"],
+      "required": ["ok", "brief_path", "plan", "interfaces", "retired", "detail"],
       "optional": [],
-      "enums": {}
+      "enums": {},
+      "note": "The same object stands in § Handoff of 2. blueprint.md, its seat on disk. The rules the prose adds — every task with a non-empty check and red_if, cases rows with input and expected, consumers as strings — are SHAPES.blueprint of architect/architect.mjs."
     },
     "execute": {
       "producer": "skills/execute/SKILL.md § What you return",
-      "required": ["ok", "note_review_path", "verify_detail", "detail"],
+      "required": ["ok", "note_review_path", "verify_detail", "checks", "red_proofs", "consumers_checked", "absence", "preflight", "detail"],
       "optional": [],
-      "enums": {}
+      "enums": {
+        "red_proofs.against": ["base", "mutation"],
+        "preflight.step": ["check_fast", "lint_fix", "test_targeted", "layers"],
+        "preflight.outcome": ["green", "red", "skipped"]
+      },
+      "note": "The same object stands in § Handoff of 4. review-notes.md, its seat on disk. The rules the prose adds — a red proof with a non-zero exit and its output, a count with a reason for every hit left, each of the four preflight steps present — are SHAPES.execute of architect/architect.mjs; holding it against the brief is the handoff question."
     },
     "finder": {
       "producer": "skills/finder-prompt/SKILL.md § The block you return",
@@ -37,7 +43,8 @@
       "optional": [],
       "enums": {
         "to_confirm.class": ["arch", "bug", "perf", "test-coverage"]
-      }
+      },
+      "note": "Every item of the four lists carries `finding_id`, and every finding handed over has exactly one outcome: the `block` question checks it against the `finding_ids` passed beside the block."
     },
     "coverage-auto": {
       "producer": "skills/test-coverage/SKILL.md § Automatic mode",
@@ -63,7 +70,7 @@
         "outcome": ["fixed-point", "diminishing-returns", "oscillation", "rounds-truncated", "rounds-exhausted"],
         "independence": ["intact", "lost"],
         "commit": ["done", "partial", "not-requested", "skipped"],
-        "coverage": ["tests-written", "no-tests-needed"]
+        "coverage": ["tests-written", "no-tests-needed", "no-test-command"]
       }
     },
     "commit": {
@@ -105,9 +112,9 @@
       "required": ["ok", "verdict", "remaining", "resume_from", "blockers", "retry", "fallback", "readings", "violations", "detail"],
       "optional": [],
       "enums": {
-        "verdict": ["BLOCKED_NO_COMMIT", "GREEN_COMMITTED", "GREEN_WITH_POST_DECISIONS", "blocked", "clean", "commit", "continue", "diminishing-returns", "fallback", "fixed-point", "invalid", "merit", "oscillation", "proceed", "restart", "resume", "retry", "rounds-exhausted", "rounds-truncated", "stop", "unblock", "valid", "violations"]
+        "verdict": ["BLOCKED_NO_COMMIT", "GREEN_COMMITTED", "GREEN_WITH_POST_DECISIONS", "blocked", "clean", "commit", "continue", "diminishing-returns", "fallback", "fixed-point", "invalid", "merit", "not-ready", "oscillation", "proceed", "ready", "restart", "resume", "retry", "rounds-exhausted", "rounds-truncated", "stop", "unblock", "valid", "violations"]
       },
-      "note": "The effective domain of `verdict` depends on `question`: this enum is the union of the nine domains, one per question — decision, closing, unblock, propagation, resumption, order, round, layers, block — and `verdict` is `null` when the question does not apply, that is `propagation` on a block that came back. `remaining` and `resume_from` are filled by `order` and `resumption` alone; `retry` and `fallback` by `propagation` alone; `readings` by the ambiguity rule alone; `violations` by `layers` alone, one `{file, line, policy, layer, fragment, text}` per violating line. Field names of the blocks this one consumes are not renamed on either side: `gate`, `gate_detail`, `outcome`, `missing_disciplines`, `blocking`, `to_confirm`, `base`, `item`, `rounds`, `commit`, `commit_sha`."
+      "note": "The effective domain of `verdict` depends on `question`: this enum is the union of the ten domains, one per question — decision, closing, unblock, propagation, resumption, order, round, layers, block, handoff — and `verdict` is `null` when the question does not apply, that is `propagation` on a block that came back. `remaining` and `resume_from` are filled by `order` and `resumption` alone; `retry` and `fallback` by `propagation` alone; `readings` by the ambiguity rule alone; `violations` by `layers` alone, one `{file, line, policy, layer, fragment, text}` per violating line; `handoff` answers `ready` or `not-ready` with every missing piece of evidence in `blockers`. Field names of the blocks this one consumes are not renamed on either side: `gate`, `gate_detail`, `outcome`, `missing_disciplines`, `blocking`, `to_confirm`, `base`, `item`, `rounds`, `commit`, `commit_sha`."
     },
     "develop-feature-outcome": {
       "producer": "skills/develop-feature/SKILL.md § Outcome",
@@ -145,15 +152,18 @@
   },
   "ledger": {
     "producer": "skills/review/SKILL.md § Baseline and ledger",
-    "required": ["base", "item", "rounds", "outcome", "coverage", "gate", "gate_detail"],
-    "round_required": ["n", "disciplines", "missing_disciplines", "applied", "discarded", "to_confirm", "oscillation", "verdict", "why"],
+    "required": ["base", "item", "scope_tree", "scope_files", "rounds", "outcome", "coverage", "gate", "gate_detail"],
+    "round_required": ["n", "disciplines", "missing_disciplines", "pre_apply_tree", "post_apply_tree", "applied", "discarded", "to_confirm", "oscillation", "check_fast", "verdict", "why"],
+    "round_optional": ["cost", "deviations"],
     "enums": {
-      "rounds.verdict": ["continue", "stop"]
-    }
+      "rounds.verdict": ["continue", "stop"],
+      "rounds.check_fast.status": ["green", "red", "skipped"]
+    },
+    "note": "Written only by architect/ledger.mjs, which validates it against this entry before every write. `outcome`, `coverage` and `gate` take the domains of § review-outcome and § gate once set; until their step ran they are null. `cost` holds only the numbers the host reported for each step, never an estimate."
   },
   "params": {
     "producer": "contracts/project-contract.md §4 and contracts/orchestration.md §7",
-    "project_json": ["contract", "name", "repo_root", "code_root", "instructions_file", "language.chat", "language.commit", "tech_doc", "changelog", "version.file", "version.field", "version.replicated_in", "paths.studies", "paths.lib_notes", "paths.review_state", "memory.root", "memory.index", "commit.memory_prefix", "worktree.pool", "worktree.prefix", "worktree.max", "worktree.branch_prefix", "areas", "areas.<area>.paths", "areas.<area>.gate", "areas.<area>.lint_fix", "areas.<area>.test_targeted", "areas.<area>.coverage"],
+    "project_json": ["contract", "name", "repo_root", "code_root", "instructions_file", "language.chat", "language.commit", "tech_doc", "changelog", "version.file", "version.field", "version.replicated_in", "paths.studies", "paths.lib_notes", "paths.review_state", "memory.root", "memory.index", "commit.memory_prefix", "worktree.pool", "worktree.prefix", "worktree.max", "worktree.branch_prefix", "areas", "areas.<area>.paths", "areas.<area>.gate", "areas.<area>.check_fast", "areas.<area>.lint_fix", "areas.<area>.test_targeted", "areas.<area>.coverage"],
     "environment_json": ["contract", "default_host", "hosts", "backends", "hosts.<host>.models", "hosts.<host>.models.<role>", "hosts.<host>.models.judge", "hosts.<host>.models.worker", "hosts.<host>.skill_pointers", "hosts.<host>.enforcement", "hosts.<host>.settings_file", "hosts.<host>.base_url_env", "hosts.<host>.native_backend", "backends.<backend>", "backends.<backend>.base_url", "backends.<backend>.sequential_fanout", "backends.<backend>.caveats", "temp_dir"],
     "contract_expected": {
       "project_json": 2,

@@ -131,15 +131,15 @@ rebuilding the graph from the caller's prose.
 | `research` | owner, `new-feature` § *The missing knowledge* | name of the technology; from `new-feature` also the version in use in the project and the questions the notes must answer | path of the file in `{paths.lib_notes}/`, in both modes, nothing else | yes — fan-out per thematic block (leaves) + `study` as leaf child |
 | `study` | `research` § *Step 2* only | path of the dirty file, studied technology, studied and latest versions with dates | reordered file in `{paths.lib_notes}/` + the block of § *The block you return* of its file | no — leaf |
 | `blueprint` | `develop-feature` phase 1 | folder with `1. decision-doc.md`, chosen solution verbatim, relevant memories | § *What you return* of its file | no |
-| `execute` | `develop-feature` phase 2 | folder with `2. blueprint.md`, relevant memories | § *What you return* of its file | no |
+| `execute` | `develop-feature` phase 2 | folder with `2. blueprint.md`, relevant memories; on a relaunch, the `handoff` blockers or the round-0 findings | § *What you return* of its file | no |
 | `develop-feature` | `new-feature` § *Delivery* | folder and chosen solution | § *Outcome* of its file | yes — its phases, and `review` as orchestrating child |
 | `review` | owner, `develop-feature` phase 3 | base-ref or path of `4. review-notes.md`, ledger to reopen (chosen on `base` **and** `item`), `--no-commit` from whoever commits on their own, effort, `--backend` when the session runs there, work roots and artefacts when running on a worktree | § *Outcome* of its file | yes — finder, applier, coverage, gate, `commit` |
-| a round's finder (`finder-prompt`) | `review` § *Finder* | discipline and contract, round `BASE` and file, effort, ledger applied and discarded | § *The block you return* of its file | no |
+| a round's finder (`finder-prompt`) | `review` § *Finder* | discipline and contract, the round range (`from`, `to`, files), effort, the ledger path, the resolved parameters | § *The block you return* of its file | no |
 | `code-review` | owner, `review` as `bug` finder | hand-told scope **or** round scope | report in chat **or** § *The block you return* of `finder-prompt`, with the `confidence` scale its file declares | **no** |
 | `arch-check` | `review` as `arch` finder | round scope | the block of `finder-prompt` § *The block you return*; its file declares scope and permissions | no |
 | `perf` | `review` as `perf` finder | scope **or** round scope | the block of `finder-prompt` § *The block you return*; its § *Finder mode* declares scope and permissions | no |
 | `test-coverage` | `review` § *Coverage* with `--auto` | macro-category **or** final cycle diff and relevant memories | § *Automatic mode* of its file | no |
-| `applier` | `review` § *Applier* | findings of all round finders, previous rounds' applied, scope and `BASE`, relevant memories, and the **mode** when it is the closing round on tests | § *The block you return* of its file | no |
+| `applier` | `review` § *Applier* | the path of the round's numbered findings file, the ledger path, the round range, relevant memories, the resolved parameters, and the **mode** when it is the closing round on tests | § *The block you return* of its file | no |
 | `commit` | owner, `review` § *Closing* (always, except `--no-commit`) | code-group perimeter; it partitions memory/docs and version/changelog itself (§ *Procedure* 3 of its file) | § *Procedure* 8 of its file, in chat | yes — `update-memory`, **always and without exceptions** |
 | `update-memory` | `develop-feature` phase 5b, `commit` § *Alignment* (**always**, on every `commit` invocation) | diff in index, feature folder where to deposit its own artefact (from `develop-feature`), **commit permission for its own group** | § *Procedure* 7 of its file | no |
 
@@ -157,8 +157,8 @@ answers, given the entry point and the artefacts already on disk, which phases r
 **shows** the graph to whoever reads a contract, but does not **declare** it: a skill that needs
 the sequence asks the evaluator and follows the verdict.
 
-**A machine compares the two.** `node hooks/self-check.mjs` launches the bench of
-`architect/` together with the benches of the four hooks, and that bench reads this file, extracts
+**A machine compares the two.** `node hooks/self-check.mjs` launches the evaluator's bench, in
+`architect/`, together with the other benches, and that bench reads this file, extracts
 the rows above, and refuses a divergence in either direction — a node the program does not carry, a
 row with no node on disk, a caller on one side and not on the other. The evaluator takes its root
 as an argument, never by position on disk, so a reorganised tree cannot silently lose the corpus.
@@ -237,6 +237,16 @@ Rules valid on every host:
    no memory is relevant, pass only the index. It is the channel through which facts not deducible
    from the code reach whoever starts from zero: without it, they end up recopied inside the contracts, and it is
    the copy that the subagents read.
+
+   **Resolved parameters, and state by path.** The keys in braces the child's contract cites and
+   that you already hold resolved — `{code_root}`, `{instructions_file}`, `{memory.index}`,
+   `{language.chat}`, an area's commands — go in the prompt as `key = value` lines, copied from the
+   parameter file and never paraphrased. The child uses a passed value as it is and resolves on §5
+   of `contracts/project-contract.md` only a key it was not passed: a value resolved once is not
+   resolved again by every child, and a key left out still resolves, one file later. What already
+   lives in a file — a ledger, a list a program numbered — goes as its **path**, not as a
+   transcription: a copy drifts from its file at the first write, and it is paid twice, by whoever
+   writes it into the prompt and by whoever reads it there.
 2. **Return by contract.** Every step that feeds a downstream decision returns a JSON block
    with the fields the skill declares: read that, not the prose. If the block is missing or
    incomplete, the step has failed — do not interpret it by feel.

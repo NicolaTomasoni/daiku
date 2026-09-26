@@ -119,7 +119,7 @@ Each layer is tested from its architectural strength point: which it is — what
 
 Active when `/review` invokes you, on exit of its cycle, on the final diff under `{code_root}`. **You skip Phase 1 and Phase 2**: no global table, no STOP, no question on category/%. The scope is not a macro-category but the **feature diff** the caller passes you.
 
-The caller also passes you `{memory.index}` and the **paths** of the memories the diff touches, to open before writing: it is the channel of §4.1 of `contracts/orchestration.md`. If it does not pass them, open the index and choose yourself — a test crystallising a behaviour a memory declares wrong is a test no round will ever review again.
+The caller also passes you `{memory.index}` and the **paths** of the memories the diff touches, to open before writing: it is the channel of §4.1 of `contracts/orchestration.md`. If it does not pass them, open the index and choose yourself — a test crystallising a behaviour a memory declares wrong is a test no round will ever review again. The keys it passes already resolved you use as passed, and a key it did not pass you resolve on §5 of `contracts/project-contract.md` (§4 point 1 of `contracts/orchestration.md`). It launches you only when at least one area the diff touches declares `{areas.<area>.test_targeted}`, or when `--with test-coverage` forces the phase.
 
 **You decide** whether the diff introduces new logic uncovered by tests: if not, you come back without writing anything and declare it in the return block (`skipped: true` with why). If the caller passed `--with test-coverage`, you lose the faculty of skipping: write for each new testable branch.
 

@@ -30,10 +30,13 @@ The argument indicates the **folder** (where `1. decision-doc.md` lives) and **w
 1. **Only what is needed.** The brief includes only the information needed to realise the chosen solution: the relevant decision, the chosen option, its rationale, the relevant constraints and specifications, the completion criteria. **Discard** the unchosen options and the unrelated decisions — they must not distract the executor.
 2. **No loss of specifications.** Everything needed to execute must be *inside* `2. blueprint.md` (or explicitly point to a reference file in the folder). The executor must not return to the decision document nor to the user to recover a detail.
 3. **Anchor the plan to the real code, not only to the document.** The decision document is highly abstract and may not reflect the current state of the code. Before freezing the plan, **read the code and the files involved** and verify that the assumptions hold (the files exist, the signatures are as expected, the integration point is where you believe). If reality diverges from the document, **adapt the tasks** and annotate the divergence. A plan built without looking at the ground is the first cause of error.
-4. **Observable verification, not self-declared.** Every task has an **executable verification criterion**: the strongest observable check available for that kind of work — build, test, `grep`, a command for code; a concrete equivalent check when the work is not code (a file produced in the expected form, a comparable output). Never "done when it looks done": the verdict belongs to the check, not to the executor. No vague tasks.
-5. **Mandatory closing verification.** The last tasks of the plan are always a closing verification: the strongest check **targeted at the touched perimeter** (for code: imports of the touched modules and only the tests covering what changed; otherwise the concrete equivalent check) and a self-review of the result against the initial completion criteria. Without this, autonomy produces wrong results with confidence. The package gate — full suite, lint, type-check, build — **does not enter the plan**: it belongs to `/review`, which always runs it on the diff.
-6. **Anchored to the inputs.** Do not invent specifications, constraints or tasks that the document, the reference files and the code do not justify. If an operational detail is truly missing, write it as an **explicit assumption** inside the brief, so the executor proceeds knowingly instead of stopping.
-7. **You prepare, you do not execute.** Do not modify the project code. You can and must **read it** to anchor the plan (principle 3), but your only written output is `2. blueprint.md`.
+4. **Observable verification that can fail, not self-declared.** Every task has an **executable verification criterion**: the strongest observable check available for that kind of work — build, test, a command for code; a concrete equivalent check when the work is not code (a file produced in the expected form, a comparable output). Next to it the task names **the state that turns it red** (`Red if:`): the wrong result the check catches. A check no wrong state can fail is not a verification — a `grep` finding a name proves the name is there, not that it is right, and it is admitted only for a task whose whole goal is that presence, which then says so. **On a set that can be enumerated** — rules, checks, table rows, branches, enum values, entry points, call sites, the members of a registry — the check covers **every** element, never an example: a minimum written in the brief becomes the ceiling the executor stops at. Never "done when it looks done": the verdict belongs to the check, not to the executor. No vague tasks.
+5. **Map who reads what you change.** For every interface the solution touches — a signature, a field of a block, a JSON key, an argument, a prose instruction naming the inputs of a call, a registry listing the members of a set — the brief declares its **single seat** and its **consumers**, each with the `path:line` that `git grep -n -F '<literal string>'` returned. Every consumer becomes a task or a check: the executor stays inside the brief's perimeter, so a consumer the brief does not map is one nobody verifies. Name each interface by that literal string, specific enough that the search returns its readers and nothing else: the caller runs the same search again before the review, and every file it finds must be one you mapped or one the executor checked. And the check of a call is **running it as written** — the compilation or type-check of the calling file, or, for a call written in prose to a program, the very input the prose describes handed to that program, which refuses a missing key — never a `grep` that the name is there.
+6. **Say which facts the change retires.** A renamed thing, a changed count, a reversed rule: the old wording survives in a sentence, a table or a comment nobody reopened. For each, the brief carries the old wording and the fixed string `git grep -F` finds it with; the executor searches it and answers for every hit.
+7. **Tests first, where behaviour changes.** A task that changes what the code does carries a **cases table**: one row per element the change enumerates — table row, prose item, branch, enum value, input, boundary case — with the input and the expected outcome. The executor writes those tests first and sees them red before writing the code. The table is written here because this context does not yet know how the code will look, and a case derived from the code already written confirms it instead of testing it.
+8. **Mandatory closing verification.** The last tasks of the plan are always a closing verification: **every check of the plan rerun on the final tree** — a later task can break an earlier one — plus the quick checks of the touched areas `skills/execute/SKILL.md` declares for its closing, and a self-review of the result against the initial completion criteria. Without this, autonomy produces wrong results with confidence. The package gate — full suite, lint, type-check, build — **does not enter the plan**: it belongs to `/review`, which always runs it on the diff.
+9. **Anchored to the inputs.** Do not invent specifications, constraints or tasks that the document, the reference files and the code do not justify. If an operational detail is truly missing, write it as an **explicit assumption** inside the brief, so the executor proceeds knowingly instead of stopping.
+10. **You prepare, you do not execute.** Do not modify the project code. You can and must **read it** to anchor the plan (principle 3), but your only written output is `2. blueprint.md`.
 
 ## Procedure
 
@@ -43,11 +46,11 @@ The argument indicates the **folder** (where `1. decision-doc.md` lives) and **w
 
 3. **Distill the chosen solution**: from what must be done and why, to the constraints and specifications, to the completion criteria. Keep only the material of the chosen option.
 
-4. **Anchor to the real code.** Read the files and the code locations the solution touches. Verify that the assumptions of the document hold and collect the concrete paths and details the executor will need. Derive the **target paths** — the `{code_root}`-relative paths and areas the solution will touch, read from the policies `paths`/`layers` before opening code. Where reality diverges from the document, adapt the plan of the next step accordingly.
+4. **Anchor to the real code.** Read the files and the code locations the solution touches. Verify that the assumptions of the document hold and collect the concrete paths and details the executor will need. Derive the **target paths** — the `{code_root}`-relative paths and areas the solution will touch, read from the policies `paths`/`layers` before opening code. For each interface the solution touches, `git grep -n -F` its literal string and keep every consumer it returns (principle 5); for each fact it retires, the fixed string finding the old wording (principle 6). Where reality diverges from the document, adapt the plan of the next step accordingly.
 
-5. **Build the implementation plan**: break the solution into ordered and verifiable tasks. Each task = one executable step + one **observable check** declaring it complete. If one task presupposes another, put it after. **Open** the plan with a reconnaissance task (verify in the field the remaining assumptions of the brief) and **close it** with the mandatory closing verification (the strongest check targeted at the perimeter — imports and tests of the touched code — + self-review against the completion criteria).
+5. **Build the implementation plan**: break the solution into ordered and verifiable tasks. Each task = one executable step + one **observable check** declaring it complete + the **state that turns it red** (principle 4); a task changing behaviour also carries its cases table (principle 7). If one task presupposes another, put it after. **Open** the plan with a reconnaissance task (verify in the field the remaining assumptions of the brief) and **close it** with the mandatory closing verification (principle 8).
 
-6. **Write `2. blueprint.md`** in the input folder, with the structure below. Include the **provenance** line (from which document and version/date the brief originates). If it already exists, do **not** rerun the brief and do not write a second one: report it and close with the existing path (see § *What you return*). Save in the project encoding, without degrading non-ASCII characters.
+6. **Write `2. blueprint.md`** in the input folder, with the structure below, ending with the *Handoff* section — the block of § *What you return*. Include the **provenance** line (from which document and version/date the brief originates). If it already exists, do **not** rerun the brief and do not write a second one: close with the block its *Handoff* section carries (see § *What you return*). Save in the project encoding, without degrading non-ASCII characters.
 
 7. **Summarise in chat** in a few lines: the chosen solution and the tasks of the plan in order. The detail lives in the file.
 
@@ -97,30 +100,49 @@ The file is written **addressing the executor** (second person, operational impe
 - Explicit assumptions (if some operational detail was not in the document)
 - Reference files and useful code locations (paths in the folder and in the repo)
 
+## Interfaces touched and their consumers   ← principle 5; "none" if the change touches none
+- <literal string> — seat: <path:line> — consumers: <path:line>, <path:line>
+  (from `git grep -n -F '<literal string>'`; each consumer is a task or a check below)
+
+## Facts this change retires        ← principle 6; "none" if it retires none
+- "<old wording>" — search: `git grep -n -F '<fixed string>'`
+
 ## Memory — plan and journal        ← ready-made plan, to fill in
    State: [ ] to do · [~] in progress · [x] done
 
    - [ ] Task 0 — Reconnaissance: verify in the field the remaining assumptions of the
          brief (files/signatures/integration point exist as expected).
          Check: <observable check; if it diverges, adapt the plan and note it>
+         Red if: <the divergence that makes you adapt the plan>
          Notes:
    - [ ] Task 1: <executable step>
-         Check: <observable check: build/test/grep/command>
+         Check: <observable check: build/test/command — on every element when the task
+                works on a set>
+         Red if: <the wrong state this check catches>
+         Cases: (only when the task changes behaviour: write these tests first, see them red)
+           | Input | Expected |
+           |---|---|
+           | <input> | <expected outcome> |
          Notes: (fill in during execution)
    - [ ] Task 2: ...
          Check: ...
+         Red if: ...
          Notes:
    ...
-   - [ ] Task N — Closing verification: the strongest check targeted at the perimeter
-         (code: imports of the touched modules and only the tests covering them; otherwise
-         the concrete equivalent check) and self-review of the result against the
-         completion criteria. The package gate does not go here: it belongs to `/review`.
-         Check: the check passes; every completion criterion satisfied.
+   - [ ] Task N — Closing verification: rerun every Check above on the final tree, run the
+         quick checks of the touched areas the execute contract declares for its closing,
+         and self-review the result against the completion criteria. The package gate
+         does not go here: it belongs to `/review`.
+         Check: every check of the plan green on the final tree; every criterion satisfied.
+         Red if: an earlier task's check fails after the later ones, or a criterion is unmet.
          Notes:
 
    ### Journal
    (Append here, in order, what you did, the decisions taken, the deviations from the
    plan and why, the hitches. Keep the task state above aligned.)
+
+## Handoff                          ← the block of § What you return, as a json fence;
+                                      the executor never edits it
 ```
 
 Cut rule: whoever reads `2. blueprint.md` must be able to execute the whole solution **without** opening other documents except the explicitly cited reference files, and **without** asking anything of the user.
@@ -134,9 +156,17 @@ Finish here: your only output is `2. blueprint.md` and the return block. Do not 
 Summarise in chat (Procedure point 7) and **close with this block — you are the Brief phase of `develop-feature`** — which is the only format on which the caller decides whether to continue:
 
 ```json
-{"ok": true, "brief_path": "<path of 2. blueprint.md>", "detail": "<if ok=false, the exact reason>"}
+{"ok": true, "brief_path": "<path of 2. blueprint.md>", "plan": [{"task": "<the task's number, as a string>", "check": "<the Check line>", "red_if": "<the Red if line>", "cases": [{"input": "<input>", "expected": "<expected outcome>"}]}], "interfaces": [{"symbol": "<literal string>", "declared_in": "<path:line>", "consumers": ["<path:line>"]}], "retired": [{"fact": "<old wording>", "pattern": "<fixed string>"}], "detail": "<if ok=false, the exact reason>"}
 ```
 
-If `2. blueprint.md` already existed, do **not** rerun the brief: `ok: true` with the existing path.
+- **`plan`** is the task list of the Memory as you froze it, one item per task; `task` is the number the Memory gives it, as a string (`"0"`, `"1"`, … up to the closing task's), and it is the identity the executor answers with; `cases` is the task's cases table, `[]` for a task that changes no behaviour.
+- **`interfaces`** and **`retired`** are the two sections of the same name, item by item. An empty list says the change touches no interface, or retires no fact: the key is never omitted.
+- With `ok: false` the three lists are `[]`.
+
+**The block stands in the file, and that is its seat.** Write it verbatim in the *Handoff* section of `2. blueprint.md` and return that same object: a delivery resumed after this phase reads it there (`skills/develop-feature/SKILL.md` § *Progress and findings*), because the chat that carried it is gone. It is the plan **as you froze it**: the executor adapts the Memory, never the *Handoff* section, and answers for every task of it in its own block — which is how a task dropped along the way stays visible.
+
+If `2. blueprint.md` already existed, do **not** rerun the brief: `ok: true` and the block its *Handoff* section carries. If that section is missing or does not have this form — a brief written before it existed, or a relaunch after the caller found it malformed — rewrite that section alone from the file's own tasks and sections, completing there what they lack (a `red_if`, a consumer map, a search for a retired fact) as principles 4 to 7 ask: it is the only change you make to an existing brief.
+
+**Whoever receives it checks its form, not its quality.** The caller hands it to the `block` question of the evaluator (`skills/develop-feature/SKILL.md` § *1. Brief*), which refuses an empty `check` or `red_if`, a behaviour table without input or expected outcome, a consumer that is not a string: a `Red if` it finds non-empty can still be banal, and whether it catches a real wrong state stays with you.
 
 The schema lives here, in the file of the node that produces it, and whoever invokes you cites it instead of copying it (§4.2 of `contracts/orchestration.md`): a block rewritten in the caller diverges from this one at the first modification, and the first to diverge is always the line somebody added afterwards.

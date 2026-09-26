@@ -85,7 +85,7 @@ That is why each carries a test bench running on a simulated filesystem, touchin
 nothing, and printing a counted total:
 
 ```bash
-node hooks/self-check.mjs          # all five benches at once, with the summed total
+node hooks/self-check.mjs          # all six benches at once, with the summed total
 node hooks/lib/command-guard.mjs --self-check   # one only, as sync-host runs it
 node hooks/lib/edit-guard.mjs --self-check      # the coarse edit perimeter, alone
 ```
@@ -93,11 +93,19 @@ node hooks/lib/edit-guard.mjs --self-check      # the coarse edit perimeter, alo
 The first exits `1` on the first red: the command for a CI and to run before a
 release, next to the two package validators.
 
-The five are the four above plus the evaluator's, which lives in `architect/` — outside
-`lib/`, because that folder is copied into the user's project and this one is not. It is the
-only bench here whose program **fails loudly**: the four hooks stay silent on a fault, so a
-total that drops is the only sign a bench stopped running, and that sign is worth exactly as
-much for the evaluator, whose silence stops a delivery.
+The six are the four above plus the two programs of `architect/` — the evaluator and the
+review's ledger tool — outside `lib/`, because that folder is copied into the user's project and
+this one is not. They are the only benches here whose programs **fail loudly**: the four hooks
+stay silent on a fault, so a total that drops is the only sign a bench stopped running, and that
+sign is worth exactly as much for the two programs, whose silence stops a delivery. The ledger
+tool's bench runs real Git on throwaway repositories under the system temp directory, so it
+needs `git` on the `PATH`.
+
+**A check nobody saw fail counts as red.** Beside its counted total a bench may report
+`never_red`: the rules no fixture of its own ever turned red. `self-check.mjs` turns a
+non-empty list red even when every case passed, because a rule that has only ever passed
+cannot be told from one that cannot fail. The evaluator's bench reports it, for every rule
+written through its `rule()`.
 
 ## What they do not do
 

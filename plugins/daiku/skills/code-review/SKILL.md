@@ -29,11 +29,12 @@ Arguments: `$ARGUMENTS`, plus `--effort low|medium|high` (optional, default `med
 
 Valid in finder mode. In manual mode you receive `$ARGUMENTS` as § *Manual mode* says.
 
-- the **round scope**: `BASE` and, from the second round on, the list of files to work on;
+- the **round range** — `from`, `to` and the files — and `work_root`: you judge `git diff <from> <to> -- <files>`, which from the second round on is only what the previous applier wrote;
 - the **effort** level (`low` | `medium` | `high`), which fixes the reading perimeter;
-- from the second round on: the **applied** and **discarded** of previous rounds, from the ledger.
+- the **ledger path**: from the second round on, the **applied** and **discarded** of previous rounds are read there;
+- the **resolved parameters**, used as passed; a key not passed resolves on §5 of `contracts/project-contract.md` (§4 point 1 of `contracts/orchestration.md`).
 
-If one of these is missing, **do not choose it yourself and do not ask for it**: return the empty block declaring which input was missing. A guessed scope is the only thing that makes two rounds incomparable.
+If one of the first three is missing, **do not choose it yourself and do not ask for it**: return the empty block declaring which input was missing. A guessed scope is the only thing that makes two rounds incomparable.
 
 ## What you look for
 
@@ -60,7 +61,7 @@ The reading perimeter is fixed by the **effort** the caller passes you, not by t
 - **Read-only**: you modify no files and run no commands that write.
 - **Do not trust what the code declares it does: verify it.** Symbols not imported or not defined, functions returning an empty or constant value while pretending to compute, dead code introduced but not wired, incoherent comparisons or formats.
 - **Return only verified findings**, never "plausible" ones. If you are not certain a finding is real, do not silence it: certainty is expressed in the `confidence` field, because the applier reverifies every finding before applying it. A finding verified at low confidence is information; a silenced finding is not.
-- **Already judged findings** (from the second round on): you receive the discarded of previous rounds with the reason. Do not repropose them, except for new evidence that the reason was wrong — in that case say so explicitly in the description.
+- **Already judged findings** (from the second round on): the ledger holds the discarded of previous rounds with the reason. Do not repropose them, except for new evidence that the reason was wrong — in that case say so explicitly in the description.
 
 ## The `confidence` scale
 

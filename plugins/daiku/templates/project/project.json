@@ -40,6 +40,10 @@
         "cwd": "<directory to run from>",
         "run": ["<the exact line to run, not a description of it>"]
       },
+      "check_fast": {
+        "cwd": "<directory to run from>",
+        "run": ["<the line that compiles, type-checks or lints <FILES> without writing anything>"]
+      },
       "lint_fix": {
         "cwd": "<directory to run from>",
         "run": ["<the line that applies only the safe lint fixes to <FILES>>"]

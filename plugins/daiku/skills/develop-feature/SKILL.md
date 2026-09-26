@@ -38,7 +38,7 @@ Read `contracts/orchestration.md`: roles, host, how a subagent launches, concurr
 
 ## The evaluator
 
-Four of the classifications below are **asked, not read off this prose**, and the
+Six of the classifications below are **asked, not read off this prose**, and the
 verdict binds. It is one program, and asking it is one command:
 
 ```bash
@@ -47,31 +47,34 @@ node <package root>/architect/architect.mjs <package root>
 
 It reads **one JSON object on stdin** and writes **one JSON object on stdout**; it starts no
 process, talks to no model and opens no file of the project — only the package's own
-`schemas/blocks.json`, for the `block` question. What it answers here:
+`schemas/blocks.json`, for the `block` and `handoff` questions. What it answers here:
 
 | Question | Where it is used here |
 |---|---|
 | `order` | § *The sequence* — given the entry point and the artefacts already on disk, which phases remain |
+| `block` | § *1. Brief* and § *2. Execute* — whether the block of the phase has the form its node declares |
+| `handoff` | § *The handoff* — whether execute left the evidence the brief asked of it |
 | `decision` | § *4. Decision* — the classification of the six rows |
 | `unblock` | § *Mechanical unblock* — whether only mechanical work remains |
 | `propagation` | *Block validation*, below — what follows a block that did not come back |
 
 **What it reads is one JSON object whose keys are fixed**, and a caller that guesses one of them
-stops the delivery. `question` is always there; then only what that question needs: `entry` (the
-entry point) and `present` (the artefacts already on disk) for `order` and `resumption`, the
-`review_outcome` block in full for `decision`, `closing` and `unblock`, its `commit` alone for
-`resumption` (it says whether the cycle had already closed), the `ledger` (or `null`) for `order`,
-`closing` and `resumption` — for `order` a ledger that exists and is not passed turns into a fork
-for the owner where a verdict was due — and `step` (`{"node": …, "block": …|null, "attempt": 1|2}`)
-for `propagation`. Three more questions read their own keys: `round` the `ledger`, `rounds_cap`
-(an integer or `null`) and, when asked again, `merit` (`"continue"` or `"stop"`); `layers` the
-`layers` of the opened policies and the `added` lines of the scope; `block` the block's `name` in
-`schemas/blocks.json` and the `block` itself. These are the nine questions it answers; the five this
-file does not use are asked by the contracts that need them, with the same keys — `closing`,
-`resumption` and `round` by `skills/review/SKILL.md` (§ *Closing*, § *Baseline and ledger*, § *When
-to run another round*), `layers` by `skills/arch-check/SKILL.md` § *How you verify*, `block` by
-`skills/new-feature/SKILL.md` § *7. Decisions are asked in chat*. A key a question needs and does
-not find is a loud failure, never a guessed value.
+stops the delivery. `question` is always there; **which other keys each question requires is
+declared once**, in `REQUIRES` of `architect/architect.mjs`: the program refuses an input missing
+one of them, and its bench reads every call to the evaluator in the contracts of `skills/` and
+refuses one whose paragraph does not name them all — so the keys are named where each call is
+made, and not listed again here. Three of them carry a meaning their name does not say: `ledger`
+is `null` when there is none, and for `order` a ledger that exists and is not passed turns into a
+fork for the owner where a verdict was due; `step` is `{"node": …, "block": …|null, "attempt": 1|2}`;
+`measured` holds the caller's own read-only searches, never the executor's word (§ *The handoff*).
+These are the ten questions it answers. The four this file does not use directly are asked by the contracts that need them:
+`closing`, `resumption` and `round` by `skills/review/SKILL.md` (§ *Closing*, § *Baseline and ledger*, § *When to run another round*), through
+`architect/ledger.mjs`, the review's disk side, which imports these questions and hands them the ledger and the added lines it read from disk
+(`skills/review/SKILL.md` § *The ledger tool*), and which asks `block` too, on the finder and applier blocks; `layers` by
+`skills/arch-check/SKILL.md` § *How you verify*, the same way, and again by `skills/execute/SKILL.md` § *Principles* point 8, which calls
+`architect/architect.mjs` directly — execute runs before a ledger exists, so it reads the added lines from Git itself; and `block` is asked also
+by `skills/new-feature/SKILL.md` § *7. Decisions are asked in chat*.
+A key a question needs and does not find is a loud failure, never a guessed value.
 
 **The root is a path relative to the package** — the folder containing `skills/`, `contracts/` and
 `architect/`, **two levels above this file** — in the same form `init` and `sync-host` already use:
@@ -115,8 +118,8 @@ The state needed to **resume** is not that: they are the artefacts the phases de
 The phases are ordered and not skippable. Each is **one** subagent, with the prompt giving it the contract to read, the resolved input and the JSON block to return.
 
 **Which phases remain is not read off this file, it is asked.** Before phase 0, ask the evaluator
-(`question: "order"`), passing the entry point, the artefacts already on disk and the `ledger` (or
-`null`): the verdict says where to start and what is left to do, and the sections below are its
+(`question: "order"`), passing the entry point (`entry`), the artefacts already on disk (`present`)
+and the `ledger` (or `null`): the verdict says where to start and what is left to do, and the sections below are its
 **rendering** for whoever reads a contract; the evaluator owns the order. Two things stay here:
 the phases are ordered and
 none is skippable, and the worktree lifecycle of phase 0 still belongs here.
@@ -167,6 +170,8 @@ Subagent producing the brief. In the prompt:
 
 The expected outcome is the block `skills/blueprint/SKILL.md` declares in its own § *What you return*, in full and with those field names.
 
+**Whether it has that form is asked, not eyeballed.** Call the evaluator with `question: "block"`, `name: "blueprint"` and `block` (what came back, parsed, or `null`): on `invalid` the phase has failed, `blockers` says what was wrong, and *Block validation* above holds — one relaunch, then the delivery stops. It checks the form, and the block says so of itself: a plan whose every task carries a `red_if` can still carry banal ones.
+
 ### 2. Execute — **worker** role
 
 Executor subagent. In the prompt:
@@ -177,15 +182,45 @@ Executor subagent. In the prompt:
 - `{memory.index}` and the paths of the memories pertinent to the perimeter, to open before writing (§4.1 of `contracts/orchestration.md`);
 - ask nothing of the user; stop only before a real block (unjustified destructive action or irreconcilable contradiction).
 
-The expected outcome is the block `skills/execute/SKILL.md` declares in its own § *What you return*, in full and with those field names.
+The expected outcome is the block `skills/execute/SKILL.md` declares in its own § *What you return*, in full and with those field names. Its form is asked like the brief's — `question: "block"`, `name: "execute"`, `block` — and an `invalid` is a failed phase under *Block validation*. `ok: true` is not the end of the phase: execute is over when § *The handoff* below says `ready`.
 
-### 3. Review — `/review`, always, inside the delivery
+#### Round 0 — **worker** role, only above the sharding threshold
+
+On a diff above the threshold at which `skills/review/SKILL.md` § *Finder* shards the `bug` finder — measured in the work root on `git diff --numstat <base-ref> -- {code_root}` plus the untracked files of `git ls-files --others --exclude-standard -- {code_root}`, each counted whole — one more subagent reads the diff before the handoff. Below the threshold it does not exist: say so in one line in chat and go to the handoff.
+
+It is **not** the review brought forward. It has a lens the `bug` finder does not have, on the three kinds of defect that cost review rounds when execute leaves them behind, and its findings are applied by execute, not by the applier. In the prompt, and only this:
+
+- the diff: the base-ref of `4. review-notes.md`, the work root, `{code_root}` and the untracked files;
+- the lens, in these words:
+  - **producer and consumer** — for every interface the diff changes (a signature, a block field, a JSON key, an argument, a prose instruction naming the inputs of a call, a registry of the members of a set), `git grep --untracked` its literal string and verify that every consumer reads it as it is written now;
+  - **retired facts** — for every name, count or rule the diff changes, `git grep --untracked` the old wording: a surviving reference, a sentence contradicting the new rule, a count gone stale;
+  - **checks that cannot go red** — for every test or check the diff adds, name the input that makes it fail: a check under a condition always true, one fixture per enum, a presence `grep` standing for correctness are findings;
+- no logic defects and no style: those belong to the review, whose finders read this diff after you;
+- the read-only constraint, in these words: it modifies no files and runs no commands that write (§4 of `contracts/orchestration.md`);
+- no brief, no Journal, no notes: it judges the diff, not what execute says of it;
+- the block to return: the one `skills/finder-prompt/SKILL.md` § *The block you return* declares, `confidence` high only where a command shows the finding — the grep line, the input that cannot fail.
+
+On `claude` the subagent type is `finder`. A block that does not come back is relaunched once; at the second silence round 0 is declared missing in chat and the phase goes on to the handoff, because it adds to the delivery and never holds it. If findings come back, relaunch execute on the same folder with the findings in the prompt — § *Round-0 findings* of `skills/execute/SKILL.md` says what it does with them — and validate its block again. Zero findings: straight to the handoff.
+
+**The review stays blind to it.** The findings go to execute and stop there: they are not written in `4. review-notes.md`, not passed to phase 3, and no finder of the review is handed them. The review's round 1 reads the diff as if round 0 had never been, which is the only way its yield stays what it was.
+
+#### The handoff — asked, not judged
+
+Execute is over when a program finds its evidence, not when its block says `ok`. Before phase 3:
+
+1. **Measure, yourself, read-only.** In the work root, with `--untracked` because what execute created is not in the index yet: for each `retired` item of the brief, `git grep --untracked -n -F -e '<pattern>' -- {code_root}` and the number of lines it prints; for each `interfaces` item, `git grep --untracked -l -F -e '<symbol>' -- {code_root}` and the files it prints; the files of the diff, `git diff --name-only --relative <base-ref> -- {code_root}` plus `git ls-files --others --exclude-standard -- {code_root}`. In the artefacts root, the tasks still open: `git grep --no-index -n -E '^[[:space:]]*- \[[ ~]\] ' -- '<folder>/2. blueprint.md'`. They are the searches execute ran: rerunning them costs seconds, and a count read off its block is a count nobody measured.
+2. **Ask.** Call the evaluator with `question: "handoff"`, `brief` (the block of phase 1 — on a resumed delivery, the one `<folder>/2. blueprint.md` carries in its *Handoff* section; a brief without that section, written before it existed, goes back to phase 1 once, whose contract then rewrites that section alone), `notes` (the block of phase 2), `diff_files` and `measured` (`{"absence": [{"pattern", "hits"}], "consumers": [{"symbol", "files"}], "open_tasks": [<lines>]}`). `ready` → phase 3. `not-ready` → `blockers` names every piece of evidence missing: a task of the brief not rerun green, a behaviour change never seen red, a consumer not checked, a retired fact whose count differs from yours, a quick check red, a task left open.
+3. **One relaunch, then it stops.** On `not-ready` relaunch execute **once** — the ceiling of §4 point 2 of `contracts/orchestration.md` — with the same prompt plus the `blockers`, which are the whole scope of that run (§ *When you are relaunched on the handoff* of `skills/execute/SKILL.md`); then measure and ask again. A second `not-ready` is a failed Execute: the delivery stops (§ *Early block*) with the blockers as its reason.
+
+What the program checks is the **form of the evidence** — a proof exists, its exit is red, a count matches the measurement — never whether a red proof exercised the right thing: that stays the review's.
+
+### 3. Review — **worker** role, `/review`, always, inside the delivery
 
 Review **is part of the delivery**: it is not an optional step, it is not postponed to the user, and it is not skipped — it is the only point of the chain running the build and test gate, so without it nobody has proven the feature compiles. Without it the decision of phase 4 does not exist, so the commit does not exist.
 
 Fully run `skills/review/SKILL.md` — scope → finder and fix rounds, until the cycle converges → gate — on file `<folder>/4. review-notes.md` in the **artefacts root** (fixed name by `execute` contract: do not concatenate the returned path, its format is not guaranteed). It is the same discipline running from standalone `/review`: a single source, no copy — **do not rewrite it here**. In the prompt also pass it the worktree work root and the artefacts root: diff, fix, coverage and gate run in the first, ledger and `5. review-report.md` in the second (`skills/review/SKILL.md`, § *When review runs on a worktree*).
 
-**Delegate it to a subagent** executing that contract: do not orchestrate its phases yourself. The yield of its round 1 stands in the independence of the finders, and orchestrating it from here — where you have in mind the brief, the execution and what you expect — is the already self-convinced pass the fan-out exists to avoid (§4 of `contracts/orchestration.md`, *Depth and degradation*). If you are **resuming** a delivery whose review had already started, pass it the ledger path you find in `{paths.review_state}/` with the `base` of this delivery **and** with `item` equal to `<folder>`: it restarts from the next round instead of running the whole triage again. The two fields are watched together because the baseline alone does not identify a review — a resumed delivery restarts from the same commit — and **if the candidates remain more than one, or if the ledger carries no `item`, you pass none of them**: the triage is run again, while the ledger of another feature silently switches off `on_previous_fix` and `oscillation`. `--with` is not used here: the conditional disciplines are decided by the scope from the diff.
+**Delegate it to a subagent** executing that contract, on the **worker** role: its exits, its rounds and its closing are verdicts of the evaluator and of `architect/ledger.mjs`, and what stays with it is bookkeeping plus the merit verdict of rule 3, taken on criteria its contract writes down. Do not orchestrate its phases yourself. The yield of its round 1 stands in the independence of the finders, and orchestrating it from here — where you have in mind the brief, the execution and what you expect — is the already self-convinced pass the fan-out exists to avoid (§4 of `contracts/orchestration.md`, *Depth and degradation*). If you are **resuming** a delivery whose review had already started, pass it the ledger path you find in `{paths.review_state}/` with the `base` of this delivery **and** with `item` equal to `<folder>`: it restarts from the next round instead of running the whole triage again. The two fields are watched together because the baseline alone does not identify a review — a resumed delivery restarts from the same commit — and **if the candidates remain more than one, or if the ledger carries no `item`, you pass none of them**: the triage is run again, while the ledger of another feature silently switches off `on_previous_fix` and `oscillation`. `--with` is not used here: the conditional disciplines are decided by the scope from the diff.
 
 **Instead always pass it `--no-commit`**, and it is mandatory: `/review` closes with the commit by its own setting (§ *Closing* of its file), and the commit of this delivery is **phase 6**, after the decision of phase 4 and the alignment of 5b. Without that flag review would commit the code before you evaluated its open items, phase 6 would find the tree already clean, and `update-memory` would run twice — once from `/commit` inside review, once as phase 5b — on a diff meanwhile already entered.
 
@@ -302,10 +337,11 @@ A subagent: `git -C <pool>/<name> reset --hard <merge_sha>` and `git -C <pool>/<
 
 Subagent appending **at the tail** of `<folder>/5. review-report.md` — the file phase 3 already wrote — never overwrite or reformat what is already there.
 
-It is the only phase having to report fields produced by **six others**, and a subagent in a fresh context derives none of them alone. In the prompt they therefore go **already resolved**, one by one (§4.1 of `contracts/orchestration.md`): rebuilding them from memory drops first precisely the lines saying what the delivery did **not** do — and a poor report is never reopened. In the prompt:
+It is the only phase having to report fields produced by **seven others**, and a subagent in a fresh context derives none of them alone. In the prompt they therefore go **already resolved**, one by one (§4.1 of `contracts/orchestration.md`): rebuilding them from memory drops first precisely the lines saying what the delivery did **not** do — and a poor report is never reopened. In the prompt:
 
 - the path to append on, `<folder>/5. review-report.md`, and the tail-append constraint;
 - `<folder>` and the **delivered solution**, verbatim: it is the one distilling it, not you;
+- from **phase 2**: the path of `<folder>/4. review-notes.md`, whose *Considerations* section is material for the open-items paragraph where a point is still open — its *Handoff* section is evidence for a program, not for the report;
 - from the **phase 3** block: `gate` and `gate_detail`, `outcome`, `missing_disciplines` and `independence`;
 - from **phase 4**: the classified `status` and the remaining `to_confirm` items, with their `scenario`;
 - from the **phase 5b** block: `updated` and the `confirm_with_owner` items;
@@ -328,7 +364,7 @@ It is the last phase and nobody decides anything more on its outcome, but the bl
 
 ## Early block
 
-If Acquisition, Brief or Execute fail, the delivery stops: say so in chat, have the report write a block saying what had to be delivered, at which phase it stopped and why, and close with `status: "blocked"`. No stage, no memory, no commit, no merge.
+If Acquisition, Brief or Execute fail, the delivery stops — and Execute fails also when § *The handoff* stays `not-ready` after its one relaunch: say so in chat, have the report write a block saying what had to be delivered, at which phase it stopped and why, and close with `status: "blocked"`. No stage, no memory, no commit, no merge.
 
 **Also here the report is a subagent, and also here the prompt is the only channel.** You pass it only the fields of phase 7 existing at that point — file path and tail append, `<folder>` and solution, **which phase stopped** and the `detail` of its block, `status: "blocked"`, the dirty paths under `{code_root}` — and you explicitly tell it the others **do not exist**: gate, commit and memory never ran. Without that line the report tells them anyway, and it is how a delivery never started reads like a delivery arrived badly at the end.
 
@@ -359,7 +395,7 @@ If Acquisition, Brief or Execute fail, the delivery stops: say so in chat, have 
 
 Every field comes from a phase, and is reported **verbatim** from there — not recomputed from memory: `status` from phase 4 (a conflicting merge of phase 6b reclassifies it `BLOCKED_NO_COMMIT`); `worktree` from phase 0 (`null` if it acquired nothing); `commit_sha` from `committed`/`commit_sha` of phase 6; `merge_sha` from phase 6b (`null` if merge did not start or went into conflict); `memory_updated` from the `updated` field of phase 5b (`false` if the phase was not run); `memory_committed` and `memory_commit_sha` and `version_commit_sha` from phase 6; `reason` from the `detail` of the blocking phase. The delivery does not park — on `BLOCKED_NO_COMMIT` and on `blocked` the worktree stays dirty and the paths are declared in the report and in `reason`.
 
-**`architect_agreement` is the one field that measures the delivery instead of reporting it.** It says whether your own reading of the four asked classifications coincided with the verdict of § *The evaluator*: `match` when they agreed, `divergence` when they did not — and on a divergence the verdict held, which is the case worth reading. It is `null` when the evaluator never ran, and a `null` there is not a fault but a fact to declare. It exists to measure the evaluator's value: if the two readings always coincide, the evaluator bought little.
+**`architect_agreement` is the one field that measures the delivery instead of reporting it.** It says whether your own reading of the six asked classifications coincided with the verdict of § *The evaluator*: `match` when they agreed, `divergence` when they did not — and on a divergence the verdict held, which is the case worth reading. It is `null` when the evaluator never ran, and a `null` there is not a fault but a fact to declare. It exists to measure the evaluator's value: if the two readings always coincide, the evaluator bought little.
 
 ## Self-deceptions (stop them before they stop you)
 
@@ -367,6 +403,7 @@ Every field comes from a phase, and is reported **verbatim** from there — not 
 |---|---|
 | "I do the brief/execution here in chat, it is faster" | Every phase is a subagent in a fresh context (`contracts/orchestration.md` §4). In chat you carry behind all the context of previous phases and the chain degenerates. |
 | "I rewrite the review discipline here, so everything is in one place" | No: the source is `skills/review/SKILL.md`. Copying it here makes it diverge at the first modification. |
+| "Execute returned `ok: true`, I go to the review" | `ok` is the executor's word on itself. The phase closes on the handoff's `ready`, measured on the disk (§ *The handoff*). |
 | "The gate is red but the code is clearly right, I commit" | Red gate = `BLOCKED_NO_COMMIT`. Classification is deterministic, not a judgement. |
 | "I leave this as a post-commit decision, so the user decides" | Post-commit decisions are true forks, not what nobody wanted to resolve. If one road is clearly the right one, it is resolved where the finding originates. |
 | "I commit first and update memory after" | The order is declared: stage → memory → feature commit → doc/memory commit → version/changelog commit. No feature freezes without the artefacts realigned on the **same** diff. |

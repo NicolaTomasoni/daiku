@@ -12,7 +12,7 @@
  * and, **in verdict mode, it opens no file of the project** — everything it needs to
  * know about the disk the agent passes it, because the agent already holds it. The one
  * file it does open is the package's own `schemas/blocks.json`, and only for the
- * `block` question: that is not the project's disk, it is the contract it checks against. The price is
+ * `block` and `handoff` questions: that is not the project's disk, it is the contract it checks against. The price is
  * declared: a wrong list gives a wrong verdict. It is accepted because a list passed
  * in the clear *ends up in the outcome* and can be inspected, while a `stat` made
  * inside a process leaves no trace.
@@ -23,14 +23,14 @@
  *       reads one JSON object on stdin, writes one JSON object on stdout, exits 0.
  *
  *   node <package-root>/architect/architect.mjs --self-check <package-root>
- *       the bench. Counted JSON `{checks, passed, failed[]}` on stdout, exit 1 on the
- *       first red. `hooks/self-check.mjs` launches it, so the release verification
- *       stays a single command.
+ *       the bench. Counted JSON `{checks, passed, failed[], never_red[]}` on stdout, exit 1
+ *       on the first red or on a rule no fixture turned red. `hooks/self-check.mjs`
+ *       launches it, so the release verification stays a single command.
  *
  * **The root always arrives as an argument**, in both modes, and is never derived
  * from this file's position on disk: a program that deduces its own root is correct
  * until the first move of the tree and wrong in silence. Verdict mode reads the root only
- * for the `block` question; it requires it on every question all the same, because a
+ * for the `block` and `handoff` questions; it requires it on every question all the same, because a
  * single invocation form is one thing to get wrong once. The bench uses it to read the
  * contracts it compares itself against.
  *
@@ -45,7 +45,7 @@
  *
  * **Fields of the blocks it consumes that it deliberately does not read**, declared as
  * §4 point 2 of `contracts/orchestration.md` requires, each standing on the road of
- * none of the nine questions: `rounds` as a count (the rounds themselves live in the
+ * none of the ten questions: `rounds` as a count (the rounds themselves live in the
  * ledger, and the ledger is what this program reads), `disciplines_round_1`,
  * `independence`, `applied`, `severe`, `on_previous_fix`, `discarded`, `coverage` **of
  * the review block** (the ledger's is read, by the resumption and the readable-ledger
@@ -53,16 +53,24 @@
  * by the `order`, the closing and the resumption), `blocking` **as the block's own count**
  * (of each item it is read, by the blocking condition), `commit_sha` (the resumption reads
  * `commit` alone, to know whether the cycle had closed), `report`. Not reading a field is
- * also why a missing one among these changes no verdict.
+ * also why a missing one among these changes no verdict. Of the brief and execute blocks
+ * the `handoff` question holds together, the content of `brief_path`, `note_review_path`,
+ * `verify_detail` and `detail` is not read either — the prose of a step, not its evidence —
+ * but their presence is: it is the form the `block` question checks before `handoff` reads.
+ * Of each round of the ledger, the trees are read only as present — the `round` question
+ * refuses a round after one without them — and the fast check only by its `status`; `cost`,
+ * `deviations`, the fast check's `detail` and `files`, the trees' values themselves are not
+ * read: they are what `architect/ledger.mjs` measured, for the reader and for the next range.
  *
  * **A case the bench does not cover is a delivery that stops**, not a wrong verdict:
  * the verdict binds, and the bench is the only defence. That is the reason the bench
- * below counts one proof for every row of every table the nine questions copy, every
+ * below counts one proof for every row of every table the ten questions copy, every
  * entry point, every case of the ambiguity rule, and every row of the topology table.
  */
 
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { readdirSync, readFileSync, realpathSync } from 'node:fs';
+import { join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 /* ------------------------------------------------------------------------- *
  * The order this program owns; the table of §3 is its reflection
@@ -169,6 +177,10 @@ const GATES = ['green', 'red'];
 const EXITS = ['fixed-point', 'diminishing-returns', 'oscillation', 'rounds-truncated', 'rounds-exhausted'];
 const DECISIONS = ['GREEN_COMMITTED', 'GREEN_WITH_POST_DECISIONS', 'BLOCKED_NO_COMMIT'];
 const MERITS = ['continue', 'stop'];
+/** The quick checks of `skills/execute/SKILL.md` § *Principles* 8; the bench holds it equal to `schemas/blocks.json`. */
+const PREFLIGHT_STEPS = ['check_fast', 'lint_fix', 'test_targeted', 'layers'];
+/** The outcome of the fast check `skills/review/SKILL.md` § *Applier* runs after each applier. */
+const CHECKS = ['green', 'red', 'skipped'];
 
 /** The guardrail `skills/review/SKILL.md` § *Exits* sets when no `--rounds N` was passed. */
 const ROUNDS_GUARDRAIL = 6;
@@ -181,6 +193,23 @@ class BadInput extends Error {}
 
 function nonEmpty(value) {
   return typeof value === 'string' && value.trim() !== '';
+}
+
+/**
+ * A rule a verdict can fail on, evaluated so the bench can see it fail. `rule(id, holds)`
+ * returns `holds` and records, per `id`, whether it was ever seen holding and ever seen
+ * failing. The bench reads every literal id this file passes to it and every row of `REQUIRES`, and
+ * a rule no fixture ever turned red is itself a red — `never_red` — because a check nobody
+ * saw fail is indistinguishable from one that cannot. Rules added after this convention go
+ * through it; the ones written before it are covered by their own cases.
+ */
+const SEEN = new Map();
+function rule(id, holds) {
+  const seen = SEEN.get(id) || { held: false, failed: false };
+  if (holds) seen.held = true;
+  else seen.failed = true;
+  SEEN.set(id, seen);
+  return holds;
 }
 
 function presentOf(input) {
@@ -328,7 +357,7 @@ function incoherence(input, question) {
 }
 
 /* ------------------------------------------------------------------------- *
- * The nine questions
+ * The ten questions
  * ------------------------------------------------------------------------- */
 
 /** Where in the chain the entry starts, cut at the furthest phase the artefacts prove. */
@@ -565,6 +594,27 @@ function roundsOf(ledger) {
     for (const key of ['applied', 'oscillation']) {
       if (!Array.isArray(round[key])) throw new BadInput(`ledger.rounds[${index}].${key} is required and must be an array`);
     }
+    // A round after the first judges the delta of the round before it, and that delta is the
+    // pair of trees the ledger recorded around its applier: without them it does not exist.
+    if (index > 0) {
+      for (const key of ['pre_apply_tree', 'post_apply_tree']) {
+        if (!rule('round.previous-trees', nonEmpty(rounds[index - 1][key]))) {
+          throw new BadInput(
+            `ledger.rounds[${index - 1}].${key} is required: round ${index + 1} judges the delta between the two trees of the round before it`
+          );
+        }
+      }
+    }
+    if (round.check_fast !== undefined) {
+      if (!rule('round.check-fast-list', Array.isArray(round.check_fast))) {
+        throw new BadInput(`ledger.rounds[${index}].check_fast must be an array`);
+      }
+      round.check_fast.forEach((entry, at) => {
+        if (!rule('round.check-fast-entry', !!entry && nonEmpty(entry.area) && CHECKS.includes(entry.status))) {
+          throw new BadInput(`ledger.rounds[${index}].check_fast[${at}] must be {"area", "status": ${CHECKS.join('|')}}`);
+        }
+      });
+    }
     round.applied.forEach((fix, at) => {
       if (!fix || !nonEmpty(fix.file) || typeof fix.symbol !== 'string' || !nonEmpty(fix.anchor)) {
         throw new BadInput(`ledger.rounds[${index}].applied[${at}] needs file, symbol and anchor: a fix is identified by them`);
@@ -643,8 +693,12 @@ function askRound(input) {
 
   const severe = current.applied.filter((fix) => fix.severe).length;
   const regressing = current.applied.filter((fix) => fix.on_previous_fix).length;
+  // A fix the fast check rejects is code that does not pass the gate either: the round that
+  // wrote it cannot be the last one, whatever else it applied.
+  const red = (current.check_fast || []).filter((entry) => entry.status === 'red').map((entry) => entry.area);
   let why;
   if (severe >= 3) why = `rule 2: ${severe} severe fixes in round ${n}`;
+  else if (!rule('round.fast-check-green', !red.length)) why = `rule 2: the fast check is red on ${red.join(', ')} after round ${n}`;
   else if (regressing) why = `rule 3: ${regressing} fixes rewrite a previous fix (on_previous_fix)`;
   else if (merit === null) {
     return block({
@@ -775,6 +829,126 @@ function valuesAt(value, path) {
  * data, an order of option ids is a rule. One entry per block whose prose carries one.
  */
 const SHAPES = {
+  // skills/blueprint/SKILL.md § What you return: the plan as the brief froze it, the consumers of
+  // every interface it touches, the facts it retires. Form, not quality: a non-empty red_if can
+  // still be banal, and the prose says so.
+  blueprint: (value) => {
+    const keys = ['plan', 'interfaces', 'retired'];
+    const wrong = [];
+    for (const key of keys) {
+      if (key in value && !rule('blueprint.lists', Array.isArray(value[key]))) wrong.push(`${key} is not an array — with zero items it is []`);
+    }
+    if (value.ok !== true || keys.some((key) => !Array.isArray(value[key]))) return wrong;
+    if (!rule('blueprint.plan-not-empty', value.plan.length > 0)) {
+      wrong.push('plan is empty: a brief has at least its reconnaissance and its closing task');
+    }
+    const ids = new Set();
+    value.plan.forEach((task, at) => {
+      const where = `plan[${at}]`;
+      if (!rule('blueprint.plan-item', !!task && typeof task === 'object' && !Array.isArray(task))) {
+        wrong.push(`${where} is not a task`);
+        return;
+      }
+      if (!rule('blueprint.task-id', nonEmpty(task.task))) wrong.push(`${where}.task is missing or empty: it is the id the Memory numbers the task with`);
+      else if (!rule('blueprint.task-id-unique', !ids.has(task.task))) wrong.push(`${where}.task ${JSON.stringify(task.task)} repeats an id`);
+      else ids.add(task.task);
+      if (!rule('blueprint.check', nonEmpty(task.check))) wrong.push(`${where}.check is missing or empty`);
+      if (!rule('blueprint.red-if', nonEmpty(task.red_if))) {
+        wrong.push(`${where}.red_if is missing or empty: a check naming no wrong state it catches is not a verification`);
+      }
+      if (!rule('blueprint.cases-list', Array.isArray(task.cases))) {
+        wrong.push(`${where}.cases is not an array — for a task changing no behaviour it is []`);
+        return;
+      }
+      task.cases.forEach((row, index) => {
+        if (!rule('blueprint.case-row', !!row && nonEmpty(row.input) && nonEmpty(row.expected))) {
+          wrong.push(`${where}.cases[${index}] needs input and expected, both non-empty`);
+        }
+      });
+    });
+    value.interfaces.forEach((item, at) => {
+      if (!rule('blueprint.interface', !!item && nonEmpty(item.symbol) && nonEmpty(item.declared_in))) {
+        wrong.push(`interfaces[${at}] needs symbol and declared_in, both non-empty`);
+        return;
+      }
+      if (!rule('blueprint.consumers', Array.isArray(item.consumers) && item.consumers.every(nonEmpty))) {
+        wrong.push(`interfaces[${at}].consumers must be an array of "<path:line>" strings — with none it is []`);
+      }
+    });
+    value.retired.forEach((item, at) => {
+      if (!rule('blueprint.retired', !!item && nonEmpty(item.fact) && nonEmpty(item.pattern))) {
+        wrong.push(`retired[${at}] needs fact and pattern, both non-empty`);
+      }
+    });
+    return wrong;
+  },
+  // skills/execute/SKILL.md § What you return: the evidence of what execute verified. Form, not
+  // quality: a red proof with a non-zero exit can still exercise the wrong thing.
+  execute: (value) => {
+    const keys = ['checks', 'red_proofs', 'consumers_checked', 'absence', 'preflight'];
+    const wrong = [];
+    for (const key of keys) {
+      if (key in value && !rule('execute.lists', Array.isArray(value[key]))) wrong.push(`${key} is not an array — with zero items it is []`);
+    }
+    if (value.ok !== true || keys.some((key) => !Array.isArray(value[key]))) return wrong;
+    const tasks = new Set();
+    value.checks.forEach((row, at) => {
+      const where = `checks[${at}]`;
+      if (!rule('execute.check-task', !!row && nonEmpty(row.task))) {
+        wrong.push(`${where}.task is missing or empty`);
+        return;
+      }
+      if (!rule('execute.check-task-unique', !tasks.has(row.task))) wrong.push(`${where}.task ${JSON.stringify(row.task)} repeats a task: one row per task`);
+      tasks.add(row.task);
+      if ('replaced' in row) {
+        if (!rule('execute.check-replaced', nonEmpty(row.replaced))) wrong.push(`${where}.replaced is empty: a replaced task says why, as the Journal does`);
+      } else if (!rule('execute.check-run', nonEmpty(row.check) && Number.isInteger(row.exit))) {
+        wrong.push(`${where} needs check and an integer exit: the command rerun at closing and what it returned`);
+      }
+    });
+    value.red_proofs.forEach((proof, at) => {
+      const where = `red_proofs[${at}]`;
+      if (!rule('execute.proof-names', !!proof && nonEmpty(proof.test) && nonEmpty(proof.task) && nonEmpty(proof.against))) {
+        wrong.push(`${where} needs test, task and against, all non-empty`);
+        return;
+      }
+      if (!rule('execute.proof-red', Number.isInteger(proof.exit) && proof.exit !== 0)) {
+        wrong.push(`${where}.exit must be a non-zero integer: a proof of red that exited 0 is a green`);
+      }
+      if (!rule('execute.proof-output', nonEmpty(proof.red_output))) wrong.push(`${where}.red_output is empty: the lines showing the red are the proof`);
+    });
+    value.consumers_checked.forEach((row, at) => {
+      if (!rule('execute.consumer', !!row && nonEmpty(row.consumer) && nonEmpty(row.check) && Number.isInteger(row.exit))) {
+        wrong.push(`consumers_checked[${at}] needs consumer, check and an integer exit`);
+      }
+    });
+    value.absence.forEach((row, at) => {
+      const where = `absence[${at}]`;
+      if (!rule('execute.absence-count', !!row && nonEmpty(row.pattern) && Number.isInteger(row.hits) && row.hits >= 0)) {
+        wrong.push(`${where} needs pattern and hits, a count from 0 up`);
+        return;
+      }
+      if (!rule('execute.absence-why', row.hits === 0 || nonEmpty(row.why))) {
+        wrong.push(`${where} counts ${row.hits} hits and no why: every hit left is answered for`);
+      }
+    });
+    value.preflight.forEach((row, at) => {
+      const where = `preflight[${at}]`;
+      if (!rule('execute.preflight-row', !!row && nonEmpty(row.step) && nonEmpty(row.outcome) && typeof row.detail === 'string')) {
+        wrong.push(`${where} needs step, outcome and detail`);
+        return;
+      }
+      if (!rule('execute.preflight-detail', row.outcome === 'green' || nonEmpty(row.detail))) {
+        wrong.push(`${where} is ${row.outcome} with no detail: a red carries its output, a skip the key the project does not declare`);
+      }
+    });
+    for (const step of PREFLIGHT_STEPS) {
+      if (!rule('execute.preflight-step', value.preflight.some((row) => row && row.step === step))) {
+        wrong.push(`preflight has no ${step} row: each of the four quick checks is run or declared skipped`);
+      }
+    }
+    return wrong;
+  },
   // skills/decision-doc/SKILL.md § The block you return, and skills/new-feature/SKILL.md § 7.
   'decision-doc': (value) => {
     const wrong = [];
@@ -814,6 +988,53 @@ const SHAPES = {
     });
     return wrong;
   },
+  // skills/applier/SKILL.md § The block you return: every finding handed over has exactly one
+  // outcome. `finding_ids` is the list the caller numbered, and a shape without it cannot judge.
+  applier: (value, input) => {
+    const ids = input.finding_ids;
+    if (!rule('applier.finding-ids', Array.isArray(ids) && ids.every(nonEmpty) && new Set(ids).size === ids.length)) {
+      throw new BadInput('finding_ids is required for the applier block: the ids of every finding handed to it, distinct and non-empty');
+    }
+    const wrong = [];
+    const outcomes = new Map(ids.map((id) => [id, []]));
+    for (const key of ['applied', 'discarded', 'to_confirm', 'oscillation']) {
+      if (!(key in value)) continue;
+      if (!rule('applier.lists', Array.isArray(value[key]))) {
+        wrong.push(`${key} is not an array — with zero items it is []`);
+        continue;
+      }
+      value[key].forEach((item, at) => {
+        const id = item && item.finding_id;
+        if (!rule('applier.item-names-a-finding', nonEmpty(id))) wrong.push(`${key}[${at}].finding_id is missing: every item names the finding it answers`);
+        else if (!rule('applier.finding-was-handed-over', outcomes.has(id))) wrong.push(`${key}[${at}].finding_id ${JSON.stringify(id)} is not a finding that was handed over`);
+        else if (key !== 'oscillation') outcomes.get(id).push(key);
+      });
+    }
+    for (const [id, seen] of outcomes) {
+      const kinds = [...new Set(seen)];
+      if (!rule('applier.every-finding-has-an-outcome', kinds.length > 0)) wrong.push(`finding ${id} has no outcome: it is applied, discarded or to confirm`);
+      else if (!rule('applier.one-outcome', kinds.length === 1)) wrong.push(`finding ${id} has more than one outcome: ${kinds.join(', ')}`);
+      else if (!rule('applier.listed-once-unless-applied', kinds[0] === 'applied' || seen.length === 1)) {
+        wrong.push(`finding ${id} is listed ${seen.length} times in ${kinds[0]}`);
+      }
+    }
+    for (const item of Array.isArray(value.oscillation) ? value.oscillation : []) {
+      const id = item && item.finding_id;
+      if (nonEmpty(id) && outcomes.has(id) && !rule('applier.oscillation-is-discarded', outcomes.get(id).includes('discarded'))) {
+        wrong.push(`finding ${id} is in oscillation and not among the discarded: a suppressed fix is recorded there too`);
+      }
+    }
+    return wrong;
+  },
+  // skills/finder-prompt/SKILL.md § The block you return: a list of findings, each on a file.
+  finder: (value) => {
+    if (!rule('finder.findings-list', Array.isArray(value.findings))) return ['findings is not an array — with zero findings it is []'];
+    const wrong = [];
+    value.findings.forEach((finding, at) => {
+      if (!rule('finder.finding-on-a-file', !!finding && nonEmpty(finding.file))) wrong.push(`findings[${at}].file is missing: a finding stands on a file`);
+    });
+    return wrong;
+  },
 };
 
 function askBlock(input, root) {
@@ -833,7 +1054,7 @@ function askBlock(input, root) {
         if (got !== null && !domain.includes(got)) wrong.push(`${path} is ${JSON.stringify(got)}, outside ${domain.join('|')}`);
       }
     }
-    if (SHAPES[input.name]) wrong.push(...SHAPES[input.name](value));
+    if (SHAPES[input.name]) wrong.push(...SHAPES[input.name](value, input));
   }
   return block({
     verdict: wrong.length ? 'invalid' : 'valid',
@@ -841,6 +1062,134 @@ function askBlock(input, root) {
     detail: wrong.length
       ? `the ${input.name} block is malformed — ${wrong.length} faults. A malformed block counts as a block that did not come back.`
       : `the ${input.name} block has the shape its producer declares.`,
+  });
+}
+
+/* ------------------------------------------------------------------------- *
+ * 10. The handoff — `skills/develop-feature/SKILL.md` § *The handoff*
+ * ------------------------------------------------------------------------- */
+
+/** The file a reference names: `<file>::<case>` and `<path>:<line>` lose their tail, `\` becomes `/`. */
+function fileOf(ref) {
+  return slashed(String(ref))
+    .replace(/::.*$/, '')
+    .replace(/:\d+(?::\d+)?$/, '')
+    .replace(/^\.\//, '');
+}
+
+/** A block handed to `handoff` is held to the form the `block` question checks, or refused loudly. */
+function heldBlock(input, key, name, root) {
+  const shape = askBlock({ question: 'block', name, block: input[key] }, root);
+  if (shape.verdict !== 'valid') throw new BadInput(`${key} is not a valid ${name} block — ${shape.blockers.join('; ')}`);
+  if (input[key].ok !== true) {
+    throw new BadInput(`${key}.ok is not true: a step that failed is the propagation question, not the handoff`);
+  }
+  return input[key];
+}
+
+/** The caller's own read-only measurements, never the executor's word. */
+function measuredOf(input) {
+  const measured = input.measured;
+  if (!measured || typeof measured !== 'object' || Array.isArray(measured)) {
+    throw new BadInput('measured is required: {"absence", "consumers", "open_tasks"}, the caller\'s own read-only searches');
+  }
+  if (!Array.isArray(measured.absence) || measured.absence.some((row) => !row || !nonEmpty(row.pattern) || !Number.isInteger(row.hits) || row.hits < 0)) {
+    throw new BadInput('measured.absence must be [{"pattern", "hits"}], one row per retired fact, hits counted from 0');
+  }
+  if (!Array.isArray(measured.consumers) || measured.consumers.some((row) => !row || !nonEmpty(row.symbol) || !Array.isArray(row.files) || !row.files.every(nonEmpty))) {
+    throw new BadInput('measured.consumers must be [{"symbol", "files"}], one row per interface of the brief');
+  }
+  if (!Array.isArray(measured.open_tasks) || !measured.open_tasks.every((line) => typeof line === 'string')) {
+    throw new BadInput('measured.open_tasks must be an array: the task lines of the brief still [ ] or [~]');
+  }
+  return measured;
+}
+
+function askHandoff(input, root) {
+  const brief = heldBlock(input, 'brief', 'blueprint', root);
+  const notes = heldBlock(input, 'notes', 'execute', root);
+  if (!Array.isArray(input.diff_files) || !input.diff_files.every(nonEmpty)) {
+    throw new BadInput('diff_files is required: the files of the diff as git prints them, relative to the technical root');
+  }
+  const measured = measuredOf(input);
+  const diff = new Set(input.diff_files.map(fileOf));
+  const blockers = [];
+  const replaced = [];
+
+  // 1. Every task the brief froze is answered for at closing: rerun, or replaced with a why;
+  //    and every check rerun — the brief's and those execute added — is green.
+  for (const task of brief.plan) {
+    const row = notes.checks.find((check) => check.task === task.task);
+    if (!rule('handoff.task-answered', !!row)) blockers.push(`task ${task.task}: its check was not rerun at closing, and no row says it was replaced`);
+    else if ('replaced' in row) replaced.push(task.task);
+  }
+  for (const row of notes.checks) {
+    if ('replaced' in row) continue;
+    if (!rule('handoff.check-green', row.exit === 0)) blockers.push(`task ${row.task}: its check is red on the final tree (exit ${row.exit})`);
+  }
+
+  // 2. A task that changes behaviour was seen red, and every proof is on a file this diff writes.
+  for (const task of brief.plan) {
+    if (!task.cases.length) continue;
+    if (!rule('handoff.behaviour-proven', notes.red_proofs.some((proof) => proof.task === task.task))) {
+      blockers.push(`task ${task.task}: it changes behaviour and no test of it was seen red`);
+    }
+  }
+  for (const proof of notes.red_proofs) {
+    if (!rule('handoff.proof-in-diff', diff.has(fileOf(proof.test)))) {
+      blockers.push(`red proof ${proof.test}: its file is not in the diff, so it is not a test this change writes`);
+    }
+  }
+
+  // 3. Every consumer the brief maps is checked green, and every file naming an interface is
+  //    either mapped by the brief or checked by execute.
+  const checked = new Set(notes.consumers_checked.filter((row) => row.exit === 0).map((row) => fileOf(row.consumer)));
+  for (const item of brief.interfaces) {
+    for (const consumer of item.consumers) {
+      const row = notes.consumers_checked.find((check) => check.consumer === consumer);
+      if (!rule('handoff.consumer-checked', !!row)) blockers.push(`${item.symbol}: consumer ${consumer} has no check`);
+      else if (!rule('handoff.consumer-green', row.exit === 0)) blockers.push(`${item.symbol}: the check of consumer ${consumer} is red (exit ${row.exit})`);
+    }
+    const found = measured.consumers.find((row) => row.symbol === item.symbol);
+    if (!found) {
+      throw new BadInput(`measured.consumers has no row for ${JSON.stringify(item.symbol)}: the search is the caller's, and a missing one is a guessed value`);
+    }
+    const mapped = new Set([fileOf(item.declared_in), ...item.consumers.map(fileOf)]);
+    for (const file of new Set(found.files.map(fileOf))) {
+      if (!rule('handoff.consumer-mapped', mapped.has(file) || checked.has(file))) {
+        blockers.push(`${item.symbol}: ${file} names it, and the brief does not map it nor did execute check it`);
+      }
+    }
+  }
+
+  // 4. Every fact the brief retires was searched, and the count is the caller's measurement.
+  for (const item of brief.retired) {
+    const measure = measured.absence.find((row) => row.pattern === item.pattern);
+    if (!measure) {
+      throw new BadInput(`measured.absence has no row for ${JSON.stringify(item.pattern)}: the search is the caller's, and a missing one is a guessed value`);
+    }
+    const row = notes.absence.find((absence) => absence.pattern === item.pattern);
+    if (!rule('handoff.retired-searched', !!row)) blockers.push(`retired "${item.fact}": no search recorded for ${JSON.stringify(item.pattern)}`);
+    else if (!rule('handoff.retired-count', row.hits === measure.hits)) {
+      blockers.push(`retired "${item.fact}": execute counted ${row.hits} hits, the search counts ${measure.hits} — the measurement holds`);
+    }
+  }
+
+  // 5. No quick check is red, and 6. no task is left open in the brief.
+  for (const row of notes.preflight) {
+    if (!rule('handoff.preflight-green', row.outcome !== 'red')) blockers.push(`preflight ${row.step} on ${row.area || 'no area'} is red: ${row.detail}`);
+  }
+  if (!rule('handoff.no-open-task', measured.open_tasks.length === 0)) {
+    blockers.push(...measured.open_tasks.map((line) => `task still open in the brief: ${line.trim()}`));
+  }
+
+  return block({
+    verdict: blockers.length ? 'not-ready' : 'ready',
+    blockers,
+    detail: blockers.length
+      ? `${blockers.length} pieces of evidence are missing: execute is relaunched once with them, and a second not-ready stops the delivery.`
+      : 'every task of the brief is answered for, every behaviour change was seen red, every consumer checked, every retired fact searched' +
+        (replaced.length ? `; replaced by the plan adaptation, with the why in the Journal: ${replaced.join(', ')}.` : '.'),
   });
 }
 
@@ -854,7 +1203,62 @@ const ASKS = {
   round: askRound,
   layers: askLayers,
   block: askBlock,
+  handoff: askHandoff,
 };
+
+/**
+ * The keys each question requires besides `question`, declared once. The program refuses an
+ * input missing one of them before asking, and the bench refuses a call to the evaluator,
+ * written in the contracts of `skills/`, whose paragraph does not name them all. A key a
+ * question reads only in some cases — `merit` on the second ask of `round`, `finding_ids` for
+ * the applier's block, the `commit` of `review_outcome` for `resumption` — is not here: the
+ * question checks it where it reads it. A contract that changes the input of a question
+ * changes its row here in the same change.
+ */
+const REQUIRES = {
+  decision: ['review_outcome'],
+  closing: ['review_outcome', 'ledger'],
+  unblock: ['review_outcome'],
+  propagation: ['step'],
+  resumption: ['entry', 'present', 'ledger'],
+  order: ['entry', 'present', 'ledger'],
+  round: ['ledger', 'rounds_cap'],
+  layers: ['layers', 'added'],
+  block: ['name', 'block'],
+  handoff: ['brief', 'notes', 'diff_files', 'measured'],
+};
+
+/** Every answer goes through here: the keys of `REQUIRES` first, then the question. */
+function dispatch(input, root) {
+  for (const key of REQUIRES[input.question] || []) {
+    if (!rule(`requires:${input.question}.${key}`, Object.prototype.hasOwnProperty.call(input, key))) {
+      throw new BadInput(`${key} is required by the ${input.question} question: a key a question needs and does not find is a loud failure, never a guessed value`);
+    }
+  }
+  return ASKS[input.question](input, root);
+}
+
+/** The paragraph a line stands in: the run of non-blank lines around it, cut at list items and headings. */
+function paragraphAt(lines, at) {
+  const opens = (line) => /^\s*([-*]|\d+\.)\s/.test(line) || /^#{1,6}\s/.test(line);
+  let from = at;
+  while (from > 0 && lines[from - 1].trim() !== '' && !opens(lines[from - 1])) from -= 1;
+  let to = at;
+  while (to + 1 < lines.length && lines[to + 1].trim() !== '' && !opens(lines[to + 1])) to += 1;
+  return lines.slice(from, to + 1).join(' ');
+}
+
+/**
+ * What a call to the evaluator written in prose leaves unnamed: the question itself when
+ * `REQUIRES` does not know it, else each key its row lists that the paragraph does not name.
+ * The name counts in a code span or as a word — "the artefacts present" names `present` —
+ * and never inside the `question: "…"` literal, where `block` would name itself.
+ */
+function unnamedKeys(paragraph, question) {
+  if (!rule('doc.question-known', Object.prototype.hasOwnProperty.call(REQUIRES, question))) return ['the question itself, which REQUIRES does not know'];
+  const text = paragraph.replace(/question:\s*"[^"]*"/g, ' ');
+  return REQUIRES[question].filter((key) => !rule('doc.key-named', new RegExp(`\\b${key}\\b`).test(text)));
+}
 
 /* ------------------------------------------------------------------------- *
  * The bench
@@ -954,7 +1358,11 @@ const GREEN = (extra = {}) => ({
 const FIX = (file, symbol, anchor, severe = false, onPreviousFix = false) => ({
   file, symbol, anchor, line: 1, what: 'x', severe, on_previous_fix: onPreviousFix,
 });
-const ROUND = (applied, oscillation = []) => ({ applied, oscillation, discarded: [], to_confirm: [], missing_disciplines: [] });
+const ROUND = (applied, oscillation = [], extra = {}) => ({
+  applied, oscillation, discarded: [], to_confirm: [], missing_disciplines: [], pre_apply_tree: 'a1', post_apply_tree: 'b2', ...extra,
+});
+const OUTCOME = (id, extra = {}) => ({ finding_id: id, file: 'a.mjs', symbol: 'f', line: 1, ...extra });
+const APPLIER = (extra = {}) => ({ applied: [], discarded: [], to_confirm: [], oscillation: [], ...extra });
 const LEDGER = (rounds) => ({
   base: 'abc1234', item: 'x/y', rounds: rounds.map((round, index) => ({ n: index + 1, ...round })),
   outcome: null, coverage: null, gate: null, gate_detail: null,
@@ -969,6 +1377,34 @@ const DOC = (extra = {}, decision = {}) => ({
     options: [{ id: 'A', text: 'a' }, { id: 'B', text: 'b' }], recommended_id: 'A', recommended_why: 'w', ...decision,
   }],
   incorporated: [], open_items: [], ...extra,
+});
+const BP_TASK = (id, extra = {}) => ({ task: id, check: `node check-${id}.mjs`, red_if: `task ${id} left undone`, cases: [], ...extra });
+const BP_BLOCK = (extra = {}) => ({
+  ok: true, brief_path: 'x/2. blueprint.md',
+  plan: [BP_TASK('0'), BP_TASK('1', { cases: [{ input: 'a', expected: 'b' }] }), BP_TASK('2')],
+  interfaces: [{ symbol: 'red_proofs', declared_in: 'skills/execute/SKILL.md:120', consumers: ['architect/architect.mjs:900'] }],
+  retired: [{ fact: 'the retired wording', pattern: 'the retired wording' }],
+  detail: '', ...extra,
+});
+const EX_BLOCK = (extra = {}) => ({
+  ok: true, note_review_path: 'x/4. review-notes.md', verify_detail: 'green',
+  checks: ['0', '1', '2'].map((task) => ({ task, check: `node check-${task}.mjs`, exit: 0 })),
+  red_proofs: [{ test: 'test/a.test.mjs::maps a to b', task: '1', against: 'base', exit: 1, red_output: 'expected b, got undefined' }],
+  consumers_checked: [{ consumer: 'architect/architect.mjs:900', check: 'node architect/architect.mjs --self-check .', exit: 0 }],
+  absence: [{ pattern: 'the retired wording', hits: 0, why: '' }],
+  preflight: PREFLIGHT_STEPS.map((step) => ({ step, area: 'core', outcome: 'green', detail: '' })),
+  detail: '', ...extra,
+});
+const HANDOFF = (extra = {}, measured = {}) => ({
+  question: 'handoff', brief: BP_BLOCK(), notes: EX_BLOCK(),
+  diff_files: ['test/a.test.mjs', 'architect/architect.mjs', 'skills/execute/SKILL.md'],
+  measured: {
+    absence: [{ pattern: 'the retired wording', hits: 0 }],
+    consumers: [{ symbol: 'red_proofs', files: ['skills/execute/SKILL.md', 'architect/architect.mjs'] }],
+    open_tasks: [],
+    ...measured,
+  },
+  ...extra,
 });
 
 /**
@@ -1100,44 +1536,44 @@ const CASES = [
 
   /* --- question: order — skills/develop-feature/SKILL.md § The sequence --- */
   { id: 'order:proceed-from-the-start', cites: { file: 'skills/develop-feature/SKILL.md', section: 'The sequence' },
-    input: { question: 'order', entry: 'new-feature', present: [] },
+    input: { question: 'order', entry: 'new-feature', present: [], ledger: null },
     expect: { verdict: 'proceed', remaining_starts_with: 'problem' } },
   { id: 'order:proceed-from-the-delivery', cites: { file: 'skills/develop-feature/SKILL.md', section: 'The sequence' },
-    input: { question: 'order', entry: 'develop-feature', present: ['1. decision-doc.md'] },
+    input: { question: 'order', entry: 'develop-feature', present: ['1. decision-doc.md'], ledger: null },
     expect: { verdict: 'proceed', remaining_starts_with: 'acquisition' } },
   { id: 'order:proven-phases-are-cut', cites: { file: 'skills/develop-feature/SKILL.md', section: 'The sequence' },
-    input: { question: 'order', entry: 'develop-feature', present: ['1. decision-doc.md', '2. blueprint.md'] },
+    input: { question: 'order', entry: 'develop-feature', present: ['1. decision-doc.md', '2. blueprint.md'], ledger: null },
     expect: { verdict: 'proceed', remaining_starts_with: 'execute' } },
   { id: 'order:review-entry', cites: { file: 'skills/review/SKILL.md', section: 'The cycle' },
-    input: { question: 'order', entry: 'review', present: [] },
+    input: { question: 'order', entry: 'review', present: [], ledger: null },
     expect: { verdict: 'proceed', remaining_starts_with: 'scope', remaining: ['scope', 'finder', 'applier', 'coverage', 'gate', 'closing'] } },
   { id: 'order:review-entry-on-a-review-notes', cites: { file: 'skills/review/SKILL.md', section: 'The cycle' },
-    input: { question: 'order', entry: 'review', present: ['4. review-notes.md'] },
+    input: { question: 'order', entry: 'review', present: ['4. review-notes.md'], ledger: null },
     expect: { verdict: 'proceed', remaining_starts_with: 'scope' } },
 
   /* --- the four entry points, plus the atomic one --- */
   { id: 'entry:new-feature', cites: { file: 'skills/new-feature/SKILL.md', section: 'The sequence' },
-    input: { question: 'order', entry: 'new-feature', present: [] },
+    input: { question: 'order', entry: 'new-feature', present: [], ledger: null },
     expect: { verdict: 'proceed', remaining_starts_with: 'problem' } },
   { id: 'entry:decision-doc', cites: { file: 'skills/decision-doc/SKILL.md', section: 'Input: the problem folder' },
-    input: { question: 'order', entry: 'decision-doc', present: ['0. problem.md'] },
+    input: { question: 'order', entry: 'decision-doc', present: ['0. problem.md'], ledger: null },
     expect: { verdict: 'proceed', remaining_starts_with: 'decisions' } },
   { id: 'entry:develop-feature', cites: { file: 'skills/develop-feature/SKILL.md', section: 'Input' },
-    input: { question: 'order', entry: 'develop-feature', present: ['1. decision-doc.md'] },
+    input: { question: 'order', entry: 'develop-feature', present: ['1. decision-doc.md'], ledger: null },
     expect: { verdict: 'proceed', remaining_starts_with: 'acquisition' } },
   { id: 'entry:review', cites: { file: 'skills/review/SKILL.md', section: 'Input' },
-    input: { question: 'order', entry: 'review', present: [] },
+    input: { question: 'order', entry: 'review', present: [], ledger: null },
     expect: { verdict: 'proceed', remaining_starts_with: 'scope' } },
   { id: 'entry:study', cites: { file: 'contracts/orchestration.md', section: '3. Invocable skills and internal contracts' },
-    input: { question: 'order', entry: 'study', present: [] },
+    input: { question: 'order', entry: 'study', present: [], ledger: null },
     expect: { verdict: 'stop' } },
 
   /* --- ambiguity: two incoherences and one legitimate fork --- */
   { id: 'ambiguity:incoherence-artifacts-exclude-each-other', cites: { file: 'skills/develop-feature/SKILL.md', section: 'Input' },
-    input: { question: 'order', entry: 'new-feature', present: ['1. decision-doc.md', '5. review-report.md'] },
+    input: { question: 'order', entry: 'new-feature', present: ['1. decision-doc.md', '5. review-report.md'], ledger: null },
     expect: { verdict: 'stop', readings_length: 0 } },
   { id: 'ambiguity:incoherence-entry-declares-a-missing-artifact', cites: { file: 'skills/develop-feature/SKILL.md', section: 'Input' },
-    input: { question: 'order', entry: 'develop-feature', present: [] },
+    input: { question: 'order', entry: 'develop-feature', present: [], ledger: null },
     expect: { verdict: 'stop', readings_length: 0 } },
   { id: 'ambiguity:fork-both-readings-are-defensible', cites: { file: 'skills/review/SKILL.md', section: 'Baseline and ledger' },
     input: { question: 'order', entry: 'new-feature', present: ['4. review-notes.md'], ledger: null },
@@ -1197,6 +1633,18 @@ const CASES = [
   { id: 'round:a-cap-above-the-guardrail-replaces-it', cites: { file: 'skills/review/SKILL.md', section: 'Exits' },
     input: { question: 'round', rounds_cap: 8, merit: 'continue', ledger: LEDGER([1, 2, 3, 4, 5, 6].map((i) => ROUND([FIX('a.mjs', `f${i}`, `${i}`)]))) },
     expect: { verdict: 'continue' } },
+  { id: 'round:rule-2-a-red-fast-check', cites: { file: 'skills/review/SKILL.md', section: 'When to run another round' },
+    input: { question: 'round', rounds_cap: null, merit: 'stop', ledger: LEDGER([ROUND([FIX('a.mjs', 'f', '1')], [], { check_fast: [{ area: 'web', status: 'red', detail: 'tsc: 1 error' }] })]) },
+    expect: { verdict: 'continue' } },
+  { id: 'round:a-green-fast-check-leaves-the-merit', cites: { file: 'skills/review/SKILL.md', section: 'When to run another round' },
+    input: { question: 'round', rounds_cap: null, ledger: LEDGER([ROUND([FIX('a.mjs', 'f', '1')], [], { check_fast: [{ area: 'web', status: 'green', detail: '' }, { area: 'api', status: 'skipped', detail: '' }] })]) },
+    expect: { verdict: 'merit' } },
+  { id: 'round:a-red-fast-check-at-the-cap-truncates', cites: { file: 'skills/review/SKILL.md', section: 'Exits' },
+    input: { question: 'round', rounds_cap: 1, ledger: LEDGER([ROUND([FIX('a.mjs', 'f', '1')], [], { check_fast: [{ area: 'web', status: 'red', detail: 'x' }] })]) },
+    expect: { verdict: 'rounds-truncated' } },
+  { id: 'round:the-last-round-needs-no-trees-yet', cites: { file: 'skills/review/SKILL.md', section: 'Which disciplines run, at which round' },
+    input: { question: 'round', rounds_cap: null, ledger: LEDGER([ROUND([], [], { pre_apply_tree: undefined, post_apply_tree: undefined })]) },
+    expect: { verdict: 'fixed-point' } },
 
   /* --- question: layers — skills/arch-check/SKILL.md § How you verify --- */
   { id: 'layers:a-denied-fragment-in-the-layer', cites: { file: 'skills/arch-check/SKILL.md', section: 'How you verify' },
@@ -1223,6 +1671,160 @@ const CASES = [
   { id: 'layers:a-malformed-layer-falls-back-to-the-prose', cites: { file: 'skills/arch-check/SKILL.md', section: 'How you verify' },
     input: { question: 'layers', layers: [LAYER({ deny_imports: [] })], added: [{ file: 'src/server/api/x.ts', line: 3, text: "import 'src/server/db/x'" }] },
     expect: { verdict: 'clean', blockers_include: 'malformed' } },
+
+  /* --- question: block on the brief and on execute — skills/blueprint/SKILL.md and skills/execute/SKILL.md § What you return --- */
+  { id: 'block:blueprint-valid', cites: { file: 'skills/blueprint/SKILL.md', section: 'What you return' },
+    input: { question: 'block', name: 'blueprint', block: BP_BLOCK() },
+    expect: { verdict: 'valid', blockers: [] } },
+  { id: 'block:blueprint-failed-with-empty-lists', cites: { file: 'skills/blueprint/SKILL.md', section: 'What you return' },
+    input: { question: 'block', name: 'blueprint', block: BP_BLOCK({ ok: false, plan: [], interfaces: [], retired: [], detail: 'no decision-doc' }) },
+    expect: { verdict: 'valid' } },
+  { id: 'block:blueprint-without-its-plan', cites: { file: 'skills/blueprint/SKILL.md', section: 'What you return' },
+    input: { question: 'block', name: 'blueprint', block: (() => { const value = BP_BLOCK(); delete value.plan; return value; })() },
+    expect: { verdict: 'invalid', blockers_include: 'plan is missing' } },
+  { id: 'block:blueprint-a-list-that-is-not-a-list', cites: { file: 'skills/blueprint/SKILL.md', section: 'What you return' },
+    input: { question: 'block', name: 'blueprint', block: BP_BLOCK({ retired: 'none' }) },
+    expect: { verdict: 'invalid', blockers_include: 'retired is not an array' } },
+  { id: 'block:blueprint-an-empty-plan', cites: { file: 'skills/blueprint/SKILL.md', section: 'Principles' },
+    input: { question: 'block', name: 'blueprint', block: BP_BLOCK({ plan: [] }) },
+    expect: { verdict: 'invalid', blockers_include: 'plan is empty' } },
+  { id: 'block:blueprint-a-task-that-is-not-a-task', cites: { file: 'skills/blueprint/SKILL.md', section: 'What you return' },
+    input: { question: 'block', name: 'blueprint', block: BP_BLOCK({ plan: ['Task 1'] }) },
+    expect: { verdict: 'invalid', blockers_include: 'plan[0] is not a task' } },
+  { id: 'block:blueprint-a-task-without-its-id', cites: { file: 'skills/blueprint/SKILL.md', section: 'What you return' },
+    input: { question: 'block', name: 'blueprint', block: BP_BLOCK({ plan: [BP_TASK('')] }) },
+    expect: { verdict: 'invalid', blockers_include: 'plan[0].task' } },
+  { id: 'block:blueprint-a-repeated-task-id', cites: { file: 'skills/blueprint/SKILL.md', section: 'What you return' },
+    input: { question: 'block', name: 'blueprint', block: BP_BLOCK({ plan: [BP_TASK('1'), BP_TASK('1')] }) },
+    expect: { verdict: 'invalid', blockers_include: 'repeats an id' } },
+  { id: 'block:blueprint-a-task-without-its-check', cites: { file: 'skills/blueprint/SKILL.md', section: 'Principles' },
+    input: { question: 'block', name: 'blueprint', block: BP_BLOCK({ plan: [BP_TASK('1', { check: ' ' })] }) },
+    expect: { verdict: 'invalid', blockers_include: 'plan[0].check' } },
+  { id: 'block:blueprint-a-check-that-names-no-red', cites: { file: 'skills/blueprint/SKILL.md', section: 'Principles' },
+    input: { question: 'block', name: 'blueprint', block: BP_BLOCK({ plan: [BP_TASK('1', { red_if: '' })] }) },
+    expect: { verdict: 'invalid', blockers_include: 'plan[0].red_if' } },
+  { id: 'block:blueprint-cases-not-a-list', cites: { file: 'skills/blueprint/SKILL.md', section: 'Principles' },
+    input: { question: 'block', name: 'blueprint', block: BP_BLOCK({ plan: [BP_TASK('1', { cases: 'see the table' })] }) },
+    expect: { verdict: 'invalid', blockers_include: 'plan[0].cases is not an array' } },
+  { id: 'block:blueprint-a-case-without-its-expected', cites: { file: 'skills/blueprint/SKILL.md', section: 'Principles' },
+    input: { question: 'block', name: 'blueprint', block: BP_BLOCK({ plan: [BP_TASK('1', { cases: [{ input: 'a' }] })] }) },
+    expect: { verdict: 'invalid', blockers_include: 'plan[0].cases[0]' } },
+  { id: 'block:blueprint-an-interface-without-its-seat', cites: { file: 'skills/blueprint/SKILL.md', section: 'Principles' },
+    input: { question: 'block', name: 'blueprint', block: BP_BLOCK({ interfaces: [{ symbol: 'x', declared_in: '', consumers: [] }] }) },
+    expect: { verdict: 'invalid', blockers_include: 'interfaces[0] needs symbol and declared_in' } },
+  { id: 'block:blueprint-consumers-not-strings', cites: { file: 'skills/blueprint/SKILL.md', section: 'Principles' },
+    input: { question: 'block', name: 'blueprint', block: BP_BLOCK({ interfaces: [{ symbol: 'x', declared_in: 'a.mjs:1', consumers: [{ file: 'b.mjs' }] }] }) },
+    expect: { verdict: 'invalid', blockers_include: 'interfaces[0].consumers' } },
+  { id: 'block:blueprint-a-retired-fact-without-its-search', cites: { file: 'skills/blueprint/SKILL.md', section: 'Principles' },
+    input: { question: 'block', name: 'blueprint', block: BP_BLOCK({ retired: [{ fact: 'the retired wording' }] }) },
+    expect: { verdict: 'invalid', blockers_include: 'retired[0]' } },
+  { id: 'block:execute-valid', cites: { file: 'skills/execute/SKILL.md', section: 'What you return' },
+    input: { question: 'block', name: 'execute', block: EX_BLOCK() },
+    expect: { verdict: 'valid', blockers: [] } },
+  { id: 'block:execute-a-replaced-task', cites: { file: 'skills/execute/SKILL.md', section: 'What you return' },
+    input: { question: 'block', name: 'execute', block: EX_BLOCK({ checks: [{ task: '0', check: 'x', exit: 0 }, { task: '1', replaced: 'the probe showed the hook already exists' }] }) },
+    expect: { verdict: 'valid' } },
+  { id: 'block:execute-without-its-evidence', cites: { file: 'skills/execute/SKILL.md', section: 'What you return' },
+    input: { question: 'block', name: 'execute', block: { ok: true, note_review_path: 'x/4. review-notes.md', verify_detail: 'green', detail: '' } },
+    expect: { verdict: 'invalid', blockers_include: 'red_proofs is missing' } },
+  { id: 'block:execute-a-list-that-is-not-a-list', cites: { file: 'skills/execute/SKILL.md', section: 'What you return' },
+    input: { question: 'block', name: 'execute', block: EX_BLOCK({ absence: {} }) },
+    expect: { verdict: 'invalid', blockers_include: 'absence is not an array' } },
+  { id: 'block:execute-a-check-row-without-its-task', cites: { file: 'skills/execute/SKILL.md', section: 'What you return' },
+    input: { question: 'block', name: 'execute', block: EX_BLOCK({ checks: [{ check: 'x', exit: 0 }] }) },
+    expect: { verdict: 'invalid', blockers_include: 'checks[0].task' } },
+  { id: 'block:execute-a-task-rerun-twice', cites: { file: 'skills/execute/SKILL.md', section: 'What you return' },
+    input: { question: 'block', name: 'execute', block: EX_BLOCK({ checks: [{ task: '1', check: 'x', exit: 0 }, { task: '1', check: 'x', exit: 0 }] }) },
+    expect: { verdict: 'invalid', blockers_include: 'repeats a task' } },
+  { id: 'block:execute-a-replaced-task-without-its-why', cites: { file: 'skills/execute/SKILL.md', section: 'What you return' },
+    input: { question: 'block', name: 'execute', block: EX_BLOCK({ checks: [{ task: '1', replaced: '' }] }) },
+    expect: { verdict: 'invalid', blockers_include: 'replaced is empty' } },
+  { id: 'block:execute-a-check-without-its-exit', cites: { file: 'skills/execute/SKILL.md', section: 'What you return' },
+    input: { question: 'block', name: 'execute', block: EX_BLOCK({ checks: [{ task: '1', check: 'x', exit: 'green' }] }) },
+    expect: { verdict: 'invalid', blockers_include: 'integer exit' } },
+  { id: 'block:execute-a-proof-without-its-test', cites: { file: 'skills/execute/SKILL.md', section: 'Principles' },
+    input: { question: 'block', name: 'execute', block: EX_BLOCK({ red_proofs: [{ task: '1', against: 'base', exit: 1, red_output: 'x' }] }) },
+    expect: { verdict: 'invalid', blockers_include: 'red_proofs[0] needs test' } },
+  { id: 'block:execute-a-proof-that-exited-green', cites: { file: 'skills/execute/SKILL.md', section: 'Principles' },
+    input: { question: 'block', name: 'execute', block: EX_BLOCK({ red_proofs: [{ test: 't::c', task: '1', against: 'base', exit: 0, red_output: 'ok' }] }) },
+    expect: { verdict: 'invalid', blockers_include: 'non-zero' } },
+  { id: 'block:execute-a-proof-without-its-output', cites: { file: 'skills/execute/SKILL.md', section: 'Principles' },
+    input: { question: 'block', name: 'execute', block: EX_BLOCK({ red_proofs: [{ test: 't::c', task: '1', against: 'mutation', exit: 1, red_output: '' }] }) },
+    expect: { verdict: 'invalid', blockers_include: 'red_output is empty' } },
+  { id: 'block:execute-a-proof-against-a-guess', cites: { file: 'skills/execute/SKILL.md', section: 'What you return' },
+    input: { question: 'block', name: 'execute', block: EX_BLOCK({ red_proofs: [{ test: 't::c', task: '1', against: 'imagined', exit: 1, red_output: 'x' }] }) },
+    expect: { verdict: 'invalid', blockers_include: 'red_proofs.against' } },
+  { id: 'block:execute-a-consumer-without-its-check', cites: { file: 'skills/execute/SKILL.md', section: 'Principles' },
+    input: { question: 'block', name: 'execute', block: EX_BLOCK({ consumers_checked: [{ consumer: 'a.mjs:1', exit: 0 }] }) },
+    expect: { verdict: 'invalid', blockers_include: 'consumers_checked[0]' } },
+  { id: 'block:execute-a-count-that-is-not-a-count', cites: { file: 'skills/execute/SKILL.md', section: 'Principles' },
+    input: { question: 'block', name: 'execute', block: EX_BLOCK({ absence: [{ pattern: 'the retired wording', hits: 'none', why: '' }] }) },
+    expect: { verdict: 'invalid', blockers_include: 'absence[0] needs pattern and hits' } },
+  { id: 'block:execute-hits-left-without-a-why', cites: { file: 'skills/execute/SKILL.md', section: 'Principles' },
+    input: { question: 'block', name: 'execute', block: EX_BLOCK({ absence: [{ pattern: 'the retired wording', hits: 2, why: '' }] }) },
+    expect: { verdict: 'invalid', blockers_include: 'every hit left is answered for' } },
+  { id: 'block:execute-a-preflight-row-without-its-outcome', cites: { file: 'skills/execute/SKILL.md', section: 'Principles' },
+    input: { question: 'block', name: 'execute', block: EX_BLOCK({ preflight: [...EX_BLOCK().preflight, { step: 'layers', area: 'core', detail: '' }] }) },
+    expect: { verdict: 'invalid', blockers_include: 'needs step, outcome and detail' } },
+  { id: 'block:execute-a-skip-that-says-nothing', cites: { file: 'skills/execute/SKILL.md', section: 'Principles' },
+    input: { question: 'block', name: 'execute', block: EX_BLOCK({ preflight: EX_BLOCK().preflight.map((row) => (row.step === 'check_fast' ? { ...row, outcome: 'skipped' } : row)) }) },
+    expect: { verdict: 'invalid', blockers_include: 'is skipped with no detail' } },
+  { id: 'block:execute-a-quick-check-never-run', cites: { file: 'skills/execute/SKILL.md', section: 'Principles' },
+    input: { question: 'block', name: 'execute', block: EX_BLOCK({ preflight: EX_BLOCK().preflight.filter((row) => row.step !== 'layers') }) },
+    expect: { verdict: 'invalid', blockers_include: 'preflight has no layers row' } },
+
+  /* --- question: handoff — skills/develop-feature/SKILL.md § The handoff --- */
+  { id: 'handoff:ready', cites: { file: 'skills/develop-feature/SKILL.md', section: 'The handoff' },
+    input: HANDOFF(),
+    expect: { verdict: 'ready', blockers: [] } },
+  { id: 'handoff:a-replaced-task-is-answered-for', cites: { file: 'skills/develop-feature/SKILL.md', section: 'The handoff' },
+    input: HANDOFF({ notes: EX_BLOCK({ checks: [{ task: '0', check: 'x', exit: 0 }, { task: '1', check: 'x', exit: 0 }, { task: '2', replaced: 'merged into task 1' }] }) }),
+    expect: { verdict: 'ready' } },
+  { id: 'handoff:a-task-dropped-without-a-row', cites: { file: 'skills/develop-feature/SKILL.md', section: 'The handoff' },
+    input: HANDOFF({ notes: EX_BLOCK({ checks: [{ task: '0', check: 'x', exit: 0 }, { task: '1', check: 'x', exit: 0 }] }) }),
+    expect: { verdict: 'not-ready', blockers_include: 'task 2: its check was not rerun' } },
+  { id: 'handoff:a-check-red-on-the-final-tree', cites: { file: 'skills/execute/SKILL.md', section: 'Principles' },
+    input: HANDOFF({ notes: EX_BLOCK({ checks: [{ task: '0', check: 'x', exit: 0 }, { task: '1', check: 'x', exit: 0 }, { task: '2', check: 'x', exit: 0 }, { task: '3', check: 'added by execute', exit: 1 }] }) }),
+    expect: { verdict: 'not-ready', blockers_include: 'task 3: its check is red' } },
+  { id: 'handoff:a-behaviour-change-never-seen-red', cites: { file: 'skills/blueprint/SKILL.md', section: 'Principles' },
+    input: HANDOFF({ notes: EX_BLOCK({ red_proofs: [] }) }),
+    expect: { verdict: 'not-ready', blockers_include: 'task 1: it changes behaviour' } },
+  { id: 'handoff:a-proof-on-a-file-the-diff-does-not-write', cites: { file: 'skills/execute/SKILL.md', section: 'Principles' },
+    input: HANDOFF({ diff_files: ['architect/architect.mjs', 'skills/execute/SKILL.md'] }),
+    expect: { verdict: 'not-ready', blockers_include: 'is not in the diff' } },
+  { id: 'handoff:a-mapped-consumer-never-checked', cites: { file: 'skills/blueprint/SKILL.md', section: 'Principles' },
+    input: HANDOFF({ notes: EX_BLOCK({ consumers_checked: [] }) }),
+    expect: { verdict: 'not-ready', blockers_include: 'has no check' } },
+  { id: 'handoff:a-mapped-consumer-checked-red', cites: { file: 'skills/blueprint/SKILL.md', section: 'Principles' },
+    input: HANDOFF({ notes: EX_BLOCK({ consumers_checked: [{ consumer: 'architect/architect.mjs:900', check: 'x', exit: 2 }] }) }),
+    expect: { verdict: 'not-ready', blockers_include: 'is red (exit 2)' } },
+  { id: 'handoff:a-consumer-nobody-mapped', cites: { file: 'skills/develop-feature/SKILL.md', section: 'The handoff' },
+    input: HANDOFF({}, { consumers: [{ symbol: 'red_proofs', files: ['skills/execute/SKILL.md', 'architect/architect.mjs', 'skills/review/SKILL.md'] }] }),
+    expect: { verdict: 'not-ready', blockers_include: 'skills/review/SKILL.md names it' } },
+  { id: 'handoff:an-unmapped-consumer-execute-checked', cites: { file: 'skills/execute/SKILL.md', section: 'Principles' },
+    input: HANDOFF({ notes: EX_BLOCK({ consumers_checked: [...EX_BLOCK().consumers_checked, { consumer: 'skills/review/SKILL.md', check: 'x', exit: 0 }] }) }, { consumers: [{ symbol: 'red_proofs', files: ['skills/execute/SKILL.md', 'architect/architect.mjs', 'skills/review/SKILL.md'] }] }),
+    expect: { verdict: 'ready' } },
+  { id: 'handoff:a-retired-fact-never-searched', cites: { file: 'skills/blueprint/SKILL.md', section: 'Principles' },
+    input: HANDOFF({ notes: EX_BLOCK({ absence: [] }) }),
+    expect: { verdict: 'not-ready', blockers_include: 'no search recorded' } },
+  { id: 'handoff:a-count-the-measurement-contradicts', cites: { file: 'skills/develop-feature/SKILL.md', section: 'The handoff' },
+    input: HANDOFF({}, { absence: [{ pattern: 'the retired wording', hits: 2 }] }),
+    expect: { verdict: 'not-ready', blockers_include: 'the measurement holds' } },
+  { id: 'handoff:hits-left-and-answered-for', cites: { file: 'skills/execute/SKILL.md', section: 'Principles' },
+    input: HANDOFF({ notes: EX_BLOCK({ absence: [{ pattern: 'the retired wording', hits: 1, why: 'the changelog keeps the old entry' }] }) }, { absence: [{ pattern: 'the retired wording', hits: 1 }] }),
+    expect: { verdict: 'ready' } },
+  { id: 'handoff:a-quick-check-red', cites: { file: 'skills/execute/SKILL.md', section: 'Principles' },
+    input: HANDOFF({ notes: EX_BLOCK({ preflight: EX_BLOCK().preflight.map((row) => (row.step === 'check_fast' ? { ...row, outcome: 'red', detail: 'tsc: 1 error' } : row)) }) }),
+    expect: { verdict: 'not-ready', blockers_include: 'preflight check_fast on core is red' } },
+  { id: 'handoff:a-skipped-quick-check-is-not-a-block', cites: { file: 'contracts/project-contract.md', section: '6. Degradation' },
+    input: HANDOFF({ notes: EX_BLOCK({ preflight: EX_BLOCK().preflight.map((row) => (row.step === 'layers' ? { ...row, outcome: 'skipped', detail: 'no policy carries layers:' } : row)) }) }),
+    expect: { verdict: 'ready' } },
+  { id: 'handoff:a-task-left-open', cites: { file: 'skills/develop-feature/SKILL.md', section: 'The handoff' },
+    input: HANDOFF({}, { open_tasks: ['   - [~] Task 2: wire the caller'] }),
+    expect: { verdict: 'not-ready', blockers_include: 'task still open in the brief: - [~] Task 2' } },
+  { id: 'handoff:every-missing-piece-is-listed', cites: { file: 'skills/develop-feature/SKILL.md', section: 'The handoff' },
+    input: HANDOFF({ notes: EX_BLOCK({ red_proofs: [], consumers_checked: [], absence: [] }) }, { open_tasks: ['- [ ] Task 2: x'] }),
+    expect: { verdict: 'not-ready', blockers_length_at_least: 4 } },
 
   /* --- question: block — skills/decision-doc/SKILL.md § The block you return, skills/new-feature/SKILL.md § 7 --- */
   { id: 'block:decision-doc-technical', cites: { file: 'skills/decision-doc/SKILL.md', section: 'The block you return' },
@@ -1264,19 +1866,65 @@ const CASES = [
   { id: 'block:nothing-came-back', cites: { file: 'contracts/orchestration.md', section: '4. Delegation' },
     input: { question: 'block', name: 'decision-doc', block: null },
     expect: { verdict: 'invalid', blockers_length_at_least: 1 } },
-  { id: 'block:another-block-by-its-schema-alone', cites: { file: 'skills/blueprint/SKILL.md', section: 'What you return' },
-    input: { question: 'block', name: 'blueprint', block: { ok: true, brief_path: 'x/2. blueprint.md', detail: '' } },
+  { id: 'block:another-block-by-its-schema-alone', cites: { file: 'skills/develop-feature/SKILL.md', section: '7. Report' },
+    input: { question: 'block', name: 'develop-feature-report', block: { ok: true, report_path: 'x/5. review-report.md', detail: '' } },
     expect: { verdict: 'valid' } },
   { id: 'block:an-enum-inside-a-list', cites: { file: 'skills/finder-prompt/SKILL.md', section: 'The block you return' },
     input: { question: 'block', name: 'finder', block: { findings: [{ file: 'a', line: 1, symbol: 'f', confidence: 'certain', change: '', description: '' }] } },
     expect: { verdict: 'invalid', blockers_include: 'findings.confidence' } },
+  { id: 'block:applier-every-finding-has-one-outcome', cites: { file: 'skills/applier/SKILL.md', section: 'The block you return' },
+    input: { question: 'block', name: 'applier', finding_ids: ['r1-bug-1', 'r1-bug-2', 'r1-arch-1'], block: APPLIER({ applied: [OUTCOME('r1-bug-1', { anchor: 'x', severe: false, on_previous_fix: false })], discarded: [OUTCOME('r1-bug-2', { why: 'not real' })], to_confirm: [OUTCOME('r1-arch-1', { class: 'arch', blocking: false, scenario: 'x' })] }) },
+    expect: { verdict: 'valid', blockers: [] } },
+  { id: 'block:applier-one-finding-fixed-in-several-sites', cites: { file: 'skills/applier/SKILL.md', section: 'How you work' },
+    input: { question: 'block', name: 'applier', finding_ids: ['r1-bug-1'], block: APPLIER({ applied: [OUTCOME('r1-bug-1', { anchor: 'x' }), OUTCOME('r1-bug-1', { file: 'b.mjs', anchor: 'y' })] }) },
+    expect: { verdict: 'valid' } },
+  { id: 'block:applier-an-oscillation-recorded-as-discarded', cites: { file: 'skills/applier/SKILL.md', section: 'How you work' },
+    input: { question: 'block', name: 'applier', finding_ids: ['r3-bug-1'], block: APPLIER({ discarded: [OUTCOME('r3-bug-1', { why: 'oscillation' })], oscillation: [OUTCOME('r3-bug-1', { current_anchor: 'x = 1', previous_anchor: 'x = 2' })] }) },
+    expect: { verdict: 'valid' } },
+  { id: 'block:applier-a-finding-with-no-outcome', cites: { file: 'skills/applier/SKILL.md', section: 'The block you return' },
+    input: { question: 'block', name: 'applier', finding_ids: ['r1-bug-1', 'r1-bug-2'], block: APPLIER({ applied: [OUTCOME('r1-bug-1', { anchor: 'x' })] }) },
+    expect: { verdict: 'invalid', blockers_include: 'r1-bug-2 has no outcome' } },
+  { id: 'block:applier-a-finding-with-two-outcomes', cites: { file: 'skills/applier/SKILL.md', section: 'The block you return' },
+    input: { question: 'block', name: 'applier', finding_ids: ['r1-bug-1'], block: APPLIER({ applied: [OUTCOME('r1-bug-1', { anchor: 'x' })], discarded: [OUTCOME('r1-bug-1', { why: 'x' })] }) },
+    expect: { verdict: 'invalid', blockers_include: 'more than one outcome' } },
+  { id: 'block:applier-a-finding-discarded-twice', cites: { file: 'skills/applier/SKILL.md', section: 'The block you return' },
+    input: { question: 'block', name: 'applier', finding_ids: ['r1-bug-1'], block: APPLIER({ discarded: [OUTCOME('r1-bug-1', { why: 'x' }), OUTCOME('r1-bug-1', { why: 'y' })] }) },
+    expect: { verdict: 'invalid', blockers_include: 'listed 2 times' } },
+  { id: 'block:applier-an-invented-finding', cites: { file: 'skills/applier/SKILL.md', section: 'The block you return' },
+    input: { question: 'block', name: 'applier', finding_ids: ['r1-bug-1'], block: APPLIER({ applied: [OUTCOME('r1-bug-1', { anchor: 'x' }), OUTCOME('r1-bug-9', { anchor: 'y' })] }) },
+    expect: { verdict: 'invalid', blockers_include: 'not a finding that was handed over' } },
+  { id: 'block:applier-an-item-that-names-no-finding', cites: { file: 'skills/applier/SKILL.md', section: 'The block you return' },
+    input: { question: 'block', name: 'applier', finding_ids: ['r1-bug-1'], block: APPLIER({ applied: [OUTCOME('r1-bug-1', { anchor: 'x' })], to_confirm: [{ file: 'a.mjs', line: 1, class: 'bug', blocking: true, scenario: 'x' }] }) },
+    expect: { verdict: 'invalid', blockers_include: 'to_confirm[0].finding_id is missing' } },
+  { id: 'block:applier-an-oscillation-that-was-applied', cites: { file: 'skills/applier/SKILL.md', section: 'How you work' },
+    input: { question: 'block', name: 'applier', finding_ids: ['r3-bug-1'], block: APPLIER({ applied: [OUTCOME('r3-bug-1', { anchor: 'x = 1' })], oscillation: [OUTCOME('r3-bug-1', { current_anchor: 'x = 1', previous_anchor: 'x = 2' })] }) },
+    expect: { verdict: 'invalid', blockers_include: 'not among the discarded' } },
+  { id: 'block:applier-a-list-that-is-not-a-list', cites: { file: 'skills/applier/SKILL.md', section: 'The block you return' },
+    input: { question: 'block', name: 'applier', finding_ids: ['r1-bug-1'], block: APPLIER({ discarded: [OUTCOME('r1-bug-1', { why: 'x' })], to_confirm: 'none' }) },
+    expect: { verdict: 'invalid', blockers_include: 'to_confirm is not an array' } },
+  { id: 'block:finder-findings-not-a-list', cites: { file: 'skills/finder-prompt/SKILL.md', section: 'The block you return' },
+    input: { question: 'block', name: 'finder', block: { findings: 'nothing to report' } },
+    expect: { verdict: 'invalid', blockers_include: 'findings is not an array' } },
+  { id: 'block:finder-a-finding-without-its-file', cites: { file: 'skills/finder-prompt/SKILL.md', section: 'The block you return' },
+    input: { question: 'block', name: 'finder', block: { findings: [{ line: 3, symbol: 'f', confidence: 'high', change: 'x', description: 'y' }] } },
+    expect: { verdict: 'invalid', blockers_include: 'findings[0].file' } },
 ];
 
 /** The input that must be refused loudly. Nothing here is a verdict. */
 const REJECTED = [
+  { id: 'reject:handoff-brief-absent', input: (() => { const input = HANDOFF(); delete input.brief; return input; })() },
+  { id: 'reject:handoff-brief-malformed', input: HANDOFF({ brief: BP_BLOCK({ plan: [BP_TASK('1', { red_if: '' })] }) }) },
+  { id: 'reject:handoff-on-a-failed-execute', input: HANDOFF({ notes: EX_BLOCK({ ok: false, detail: 'stopped at task 2' }) }) },
+  { id: 'reject:handoff-diff-files-not-a-list', input: HANDOFF({ diff_files: 'architect/architect.mjs' }) },
+  { id: 'reject:handoff-measured-absent', input: (() => { const input = HANDOFF(); delete input.measured; return input; })() },
+  { id: 'reject:handoff-measured-counts-not-counts', input: HANDOFF({}, { absence: [{ pattern: 'the retired wording', hits: -1 }] }) },
+  { id: 'reject:handoff-measured-files-not-a-list', input: HANDOFF({}, { consumers: [{ symbol: 'red_proofs', files: 'a.mjs' }] }) },
+  { id: 'reject:handoff-open-tasks-not-a-list', input: HANDOFF({}, { open_tasks: 0 }) },
+  { id: 'reject:handoff-an-interface-nobody-searched', input: HANDOFF({}, { consumers: [] }) },
+  { id: 'reject:handoff-a-retired-fact-nobody-searched', input: HANDOFF({}, { absence: [] }) },
   { id: 'reject:unknown-question', input: { question: 'invented', entry: 'new-feature', present: [] } },
-  { id: 'reject:unknown-entry', input: { question: 'order', entry: 'invented', present: [] } },
-  { id: 'reject:present-not-a-list', input: { question: 'order', entry: 'new-feature', present: 'x' } },
+  { id: 'reject:unknown-entry', input: { question: 'order', entry: 'invented', present: [], ledger: null } },
+  { id: 'reject:present-not-a-list', input: { question: 'order', entry: 'new-feature', present: 'x', ledger: null } },
   { id: 'reject:review-outcome-absent', input: { question: 'decision' } },
   { id: 'reject:gate-outside-its-domain', input: { question: 'decision', review_outcome: GREEN({ gate: 'yellow' }) } },
   { id: 'reject:outcome-outside-its-domain', input: { question: 'decision', review_outcome: GREEN({ outcome: 'converged' }) } },
@@ -1290,12 +1938,27 @@ const REJECTED = [
   { id: 'reject:round-merit-outside-its-domain', input: { question: 'round', rounds_cap: null, merit: 'maybe', ledger: LEDGER([ROUND([])]) } },
   { id: 'reject:round-numbered-with-a-gap', input: { question: 'round', rounds_cap: null, ledger: { base: 'a', item: 'b', rounds: [{ n: 2, applied: [], oscillation: [] }] } } },
   { id: 'reject:round-fix-without-its-severity', input: { question: 'round', rounds_cap: null, ledger: LEDGER([ROUND([{ file: 'a', symbol: 'f', anchor: 'x' }])]) } },
+  { id: 'reject:round-after-a-round-without-its-trees', input: { question: 'round', rounds_cap: null, ledger: LEDGER([ROUND([FIX('a.mjs', 'f', '1')], [], { pre_apply_tree: null, post_apply_tree: null }), ROUND([])]) } },
+  { id: 'reject:round-after-a-round-without-its-post-tree', input: { question: 'round', rounds_cap: null, ledger: LEDGER([ROUND([FIX('a.mjs', 'f', '1')], [], { post_apply_tree: '' }), ROUND([])]) } },
+  { id: 'reject:round-fast-check-outside-its-domain', input: { question: 'round', rounds_cap: null, ledger: LEDGER([ROUND([FIX('a.mjs', 'f', '1')], [], { check_fast: [{ area: 'web', status: 'yellow' }] })]) } },
+  { id: 'reject:round-fast-check-not-a-list', input: { question: 'round', rounds_cap: null, ledger: LEDGER([ROUND([FIX('a.mjs', 'f', '1')], [], { check_fast: 'red' })]) } },
+  { id: 'reject:block-applier-without-its-finding-ids', input: { question: 'block', name: 'applier', block: { applied: [], discarded: [], to_confirm: [], oscillation: [] } } },
+  { id: 'reject:block-applier-with-repeated-finding-ids', input: { question: 'block', name: 'applier', finding_ids: ['r1-bug-1', 'r1-bug-1'], block: { applied: [], discarded: [], to_confirm: [], oscillation: [] } } },
   { id: 'reject:layers-absent', input: { question: 'layers', added: [] } },
   { id: 'reject:added-not-a-list', input: { question: 'layers', layers: [], added: 'x' } },
   { id: 'reject:added-row-without-its-line', input: { question: 'layers', layers: [], added: [{ file: 'a', text: 'x' }] } },
   { id: 'reject:block-name-absent', input: { question: 'block', block: {} } },
   { id: 'reject:block-name-unknown', input: { question: 'block', name: 'invented', block: {} } },
   { id: 'reject:block-absent', input: { question: 'block', name: 'decision-doc' } },
+];
+
+/** Calls in prose the doc-test must read right, one per way it can go: the proofs it can fail. */
+const DOC_CALLS = [
+  { id: 'every-key-named', question: 'round', text: 'call the evaluator with `question: "round"`, the `ledger` and `rounds_cap` (the `N`, or `null`).', unnamed: [] },
+  { id: 'a-key-named-as-a-word', question: 'resumption', text: 'with `question: "resumption"`, the ledger you were handed (or `null`), the artefacts present and the entry point.', unnamed: [] },
+  { id: 'a-key-left-out', question: 'order', text: 'with `question: "order"`, `entry: "new-feature"` and `present` (the artefacts already on disk).', unnamed: ['ledger'] },
+  { id: 'the-question-does-not-name-its-key', question: 'block', text: 'ask it with `question: "block"` and `name: "decision-doc"` whether the shape holds.', unnamed: ['block'] },
+  { id: 'an-unknown-question', question: 'invented', text: 'call the evaluator with `question: "invented"`.', unnamed: ['the question itself, which REQUIRES does not know'] },
 ];
 
 function runBench(root) {
@@ -1358,13 +2021,19 @@ function runBench(root) {
   for (const verdict of new Set(CASES.map((testCase) => testCase.expect.verdict).filter((value) => typeof value === 'string'))) {
     check(`schema:verdict:${verdict}`, verdicts.includes(verdict), 'a verdict the program returns and schemas/blocks.json § architect does not list');
   }
+  const steps = (declared.execute && declared.execute.enums && declared.execute.enums['preflight.step']) || [];
+  check(
+    'schema:preflight-steps',
+    [...steps].sort().join(',') === [...PREFLIGHT_STEPS].sort().join(','),
+    `the program requires [${PREFLIGHT_STEPS.join(', ')}], schemas/blocks.json § execute lists [${steps.join(', ')}]`
+  );
 
   /* 3. One proof per case, each citing the file and section its rule comes from. */
   for (const testCase of CASES) {
     check(`cites:${testCase.id}`, cites(root, testCase.cites), `no heading for '${testCase.cites.section}' in ${testCase.cites.file}`);
     let got;
     try {
-      got = ASKS[testCase.input.question](testCase.input, root);
+      got = dispatch(testCase.input, root);
     } catch (error) {
       check(`case:${testCase.id}`, false, `threw ${error.message}`);
       continue;
@@ -1377,15 +2046,141 @@ function runBench(root) {
     let refused = false;
     try {
       const parsed = parseInput(JSON.stringify(rejected.input));
-      ASKS[parsed.question](parsed, root);
+      dispatch(parsed, root);
     } catch (error) {
       refused = error instanceof BadInput;
     }
     check(`reject:${rejected.id.replace(/^reject:/, '')}`, refused, 'it answered instead of failing loudly');
   }
 
-  process.stdout.write(JSON.stringify({ checks: checks.length, passed: checks.length - failed.length, failed }) + '\n');
-  process.exit(failed.length ? 1 : 0);
+  /* 4b. REQUIRES: one row per question and no other, and every key of a row refused when it is
+     missing — the input of the first case asking that question, with that key taken away. */
+  for (const question of new Set([...Object.keys(ASKS), ...Object.keys(REQUIRES)])) {
+    check(`requires:row:${question}`, Object.prototype.hasOwnProperty.call(ASKS, question) && Object.prototype.hasOwnProperty.call(REQUIRES, question), 'a question and its REQUIRES row go together');
+    const sample = CASES.find((testCase) => testCase.input.question === question);
+    check(`requires:sample:${question}`, !!sample, 'no case asks this question, so no key of it can be proven required');
+    if (!sample) continue;
+    for (const key of REQUIRES[question] || []) {
+      const input = { ...sample.input };
+      delete input[key];
+      let refused = false;
+      try {
+        dispatch(input, root);
+      } catch (error) {
+        refused = error instanceof BadInput;
+      }
+      check(`requires:${question}.${key}`, refused, 'the key was taken away and the question answered anyway');
+    }
+    // And the row is complete: a key the question itself refuses to go without is in its row.
+    for (const key of Object.keys(sample.input).filter((name) => name !== 'question' && !(REQUIRES[question] || []).includes(name))) {
+      const input = { ...sample.input };
+      delete input[key];
+      let refused = false;
+      try {
+        ASKS[question](input, root);
+      } catch (error) {
+        refused = error instanceof BadInput;
+      }
+      check(`requires:complete:${question}.${key}`, !refused, 'the question refuses an input without this key, and its REQUIRES row does not list it');
+    }
+  }
+
+  /* 4c. Every call to the evaluator written in the contracts of skills/ names the keys REQUIRES
+     declares for its question — the prose a caller follows is the input it builds. */
+  let skillFiles = [];
+  try {
+    skillFiles = readdirSync(join(root, 'skills'), { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => `skills/${entry.name}/SKILL.md`)
+      .sort();
+  } catch (error) {
+    check('skills:readable', false, error.message);
+  }
+  let calls = 0;
+  for (const rel of skillFiles) {
+    let lines;
+    try {
+      lines = readLines(root, rel);
+    } catch {
+      continue;
+    }
+    lines.forEach((line, at) => {
+      for (const found of line.matchAll(/question:\s*"([^"]+)"/g)) {
+        calls += 1;
+        const unnamed = unnamedKeys(paragraphAt(lines, at), found[1]);
+        check(`doc:${rel}:${at + 1}:${found[1]}`, unnamed.length === 0, `the call does not name ${unnamed.join(', ')}`);
+      }
+    });
+  }
+  check('doc:calls-read', calls > 0, 'no call to the evaluator was found in skills/: the doc-test read nothing');
+  for (const call of DOC_CALLS) {
+    const got = unnamedKeys(call.text, call.question);
+    check(`doc-fixture:${call.id}`, JSON.stringify(got) === JSON.stringify(call.unnamed), `got [${got.join(', ')}]`);
+  }
+
+  /* 4d. isEntry: the guard that decides whether main() runs, exercised through a fake
+     `toRealPath` so no case here needs a real symlink — creating one needs privileges on
+     Windows, where this package runs. */
+  check(
+    'entry:symlink-resolves',
+    isEntry('/proj/bin/architect', '/proj/architect/architect.mjs', () => '/proj/architect/architect.mjs'),
+    'a path that resolves, through a link, to this file must run main()'
+  );
+  check(
+    'entry:other-file',
+    !isEntry('/proj/bin/other.mjs', '/proj/architect/architect.mjs', (path) => path),
+    'a different file must not run main()'
+  );
+  check(
+    'entry:empty-argv',
+    !isEntry('', '/proj/architect/architect.mjs', () => {
+      throw new Error('toRealPath must not run when argv[1] is empty');
+    }),
+    'no argv[1] must not run main(), and must not touch the filesystem'
+  );
+  check(
+    'entry:win32-case-insensitive',
+    isEntry(
+      'C:\\proj\\bin\\ARCHITECT.MJS',
+      'C:\\proj\\architect\\architect.mjs',
+      () => 'c:\\PROJ\\ARCHITECT\\architect.mjs',
+      'win32'
+    ),
+    'win32 compares the resolved path case-insensitively'
+  );
+  check(
+    'entry:win32-different-path',
+    !isEntry(
+      'C:\\proj\\bin\\other.mjs',
+      'C:\\proj\\architect\\architect.mjs',
+      () => 'c:\\proj\\bin\\OTHER.MJS',
+      'win32'
+    ),
+    'a different path on win32 must not run main() even case-folded'
+  );
+
+  /* 5. never_red: every rule written through rule() was seen failing on some fixture above. A
+     rule no case turns red passes on broken code too, and nothing else would say so. */
+  let source = '';
+  try {
+    source = readFileSync(join(root, 'architect', 'architect.mjs'), 'utf-8');
+  } catch (error) {
+    check('source:readable', false, error.message);
+  }
+  const ruleIds = new Set([
+    ...[...source.matchAll(/\brule\('([^']+)'/g)].map((found) => found[1]),
+    ...Object.entries(REQUIRES).flatMap(([question, keys]) => keys.map((key) => `requires:${question}.${key}`)),
+  ]);
+  // Counted as checks, reported apart: `hooks/self-check.mjs` turns a non-empty never_red red.
+  const neverRed = [];
+  for (const id of [...ruleIds].sort()) {
+    checks.push(`seen-red:${id}`);
+    if ((SEEN.get(id) || {}).failed !== true) neverRed.push(id);
+  }
+
+  const passed = checks.length - failed.length - neverRed.length;
+  process.stdout.write(JSON.stringify({ checks: checks.length, passed, failed, never_red: neverRed }) + '\n');
+  process.exit(failed.length || neverRed.length ? 1 : 0);
 }
 
 /* ------------------------------------------------------------------------- *
@@ -1459,7 +2254,7 @@ function main() {
   }
   let answer;
   try {
-    answer = ASKS[input.question](input, root);
+    answer = dispatch(input, root);
   } catch (error) {
     die(error instanceof BadInput ? error.message : String(error && error.message));
   }
@@ -1467,4 +2262,26 @@ function main() {
   process.exit(0);
 }
 
-main();
+/**
+ * `architect/ledger.mjs` — the disk side of the review, which reads Git and writes the ledger —
+ * imports the questions instead of launching this file: its answers are these functions, not a
+ * copy of them. Only an invocation by path runs `main`; an import runs nothing.
+ */
+export { ASKS, BadInput, anchorOf, dispatch, globToRegExp, valuesAt };
+
+/**
+ * The guard that decides whether `main()` runs: true only when this file itself was launched —
+ * by its own path or through a symlink to it — never when another module merely imports it (as
+ * `ledger.mjs` does). Pure and platform-parametric so the bench can prove the symlink branch
+ * without creating a real symlink: on Windows, where this package runs, that needs privileges
+ * the bench must not assume. `toRealPath` does the one bit of filesystem work (`resolve` +
+ * `realpathSync` in production, `main()`'s call site below wires it); the bench replaces it with
+ * a fake that returns a fixed string, so no bench case here touches the disk.
+ */
+function isEntry(argv1, ownPath, toRealPath, platform = process.platform) {
+  const invokedPath = argv1 ? toRealPath(argv1) : '';
+  return platform === 'win32' ? invokedPath.toLowerCase() === ownPath.toLowerCase() : invokedPath === ownPath;
+}
+
+const ownPath = fileURLToPath(import.meta.url);
+if (isEntry(process.argv[1], ownPath, (path) => realpathSync(resolve(path)))) main();
