@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 48eaa498-ed6e-4a36-847d-3f8fa95f7f21
-  modified: 2026-09-23T18:04:37.333Z
+  modified: 2026-09-26T00:08:47.000Z
 ---
 
 Dal 18 settembre 2026 `.claude/` porta un **corpus di sviluppo**: `orchestration.md`, i comandi in
@@ -76,6 +76,17 @@ identificatori del prodotto. Vedi [[confine-degli-identificatori]].
 skill del pacchetto **non dichiarano più la sequenza**: la chiedono a lui, e il verdetto vincola.
 Qui non c'è niente di simile, e non ci sarà finché non lo autorizzi: `commands/deliver-feature.md`
 recita ancora la sequenza a parole. Vedi [[valutatore-deterministico]].
+
+**E dal 26 settembre 2026 diverge anche il ciclo di review, con ciò che lo alimenta.** Nel prodotto
+le misure sul disco della review le fa `plugins/daiku/architect/ledger.mjs`, che scrive il ledger,
+misura `on_previous_fix` sui due alberi attorno all'applicatore — file non tracciati compresi — e
+dal secondo giro passa ai finder il solo delta dei fix; dopo ogni applicatore gira `check_fast`, e
+fra execute e review il valutatore chiede, con la domanda `handoff`, le prove che il brief ha
+preteso (`Red if`, tabelle `Cases`, mappa dei consumatori, fatti ritirati). Qui niente di questo:
+`commands/review.md` fa scrivere il ledger a mano all'orchestratore, al giro ≥2 dà al finder i file
+toccati dall'applicatore invece del delta dei fix, e misura il suo `su_fix_precedente` con `git grep -F '<ancora>' --
+<file>`, che senza `--untracked` non vede un file non ancora nell'indice; `commands/blueprint.md` e
+`commands/execute.md` non chiedono né producono quelle prove. Resta così finché non lo autorizzi.
 
 **E dal 19 settembre 2026 diverge anche il nome di un ruolo.** Nel prodotto il ruolo che decide si
 chiama `judge`, qui ancora `giudice` — 11 occorrenze in 6 file, `orchestration.md` compreso. Nel

@@ -12,13 +12,14 @@
  * on disk. Output is counted JSON `{checks, passed, failed[]}`; exit `1` on the first
  * red, same convention as the hook benches.
  *
- * It verifies the three machine-checkable properties `contracts/orchestration.md` §3
- * declares the table is kept by hand for:
+ * It verifies four machine-checkable properties of the corpus:
  *
- * 1. the nodes on disk are all and only the table rows;
+ * 1. the nodes on disk are all and only the table rows of `contracts/orchestration.md` §3;
  * 2. every contract handed to a subagent as a contract to read appears among the
  *    callers of its own row (mere block citations are not handoffs and are ignored);
- * 3. every `§ *X*` section reference resolves to a heading in the cited file.
+ * 3. every `§ *X*` section reference resolves to a heading in the cited file;
+ * 4. every handoff of an orchestrating contract declares the role it runs on — with its own
+ *    fixtures, green and red, counted among the checks.
  */
 
 import { readdirSync, readFileSync } from 'node:fs';
@@ -119,6 +120,71 @@ for (const citer of diskNodes) {
       check(`caller:${citer}->${cited}`, ok, ok ? '' : `skills/${citer}/SKILL.md hands ${cited} to a subagent but ${citer} is not among its row callers`);
     }
   });
+}
+
+/* Property 4: every handoff of an orchestrating contract declares the role it runs on. The
+   model resolves from the role alone (§2 of contracts/orchestration.md): a delegation without
+   one runs on whatever the host defaults to, and nothing says so. The orchestrating contracts
+   are the rows whose "Re-delegates" cell opens with "yes"; a handoff is Property 2's (path and
+   verb on the same line). The role counts on the handoff line, in its paragraph or list, in the
+   heading of its section, or in the bold lead-in opening its step inside that section. */
+const ROLE = /\*\*(judge|worker)\*\*|\b(judge|worker) role\b/i;
+function unroledHandoffs(lines, self) {
+  const out = [];
+  let heading = -1;
+  lines.forEach((line, i) => {
+    if (/^#{1,4}\s/.test(line)) heading = i;
+    for (const m of line.matchAll(/skills\/([a-z-]+)\/SKILL\.md/g)) {
+      if (m[1] === self || !HANDOFF_VERBS.some((v) => line.toLowerCase().includes(v))) continue;
+      let from = i;
+      while (from > 0 && lines[from - 1].trim() !== '' && !/^#{1,4}\s/.test(lines[from - 1])) from -= 1;
+      let to = i;
+      while (to < lines.length - 1 && lines[to + 1].trim() !== '' && !/^#{1,4}\s/.test(lines[to + 1])) to += 1;
+      let lead = '';
+      for (let k = i; k > heading; k -= 1) {
+        if (/^\*\*/.test(lines[k])) {
+          lead = lines[k];
+          break;
+        }
+      }
+      const declared = [line, lines.slice(from, to + 1).join('\n'), heading >= 0 ? lines[heading] : '', lead].some((t) => ROLE.test(t));
+      if (!declared) out.push({ line: i + 1, cited: m[1] });
+    }
+  });
+  return out;
+}
+const ROLE_FIXTURES = [
+  { id: 'role-in-the-heading', ok: true, text: '### 1. Brief — **judge** role\n\n- read in full `skills/blueprint/SKILL.md` and follow it' },
+  { id: 'role-in-the-list', ok: true, text: '## Step 2\n\nLaunch a subagent:\n\n- the **contract to read**: `skills/study/SKILL.md`;\n- the **step role**: **worker**;' },
+  { id: 'role-in-the-lead-in', ok: true, text: '### 5. Memory\n\n**5b. Update — judge role.** In the prompt:\n\n- read in full `skills/update-memory/SKILL.md`' },
+  { id: 'role-on-the-line', ok: true, text: '### Closing\n\nDelegate it to a **judge** subagent fully reading `skills/commit/SKILL.md`.' },
+  { id: 'no-role-anywhere', ok: false, text: '### 10. Delivery — `develop-feature`\n\nDelegate the whole delivery to a subagent running `skills/develop-feature/SKILL.md`.' },
+  { id: 'a-role-of-another-section', ok: false, text: '### 1. Brief — **judge** role\n\nx\n\n### 3. Review\n\nFully run `skills/review/SKILL.md`.' },
+  { id: 'a-role-of-another-paragraph', ok: false, text: '### 3. Review\n\nThe **worker** of phase 2 left notes.\n\nFully run `skills/review/SKILL.md`.' },
+];
+for (const fixture of ROLE_FIXTURES) {
+  const found = unroledHandoffs(fixture.text.split('\n'), 'fixture');
+  check(`role-fixture:${fixture.id}`, (found.length === 0) === fixture.ok, `expected ${fixture.ok ? 'no' : 'an'} unroled handoff, found ${found.length}`);
+}
+const orchestrating = [];
+{
+  let inTable = false;
+  for (const line of orchLines) {
+    if (/^\|\s*Node\s*\|/.test(line)) {
+      inTable = true;
+      continue;
+    }
+    if (!inTable) continue;
+    if (!line.startsWith('|')) break;
+    const cells = line.split('|');
+    const node = ((cells[1] || '').match(/`([^`]+)`/) || [])[1];
+    if (node && nodeSet.has(node) && /^\s*yes\b/i.test(cells[5] || '')) orchestrating.push(node);
+  }
+}
+check('role:orchestrating-rows-read', orchestrating.length > 0, 'no row of the §3 table re-delegates');
+for (const node of orchestrating) {
+  const unroled = unroledHandoffs(read(skillFile(node)), node);
+  check(`role:${node}`, unroled.length === 0, unroled.map((u) => `skills/${node}/SKILL.md:${u.line} hands ${u.cited} to a subagent with no role`).join('; '));
 }
 
 /* Property 3: section references. */

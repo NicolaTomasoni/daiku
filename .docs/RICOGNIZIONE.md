@@ -501,15 +501,18 @@ plugins/                               ← radice del repository pubblico
    ├─ contracts/                       ← NON skill: ignorati da entrambi i validatori,
    │  ├─ orchestration.md                 trasportati da entrambi gli host (§3.3)
    │  └─ project-contract.md
-   ├─ architect/architect.mjs          ← il valutatore deterministico: possiede l'ordine della
-   │                                      catena e risponde alle nove domande, con il suo banco
+   ├─ architect/                       ← gli unici programmi non-hook: falliscono rumorosamente
+   │  ├─ architect.mjs                    il valutatore deterministico: possiede l'ordine della
+   │  │                                   catena e risponde alle dieci domande, con il suo banco
+   │  └─ ledger.mjs                       il lato disco della review: legge Git, scrive il
+   │                                      ledger, chiede i verdetti al valutatore; col suo banco
    ├─ schemas/blocks.json              ← la forma verificabile dei blocchi di ritorno
    ├─ agents/finder.md                 ← l'unico ruolo; su Codex lo rende `sync-host` in
    │                                      `.codex/agents/*.toml` (§3.6)
    ├─ hooks/                           ← solo Claude: plugin_hooks rimossa su Codex (§3.4)
    │  ├─ hooks.json
    │  ├─ README.md                        la guida dei quattro guardrail: rami, gate, banchi
-   │  ├─ self-check.mjs                   i cinque banchi in un colpo (quattro hook + architect)
+   │  ├─ self-check.mjs                   i sei banchi in un colpo (quattro hook + i due di architect)
    │  └─ lib/*.mjs                        i 4 hook + `project-root` e `daiku-config`, importati
    ├─ templates/                       ← ciò che init copia; mai letto in place, tutto in inglese (§5.6)
    │  ├─ project/project.json

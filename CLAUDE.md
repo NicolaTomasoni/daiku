@@ -185,16 +185,19 @@ La seconda richiede `pyyaml`. Non saltarla: i due validatori non coprono le stes
 quello di Codex a rifiutare i campi di manifest non ammessi, ed è quello di Claude Code a
 segnalare le skill che si caricherebbero con i metadati vuoti.
 
-Nessuno dei due però guarda dentro gli hook, che sono l'unica parte eseguibile del pacchetto e
-sono tutti **fail-open**: davanti a un guasto tacciono ed escono `0`, quindi rotti e silenziosi
-si assomigliano. La terza verifica è la loro, e vale come le altre due:
+Nessuno dei due però guarda dentro il codice eseguibile del pacchetto: gli hook, tutti
+**fail-open** — davanti a un guasto tacciono ed escono `0`, quindi rotti e silenziosi si
+assomigliano — e i due programmi di `plugins/daiku/architect/`. La terza verifica è la loro, e
+vale come le altre due:
 
 ```bash
 node plugins/daiku/hooks/self-check.mjs
 ```
 
-Lancia insieme i banchi di prova dei quattro hook e quello del valutatore deterministico
-(`plugins/daiku/architect/`), stampa il totale contato ed esce `1` al primo caso rosso.
+Lancia insieme i sei banchi di prova — i quattro hook, il valutatore deterministico
+(`architect/architect.mjs`) e lo strumento del ledger della review (`architect/ledger.mjs`) —
+stampa il totale contato ed esce `1` al primo caso rosso. Il banco del ledger lavora con Git vero
+su repository usa e getta nella cartella temporanea di sistema: vuole `git` nel `PATH`.
 
 ```bash
 node .docs/tools/check-topology.mjs plugins/daiku

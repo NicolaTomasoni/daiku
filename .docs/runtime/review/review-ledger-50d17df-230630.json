@@ -1,0 +1,125 @@
+{
+ "base": "50d17df855df395897a7d6af6f0fb8a199af543d",
+ "item": null,
+ "giri": [
+  {
+   "n": 1,
+   "finder_tornati": 6,
+   "finder_mancati": 0,
+   "applicati": [
+    {
+     "file": "plugins/daiku/architect/architect.mjs",
+     "simbolo": "paragraphAt",
+     "ancora": "while (from > 0 && lines[from - 1].trim() !== '' && !opens(lines[from - 1]))",
+     "riga": 1245,
+     "cosa": "Il ciclo all'indietro controllava la riga già inclusa invece della candidata e inglobava heading o voci di lista sopra la chiamata (falso verde nel doc-test di REQUIRES). Ora controlla la candidata.",
+     "grave": true,
+     "su_fix_precedente": false
+    },
+    {
+     "file": "plugins/daiku/architect/architect.mjs",
+     "simbolo": "guardia top-level su main()",
+     "ancora": "const invokedPath = process.argv[1] ? realpathSync(resolve(process.argv[1])) : '';",
+     "riga": 2231,
+     "cosa": "Lanciato tramite symlink main() non girava (exit 0 silenzioso). Ora risolve il path reale prima del confronto.",
+     "grave": true,
+     "su_fix_precedente": false
+    },
+    {
+     "file": "plugins/daiku/skills/execute/SKILL.md",
+     "simbolo": "§ Principles, principio 8 (layers preflight)",
+     "ancora": "Call `architect/architect.mjs` with `question: \"layers\"`, `layers` (the `layers:` block",
+     "riga": 36,
+     "cosa": "Execute doveva chiamare layers via ledger.mjs, che richiede un ledger che nasce solo in review. Ora chiama architect.mjs direttamente con layers e added calcolate da sé.",
+     "grave": true,
+     "su_fix_precedente": false
+    },
+    {
+     "file": "plugins/daiku/skills/develop-feature/SKILL.md",
+     "simbolo": "§ The evaluator",
+     "ancora": "`architect/architect.mjs` directly — execute runs before a ledger exists, so it",
+     "riga": 75,
+     "cosa": "Stessa interfaccia: il file diceva che layers passa solo da ledger.mjs. Allineato.",
+     "grave": true,
+     "su_fix_precedente": false
+    },
+    {
+     "file": "plugins/daiku/architect/ledger.mjs",
+     "simbolo": "checksOf",
+     "ancora": "recorded.some((entry) => entry.area === 'assets' && entry.status === 'skipped'",
+     "riga": 1168,
+     "cosa": "Il ramo skipped di checksOf non era raggiungibile dal banco. Aggiunta area senza check_fast dentro code_root e caso provato rosso.",
+     "grave": true,
+     "su_fix_precedente": false
+    },
+    {
+     "file": "plugins/daiku/architect/ledger.mjs",
+     "simbolo": "actTail",
+     "ancora": "tail.rounds[2].to_confirm.some((item) => item.blocking === true && item.scenario ===",
+     "riga": 1093,
+     "cosa": "to_confirm di tail mai esercitato dal banco. Aggiunti caso verde e rifiuto, provati rossi.",
+     "grave": true,
+     "su_fix_precedente": false
+    },
+    {
+     "file": "plugins/daiku/architect/ledger.mjs",
+     "simbolo": "measure",
+     "ancora": "measured.set(fix, own.some(rewrites) || orphans.some(rewrites));",
+     "riga": 438,
+     "cosa": "Un fix senza hunk propri ereditava gli hunk dei fratelli: falso on_previous_fix. Ora solo own più orphans; caso di banco provato rosso.",
+     "grave": true,
+     "su_fix_precedente": false
+    },
+    {
+     "file": "plugins/daiku/architect/ledger.mjs",
+     "simbolo": "actScope",
+     "ancora": "const base = git(cwd, ['rev-parse', '--verify', `${baseRef}^{commit}`]).trim();",
+     "riga": 470,
+     "cosa": "--quiet svuotava il motivo del fallimento su base_ref invalido. Tolto; rifiuto nel banco provato rosso.",
+     "grave": false,
+     "su_fix_precedente": false
+    }
+   ],
+   "scartati": [],
+   "da_confermare": [],
+   "oscillazione": [],
+   "verdetto": "continua",
+   "perche": "Regola 2: sette fix gravi al giro 1 (≥3), un altro giro senza discutere. su_fix_precedente misurato: nessuno (giro 1). Oscillazione: nessuna."
+  },
+  {
+   "n": 2,
+   "finder_tornati": 1,
+   "finder_mancati": 0,
+   "applicati": [
+    {
+     "file": "plugins/daiku/architect/architect.mjs",
+     "simbolo": "isEntry (top-level guard on main())",
+     "ancora": "if (isEntry(process.argv[1], ownPath, (path) => realpathSync(resolve(path)))) main();",
+     "riga": 2287,
+     "cosa": "La guardia del giro 1 non aveva banco sul ramo positivo (symlink). Estratta in isEntry pura con realpath e platform iniettabili; 5 casi nel banco provati rossi con 4 mutazioni in copia.",
+     "grave": true,
+     "su_fix_precedente": true
+    }
+   ],
+   "scartati": [],
+   "da_confermare": [],
+   "oscillazione": [],
+   "verdetto": "continua",
+   "perche": "Regola 3: un fix con su_fix_precedente true (misurato: l'ancora del giro 1 sulla guardia non compare più nel file, la riga è stata riscritta). Le correzioni stanno ancora toccando materiale del giro precedente: un altro giro sul fix."
+  },
+  {
+   "n": 3,
+   "finder_tornati": 1,
+   "finder_mancati": 0,
+   "applicati": [],
+   "scartati": [],
+   "da_confermare": [],
+   "oscillazione": [],
+   "verdetto": "fermati",
+   "perche": "Regola 1: zero rilievi, applicatore non lanciato. Punto fisso."
+  }
+ ],
+ "uscita": "punto-fisso",
+ "gate": "rosso",
+ "gate_detail": "claude plugin validate PASS; validate_plugin.py (Codex) PASS; check-topology 356/356; self-check 6 banchi, 896 checks, exit 1: rossi solo command-guard 15/104, contracts-post-edit 3/50, edit-guard 4/40, identici byte per byte alla baseline al BASE (piattaforma Windows vs Linux, hook non toccati dal diff); architect 602 ok, ledger 74 ok (nuovo). check-ignore ledger.mjs: non ignorato, si pubblica. Prompt audit claude-api sui 15 file di testo: nessun rilievo."
+}
