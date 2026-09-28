@@ -1,11 +1,11 @@
 ---
 name: valutatore-deterministico
-description: "Il prodotto ha un valutatore deterministico che possiede l'ordine della catena e risponde a dieci domande meccaniche, e accanto uno strumento che misura il disco per la review: il verdetto vincola, e il banco è l'unica difesa"
+description: "Il prodotto ha un valutatore deterministico che possiede l'ordine della catena e risponde a nove domande meccaniche, e accanto uno strumento che misura il disco per la review: il verdetto vincola, e il banco è l'unica difesa"
 metadata:
   node_type: memory
   type: project
   originSessionId: 43bcfac4-1cc3-4310-acf9-530699fcf261
-  modified: 2026-09-26T00:08:47.000Z
+  modified: 2026-09-28T14:35:52.739Z
 ---
 
 **Dal 23 settembre 2026 il prodotto ha un valutatore deterministico.** È
@@ -15,15 +15,19 @@ conversazione, al posto delle tre opzioni che erano in campo — `evaluator/`, `
 `verdicts/` — e **non si rinomina più**: è un path, e dentro le skill lo nominano da fuori (vedi
 [[confine-degli-identificatori]]).
 
-Fa due mestieri: **valuta** dieci classificazioni meccaniche — la decisione finale, la chiusura del
+Fa due mestieri: **valuta** nove classificazioni meccaniche — la decisione finale, la chiusura del
 ciclo, lo sblocco meccanico, la propagazione del fallimento, la ripresa, l'ordine, il verdetto di
-giro di `review` (`round`), il controllo `layers:` di `arch-check` (`layers`), la forma di un
+giro di `review` (`round`), il controllo `layers:` di `arch-check` (`layers`) e la forma di un
 blocco di ritorno contro `schemas/blocks.json` (`block`, usata da `new-feature` sul blocco di
 `decision-doc`, da `develop-feature` su quelli di `blueprint` ed `execute`, e sui blocchi di finder
-e applicatore dallo strumento del ledger) e se execute ha lasciato le prove che il brief gli
-chiedeva (`handoff`) — e **possiede l'ordine della catena**: la tabella di §3 di
+e applicatore dallo strumento del ledger) — e **possiede l'ordine della catena**: la tabella di §3 di
 `contracts/orchestration.md` non lo dichiara più, ne è il riflesso, e il banco del valutatore
 rifiuta la divergenza nei due versi.
+
+Le misure sul codice si fermano al brief: `blueprint` è l'ultimo passo che guarda il codice per
+costruire le sue mappe (consumatori, fatti ritirati), da `execute` in avanti nessuno rimisura sul
+disco — l'esecutore lavora solo sui file che il brief cita, e se ne serve uno non citato il brief
+era impreciso.
 
 **Why:** un modello che legge una tabella di sei righe e deve applicarle tutte è un modo costoso e
 non riproducibile di fare un `if`; e la sequenza era dichiarata a parole in tre contratti, quindi
@@ -36,8 +40,7 @@ resto del pacchetto discendono da qui, e sono la parte che conta:
   ferma. Conseguenza dichiarata a chi installa: `node` che manca smette di essere un controllo che
   tace e diventa un requisito che ferma il lavoro. Vedi [[guardrail-nascono-spenti]].
 - **Non apre file del progetto.** Quello che sa del disco glielo passa l'agente, in chiaro
-  nell'esito; l'unico file che legge è `schemas/blocks.json` del pacchetto stesso, per `block` e
-  `handoff`. Le misure sul disco della review le fa perciò un secondo programma accanto a lui,
+  nell'esito; l'unico file che legge è `schemas/blocks.json` del pacchetto stesso, per `block`. Le misure sul disco della review le fa perciò un secondo programma accanto a lui,
   `architect/ledger.mjs`: legge Git, scrive il ledger — l'unico a scriverlo, validandolo contro
   `schemas/blocks.json` § *ledger* prima di ogni scrittura — e chiede i verdetti al valutatore
   importandone le domande invece di copiarle. È lui a misurare `on_previous_fix`, sui due alberi

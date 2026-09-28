@@ -404,6 +404,12 @@ aggiornamento comandato e tutto ciò che non è una skill.
 > rimandi di sezione, quindi cresce ogni volta che un contratto ne cita uno nuovo.
 >
 > Vive fuori dal pacchetto, in `.docs/tools/`, così non viaggia con ciò che si pubblica.
+>
+> **Igiene del sorgente, 26 settembre 2026.** Il post-edit ha imparato un quinto
+> controllo — i pattern `hygiene:` delle policy sui sorgenti — e resta report-only
+> come gli altri quattro: un auto-fix scriverebbe nel progetto senza che nessuno
+> l'abbia deciso, e un deny a scrittura avvenuta bloccherebbe un gesto già compiuto.
+> Stessa ragione del 19 settembre sopra: l'hook ricorda, chi ha scritto decide.
 
 ### 5.2 Le convenzioni di progetto che il metodo presuppone
 
