@@ -29,7 +29,7 @@ Daiku*).
 
 ## Le sedi di questo progetto
 
-Ogni path è **relativo alla radice del repository** (`C:/dev/Daiku`), con separatori `/`.
+Ogni path è **relativo alla radice del repository** (`C:/dev/daiku-workspace/daiku-dev`), con separatori `/`.
 
 | Sede | Cosa c'è |
 |---|---|

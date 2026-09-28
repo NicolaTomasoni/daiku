@@ -356,17 +356,17 @@ const CONFIG_PROVA = {
   file_protetti: ['.claude/settings.json', '.claude/hooks/guardia-target.mjs', '.claude/guardia-target.json'],
 };
 
-const bash = (command, cwd = 'C:/dev/Daiku') => ({ tool_name: 'Bash', tool_input: { command }, cwd });
-const pwsh = (command, cwd = 'C:/dev/Daiku') => ({ tool_name: 'PowerShell', tool_input: { command }, cwd });
-const scrive = (file_path) => ({ tool_name: 'Write', tool_input: { file_path }, cwd: 'C:/dev/Daiku' });
-const modifica = (file_path) => ({ tool_name: 'Edit', tool_input: { file_path }, cwd: 'C:/dev/Daiku' });
+const bash = (command, cwd = 'C:/dev/daiku-workspace/daiku-dev') => ({ tool_name: 'Bash', tool_input: { command }, cwd });
+const pwsh = (command, cwd = 'C:/dev/daiku-workspace/daiku-dev') => ({ tool_name: 'PowerShell', tool_input: { command }, cwd });
+const scrive = (file_path) => ({ tool_name: 'Write', tool_input: { file_path }, cwd: 'C:/dev/daiku-workspace/daiku-dev' });
+const modifica = (file_path) => ({ tool_name: 'Edit', tool_input: { file_path }, cwd: 'C:/dev/daiku-workspace/daiku-dev' });
 
 const CASI = [
   // --- lavorare normalmente nel cantiere: permesso
   ['git status nel repo', bash('git status'), false],
   ['gate del cantiere', bash('claude plugin validate plugins/daiku'), false],
-  ['scrivere un file di sviluppo', scrive('C:/dev/Daiku/.docs/note.md'), false],
-  ['modificare una skill del prodotto', modifica('C:/dev/Daiku/plugins/daiku/skills/init/SKILL.md'), false],
+  ['scrivere un file di sviluppo', scrive('C:/dev/daiku-workspace/daiku-dev/.docs/note.md'), false],
+  ['modificare una skill del prodotto', modifica('C:/dev/daiku-workspace/daiku-dev/plugins/daiku/skills/init/SKILL.md'), false],
 
   // --- esecuzione del target: negato, in ogni forma
   ['node dentro il clone', bash(`node ${RADICE}/progetto/index.js`), true],
@@ -396,13 +396,13 @@ const CASI = [
   ['cercare la stringa "npm install": permesso', bash('rg "npm install" docs/'), false],
 
   // --- protezione del presidio: scrittura negata
-  ['spegnere dal config', modifica('C:/dev/Daiku/.claude/guardia-target.json'), true],
-  ['riscrivere settings.json', scrive('C:/dev/Daiku/.claude/settings.json'), true],
-  ['riscrivere il guardiano', scrive('C:/dev/Daiku/.claude/hooks/guardia-target.mjs'), true],
+  ['spegnere dal config', modifica('C:/dev/daiku-workspace/daiku-dev/.claude/guardia-target.json'), true],
+  ['riscrivere settings.json', scrive('C:/dev/daiku-workspace/daiku-dev/.claude/settings.json'), true],
+  ['riscrivere il guardiano', scrive('C:/dev/daiku-workspace/daiku-dev/.claude/hooks/guardia-target.mjs'), true],
   ['rm del config', bash('rm .claude/guardia-target.json'), true],
   ['echo sul config', bash('echo {} > .claude/guardia-target.json'), true],
   ['sed sul guardiano', bash('sed -i s/enabled/disabled/ .claude/hooks/guardia-target.mjs'), true],
-  ['path assoluto al config', bash('cp /tmp/x C:/dev/Daiku/.claude/guardia-target.json'), true],
+  ['path assoluto al config', bash('cp /tmp/x C:/dev/daiku-workspace/daiku-dev/.claude/guardia-target.json'), true],
   ['scriversi il config con node -e', bash(`node -e "require('fs').writeFileSync('.claude/guardia-target.json','{}')"`), true],
 
   // --- protezione del presidio: le due esenzioni strette, permesse
@@ -414,21 +414,21 @@ const CASI = [
   // --- interruttore spento: tutto passa, tranne la protezione del presidio
   ['a presidio spento il target si esegue', { ...bash(`node ${RADICE}/p.js`), __config: { ...CONFIG_PROVA, enabled: false } }, false],
   ['a presidio spento le installazioni passano', { ...bash('npm install -g opensrc'), __config: { ...CONFIG_PROVA, enabled: false } }, false],
-  ['a presidio spento il config resta protetto', { ...modifica('C:/dev/Daiku/.claude/guardia-target.json'), __config: { ...CONFIG_PROVA, enabled: false } }, true],
+  ['a presidio spento il config resta protetto', { ...modifica('C:/dev/daiku-workspace/daiku-dev/.claude/guardia-target.json'), __config: { ...CONFIG_PROVA, enabled: false } }, true],
 ];
 
 function banco() {
   const falliti = [];
   for (const [nome, evento, atteso] of CASI) {
     const config = evento.__config ?? CONFIG_PROVA;
-    const { nega } = valuta(evento, config, 'C:/dev/Daiku');
+    const { nega } = valuta(evento, config, 'C:/dev/daiku-workspace/daiku-dev');
     if (nega !== atteso) falliti.push(`${nome}: atteso ${atteso ? 'NEGATO' : 'permesso'}, ottenuto ${nega ? 'NEGATO' : 'permesso'}`);
   }
 
   // Il banco prova su una copia della configurazione. Se la copia e il file vero divergono, i casi
   // verdi non dicono piu' niente su cio' che gira davvero: e' il modo silenzioso in cui un banco
   // invecchia. Quindi la divergenza e' un caso rosso, non una svista.
-  const vera = leggiConfig('C:/dev/Daiku');
+  const vera = leggiConfig('C:/dev/daiku-workspace/daiku-dev');
   if (!vera) {
     falliti.push(`config reale assente o illeggibile: ${CONFIG_REL}`);
   } else {
