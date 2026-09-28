@@ -10,7 +10,7 @@ metadata:
 
 Daiku sta in **due repository** (il secondo dal 18 settembre 2026).
 
-Lo **sviluppo** è questo: `NicolaTomasoni/daiku-kaji-dev`, privato, con dentro tutto —
+Lo **sviluppo** è questo: `tomasoni.nicola/daiku-dev` su GitLab, privato, con dentro tutto —
 `plugins/`, `.docs/`, `CLAUDE.md`, `.claude/`, `.vscode/`. Il
 `.gitignore` in radice non filtra niente del prodotto: esclude solo `.claude/settings.local.json`,
 che non deve stare in nessun git (vedi [[memoria-nel-repo]]).

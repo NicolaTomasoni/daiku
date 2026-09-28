@@ -5,7 +5,7 @@ Indice delle memorie del progetto. Una riga per file, nessun contenuto qui dentr
 - [Alberatura del pacchetto](alberatura-pacchetto.md) — nessun file di prodotto in radice: plugins/ è la radice pubblica; cosa contiene ogni cartella, i nomi che si somigliano e non c'entrano, le tre regole di collocazione
 - [Il corpus di sviluppo](corpus-di-sviluppo.md) — i contratti in `.claude/` sono una derivazione di quelli del prodotto: in cosa divergono, perché non si toccano, e su quale premessa sono rimasti indietro
 - [Si pubblica solo il prodotto](si-pubblica-solo-il-prodotto.md) — due repository: qui si sviluppa con tutto dentro, su GitHub si pubblica Daiku come albero generato dallo script
-- [Pubblicazione su GitHub](pubblicazione-su-github.md) — i due repository stanno su GitHub, lo sviluppo privato è daiku-kaji-dev, e cosa ricontrollare prima di pubblicare
+- [Pubblicazione su GitHub](pubblicazione-su-github.md) — lo sviluppo privato è daiku-dev su GitLab, la pubblicazione è daiku su GitHub, e cosa ricontrollare prima di pubblicare
 - [La memoria vive nel repo](memoria-nel-repo.md) — perché `autoMemoryDirectory` non si versiona e va riscritto su ogni macchina
 - [Il frontmatter di una skill va quotato](frontmatter-skill-va-quotato.md) — il guasto silenzioso che svuota i metadati di una SKILL.md
 - [init scrive il file di istruzioni](init-scrive-le-istruzioni.md) — il divieto ribaltato il 19 settembre 2026, le tre cose che lo contengono, e l'inglese di tutto ciò che init deposita

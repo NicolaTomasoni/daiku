@@ -21,8 +21,7 @@ da quelli di Daiku.
 
 **How to apply:**
 
-- In questo repo non resta traccia di Kaji tranne il nome del repository GitHub di sviluppo
-  (`daiku-kaji-dev`, non rinominato).
+- In questo repo non resta traccia di Kaji.
 - Il remote di `C:/dev/Kaji` punta ancora al vecchio progetto GitLab
   `claude-code-router-extension`: la sede GitHub di Kaji non è decisa.
 - Ciò che i due prodotti condividono resta un contratto versionato per copia, non un file letto

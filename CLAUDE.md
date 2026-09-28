@@ -40,7 +40,7 @@ Vale allo stesso modo per `.claude/orchestration.md` e `.claude/agents/`.
 
 ## Due repository: qui si sviluppa, altrove si pubblica
 
-Questo repository è lo **sviluppo**: `NicolaTomasoni/daiku-kaji-dev` su GitHub, privato, e con
+Questo repository è lo **sviluppo**: `tomasoni.nicola/daiku-dev` su GitLab, privato, e con
 dentro tutto — il prodotto, ricognizione, punti aperti, memoria, esempi, istruzioni. Non
 diventa mai pubblico, e la sua storia non si ripulisce: porta `CLAUDE.md` nel commit iniziale.
 
