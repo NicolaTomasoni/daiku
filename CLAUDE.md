@@ -1,4 +1,4 @@
-In questo repository sviluppiamo **Daiku**, un'estensione per Claude Code e Codex che implementa un agent loop. Rispondi sempre in italiano nelle chat. Tutti i file del workflow devono essere in italiano, ad eccezione della cartella del prodotto, `plugins\daiku`, che deve essere sempre in inglese insieme a tutto il suo contenuto: il prodotto parla inglese, il cantiere che lo costruisce italiano.
+In questo repository sviluppiamo **Daiku**, un'estensione per Claude Code e Codex che implementa un agent loop. Rispondi sempre in italiano nelle chat. Tutti i file del workflow devono essere in italiano, ad eccezione della cartella del prodotto, `plugins\`, che deve essere sempre in inglese insieme a tutto il suo contenuto: il prodotto parla inglese, il cantiere che lo costruisce italiano.
 
 ## Comportamento
 Non chiedere mai permessi o conferme: lavora sempre in bypass, in autonomia, senza fermarti ad approvare.
@@ -27,7 +27,7 @@ Un file che il repository pubblico deve avere in
 radice — il README, il `.gitattributes`, le vetrine — sta nella radice della cartella del
 prodotto, mai in quella di questo repository.
 
-Il marketplace locale di Claude Code punta a `C:\dev\Daiku\plugins`, non alla radice: su una
+Il marketplace locale di Claude Code punta a `C:\dev\daiku-workspace\daiku-dev\plugins`, non alla radice: su una
 macchina nuova si aggiunge con `claude plugin marketplace add <repo>/plugins`.
 
 ## Prodotto e cantiere
@@ -45,10 +45,11 @@ dentro tutto — il prodotto, ricognizione, punti aperti, memoria, esempi, istru
 diventa mai pubblico, e la sua storia non si ripulisce: porta `CLAUDE.md` nel commit iniziale.
 
 La **pubblicazione** è il repository `NicolaTomasoni/daiku` su GitHub, che non è un branch
-di questo né un fork: è un albero generato. A ogni rilascio lo script
+di questo né un fork: è un albero generato, inglese sempre e tutto — riceve il contenuto di
+`plugins/`, che è inglese per intero, e non gli si aggiunge niente in pubblicazione. A ogni rilascio lo script
 `.docs/tools/pubblica-dist.ps1` copia lì il contenuto di `plugins/` e committa
 (task VS Code «Daiku: pubblica dist»). Là dentro non si lavora mai; il suo checkout
-di servizio sta in `C:\dev\daiku-dist`.
+di servizio sta in `C:\dev\daiku-workspace\daiku`.
 
 | Prodotto | Repository di pubblicazione | Cosa si copia |
 |---|---|---|
@@ -68,8 +69,7 @@ E il confine non guarda *dentro* i file: ciò che sta sotto `plugins/` viene
 pubblicato com'è. Prima di un rilascio, controlla che non porti con sé valori di un progetto
 ospite o path di questa macchina.
 
-**In `plugins/daiku/templates/` si scrive in inglese.** Il resto del pacchetto è in italiano ed è
-giusto così: lo legge chi costruisce con Daiku. Ma gli scheletri di `templates/` non li legge lui —
+**Sotto `plugins/` è inglese tutto.** Gli scheletri di `templates/` non li legge chi costruisce con Daiku —
 li copia la skill di apertura dentro il repository di un utente qualunque, e ci restano: segnaposto,
 prosa dei README, il file di istruzioni del progetto, `description` e `statusMessage` di un
 `hooks.json`. **Non ci sono eccezioni.** Le cartelle di lingua `domain/it/` e `policies/it/` sono

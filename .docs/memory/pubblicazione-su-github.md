@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 69438169-0316-47c8-a4e8-3365650ee2cf
-  modified: 2026-09-28T16:35:21.782Z
+  modified: 2026-09-28T17:55:39.472Z
 ---
 
 Su questa macchina sviluppo e pubblicazione stanno affiancati in `C:\dev\daiku-workspace\`,
@@ -24,7 +24,12 @@ owner/repo` su Codex. Un GitLab richiederebbe l'URL git completo su tutti e due,
 le istruzioni di installazione senza dare nulla in cambio. La pubblicazione sta su GitHub
 per questo; lo sviluppo sta su GitLab, dove la forma breve non serve.
 
-**How to apply:** lo script esegue a ogni rilascio il gate stretto (path di questa macchina,
+**How to apply:** il riversamento semplice va col task «Daiku: pubblica dist»; il rilascio
+versionato guidato è `.claude/commands/rilascia-daiku.md`: verifiche verdi, numeri dallo script
+(`rilascia-daiku.mjs --solo-file`), prosa AI (voce di changelog e messaggio `release X.Y.Z`),
+pubblicazione con `pubblica-dist.ps1` in UN commit. I tre task «Daiku: rilascio major/minor/patch»
+restano per il lancio senza agente: stesso script in modo intero, note headless con `--notes auto`
+o forzate con testo. Lo script esegue a ogni rilascio il gate stretto (path di questa macchina,
 nome utente, segnaposto non sostituiti, nome del repo di sviluppo). Il gate largo resta
 **prima** dell'apertura al pubblico, perché da quel momento ciò che sta sotto `plugins/` esce
 com'è scritto: `grep -rin "reforgia\|<username>\|c:/dev/" plugins/daiku/`

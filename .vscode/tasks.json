@@ -110,9 +110,57 @@
       ],
       "problemMatcher": [],
       "presentation": { "reveal": "always", "panel": "shared" }
+    },
+    {
+      "label": "Daiku: rilascio major",
+      "type": "shell",
+      "command": "node",
+      "args": [
+        "${workspaceFolder}/.docs/tools/rilascia-daiku.mjs",
+        "--bump",
+        "major",
+        "--notes",
+        "${input:noteRilascio}"
+      ],
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "shared" }
+    },
+    {
+      "label": "Daiku: rilascio minor",
+      "type": "shell",
+      "command": "node",
+      "args": [
+        "${workspaceFolder}/.docs/tools/rilascia-daiku.mjs",
+        "--bump",
+        "minor",
+        "--notes",
+        "${input:noteRilascio}"
+      ],
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "shared" }
+    },
+    {
+      "label": "Daiku: rilascio patch",
+      "type": "shell",
+      "command": "node",
+      "args": [
+        "${workspaceFolder}/.docs/tools/rilascia-daiku.mjs",
+        "--bump",
+        "patch",
+        "--notes",
+        "${input:noteRilascio}"
+      ],
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "shared" }
     }
   ],
   "inputs": [
+    {
+      "id": "noteRilascio",
+      "type": "promptString",
+      "description": "Note di rilascio in inglese: 'auto' le fa scrivere all'AI dal diff, testo per forzarle, vuoto per la sola versione",
+      "default": "auto"
+    },
     {
       "id": "messaggioDist",
       "type": "promptString",

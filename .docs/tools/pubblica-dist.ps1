@@ -10,7 +10,7 @@ Task VS Code: "Daiku: pubblica dist".
 #>
 param(
   [string]$Messaggio = "",
-  [string]$Destinazione = "C:\dev\daiku-dist",
+  [string]$Destinazione = "C:\dev\daiku-workspace\daiku",
   [switch]$SenzaPush
 )
 
