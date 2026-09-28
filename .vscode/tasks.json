@@ -94,6 +94,30 @@
       ],
       "problemMatcher": [],
       "presentation": { "reveal": "always", "panel": "shared" }
+    },
+    {
+      "label": "Daiku: pubblica dist",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/.docs/tools/pubblica-dist.ps1",
+        "-Messaggio",
+        "${input:messaggioDist}"
+      ],
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "shared" }
+    }
+  ],
+  "inputs": [
+    {
+      "id": "messaggioDist",
+      "type": "promptString",
+      "description": "Messaggio del commit nel repo di distribuzione",
+      "default": "aggiorna dist da plugins/"
     }
   ]
 }

@@ -1,22 +1,19 @@
-# Questo è il repository di **sviluppo** di Daiku e Kaji, e contiene tutto: i due prodotti in
-# `plugins/` ed `extensions/kaji/`, la ricognizione, i punti aperti, la memoria, gli esempi e le
+# Questo è il repository di **sviluppo** di Daiku, e contiene tutto: il prodotto in
+# `plugins/`, la ricognizione, i punti aperti, la memoria, gli esempi e le
 # istruzioni di progetto. Resta privato e non diventa mai pubblico — la sua storia porta
 # `CLAUDE.md` nel commit iniziale, e non si ripulisce.
 #
-# La pubblicazione sono **due** repository su GitHub, uno per prodotto, che non sono branch di
-# questo né fork: sono alberi generati. A ogni rilascio uno script per prodotto copia lì il
-# contenuto della cartella del prodotto — `plugins/` per Daiku, `extensions/kaji/` per Kaji — e
-# committa. Là dentro non si lavora.
+# La pubblicazione è un repository su GitHub, che non è un branch di
+# questo né un fork: è un albero generato. A ogni rilascio uno script copia lì il
+# contenuto della cartella del prodotto — `plugins/` — e committa. Là dentro non si lavora.
 #
-# Per Daiku serve perché chi aggiunge il marketplace riceve un clone dell'**intero** repository:
+# Serve perché chi aggiunge il marketplace riceve un clone dell'**intero** repository:
 # lo schema di Claude Code lo dice alla voce `sparsePaths` — «If omitted, the full repository is
 # cloned» — e su Codex `--sparse` esiste per la stessa ragione. Il repo *è* l'artefatto
 # consegnato: non c'è un passo di impacchettamento dove mettere il filtro.
 #
-# Quindi il confine di ciò che esce non sta qui: sta nel perimetro delle due cartelle di prodotto.
-# Un file nato fuori da quelle resta fuori dai pacchetti pubblicati; uno nato dentro, esce. Gli
-# ignore propri di ciascun prodotto — per Kaji dipendenze, build, VSIX — stanno dentro la sua
-# cartella, e viaggiano con lui nel suo repository pubblico.
+# Quindi il confine di ciò che esce non sta qui: sta nel perimetro della cartella di prodotto.
+# Un file nato fuori da quella resta fuori dal pacchetto pubblicato; uno nato dentro, esce.
 #
 # Qui si esclude soltanto ciò che non deve stare in **nessun** git.
 

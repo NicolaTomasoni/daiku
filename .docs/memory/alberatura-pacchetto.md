@@ -1,17 +1,16 @@
 ---
 name: alberatura-pacchetto
-description: "Cosa contiene ogni cartella del repo e a cosa serve — i due prodotti, lo sviluppo — con i nomi che si somigliano e non c'entrano niente"
+description: "Cosa contiene ogni cartella del repo e a cosa serve — il prodotto, lo sviluppo — con i nomi che si somigliano e non c'entrano niente"
 metadata: 
   node_type: memory
   type: project
   originSessionId: 48eaa498-ed6e-4a36-847d-3f8fa95f7f21
-  modified: 2026-09-26T00:08:47.000Z
+  modified: 2026-09-28T14:36:00.297Z
 ---
 
-Il repo ospita due prodotti, Daiku e Kaji (vedi [[monorepo-daiku-kaji]]). **In radice non entra
-nessun file di prodotto**: ci sono le sedi di sviluppo e una cartella per prodotto, ciascuna delle
-quali è per intero la radice del suo repository pubblico — `plugins/` per Daiku, `extensions/kaji/`
-per Kaji.
+Il repo ospita il prodotto Daiku. **In radice non entra
+nessun file di prodotto**: ci sono le sedi di sviluppo e una cartella,
+che è per intero la radice del suo repository pubblico — `plugins/`.
 
 `plugins/` è **insieme marketplace e pacchetto**: una sola alberatura serve Claude Code e Codex,
 perché i due host cercano file con nomi diversi e ignorano quelli dell'altro.
@@ -26,7 +25,7 @@ perché i due host cercano file con nomi diversi e ignorano quelli dell'altro.
 | `contracts/` | `orchestration.md`, `project-contract.md` | le skill li aprono per path; non sono skill loro stessi |
 | `agents/` | `finder` — l'unico subagent a toolset ristretto | solo Claude Code: Codex lo rifiuta |
 | `hooks/` | il wiring `hooks.json`, i **quattro hook** in `lib/` e i **due moduli** che importano (`project-root.mjs`, `daiku-config.mjs`); accanto, fuori da `lib/`, `self-check.mjs` e `README.md`, che sono di chi sviluppa il pacchetto e non si trasportano | solo Claude Code: su Codex `plugin_hooks` è rimossa |
-| `architect/` | `architect.mjs`: il **valutatore deterministico** — risponde a dieci domande meccaniche e tiene l'ordine della catena; `ledger.mjs`: lo **strumento lato disco della review** — legge Git, scrive il ledger e chiede i verdetti al valutatore. Ciascuno col suo banco, che `hooks/self-check.mjs` lancia (vedi [[valutatore-deterministico]]) | l'agente, che li invoca: non sono hook, nessun `hooks.json` li nomina, e non si installano in un progetto |
+| `architect/` | `architect.mjs`: il **valutatore deterministico** — risponde a nove domande meccaniche e tiene l'ordine della catena; `ledger.mjs`: lo **strumento lato disco della review** — legge Git, scrive il ledger e chiede i verdetti al valutatore. Ciascuno col suo banco, che `hooks/self-check.mjs` lancia (vedi [[valutatore-deterministico]]) | l'agente, che li invoca: non sono hook, nessun `hooks.json` li nomina, e non si installano in un progetto |
 | `schemas/` | `blocks.json`: lo specchio controllabile dei blocchi di ritorno — la prosa del nodo resta normativa | i controlli scritti a mano e gli umani che scrivono i nodi |
 | `templates/` | gli scheletri che `init` copierà nel progetto ospite | nessuno: non vengono mai letti in place |
 | `.claude-plugin/`, `.codex-plugin/` | i due manifest, uno per host | gli host, all'installazione |
@@ -42,13 +41,7 @@ c'è un pacchetto che si chiama daiku, sta in `./daiku`». Con loro stanno il `.
 prodotto e, quando nascerà, il README pubblico. Il marketplace locale si registra su
 `<repo>/plugins`, non sulla radice del repo.
 
-## 2. Il prodotto Kaji — `extensions/kaji/`
-
-La radice del repository pubblico di Kaji: `package.json`, `src/`, `test/`, il suo `.gitignore`, il
-suo `.gitattributes` e i documenti di progetto — `README.md` prodotto, `TECH-STACK.md`
-architettura, `BRANDING.md` nome — che si pubblicano con lui. Il codice non è ancora cominciato.
-
-## 3. Lo sviluppo *obbligato* a stare in radice
+## 2. Lo sviluppo *obbligato* a stare in radice
 
 Non si possono spostare: gli host e git li cercano lì e basta. Oltre a questi, in radice ci sono
 solo `.gitignore` e `.gitattributes` del repository di sviluppo.
@@ -64,9 +57,9 @@ solo `.gitignore` e `.gitattributes` del repository di sviluppo.
 - **`.vscode/`** — `tasks.json` con gli switch fra backend LLM: tooling personale dell'owner, con
   path della sua home. Non c'entra niente con Daiku.
 
-## 4. Lo sviluppo che si è potuto raccogliere
+## 3. Lo sviluppo che si è potuto raccogliere
 
-`.docs/` tiene tutto ciò che serve a costruire i due prodotti e che *non* era obbligato in radice:
+`.docs/` tiene tutto ciò che serve a costruire il prodotto e che *non* era obbligato in radice:
 
 - `RICOGNIZIONE.md` — il documento di riferimento: cosa offrono i due host, cosa manca, perché
   ogni file sta dove sta, con le prove eseguite sui validatori reali

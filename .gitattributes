@@ -6,8 +6,8 @@
 # sul disco finirebbero CRLF nei repository pubblici, che sono l'artefatto che l'utente riceve.
 #
 # `eol=lf` scavalca `core.autocrlf` e tiene LF su entrambi i lati. Questo file vale per lo
-# sviluppo; ciascun prodotto porta la stessa regola nel proprio `.gitattributes`, in
-# `plugins/` e in `extensions/kaji/`, perché viaggi con lui nel suo repository pubblico.
+# sviluppo; il prodotto porta la stessa regola nel proprio `.gitattributes`, in
+# `plugins/`, perché viaggi con lui nel repository pubblico.
 #
 # Se un giorno entra un .bat o un .cmd, quello va marcato `eol=crlf` a parte: sono gli unici
 # file che CRLF lo pretendono davvero.
