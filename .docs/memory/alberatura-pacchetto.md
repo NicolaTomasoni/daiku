@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 48eaa498-ed6e-4a36-847d-3f8fa95f7f21
-  modified: 2026-09-28T17:06:25.722Z
+  modified: 2026-09-28T18:04:02.221Z
 ---
 
 Il repo ospita il prodotto Daiku. Questo repository sta in `C:\dev\daiku-workspace\daiku-dev`,
@@ -48,11 +48,11 @@ solo `.gitignore` e `.gitattributes` del repository di sviluppo.
 
 - **`CLAUDE.md`** — le istruzioni per chi sviluppa Daiku. Non è Daiku.
 - **`.claude/`** — come si lavora *su* Daiku, non come Daiku funziona. Dentro c'è:
-  - `orchestration.md` + `commands/` (14 comandi) + `agents/finder.md` — il **corpus di sviluppo**,
+  - `orchestration.md` + `commands/` (13 comandi) + `agents/finder.md` — il **corpus di sviluppo**,
     una derivazione dei contratti del prodotto adattata a questo repo: valori scritti per esteso
     invece che parametrizzati, e niente worktree. Non si sincronizza da solo col pacchetto:
     si scrive solo nel prodotto, e un ordine esplicito dell'owner può toccarlo. Vedi [[corpus-di-sviluppo]].
-    Fra i 14, `confronta-repo.md` è il comando dell'owner, precedente al corpus.
+    Fra i 13, `studia-repository.md` è il comando dell'owner per lo studio dei repository di terzi.
   - `settings.local.json` — punta `autoMemoryDirectory` (vedi [[memoria-nel-repo]]).
 - **`.vscode/`** — `tasks.json` con gli switch fra backend LLM: tooling personale dell'owner, con
   path della sua home. Non c'entra niente con Daiku.
@@ -76,7 +76,7 @@ solo `.gitignore` e `.gitattributes` del repository di sviluppo.
   compilato davvero
 - `tools/check-topology.mjs` — verifica la topologia del corpus, nel gate e a mano prima del
   rilascio; sta qui e non sotto `plugins/` così non viaggia con ciò che si pubblica
-- `tools/studia-sorgente/` — gli attrezzi deterministici del comando `studia-sorgente`
+- `tools/studia-repository/` — gli attrezzi deterministici del comando `studia-repository`
 
 ## I nomi che si somigliano e non c'entrano niente
 

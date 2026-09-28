@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 48eaa498-ed6e-4a36-847d-3f8fa95f7f21
-  modified: 2026-09-28T14:35:56.242Z
+  modified: 2026-09-28T18:04:37.112Z
 ---
 
 Dal 18 settembre 2026 `.claude/` porta un **corpus di sviluppo**: `orchestration.md`, i comandi in
@@ -41,8 +41,8 @@ scelte dell'owner le fanno divergere e non sono reversibili per copia:
   nell'indice, e `deliver-feature` lo committa in una fase propria, dopo il report perché il
   registro delle consegne è di quel gruppo.
 
-Il prodotto ha **diciotto** contratti, questo corpus ne ha **dodici** derivati, su **quattordici**
-comandi: gli altri due, `confronta-repo.md` e `studia-sorgente.md`, sono comandi dell'owner senza
+Il prodotto ha **diciotto** contratti, questo corpus ne ha **dodici** derivati, su **tredici**
+comandi: l'altro, `studia-repository.md`, è il comando dell'owner senza
 un gemello nel prodotto. Gli otto non derivati sono
 `applier`, `arch-check`, `finder-prompt`, `init`, `perf`,
 `research`, `sync-host`, `test-coverage`. Di questi, `finder-prompt` e `applier` sono stati **assorbiti**
@@ -58,7 +58,7 @@ senza eccezioni. Nel cantiere la skill resta finché qualcuno non decide di togl
 **Due nomi non coincidono più**, dopo che il prodotto li ha rinominati: il `research` del pacchetto (con `study` come foglia di riordino) è lo `studia-libreria` di qui, e il suo `new-feature` è lo `studia-problema` di qui. Cercare il
 contratto corrispondente per nome non funziona su questi due.
 
-**Dal 22 settembre 2026 i due corpus non parlano più la stessa lingua.** `plugins/daiku/` è tutto
+**Dal 22 settembre 2026 i due corpus non parlano più la stessa lingua.** `plugins/` è tutto
 in inglese — contratti, skill, commenti e messaggi degli hook, `short_description` degli
 `openai.yaml` — mentre il cantiere resta in italiano, e ci resta per scelta: lo legge chi
 costruisce Daiku, non chi lo installa. Il confine fra le due lingue coincide ora con quello fra

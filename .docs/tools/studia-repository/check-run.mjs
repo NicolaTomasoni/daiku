@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /**
- * Gate di chiusura di /studia-sorgente: verifica a macchina una corsa già depositata su file.
+ * Gate di chiusura di /studia-repository: verifica a macchina una corsa già depositata su file.
  *
  * Attrezzo di sviluppo di questo repository, non del pacchetto: vive fuori da `plugins/`, non si
  * pubblica, non si installa in nessun progetto e non gira mai da un hook. Si lancia a mano,
- * dall'orchestratore del comando (Passo 9) o da chi vuole solo controllare una corsa già scritta:
+ * dall'orchestratore del comando (Passo 12) o da chi vuole solo controllare una corsa già scritta:
  *
- *   node .docs/tools/studia-sorgente/check-run.mjs .docs/studia-sorgente/<slug> plugins/daiku
+ *   node .docs/tools/studia-repository/check-run.mjs .docs/studia-repository/<slug> plugins/daiku
  *
  * Entrambi gli argomenti sono obbligatori e arrivano sempre per riga di comando, mai dedotti
  * dalla posizione di questo file o dalla cwd. Senza uno dei due: usage su stderr, uscita `2`.
@@ -15,12 +15,14 @@
  * dentro `--self-check`, che crea le proprie fixture in `os.tmpdir()` (repo git compreso) e le
  * cancella alla fine. Non contiene, né lancia, nessun comando d'installazione.
  *
- *   node .docs/tools/studia-sorgente/check-run.mjs --self-check
+ *   node .docs/tools/studia-repository/check-run.mjs --self-check
  *
  * Verifica la forma esatta di `run.json`, di `1. daiku-comparison.md` e di `2. evidence-ledger.md`
- * come la descrive `.claude/commands/studia-sorgente.md` § *I file di una corsa*: la stessa
+ * come la descrive `.claude/commands/studia-repository.md` § *I file di una corsa*: la stessa
  * forma vive scritta due volte, nella prosa del contratto e nel parser qui sotto, ed è l'unico
- * punto in cui le due devono combaciare alla lettera.
+ * punto in cui le due devono combaciare alla lettera. Un `run.json` senza `profondita` vale come
+ * corsa profonda. In una corsa leggera i controlli su toolchain, grafo e source non si applicano,
+ * e ogni scheda `adotta`/`adatta` è rossa: senza source non si adotta niente.
  */
 
 import { spawnSync } from 'node:child_process';
@@ -182,6 +184,8 @@ function runChecks(cartellaArg, radiceArg, opts = {}) {
     check('run-json:esiste', false, `${join(cartellaArg, 'run.json')} illeggibile: ${error.message}`);
   }
 
+  const leggera = (runJson?.profondita ?? 'profonda') === 'leggera';
+
   if (runJson) {
     const missing = RUN_JSON_KEYS.filter((k) => !hasKey(runJson, k));
     check('run-json:chiavi-complete', missing.length === 0, missing.length ? `mancano: ${missing.join(', ')}` : '');
@@ -189,21 +193,27 @@ function runChecks(cartellaArg, radiceArg, opts = {}) {
     const radiceCoincide = normPath(runJson.daiku?.radice) === normPath(radiceArg);
     check('run-json:daiku-radice-coincide', radiceCoincide, radiceCoincide ? '' : `run.json ha "${runJson.daiku?.radice}", l'argomento è "${radiceArg}"`);
 
-    const opensrcOk = !!runJson.toolchain?.opensrc?.versione && !!runJson.toolchain?.opensrc?.binario;
-    check('run-json:toolchain-opensrc-non-vuoto', opensrcOk, opensrcOk ? '' : 'toolchain.opensrc.versione o .binario vuoti');
-    const graphifyOk = !!runJson.toolchain?.graphify?.versione && !!runJson.toolchain?.graphify?.binario;
-    check('run-json:toolchain-graphify-non-vuoto', graphifyOk, graphifyOk ? '' : 'toolchain.graphify.versione o .binario vuoti');
+    const profondita = runJson.profondita ?? 'profonda';
+    const profonditaOk = ['leggera', 'mista', 'profonda'].includes(profondita);
+    check('run-json:profondita-valida', profonditaOk, profonditaOk ? '' : `profondita = ${JSON.stringify(runJson.profondita)}`);
 
-    const comando = runJson.grafo?.comando || '';
-    check('run-json:grafo-comando-code-only', comando.includes('--code-only'), comando.includes('--code-only') ? '' : `"${comando}" non contiene --code-only`);
-    check('run-json:grafo-comando-no-install', !comando.includes('install'), comando.includes('install') ? `"${comando}" contiene "install"` : '');
+    if (!leggera) {
+      const opensrcOk = !!runJson.toolchain?.opensrc?.versione && !!runJson.toolchain?.opensrc?.binario;
+      check('run-json:toolchain-opensrc-non-vuoto', opensrcOk, opensrcOk ? '' : 'toolchain.opensrc.versione o .binario vuoti');
+      const graphifyOk = !!runJson.toolchain?.graphify?.versione && !!runJson.toolchain?.graphify?.binario;
+      check('run-json:toolchain-graphify-non-vuoto', graphifyOk, graphifyOk ? '' : 'toolchain.graphify.versione o .binario vuoti');
 
-    const nodiOk = typeof runJson.grafo?.nodi === 'number' && runJson.grafo.nodi > 0;
-    check('run-json:grafo-nodi-positivo', nodiOk, nodiOk ? '' : `grafo.nodi = ${runJson.grafo?.nodi}`);
+      const comando = runJson.grafo?.comando || '';
+      check('run-json:grafo-comando-code-only', comando.includes('--code-only'), comando.includes('--code-only') ? '' : `"${comando}" non contiene --code-only`);
+      check('run-json:grafo-comando-no-install', !comando.includes('install'), comando.includes('install') ? `"${comando}" contiene "install"` : '');
 
-    const sorgenteNorm = normPath(runJson.sorgente?.path);
-    const sottoRadice = (radiciNonEseguibili || []).some((r) => sorgenteNorm.startsWith(`${normPath(r)}/`) || sorgenteNorm === normPath(r));
-    check('run-json:sorgente-sotto-radice-analisi', sottoRadice, sottoRadice ? '' : `"${runJson.sorgente?.path}" non sta sotto nessuna radice_non_eseguibile (${(radiciNonEseguibili || []).join(', ')})`);
+      const nodiOk = typeof runJson.grafo?.nodi === 'number' && runJson.grafo.nodi > 0;
+      check('run-json:grafo-nodi-positivo', nodiOk, nodiOk ? '' : `grafo.nodi = ${runJson.grafo?.nodi}`);
+
+      const sorgenteNorm = normPath(runJson.sorgente?.path);
+      const sottoRadice = (radiciNonEseguibili || []).some((r) => sorgenteNorm.startsWith(`${normPath(r)}/`) || sorgenteNorm === normPath(r));
+      check('run-json:sorgente-sotto-radice-analisi', sottoRadice, sottoRadice ? '' : `"${runJson.sorgente?.path}" non sta sotto nessuna radice_non_eseguibile (${(radiciNonEseguibili || []).join(', ')})`);
+    }
   }
 
   // I tre documenti.
@@ -294,6 +304,9 @@ function runChecks(cartellaArg, radiceArg, opts = {}) {
       if (c['Classificazione'] === 'ALREADY_PRESENT' || c['Classificazione'] === 'PARTIAL') {
         const equivOk = !!c['Equivalente in Daiku'] && c['Equivalente in Daiku'].trim().toLowerCase() !== 'nessuno';
         check(`scheda:${s.id}:equivalente-in-daiku`, equivOk, equivOk ? '' : '"Equivalente in Daiku" assente o "nessuno"');
+      }
+      if (leggera && (c['Azione'] === 'adotta' || c['Azione'] === 'adatta')) {
+        check(`scheda:${s.id}:leggera-solo-voci-leggere`, false, `Azione="${c['Azione']}" in una corsa leggera: serve il ramo profondo`);
       }
     }
 
@@ -387,12 +400,21 @@ function runSelfCheck() {
 
     function baseRunJson(dir, overrides = {}) {
       const sorgentePath = overrides.sorgentePathOverride ?? join(dir, 'analysis-root', 'opensrc', 'repos', 'example', 'fixture', '1.0.0').replace(/\\/g, '/');
+      const leggera = overrides.leggera === true;
       return {
         target: 'fixture', slug: 'npm--fixture', tipo: 'npm', focus: null, data: '2026-09-25',
-        sorgente: { path: sorgentePath, acquisizione: 'opensrc', versione_richiesta: null, versione_risolta: '1.0.0', revisione: '1.0.0' },
-        grafo: { comando: overrides.comando ?? 'graphify extract <path> --code-only --out <dir>', path: join(dir, 'grafo', 'graph.json').replace(/\\/g, '/'), nodi: overrides.nodi ?? 42, archi: 100 },
-        daiku: { radice: overrides.daikuRadice ?? 'plugins/daiku', commit: 'abc1234', grafo: join(dir, 'daiku-grafo', 'graph.json').replace(/\\/g, '/') },
-        toolchain: { opensrc: { versione: 'opensrc 9.9.9', binario: 'opensrc.cmd' }, graphify: { versione: 'graphify 8.8.8', binario: 'graphify.exe' }, node: process.version, git: 'git 2.0.0', gh: null },
+        profondita: leggera ? 'leggera' : undefined,
+        acquisizione_leggera: leggera ? { via: 'api', sha: 'abc', data_commit: '2026-09-25' } : undefined,
+        sorgente: leggera
+          ? { path: null, acquisizione: null, versione_richiesta: null, versione_risolta: null, revisione: null }
+          : { path: sorgentePath, acquisizione: 'opensrc', versione_richiesta: null, versione_risolta: '1.0.0', revisione: '1.0.0' },
+        grafo: leggera
+          ? { comando: null, path: null, nodi: 0, archi: 0 }
+          : { comando: overrides.comando ?? 'graphify extract <path> --code-only --out <dir>', path: join(dir, 'grafo', 'graph.json').replace(/\\/g, '/'), nodi: overrides.nodi ?? 42, archi: 100 },
+        daiku: { radice: overrides.daikuRadice ?? 'plugins/daiku', commit: 'abc1234', grafo: leggera ? null : join(dir, 'daiku-grafo', 'graph.json').replace(/\\/g, '/') },
+        toolchain: leggera
+          ? { opensrc: { versione: null, binario: null }, graphify: { versione: null, binario: null }, node: process.version, git: 'git 2.0.0', gh: null }
+          : { opensrc: { versione: 'opensrc 9.9.9', binario: 'opensrc.cmd' }, graphify: { versione: 'graphify 8.8.8', binario: 'graphify.exe' }, node: process.version, git: 'git 2.0.0', gh: null },
         presidio: { acceso: false },
         stato_git_iniziale: [],
         stadi: { avvio: 'fatto', acquisizione: 'fatto', grafo: 'fatto', studio: 'fatto', verifica: 'fatto', confronto: 'fatto', report: 'fatto' },
@@ -472,6 +494,25 @@ function runSelfCheck() {
       writeRun(dir, cartella, { comparisonRows: [rowFor(schedaAdottaOk)], schedeFields: [schedaAdottaOk] });
       const res = runChecks(cartella, 'plugins/daiku', { repoOverride: dir, radiciNonEseguibili: [join(dir, 'analysis-root').replace(/\\/g, '/')], gitStatusCorrente: [] });
       record('caso-verde-nessun-fallito', res.failed.length === 0, res.failed.join(' | '));
+    }
+
+    // Caso verde leggero: senza toolchain, grafo e source, con una sola voce ispira.
+    {
+      const dir = buildFakeRepo();
+      const cartella = join(dir, '.docs', 'studia-repository', 'owner--fixture');
+      const schedaIspira = { id: 'RI-001', titolo: 'Direzione interessante', azione: 'ispira', priorita: 'bassa', classificazione: 'ABSENT', modo: 'no-action', evidenza: 'EV-001', equivalente: 'nessuno', sede: 'nessuna', blast: 'low', costo: 'basso', licenza: 'da verificare sul source', confidenza: 'LOW' };
+      writeRun(dir, cartella, { runJsonOverrides: { leggera: true }, comparisonRows: [], schedeFields: [schedaIspira] });
+      const res = runChecks(cartella, 'plugins/daiku', { repoOverride: dir, radiciNonEseguibili: [join(dir, 'analysis-root').replace(/\\/g, '/')], gitStatusCorrente: [] });
+      record('caso-verde-leggero-nessun-fallito', res.failed.length === 0, res.failed.join(' | '));
+    }
+
+    // Corsa leggera con una scheda "adotta" -> rosso: senza source non si adotta niente.
+    {
+      const dir = buildFakeRepo();
+      const cartella = join(dir, '.docs', 'studia-repository', 'owner--fixture');
+      writeRun(dir, cartella, { runJsonOverrides: { leggera: true }, comparisonRows: [rowFor(schedaAdottaOk)], schedeFields: [schedaAdottaOk] });
+      const res = runChecks(cartella, 'plugins/daiku', { repoOverride: dir, radiciNonEseguibili: [join(dir, 'analysis-root').replace(/\\/g, '/')], gitStatusCorrente: [] });
+      record('leggera-con-adotta-rosso', res.failed.some((f) => f.startsWith('scheda:RI-001:leggera-solo-voci-leggere')), res.failed.join(' | '));
     }
 
     // Scheda "adotta" senza licenza -> rosso.

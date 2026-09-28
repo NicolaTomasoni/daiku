@@ -5,7 +5,7 @@ pubblicato: lo script di pubblicazione copia il solo contenuto di `plugins/`, e 
 fuori.
 
 Serve a una cosa sola: **impedire che un agente esegua il codice di un repository target**, cioè di
-un repo di terzi preso in analisi da `studia-sorgente`. Un repository di terzi si legge, si
+un repo di terzi preso in analisi da `studia-repository`. Un repository di terzi si legge, si
 indicizza e si cita: non si esegue. È l'unico divieto che protegge da un effetto **fuori** dalla
 sessione — uno script di terzi scrive sul filesystem, apre connessioni, lancia altro.
 

@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: bb0219dd-76c8-4a09-bf9b-4cb040132a6e
-  modified: 2026-09-19T19:09:39.682Z
+  modified: 2026-09-28T18:00:52.639Z
 ---
 
 Dal 19 settembre 2026 `init` **scrive il file di istruzioni** del progetto ospite (`CLAUDE.md` o
@@ -41,5 +41,5 @@ le skill parlano all'utente e cosa lasciano nei commit. Le cartelle `templates/p
 e `policies/it/` non esistono più, i loro gemelli `en/` sono stati appiattiti di un livello. La
 sede della regola è la §5.6 di `contracts/project-contract.md`. Il 22 settembre 2026 anche le skill, i contratti
 e gli hook sono passati all'inglese: il pacchetto è tutto in una lingua, e il confine con
-l'italiano coincide con quello fra `plugins/daiku/` e il corpus di sviluppo. Vedi [[tre-livelli-di-parametro]] e
+l'italiano coincide con quello fra `plugins/` e il resto del repo. Vedi [[tre-livelli-di-parametro]] e
 [[alberatura-pacchetto]].
