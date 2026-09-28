@@ -1,7 +1,7 @@
 ---
 name: 'develop-feature'
-description: 'Internal /new-feature contract — delivers a feature from the already resolved decision-doc to the commit in a single invocation: worktree, brief, execution, review rounds, decision, memory and documentation alignment, the three commits, merge and report. It orchestrates its own phases delegating each to a subagent. It is not launched by hand and does not ask anything of the owner.'
-user-invocable: false
+description: 'Delivers a feature from the already resolved decision-doc to the commit in a single invocation: worktree, brief, execution, review rounds, decision, memory and documentation alignment, the three commits, merge and report. It orchestrates its own phases delegating each to a subagent. Launched by hand on an existing folder, or by new-feature as its delivery.'
+argument-hint: '<folder with 1. decision-doc.md> [+ chosen solution, one option id and text per decision, if 2. blueprint.md is absent]'
 ---
 
 You are the **engine** of the delivery of a single feature: the sequence — brief → execution → review rounds → decision → memory/documentation update → commit (up to three groups: feature, then doc/memory, then version) → merge → cleanup → report — you orchestrate **it**, delegating each phase to a subagent according to `contracts/orchestration.md`. There is no script doing it in your place.
@@ -12,12 +12,17 @@ You are the **engine** of the delivery of a single feature: the sequence — bri
 
 When you have **one** feature with `1. decision-doc.md` already resolved and you want the complete delivery (up to the conditional commit) without anybody having to chain `blueprint` → `execute` → `/review` → `/commit` in sequence. If you want to stay on the single atomic steps (to stop between one stage and the next), use those directly: this skill does not replace them, it chains them for the cases where you want the whole delivery in one shot.
 
+## Invocation modes
+
+**You are launched by hand or by `new-feature` § *Delivery*.** The sequence is the same either way; what changes is where the input comes from and where the outcome goes.
+
+- **By hand (`owner`).** `$ARGUMENTS` carries the folder; the chosen solution only if `<folder>/2. blueprint.md` is absent and the brief still has to be produced — one option id and text per decision, as written. If the folder does not exist or holds no `1. decision-doc.md`, stop and say so. If the brief is absent and the solution is missing or ambiguous against the decision-doc, do not guess and do not ask: stop, and report the options the document truly declares, so the owner relaunches you with the choice. Close with the contract block in chat. You never push: the push stays a manual act of the owner.
+- **From `new-feature` § *Delivery*.** Folder and chosen solution arrive resolved in the prompt — there is nobody to ask, and a question asked in here stays hanging (§ *Ask the owner* of `contracts/orchestration.md`). The constraints below hold unchanged, and they are not rewritten in the caller prompt.
+
 ## Input
 
-**You are always a subagent: this contract is not launched by hand.** `new-feature` opens it § *Delivery*, and everything arrives resolved in the prompt — there is nobody to ask, and a question asked in here stays hanging (§ *Ask the owner* of `contracts/orchestration.md`).
-
 - **`<folder>`** — path of the folder (relative to the repo root, or absolute), wherever it lives: `{paths.studies}/<name>` is the common case but not the only one. Verify it on the filesystem: it must exist and contain `1. decision-doc.md`. If missing, stop and return the block with the reason.
-- **`<chosen solution>`** — mandatory, with id and text per decision: you pass it to the brief. If it is ambiguous against the decision-doc — it names a decision or an option that do not exist there — **do not guess and do not ask**: stop, and in the block report the options the document truly declares, so that whoever called you can bring them to the owner. If instead the solution was not passed to you at all, use for each decision the **`A`** option — which by contract is the recommended — and declare it in the outcome: it is a defensible choice written by whoever studied the problem, not your invention.
+- **`<chosen solution>`** — with id and text per decision: you pass it to the brief, and only to the brief — if `<folder>/2. blueprint.md` already exists the solution is not needed and is ignored. If it is ambiguous against the decision-doc — it names a decision or an option that do not exist there — **do not guess and do not ask**: stop, and in the block report the options the document truly declares, so that whoever called you can bring them to the owner. If instead the solution was not passed to you at all and no brief exists, use for each decision the **`A`** option — which by contract is the recommended — and declare it in the outcome: it is a defensible choice written by whoever studied the problem, not your invention.
 
 ## Worktree pool
 
@@ -38,7 +43,7 @@ Read `contracts/orchestration.md`: roles, host, how a subagent launches, concurr
 
 ## The evaluator
 
-Six of the classifications below are **asked, not read off this prose**, and the
+Five of the classifications below are **asked, not read off this prose**, and the
 verdict binds. It is one program, and asking it is one command:
 
 ```bash
@@ -47,13 +52,12 @@ node <package root>/architect/architect.mjs <package root>
 
 It reads **one JSON object on stdin** and writes **one JSON object on stdout**; it starts no
 process, talks to no model and opens no file of the project — only the package's own
-`schemas/blocks.json`, for the `block` and `handoff` questions. What it answers here:
+`schemas/blocks.json`, for the `block` question. What it answers here:
 
 | Question | Where it is used here |
 |---|---|
 | `order` | § *The sequence* — given the entry point and the artefacts already on disk, which phases remain |
 | `block` | § *1. Brief* and § *2. Execute* — whether the block of the phase has the form its node declares |
-| `handoff` | § *The handoff* — whether execute left the evidence the brief asked of it |
 | `decision` | § *4. Decision* — the classification of the six rows |
 | `unblock` | § *Mechanical unblock* — whether only mechanical work remains |
 | `propagation` | *Block validation*, below — what follows a block that did not come back |
@@ -65,9 +69,8 @@ one of them, and its bench reads every call to the evaluator in the contracts of
 refuses one whose paragraph does not name them all — so the keys are named where each call is
 made, and not listed again here. Three of them carry a meaning their name does not say: `ledger`
 is `null` when there is none, and for `order` a ledger that exists and is not passed turns into a
-fork for the owner where a verdict was due; `step` is `{"node": …, "block": …|null, "attempt": 1|2}`;
-`measured` holds the caller's own read-only searches, never the executor's word (§ *The handoff*).
-These are the ten questions it answers. The four this file does not use directly are asked by the contracts that need them:
+fork for the owner where a verdict was due; `step` is `{"node": …, "block": …|null, "attempt": 1|2}`.
+These are the nine questions it answers. The four this file does not use directly are asked by the contracts that need them:
 `closing`, `resumption` and `round` by `skills/review/SKILL.md` (§ *Closing*, § *Baseline and ledger*, § *When to run another round*), through
 `architect/ledger.mjs`, the review's disk side, which imports these questions and hands them the ledger and the added lines it read from disk
 (`skills/review/SKILL.md` § *The ledger tool*), and which asks `block` too, on the finder and applier blocks; `layers` by
@@ -182,37 +185,7 @@ Executor subagent. In the prompt:
 - `{memory.index}` and the paths of the memories pertinent to the perimeter, to open before writing (§4.1 of `contracts/orchestration.md`);
 - ask nothing of the user; stop only before a real block (unjustified destructive action or irreconcilable contradiction).
 
-The expected outcome is the block `skills/execute/SKILL.md` declares in its own § *What you return*, in full and with those field names. Its form is asked like the brief's — `question: "block"`, `name: "execute"`, `block` — and an `invalid` is a failed phase under *Block validation*. `ok: true` is not the end of the phase: execute is over when § *The handoff* below says `ready`.
-
-#### Round 0 — **worker** role, only above the sharding threshold
-
-On a diff above the threshold at which `skills/review/SKILL.md` § *Finder* shards the `bug` finder — measured in the work root on `git diff --numstat <base-ref> -- {code_root}` plus the untracked files of `git ls-files --others --exclude-standard -- {code_root}`, each counted whole — one more subagent reads the diff before the handoff. Below the threshold it does not exist: say so in one line in chat and go to the handoff.
-
-It is **not** the review brought forward. It has a lens the `bug` finder does not have, on the three kinds of defect that cost review rounds when execute leaves them behind, and its findings are applied by execute, not by the applier. In the prompt, and only this:
-
-- the diff: the base-ref of `4. review-notes.md`, the work root, `{code_root}` and the untracked files;
-- the lens, in these words:
-  - **producer and consumer** — for every interface the diff changes (a signature, a block field, a JSON key, an argument, a prose instruction naming the inputs of a call, a registry of the members of a set), `git grep --untracked` its literal string and verify that every consumer reads it as it is written now;
-  - **retired facts** — for every name, count or rule the diff changes, `git grep --untracked` the old wording: a surviving reference, a sentence contradicting the new rule, a count gone stale;
-  - **checks that cannot go red** — for every test or check the diff adds, name the input that makes it fail: a check under a condition always true, one fixture per enum, a presence `grep` standing for correctness are findings;
-- no logic defects and no style: those belong to the review, whose finders read this diff after you;
-- the read-only constraint, in these words: it modifies no files and runs no commands that write (§4 of `contracts/orchestration.md`);
-- no brief, no Journal, no notes: it judges the diff, not what execute says of it;
-- the block to return: the one `skills/finder-prompt/SKILL.md` § *The block you return* declares, `confidence` high only where a command shows the finding — the grep line, the input that cannot fail.
-
-On `claude` the subagent type is `finder`. A block that does not come back is relaunched once; at the second silence round 0 is declared missing in chat and the phase goes on to the handoff, because it adds to the delivery and never holds it. If findings come back, relaunch execute on the same folder with the findings in the prompt — § *Round-0 findings* of `skills/execute/SKILL.md` says what it does with them — and validate its block again. Zero findings: straight to the handoff.
-
-**The review stays blind to it.** The findings go to execute and stop there: they are not written in `4. review-notes.md`, not passed to phase 3, and no finder of the review is handed them. The review's round 1 reads the diff as if round 0 had never been, which is the only way its yield stays what it was.
-
-#### The handoff — asked, not judged
-
-Execute is over when a program finds its evidence, not when its block says `ok`. Before phase 3:
-
-1. **Measure, yourself, read-only.** In the work root, with `--untracked` because what execute created is not in the index yet: for each `retired` item of the brief, `git grep --untracked -n -F -e '<pattern>' -- {code_root}` and the number of lines it prints; for each `interfaces` item, `git grep --untracked -l -F -e '<symbol>' -- {code_root}` and the files it prints; the files of the diff, `git diff --name-only --relative <base-ref> -- {code_root}` plus `git ls-files --others --exclude-standard -- {code_root}`. In the artefacts root, the tasks still open: `git grep --no-index -n -E '^[[:space:]]*- \[[ ~]\] ' -- '<folder>/2. blueprint.md'`. They are the searches execute ran: rerunning them costs seconds, and a count read off its block is a count nobody measured.
-2. **Ask.** Call the evaluator with `question: "handoff"`, `brief` (the block of phase 1 — on a resumed delivery, the one `<folder>/2. blueprint.md` carries in its *Handoff* section; a brief without that section, written before it existed, goes back to phase 1 once, whose contract then rewrites that section alone), `notes` (the block of phase 2), `diff_files` and `measured` (`{"absence": [{"pattern", "hits"}], "consumers": [{"symbol", "files"}], "open_tasks": [<lines>]}`). `ready` → phase 3. `not-ready` → `blockers` names every piece of evidence missing: a task of the brief not rerun green, a behaviour change never seen red, a consumer not checked, a retired fact whose count differs from yours, a quick check red, a task left open.
-3. **One relaunch, then it stops.** On `not-ready` relaunch execute **once** — the ceiling of §4 point 2 of `contracts/orchestration.md` — with the same prompt plus the `blockers`, which are the whole scope of that run (§ *When you are relaunched on the handoff* of `skills/execute/SKILL.md`); then measure and ask again. A second `not-ready` is a failed Execute: the delivery stops (§ *Early block*) with the blockers as its reason.
-
-What the program checks is the **form of the evidence** — a proof exists, its exit is red, a count matches the measurement — never whether a red proof exercised the right thing: that stays the review's.
+The expected outcome is the block `skills/execute/SKILL.md` declares in its own § *What you return*, in full and with those field names. Its form is asked like the brief's — `question: "block"`, `name: "execute"`, `block` — and an `invalid` is a failed phase under *Block validation*. On `valid` the phase is over and the delivery goes to phase 3: nothing remeasures the evidence against the disk — the maps the brief built are the last measurement, and the executor worked only on the files they cite.
 
 ### 3. Review — **worker** role, `/review`, always, inside the delivery
 
@@ -364,7 +337,7 @@ It is the last phase and nobody decides anything more on its outcome, but the bl
 
 ## Early block
 
-If Acquisition, Brief or Execute fail, the delivery stops — and Execute fails also when § *The handoff* stays `not-ready` after its one relaunch: say so in chat, have the report write a block saying what had to be delivered, at which phase it stopped and why, and close with `status: "blocked"`. No stage, no memory, no commit, no merge.
+If Acquisition, Brief or Execute fail, the delivery stops — say so in chat, have the report write a block saying what had to be delivered, at which phase it stopped and why, and close with `status: "blocked"`. No stage, no memory, no commit, no merge.
 
 **Also here the report is a subagent, and also here the prompt is the only channel.** You pass it only the fields of phase 7 existing at that point — file path and tail append, `<folder>` and solution, **which phase stopped** and the `detail` of its block, `status: "blocked"`, the dirty paths under `{code_root}` — and you explicitly tell it the others **do not exist**: gate, commit and memory never ran. Without that line the report tells them anyway, and it is how a delivery never started reads like a delivery arrived badly at the end.
 
@@ -395,7 +368,7 @@ If Acquisition, Brief or Execute fail, the delivery stops — and Execute fails 
 
 Every field comes from a phase, and is reported **verbatim** from there — not recomputed from memory: `status` from phase 4 (a conflicting merge of phase 6b reclassifies it `BLOCKED_NO_COMMIT`); `worktree` from phase 0 (`null` if it acquired nothing); `commit_sha` from `committed`/`commit_sha` of phase 6; `merge_sha` from phase 6b (`null` if merge did not start or went into conflict); `memory_updated` from the `updated` field of phase 5b (`false` if the phase was not run); `memory_committed` and `memory_commit_sha` and `version_commit_sha` from phase 6; `reason` from the `detail` of the blocking phase. The delivery does not park — on `BLOCKED_NO_COMMIT` and on `blocked` the worktree stays dirty and the paths are declared in the report and in `reason`.
 
-**`architect_agreement` is the one field that measures the delivery instead of reporting it.** It says whether your own reading of the six asked classifications coincided with the verdict of § *The evaluator*: `match` when they agreed, `divergence` when they did not — and on a divergence the verdict held, which is the case worth reading. It is `null` when the evaluator never ran, and a `null` there is not a fault but a fact to declare. It exists to measure the evaluator's value: if the two readings always coincide, the evaluator bought little.
+**`architect_agreement` is the one field that measures the delivery instead of reporting it.** It says whether your own reading of the five asked classifications coincided with the verdict of § *The evaluator*: `match` when they agreed, `divergence` when they did not — and on a divergence the verdict held, which is the case worth reading. It is `null` when the evaluator never ran, and a `null` there is not a fault but a fact to declare. It exists to measure the evaluator's value: if the two readings always coincide, the evaluator bought little.
 
 ## Self-deceptions (stop them before they stop you)
 
@@ -403,7 +376,7 @@ Every field comes from a phase, and is reported **verbatim** from there — not 
 |---|---|
 | "I do the brief/execution here in chat, it is faster" | Every phase is a subagent in a fresh context (`contracts/orchestration.md` §4). In chat you carry behind all the context of previous phases and the chain degenerates. |
 | "I rewrite the review discipline here, so everything is in one place" | No: the source is `skills/review/SKILL.md`. Copying it here makes it diverge at the first modification. |
-| "Execute returned `ok: true`, I go to the review" | `ok` is the executor's word on itself. The phase closes on the handoff's `ready`, measured on the disk (§ *The handoff*). |
+| "Execute returned `ok: true`, I go to the review" | `ok` is the executor's word on itself, and the phase closes on a `valid` form asked via `block` — but the evidence it carries is never remeasured against the disk here. |
 | "The gate is red but the code is clearly right, I commit" | Red gate = `BLOCKED_NO_COMMIT`. Classification is deterministic, not a judgement. |
 | "I leave this as a post-commit decision, so the user decides" | Post-commit decisions are true forks, not what nobody wanted to resolve. If one road is clearly the right one, it is resolved where the finding originates. |
 | "I commit first and update memory after" | The order is declared: stage → memory → feature commit → doc/memory commit → version/changelog commit. No feature freezes without the artefacts realigned on the **same** diff. |

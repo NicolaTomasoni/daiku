@@ -48,6 +48,18 @@
           }
         ]
       }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/lib/stop-advice.mjs\"",
+            "timeout": 10,
+            "statusMessage": "Open review ledgers"
+          }
+        ]
+      }
     ]
   }
 }

@@ -1,12 +1,12 @@
 /**
  * Daiku's context on this project, read from `.daiku/project.json`.
  *
- * It exists because three of the four guards need the same two facts — **did this
+ * It exists because four of the five guards need the same two facts — **did this
  * project open Daiku?** and **what did it declare?** — and because the answer cannot
  * sit hard-wired inside a hook: a package installed on a host runs on *every*
  * repository that host opens, including ones Daiku has never seen.
  *
- * Hence the rule governing all four hooks:
+ * Hence the rule governing all five hooks:
  *
  * > **Without `.daiku/project.json` the guards stay silent.** Not a degradation: the
  * > boundary. A project that has not opened Daiku asked Daiku for nothing, and a
@@ -164,7 +164,7 @@ export const REAL_READS = {
   read: (filePath) => readFileSync(filePath, 'utf-8'),
 };
 
-/** A hand-built context: what the four hooks' test benches use. Seat fields resolve like the pool; absent stays `null`. */
+/** A hand-built context: what the five hooks' test benches use. Seat fields resolve like the pool; absent stays `null`. */
 export function fakeContext(fields = {}) {
   const seat = (value) => {
     if (typeof value !== 'string' || !value.trim()) return null;

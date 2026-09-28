@@ -63,7 +63,7 @@ The two coincide almost always. When they **do not** coincide, installation stil
 
 You know it from where you are running: do not ask it.
 
-On **Claude Code**: you write nothing. Declare the package already carries its hooks and the subagent roles of its `agents/` folder, updating with it, and that for this project there is no gesture to make. Close here. Do not hook those same four hooks a second time from `.claude/settings.json`: the package already hooks them, and the user would find every guard run twice.
+On **Claude Code**: you write nothing. Declare the package already carries its hooks and the subagent roles of its `agents/` folder, updating with it, and that for this project there is no gesture to make. Close here. Do not hook those same five hooks a second time from `.claude/settings.json`: the package already hooks them, and the user would find every guard run twice.
 
 On **Codex**: continue.
 
@@ -82,7 +82,7 @@ Everything stands at the package root — the folder containing `skills/`, `cont
 
 Of each folder take **everything** there is, not a list you keep in mind. If the package carries a new file, relaunching you must suffice: a hardwired list here would silently leave it behind. Among the `.mjs` files of `hooks/lib/` there are indeed two that are not hooks — `project-root.mjs`, finding the project root, and `daiku-config.mjs`, reading `.daiku/project.json` — but the others import them: if you skip one, none starts.
 
-What stands in `hooks/` but **outside** `lib/` is not copied: `self-check.mjs` is the single bench of whoever develops the package and `README.md` is its guide, and neither has anything to do inside a guest project.
+What stands in `hooks/` but **outside** `lib/` is not copied: `self-check.mjs` and `template-check.mjs` are the benches of whoever develops the package and `README.md` is its guide, and none has anything to do inside a guest project.
 
 ### 4. Try every hook before hooking it
 
@@ -92,7 +92,7 @@ For each `.mjs` file that is a hook, launch `node <file> --self-check` and read 
 - non-empty `failed` → **do not hook it**. Copy it anyway, but leave it out of `hooks.json` and report its red cases in the report.
 - No output, or unparsable output → treat it as red. The two imported modules — `project-root.mjs` and `daiku-config.mjs` — have no bench and are no hooks: they are copied and nothing more, and the benches of the other four cover them indirectly.
 
-This step exists because the four hooks are **fail-open**: on failure they stay silent and exit 0. A broken hook and a hook with nothing to say resemble each other too much to be trusted without the bench.
+This step exists because the five hooks are **fail-open**: on failure they stay silent and exit 0. A broken hook and a hook with nothing to say resemble each other too much to be trusted without the bench.
 
 ### 4-bis. Check the shape of what you will write
 

@@ -27,7 +27,7 @@
         "preflight.step": ["check_fast", "lint_fix", "test_targeted", "layers"],
         "preflight.outcome": ["green", "red", "skipped"]
       },
-      "note": "The same object stands in § Handoff of 4. review-notes.md, its seat on disk. The rules the prose adds — a red proof with a non-zero exit and its output, a count with a reason for every hit left, each of the four preflight steps present — are SHAPES.execute of architect/architect.mjs; holding it against the brief is the handoff question."
+      "note": "The same object stands in § Handoff of 4. review-notes.md, its seat on disk. The rules the prose adds — a red proof with a non-zero exit and its output, a count with a reason for every hit left, each of the four preflight steps present — are SHAPES.execute of architect/architect.mjs. The evidence is never remeasured against the disk downstream: the maps the brief built are the last measurement."
     },
     "finder": {
       "producer": "skills/finder-prompt/SKILL.md § The block you return",
@@ -112,9 +112,9 @@
       "required": ["ok", "verdict", "remaining", "resume_from", "blockers", "retry", "fallback", "readings", "violations", "detail"],
       "optional": [],
       "enums": {
-        "verdict": ["BLOCKED_NO_COMMIT", "GREEN_COMMITTED", "GREEN_WITH_POST_DECISIONS", "blocked", "clean", "commit", "continue", "diminishing-returns", "fallback", "fixed-point", "invalid", "merit", "not-ready", "oscillation", "proceed", "ready", "restart", "resume", "retry", "rounds-exhausted", "rounds-truncated", "stop", "unblock", "valid", "violations"]
+        "verdict": ["BLOCKED_NO_COMMIT", "GREEN_COMMITTED", "GREEN_WITH_POST_DECISIONS", "blocked", "clean", "commit", "continue", "diminishing-returns", "fallback", "fixed-point", "invalid", "merit", "oscillation", "proceed", "restart", "resume", "retry", "rounds-exhausted", "rounds-truncated", "stop", "unblock", "valid", "violations"]
       },
-      "note": "The effective domain of `verdict` depends on `question`: this enum is the union of the ten domains, one per question — decision, closing, unblock, propagation, resumption, order, round, layers, block, handoff — and `verdict` is `null` when the question does not apply, that is `propagation` on a block that came back. `remaining` and `resume_from` are filled by `order` and `resumption` alone; `retry` and `fallback` by `propagation` alone; `readings` by the ambiguity rule alone; `violations` by `layers` alone, one `{file, line, policy, layer, fragment, text}` per violating line; `handoff` answers `ready` or `not-ready` with every missing piece of evidence in `blockers`. Field names of the blocks this one consumes are not renamed on either side: `gate`, `gate_detail`, `outcome`, `missing_disciplines`, `blocking`, `to_confirm`, `base`, `item`, `rounds`, `commit`, `commit_sha`."
+      "note": "The effective domain of `verdict` depends on `question`: this enum is the union of the nine domains, one per question — decision, closing, unblock, propagation, resumption, order, round, layers, block — and `verdict` is `null` when the question does not apply, that is `propagation` on a block that came back. `remaining` and `resume_from` are filled by `order` and `resumption` alone; `retry` and `fallback` by `propagation` alone; `readings` by the ambiguity rule alone; `violations` by `layers` alone, one `{file, line, policy, layer, fragment, text}` per violating line. Field names of the blocks this one consumes are not renamed on either side: `gate`, `gate_detail`, `outcome`, `missing_disciplines`, `blocking`, `to_confirm`, `base`, `item`, `rounds`, `commit`, `commit_sha`."
     },
     "develop-feature-outcome": {
       "producer": "skills/develop-feature/SKILL.md § Outcome",

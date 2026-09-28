@@ -103,6 +103,21 @@ Everything arrives from the prompt of whoever invoked you, already resolved: **a
 
 **How the stage is chosen:** read all the available material in the folder (`0. problem.md` if it exists, `1. decision-doc.md` if it exists, the reference files) and evaluate whether the open questions are strategic in nature (direction, perimeter, whether to do it or not) or technical (how to do it). If both coexist, treat the strategic ones first: there is no sense in motivating technical trade-offs on a still ill-defined problem — stay at the strategic stage and stop there, without yet producing `1. decision-doc.md`. **Always declare in your block which stage you chose and why**, in the dedicated field: it is not a silent choice, and it is the first thing whoever called you reads to know where the problem stands.
 
+## What the documents may not carry
+
+Everything you write here — `0. problem.md` as you refine it, `0.5. strategic-study.md`,
+`1. decision-doc.md` — is pushed and travels beyond this machine: it carries behaviour, never
+data. No real data of any kind — no query results, no record contents, no credentials, no personal
+names, no business figures — and no code excerpts: cite the file and the section a claim rests on
+without quoting what stands there. A literal string from the code enters only when it is the
+behaviour's own name (an interface, a state, an error code), never a value it carried.
+
+Decisions and options are written in terms of behaviour, not of this program: what is done, under
+which conditions, with which observable effect and at which cost. The study must let an executor
+who never saw this program carry out the chosen solution — and recognise the same problem on a
+different project. When a technical option needs a concrete anchor, give the cases table (input
+and expected outcome, in abstract terms) instead of the code that implements it here.
+
 ## Procedure
 
 1. **Resolve the folder** the prompt passed you and verify it exists. List the files it contains.

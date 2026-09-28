@@ -58,13 +58,13 @@ file but the invocation: the same contract is an **entry point** when you launch
 **internal contract** when a chain delegates to it. `research` is the collection that
 `new-feature` procures for itself when it needs it, with reordering delegated to `study`, and at the same time the command with which you request the notes yourself.
 
-**There are seven entry points, and it is not a number that grows on its own.** A contract is launched by
+**There are nine entry points, and it is not a number that grows on its own.** A contract is launched by
 hand only if it is the **entry point of a chain**, never because it is handy to have it around:
 what sits in the middle of a chain is reached by whoever opened it, and adding it here means
 opening a second way to get there, with different scope and permissions to keep aligned
-forever. The seven fall into two groups, which are not used at the same moments.
+forever. The nine fall into two groups, which are not used at the same moments.
 
-**The method — these five, and they are all of everyday work:**
+**The method — these seven, and they are all of everyday work:**
 
 | Entry point | Why |
 |---|---|
@@ -73,6 +73,8 @@ forever. The seven fall into two groups, which are not used at the same moments.
 | `review` | the review also lives on its own, on a hand-written diff |
 | `code-review` | a bugs-only pass over the scope you tell it, with no rounds and no fixes: eyes on the code without opening a cycle |
 | `commit` | it closes a review launched with `--no-commit`, or a diff written outside a review |
+| `blueprint` | you already have a resolved decision-doc and stop at the brief: from the chosen solution it produces `2. blueprint.md` and stops there — the hand-off that travels to where the execution runs |
+| `develop-feature` | you already have the folder, with or without the brief, and want the whole delivery to the commit in a single run, without reopening the study |
 
 **Installation — two commands that are launched once per project**, and that no chain
 can reach because they run *before* there is a chain:
@@ -82,10 +84,10 @@ can reach because they run *before* there is a chain:
 | `init` | it is the first of all: it opens `.daiku/` on a project that does not have it, and until it runs no other contract has the values to work with |
 | `sync-host` | it carries guardrails and subagent roles into the host layer that cannot receive them from the package, and it is re-launched on every update |
 
-Everything else — `decision-doc`, `develop-feature`, `update-memory`, `blueprint`, `execute`,
-`finder-prompt`, `applier`, `arch-check`, `perf`, `test-coverage`, `study` — is an **internal contract**: a
-subagent receives it as a *path to read*, not as a skill to invoke. `decision-doc` and
-`develop-feature` are opened by `new-feature`, `update-memory` by `commit` on every invocation, and
+Everything else — `decision-doc`, `update-memory`, `execute`,
+`finder-prompt`, `applier`, `arch-check`, `perf`, `dead-code`, `test-coverage`, `study` — is an **internal contract**: a
+subagent receives it as a *path to read*, not as a skill to invoke. `decision-doc`
+is opened by `new-feature`, `update-memory` by `commit` on every invocation, and
 `study` by `research` on every invocation, for reordering. An internal contract
 **asks the owner nothing** and has no `argument-hint`: it returns a genuine choice in its own
 block, and whoever called it carries it into the chat (§ *Ask the owner*).
@@ -130,13 +132,14 @@ rebuilding the graph from the caller's prose.
 | `decision-doc` | `new-feature` § *The study of decisions* and § *Incorporation* | problem folder, optional subset to analyse, the already written document, the paths of the `research` notes and of the relevant memories, and on receiving the owner's answers by number | `0.5. strategic-study.md` or `1. decision-doc.md` on disk, with `0. problem.md` refined, and the block of § *The block you return* of its file | no |
 | `research` | owner, `new-feature` § *The missing knowledge* | name of the technology; from `new-feature` also the version in use in the project and the questions the notes must answer | path of the file in `{paths.lib_notes}/`, in both modes, nothing else | yes — fan-out per thematic block (leaves) + `study` as leaf child |
 | `study` | `research` § *Step 2* only | path of the dirty file, studied technology, studied and latest versions with dates | reordered file in `{paths.lib_notes}/` + the block of § *The block you return* of its file | no — leaf |
-| `blueprint` | `develop-feature` phase 1 | folder with `1. decision-doc.md`, chosen solution verbatim, relevant memories | § *What you return* of its file | no |
+| `blueprint` | `owner`, `develop-feature` phase 1 | folder with `1. decision-doc.md`, chosen solution verbatim, relevant memories | § *What you return* of its file | no |
 | `execute` | `develop-feature` phase 2 | folder with `2. blueprint.md`, relevant memories; on a relaunch, the `handoff` blockers or the round-0 findings | § *What you return* of its file | no |
-| `develop-feature` | `new-feature` § *Delivery* | folder and chosen solution | § *Outcome* of its file | yes — its phases, and `review` as orchestrating child |
+| `develop-feature` | `owner`, `new-feature` § *Delivery* | folder and chosen solution | § *Outcome* of its file | yes — its phases, and `review` as orchestrating child |
 | `review` | owner, `develop-feature` phase 3 | base-ref or path of `4. review-notes.md`, ledger to reopen (chosen on `base` **and** `item`), `--no-commit` from whoever commits on their own, effort, `--backend` when the session runs there, work roots and artefacts when running on a worktree | § *Outcome* of its file | yes — finder, applier, coverage, gate, `commit` |
 | a round's finder (`finder-prompt`) | `review` § *Finder* | discipline and contract, the round range (`from`, `to`, files), effort, the ledger path, the resolved parameters | § *The block you return* of its file | no |
 | `code-review` | owner, `review` as `bug` finder | hand-told scope **or** round scope | report in chat **or** § *The block you return* of `finder-prompt`, with the `confidence` scale its file declares | **no** |
 | `arch-check` | `review` as `arch` finder | round scope | the block of `finder-prompt` § *The block you return*; its file declares scope and permissions | no |
+| `dead-code` | `review` as `dead` finder | round scope | the block of `finder-prompt` § *The block you return*; its file declares scope and permissions | no |
 | `perf` | `review` as `perf` finder | scope **or** round scope | the block of `finder-prompt` § *The block you return*; its § *Finder mode* declares scope and permissions | no |
 | `test-coverage` | `review` § *Coverage* with `--auto` | macro-category **or** final cycle diff and relevant memories | § *Automatic mode* of its file | no |
 | `applier` | `review` § *Applier* | the path of the round's numbered findings file, the ledger path, the round range, relevant memories, the resolved parameters, and the **mode** when it is the closing round on tests | § *The block you return* of its file | no |

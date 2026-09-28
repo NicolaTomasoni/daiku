@@ -12,7 +12,7 @@ You do not see the other finders of the round: it is deliberate, and it is the s
 
 ## What you receive from the caller
 
-- your **discipline** (`bug`, `arch`, `perf`) and, with it, the contract to read;
+- your **discipline** (`bug`, `arch`, `perf`, `dead`) and, with it, the contract to read;
 - the **round range**: `from`, `to` and the files — at round 1 `BASE` against the tree the scope photographed, from round 2 the two trees around the previous round's applier — and `work_root`, where Git runs;
 - the **effort** level (`low` | `medium` | `high`);
 - the **ledger path**: from the second round on, the **applied** and **discarded** of previous rounds are read there;
@@ -27,6 +27,7 @@ If one of the first four is missing, **do not choose it yourself and do not ask 
 | `bug` | **correctness** defects introduced by the diff | `skills/code-review/SKILL.md` |
 | `arch` | violations of the architectural rules | `skills/arch-check/SKILL.md` |
 | `perf` | bottlenecks on the touched hot paths | `skills/perf/SKILL.md` |
+| `dead` | code the diff leaves unreferenced | `skills/dead-code/SKILL.md` |
 
 ## Rules
 

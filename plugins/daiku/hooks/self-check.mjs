@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 /**
- * The test benches of the four hooks and of the two programs in `architect/`, in a single shot.
+ * The test benches of the five hooks and of the two programs in `architect/`, in a single shot.
  *
  * `node hooks/self-check.mjs` from the package root. Exits `0` if every case is
- * green, `1` on the first red, and prints the **counted** total — the sum of what the six
+ * green, `1` on the first red, and prints the **counted** total — the sum of what the eight
  * benches really ran, not a number written here.
  *
- * It exists because four fail-open hooks are four ways of staying silent, and a fault in
- * one of the four is indistinguishable from silence until somebody runs its bench. A single
+ * It exists because five fail-open hooks are five ways of staying silent, and a fault in
+ * one of the five is indistinguishable from silence until somebody runs its bench. A single
  * command makes that move repeatable before a release, in a CI, or after touching a file
  * that all four import.
  *
@@ -77,6 +77,15 @@ function benches() {
     } catch (error) {
       process.stderr.write(`cannot read ${file}: ${error.message}\n`);
     }
+  }
+  // The host manifests have a bench of their own, beside this file: like the
+  // evaluator it is not a hook, so discovery by folder would never list it.
+  try {
+    const file = join(HERE, 'template-check.mjs');
+    readFileSync(file);
+    found.push({ label: 'hooks/template-check.mjs', file, args: ['--self-check'] });
+  } catch (error) {
+    process.stderr.write(`cannot read template-check.mjs: ${error.message}\n`);
   }
   return found;
 }

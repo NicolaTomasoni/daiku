@@ -1,18 +1,19 @@
 # The four guardrails
 
-Daiku ships four hooks. They do two different jobs: two **stop a gesture** before it happens, the
-other two never stop anything and only say what they know.
+Daiku ships five hooks. They do two different jobs: two **stop a gesture** before it happens, the
+other three never stop anything and only say what they know.
 
 | Hook | Event | What it does |
 |---|---|---|
 | `lib/command-guard.mjs` | `PreToolUse` on `Bash`/`PowerShell` | denies five destructive gestures: four always, one only where the project declares it |
 | `lib/edit-guard.mjs` | `PreToolUse` on `Edit`/`Write`/`MultiEdit` (`apply_patch` too on Codex) | denies new files outside the declared seats; edits to existing files always pass |
-| `lib/contracts-post-edit.mjs` | `PostToolUse` on `Edit`/`Write` | after a write to the corpus, reports faults that would not fail on their own |
+| `lib/contracts-post-edit.mjs` | `PostToolUse` on `Edit`/`Write` | after a write to the corpus — and to the sources a policy watches — reports faults that would not fail on their own |
 | `lib/session-advice.mjs` | `SessionStart` | at startup, says whether Daiku is halfway opened and whether work was left in flight |
+| `lib/stop-advice.mjs` | `Stop` | at session end, lists the review ledgers left open, so the next session resumes from them |
 
 Next to them stand two modules that are not hooks: `lib/project-root.mjs` finds the project
 root on both hosts, `lib/daiku-config.mjs` reads `.daiku/project.json`. They have no bench of
-their own: the benches of the four importing them test them.
+their own: the benches of the five importing them test them.
 
 ## Not a security barrier
 
@@ -77,7 +78,7 @@ a YAML frontmatter silently emptying is a fault even for whoever does not have D
 
 ## They degrade open, and that is why they have a bench
 
-All four are **fail-open**: malformed stdin, missing file, unreachable disk, exception →
+All five are **fail-open**: malformed stdin, missing file, unreachable disk, exception →
 silent and exit `0`. A guard breaking the turn costs more than it protects.
 
 The price is declared: **a broken hook is indistinguishable from one with nothing to say.**
@@ -85,7 +86,7 @@ That is why each carries a test bench running on a simulated filesystem, touchin
 nothing, and printing a counted total:
 
 ```bash
-node hooks/self-check.mjs          # all six benches at once, with the summed total
+node hooks/self-check.mjs          # all eight benches at once, with the summed total
 node hooks/lib/command-guard.mjs --self-check   # one only, as sync-host runs it
 node hooks/lib/edit-guard.mjs --self-check      # the coarse edit perimeter, alone
 ```
@@ -93,9 +94,10 @@ node hooks/lib/edit-guard.mjs --self-check      # the coarse edit perimeter, alo
 The first exits `1` on the first red: the command for a CI and to run before a
 release, next to the two package validators.
 
-The six are the four above plus the two programs of `architect/` — the evaluator and the
-review's ledger tool — outside `lib/`, because that folder is copied into the user's project and
-this one is not. They are the only benches here whose programs **fail loudly**: the four hooks
+The eight are the five above, the two programs of `architect/` — the evaluator and the
+review's ledger tool — and the bench of the host manifests beside this file, all three
+outside `lib/`, because that folder is copied into the user's project and
+this one is not. They are the only benches here whose programs **fail loudly**: the five hooks
 stay silent on a fault, so a total that drops is the only sign a bench stopped running, and that
 sign is worth exactly as much for the two programs, whose silence stops a delivery. The ledger
 tool's bench runs real Git on throwaway repositories under the system temp directory, so it
@@ -119,7 +121,7 @@ written through its `rule()`.
 
 ## Node and nothing else
 
-The four hooks are `.mjs` files run with `node`, dependency-free: no `package.json`, no
+The five hooks are `.mjs` files run with `node`, dependency-free: no `package.json`, no
 module to install. On a project where `node` is not on the `PATH` they do not start — and since
 the host does not stop a turn for a failing hook, the result is silence. When a project
 has no Node, these guardrails are absent: a requirement, not a graceful degradation.

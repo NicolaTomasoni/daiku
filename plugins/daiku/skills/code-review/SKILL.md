@@ -44,6 +44,7 @@ Only correctness defects **introduced by the diff**, and only high-signal ones:
 - logic producing the wrong result **regardless of inputs**;
 - violations of `{instructions_file}` for which you can cite the exact rule;
 - real defects on scenarios **reachable** from the flow, even if they manifest only on specific inputs or states: name in `description` the scenario reaching them. They are exactly the ones the cycle classifies as severe. Only unreachable scenarios stay out.
+- security defects the diff introduces, on scenarios reachable from the flow: hardcoded secrets or credentials; injection from unvalidated input (SQL, command, LDAP, XPath, template); unescaped output reaching a page, a mail or a document (XSS); missing or bypassable authentication and authorisation checks; weak cryptography or predictable randomness for security purposes; user-controlled paths reaching the network or the filesystem (SSRF, path traversal); sensitive data written to logs or error messages. Name the reachable scenario in `description`; `change` carries the fix.
 
 The reading perimeter is fixed by the **effort** the caller passes you, not by this file: at `medium` open the files the diff touches and their direct callers, at `high` also the traversed contracts and persisted state. At `low` stay on the diff alone.
 
@@ -54,7 +55,8 @@ The reading perimeter is fixed by the **effort** the caller passes you, not by t
 - nitpicks a senior would not report;
 - what a linter catches (do not launch the linter to verify);
 - generic quality not required by `{instructions_file}`;
-- violations silenced in the code (e.g. a linter ignore comment).
+- violations silenced in the code (e.g. a linter ignore comment);
+- environment configuration and its values (hosts, keys, toggles, thresholds): values, not method — unless the diff hardcodes a secret, which is a finding of § *What you look for*.
 
 ## How you work
 
@@ -70,6 +72,8 @@ It is calibrated on the criteria above, and it is the one on which the cycle dec
 - **Confidence high:** the defect lies in the diff and depends on nothing outside it: the high-signal criteria of § *What you look for*. `change` carries the concrete fix.
 - **Confidence medium:** a real defect manifesting only on **specific inputs or states**, with the reachable scenario named in `description`. `change` still carries the concrete fix.
 - **Confidence low:** a suspicion that to be confirmed requires reading beyond the perimeter the effort grants you — a farther caller, a contract or persisted state the diff does not show — no `change`; `description` says what remains to be verified.
+
+Security findings use the same scale: a secret standing in the diff is high; an injection reachable only on a specific input is medium, with the scenario named; a suspicion needing callers beyond the perimeter — a flow the diff does not show — is low, without `change`.
 
 ## The block you return
 

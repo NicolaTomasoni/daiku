@@ -501,7 +501,7 @@ function actScope(input, root) {
   });
 }
 
-const FINDER_KEY = /^(bug|arch|perf)(\d*)$/;
+const FINDER_KEY = /^(bug|arch|perf|dead)(\d*)$/;
 
 /** findings — § *Finder*: every finder block validated, every finding numbered, one file per round. */
 function actFindings(input, root) {
@@ -517,7 +517,7 @@ function actFindings(input, root) {
   const state = existsSync(file) ? readJson(file, 'the findings file') : { round: closing ? 'tests' : n, keys: {}, applier_attempts: 0, findings: [] };
   for (const [key, block] of Object.entries(input.blocks)) {
     const match = FINDER_KEY.exec(key);
-    if (!match) fail(`blocks.${key}: a key is a discipline — bug, arch, perf — with an optional shard number`);
+    if (!match) fail(`blocks.${key}: a key is a discipline — bug, arch, perf, dead — with an optional shard number`);
     if (closing && match[1] !== 'bug') fail('the closing round on tests runs the bug finder alone');
     const prior = state.keys[key];
     if (prior && prior.valid) fail(`blocks.${key} already came back valid in this round: a finder is not run twice`);
@@ -529,7 +529,7 @@ function actFindings(input, root) {
       findings: verdict.verdict === 'valid' ? block.findings : [],
     };
   }
-  const order = (key) => `${['bug', 'arch', 'perf'].indexOf(FINDER_KEY.exec(key)[1])}${key.padStart(8, '0')}`;
+  const order = (key) => `${['bug', 'arch', 'perf', 'dead'].indexOf(FINDER_KEY.exec(key)[1])}${key.padStart(8, '0')}`;
   const findings = [];
   const prefix = closing ? 't' : `r${n}`;
   for (const key of Object.keys(state.keys).sort((a, b) => order(a).localeCompare(order(b)))) {
@@ -735,7 +735,7 @@ function actRound(input, root) {
   });
 }
 
-const TAIL_DISCIPLINES = ['bug', 'arch', 'perf', 'test-coverage'];
+const TAIL_DISCIPLINES = ['bug', 'arch', 'perf', 'dead', 'test-coverage'];
 
 /** tail — § *The ledger also keeps what blocks*: coverage, gate and what the tail adds to the last round. */
 function actTail(input, root) {

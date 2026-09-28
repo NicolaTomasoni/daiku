@@ -1,7 +1,7 @@
 ---
 name: 'blueprint'
-description: 'Internal develop-feature contract — from the decision document and the chosen solution it produces an autonomous execution brief (2. blueprint.md) and stops there, without executing.'
-user-invocable: false
+description: 'From the decision document and the chosen solution it produces an autonomous execution brief (2. blueprint.md) and stops there, without executing — launched by hand to stop at the brief, or by develop-feature as its phase 1.'
+argument-hint: '<folder with 1. decision-doc.md> + chosen solution (one option id and text per decision)'
 ---
 
 It is the step downstream of `decision-doc`. You receive the folder containing the decision document (`1. decision-doc.md`) and the indication of the **chosen solution** by the user. You produce **a single file**, `2. blueprint.md`, which is an **autonomous execution brief**: it contains **only** the information needed for the chosen solution, and a **Memory section** with a **ready-made implementation plan, split into ordered tasks**. You **stop at the brief**: you do not execute the plan and you do not launch any executor. Execution is a separate and atomic step (`execute`).
@@ -11,6 +11,13 @@ The generated file serves a *future* executor, who knows nothing of how it came 
 You, here, **do not execute** the plan: you only **prepare** it. The file remains the source of truth — precisely because it is self-sufficient it is the perfect handoff for an executor (`execute`) starting from zero and knowing nothing of how it came to be.
 
 > **Parameters.** Every key in braces in this contract resolves on the project parameter files, never from memory and never by assumption: the rules are in §5 of `contracts/project-contract.md`, which also says **in which language to write** and what to do when a key is missing.
+
+## Invocation modes
+
+**You are launched by hand or by `develop-feature` phase 1.** The brief is the same either way; what changes is where the input comes from and where the block goes.
+
+- **By hand (`owner`).** `$ARGUMENTS` carries the folder and, for each decision of `1. decision-doc.md`, the id and text of the chosen option. If the solution is missing or ambiguous against the document, do not ask and do not guess: stop, and list the decisions and options the document truly declares, so the owner relaunches you with the choice. Close with the block of § *What you return* in chat, and stop there: carrying the folder wherever its execution runs is the owner's manual act, no automated flow performs it.
+- **From `develop-feature` phase 1.** Folder, chosen solution and memories arrive resolved in the prompt, and the block returns to the caller. The constraints below hold unchanged, and they are not rewritten in the caller prompt.
 
 ## Input: folder and chosen solution
 
@@ -37,6 +44,21 @@ The argument indicates the **folder** (where `1. decision-doc.md` lives) and **w
 8. **Mandatory closing verification.** The last tasks of the plan are always a closing verification: **every check of the plan rerun on the final tree** — a later task can break an earlier one — plus the quick checks of the touched areas `skills/execute/SKILL.md` declares for its closing, and a self-review of the result against the initial completion criteria. Without this, autonomy produces wrong results with confidence. The package gate — full suite, lint, type-check, build — **does not enter the plan**: it belongs to `/review`, which always runs it on the diff.
 9. **Anchored to the inputs.** Do not invent specifications, constraints or tasks that the document, the reference files and the code do not justify. If an operational detail is truly missing, write it as an **explicit assumption** inside the brief, so the executor proceeds knowingly instead of stopping.
 10. **You prepare, you do not execute.** Do not modify the project code. You can and must **read it** to anchor the plan (principle 3), but your only written output is `2. blueprint.md`.
+11. **You are the last step to look at the code.** The maps of principles 5 and 6 are built here,
+    by reading the code, and never remeasured downstream: from here on nobody searches the
+    repository to check completeness — the executor works only on the files this brief cites,
+    and if one it needs is missing the brief was imprecise, not the execution timid. So the
+    brief carries **everything** the executor needs: every file it must touch or check is
+    cited, every integration point is described by role (which part of the system it is,
+    what it owes the solution) beside its concrete path here, and every point where a
+    different project may diverge is an explicit assumption.
+12. **Behaviour in, behaviour out.** The brief carries no real data — no query results, no
+    record contents, no credentials, no personal names, no business figures — and no code
+    excerpts: paths, interface names and error codes are structure and may stay, values
+    never enter. The solution is described so that it solves this instance **and** the same
+    problem on a different project: the mechanism in general terms, the completion criteria
+    as observable behaviour, the cases tables with abstract inputs — the concrete paths of
+    this project only where the executor must put its hands.
 
 ## Procedure
 
@@ -94,11 +116,16 @@ The file is written **addressing the executor** (second person, operational impe
 - Do not do (non-goals): <list what is explicitly out of this solution>
 
 ## The chosen solution              ← only the needed info, distilled
-- What to do and why (the decision and the chosen option)
+- What to do and why (the decision and the chosen option), in behavioural terms: the mechanism
+  in general, not the code that implements it here
 - Relevant constraints and specifications
-- Completion criteria / quality gate
-- Explicit assumptions (if some operational detail was not in the document)
-- Reference files and useful code locations (paths in the folder and in the repo)
+- Completion criteria / quality gate, as observable behaviour
+- Explicit assumptions (if some operational detail was not in the document), including where a
+  different project may diverge and what the executor must re-derive there
+- Reference files and useful code locations (paths in the folder and in the repo): every file
+  the executor must touch or check is cited here — what is not cited is not opened downstream
+- For each integration point, its role (which part of the system it is, what it owes the
+  solution) beside its concrete path in this project
 
 ## Interfaces touched and their consumers   ← principle 5; "none" if the change touches none
 - <literal string> — seat: <path:line> — consumers: <path:line>, <path:line>

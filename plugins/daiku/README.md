@@ -62,7 +62,7 @@ codex plugin add daiku@daiku
 > The final marketplace address arrives with Daiku's first public release.
 > Meanwhile install from the repository's local checkout (both hosts accept it).
 
-Only requirement: **Node.js**. Without it the four protection hooks stay silent, and the method's
+Only requirement: **Node.js**. Without it the five protection hooks stay silent, and the method's
 evaluator does not start at all: its verdict binds, so a delivery stops there instead of degrading.
 
 **2. Open it on your project** — once per project, from the repository root:
@@ -190,3 +190,11 @@ flowchart TD
 
 Two pieces also stand alone: `/code-review` runs a single bug pass with the outcome in
 chat; `/commit` tidies memory and documents and closes in separate commits.
+
+## Inspirations
+
+Daiku stands on the shoulders of public work that explored the same space before it:
+
+- [everything-claude-code](https://github.com/WorldFlowAI/everything-claude-code) — a Claude Code toolkit of agents, commands, skills, rules and hooks, studied in a full repo confrontation: E2E journeys with flaky quarantine, security defect classes, the dead-code discipline, policy-guided source hygiene, open-ledger reminders and the host-manifest bench all came from there.
+- [superpowers](https://github.com/obra/superpowers) — an agentic skills framework and software development methodology.
+- [ponytail](https://github.com/DietrichGebert/ponytail) — a minimal-code ruleset pushing agents toward the smallest change that works.

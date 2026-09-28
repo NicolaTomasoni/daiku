@@ -60,7 +60,7 @@ If the user does not answer — because you are running inside a chain, or becau
 
 ### 1. Recognise the host
 
-On **Claude Code** hooks and subagents are carried by the package and update themselves: do **not** hook those four hooks a second time from `.claude/settings.json`, because the package already hooks them and every guard would run twice. The only thing you write under `.claude/` is a single key in `settings.local.json`, and it is at *Step 7*: it serves to carry the host memory inside the repository, and there is no other way to tell the host.
+On **Claude Code** hooks and subagents are carried by the package and update themselves: do **not** hook those five hooks a second time from `.claude/settings.json`, because the package already hooks them and every guard would run twice. The only thing you write under `.claude/` is a single key in `settings.local.json`, and it is at *Step 7*: it serves to carry the host memory inside the repository, and there is no other way to tell the host.
 
 On **Codex** the manifest rejects `agents` and `hooks`, and `plugin_hooks` is a removed feature: that layer must be written inside the project, under `.codex/`. **You do not write it**: it is the trade of `sync-host`, which copies the `.mjs` files, tries them with their bench and hooks only the healthy ones, and which generates `.codex/agents/*.toml` from the package roles. Close the report saying to launch it — until it runs, that project has neither guardrails nor subagent roles.
 

@@ -7,7 +7,7 @@
  * commit at all**. A broken frontmatter stays in the working tree until somebody notices —
  * and meanwhile the skill loads with emptied metadata and nobody finds it anymore.
  *
- * It covers four things, the four that break silently in a Daiku project:
+ * It covers five things, the five that break silently in a Daiku project:
  *
  *  1. **A `SKILL.md` frontmatter.** The worst corpus fault because it does not
  *     fail: the skill *loads anyway*, with emptied metadata, so the model
@@ -22,6 +22,11 @@
  *     `paths`: without that key the rule exists but is never picked.
  *  4. **The guards themselves.** A rewritten guard is verified with its own test bench,
  *     not by eye — and this hook **reminds**, it does not run.
+ *  5. **Source hygiene under a policy's watch.** Leftover `console.log`, secrets in
+ *     clear text and the project's own smells pass silently until the review: a policy
+ *     declaring `hygiene:` patterns gets the matching lines reported with file and
+ *     line. The patterns are the project's judgement, read from its policies — never
+ *     literals in this file — and the report decides nothing: whoever just wrote decides.
  *
  * **It reports, does not block.** The exit code is always `0` and there is no branch that blocks: stopping
  * the writing of a contract halfway costs more than the defect being closed. The report
@@ -39,14 +44,14 @@
  *
  * **Fail-open and silent.** Unreadable stdin, out-of-scope path, missing file, `node`
  * not starting, unparsable output, timeout → prints nothing and exits 0. It is the same
- * choice as the other two guards, at the same price: a fault is indistinguishable from
+ * choice as the other guards, at the same price: a fault is indistinguishable from
  * silence. That is why the perimeter has a test bench.
  *
  * Test bench: `node contracts-post-edit.mjs --self-check`. The total is counted, not
  * hard-coded.
  */
 
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { isAbsolute, join, relative } from 'node:path';
 import { invokedDirectly, projectRoot } from './project-root.mjs';
 
@@ -93,6 +98,13 @@ export function plan(rel) {
 
   if (/^\.daiku\/policies\/[^/]+\.md$/.test(rel) && !rel.endsWith('/README.md')) {
     return [{ label: 'area rule frontmatter', type: 'policy', target: rel }];
+  }
+
+  // Source hygiene: every other written file that is not a dotfile and not under
+  // `.daiku/` is read against the policies watching it. A file no policy covers stays
+  // silent — the step reads the policies, finds no `paths:` matching it, and says nothing.
+  if (!rel.startsWith('.') && !rel.startsWith('.daiku/')) {
+    return [{ label: `hygiene of ${rel.split('/').pop()}`, type: 'hygiene', target: rel }];
   }
 
   return [];
@@ -184,6 +196,110 @@ export function jsonFindings(text) {
   }
 }
 
+/**
+ * The `paths:` and `hygiene:` lists of a policy frontmatter. Both are plain lists of
+ * grep fragments — path patterns for `paths:`, text fragments for `hygiene:` — one `-`
+ * item per line, quoted or not. Anything else in the frontmatter is not read here.
+ */
+export function hygieneOfPolicy(text) {
+  const block = frontmatter(text);
+  if (block === null) return { paths: [], patterns: [] };
+  const paths = [];
+  const patterns = [];
+  let current = null;
+  for (const line of block.split('\n')) {
+    const key = line.match(/^([A-Za-z0-9_-]+):\s*$/);
+    if (key) {
+      current = key[1] === 'paths' ? paths : key[1] === 'hygiene' ? patterns : null;
+      continue;
+    }
+    if (current && /^\s*-\s+/.test(line)) {
+      const item = line
+        .replace(/^\s*-\s+/, '')
+        .trim()
+        .replace(/^'(.*)'$/, '$1')
+        .replace(/^"(.*)"$/, '$1');
+      if (item) current.push(item);
+    } else if (line.trim() && !/^\s/.test(line)) {
+      current = null;
+    }
+  }
+  return { paths, patterns };
+}
+
+/**
+ * The pattern form of `paths`: `**` crosses folders, `*` and `?` do not. A policy
+ * watches the written file when one of its `paths:` patterns matches it.
+ */
+export function matchGlob(rel, pattern) {
+  let out = '';
+  const p = String(pattern).replace(/\\/g, '/');
+  for (let i = 0; i < p.length; i += 1) {
+    const c = p[i];
+    if (c === '*' && p[i + 1] === '*') {
+      i += 1;
+      if (p[i + 1] === '/') {
+        i += 1;
+        out += '(?:.*/)?';
+      } else out += '.*';
+    } else if (c === '*') out += '[^/]*';
+    else if (c === '?') out += '[^/]';
+    else out += c.replace(/[.+^${}()|[\]\\]/g, '\\$&');
+  }
+  return new RegExp(`^${out}$`).test(rel);
+}
+
+const HYGIENE_SHOWN = 10;
+
+/**
+ * Lines of `text` matching any of `patterns`, as `{line, fragment}` in file order.
+ * `total` counts every match: the report shows the first few and says how many more.
+ */
+export function hygieneFindings(text, patterns) {
+  const hits = [];
+  const lines = String(text).replace(/\r\n/g, '\n').split('\n');
+  lines.forEach((content, index) => {
+    const fragment = patterns.find((candidate) => candidate && content.includes(candidate));
+    if (fragment) hits.push({ line: index + 1, fragment });
+  });
+  return { hits: hits.slice(0, HYGIENE_SHOWN), total: hits.length };
+}
+
+/** Runs the hygiene step: the policies watching `rel`, and the lines matching their patterns. `[]` when silent or degraded. */
+function hygieneReport(rel, root, env) {
+  let text;
+  try {
+    text = env.read(join(root, rel));
+  } catch {
+    return []; // the file vanished between the write and the check: stay silent
+  }
+  let names;
+  try {
+    names = env.list(join(root, '.daiku', 'policies'));
+  } catch {
+    return []; // no policies to read: stay silent
+  }
+  const lines = [];
+  for (const name of [...names].sort()) {
+    if (!name.endsWith('.md') || name === 'README.md') continue;
+    let policy;
+    try {
+      policy = env.read(join(root, '.daiku', 'policies', name));
+    } catch {
+      continue; // an unreadable policy watches nothing
+    }
+    const { paths, patterns } = hygieneOfPolicy(policy);
+    if (!patterns.length) continue;
+    if (!paths.some((pattern) => matchGlob(rel, pattern))) continue;
+    const { hits, total } = hygieneFindings(text, patterns);
+    if (!total) continue;
+    lines.push(`**hygiene (${name})** — ${total} line${total === 1 ? '' : 's'} match${total === 1 ? 'es' : ''} declared patterns:`);
+    for (const hit of hits) lines.push(`- \`${rel}:${hit.line}\`: matches \`${hit.fragment}\``);
+    if (total > hits.length) lines.push(`- …and ${total - hits.length} more`);
+  }
+  return lines;
+}
+
 /** Runs one step of the plan and returns the lines to report. `[]` when silent or degraded. */
 function runStep(step, root, env) {
   const absolute = join(root, step.target);
@@ -199,6 +315,10 @@ function runStep(step, root, env) {
       `On Codex that file asks for approval again: trust is recorded on the hash,`,
       `and until you grant it the hook is skipped.`,
     ];
+  }
+
+  if (step.type === 'hygiene') {
+    return hygieneReport(step.target, root, env);
   }
 
   let text;
@@ -231,6 +351,7 @@ export function report(rel, root, env) {
 
 const REAL_ENV = {
   read: (path) => readFileSync(path, 'utf-8'),
+  list: (path) => readdirSync(path),
 };
 
 // --- test bench -----------------------------------------------------------
@@ -242,6 +363,17 @@ function fakeEnv(files) {
     read: (p) => {
       if (!map.has(key(p))) throw new Error(`ENOENT ${p}`);
       return map.get(key(p));
+    },
+    list: (p) => {
+      const base = key(p).replace(/\/+$/, '') + '/';
+      const names = new Set();
+      for (const path of map.keys()) {
+        if (!path.startsWith(base)) continue;
+        const rest = path.slice(base.length);
+        if (rest && !rest.includes('/')) names.add(rest);
+      }
+      if (!names.size) throw new Error(`ENOENT ${p}`);
+      return [...names];
     },
   };
 }
@@ -270,17 +402,18 @@ function selfCheck() {
   check('and also the module the guards import', typesOf('plugins/daiku/hooks/lib/daiku-config.mjs') === 'reminder');
   check('a guard does not also trigger the other checks', plan('.claude/hooks/command-guard.mjs').length === 1);
 
-  // Out of scope: silence, no reads and no processes.
-  for (const outside of [
-    'src/index.ts',
-    'README.md',
-    '.daiku/domain/perf.md',
-    '.daiku/policies/README.md',
-    'docs/new-developments/x/0. problem.md',
-    'package.json',
-  ]) {
-    check(`out of scope: \`${outside}\``, plan(outside).length === 0);
+  // Corpus exclusions: silence, no reads and no processes.
+  for (const outside of ['.daiku/domain/perf.md', '.daiku/policies/README.md', '.gitignore', '.env']) {
+    check(`corpus exclusion: \`${outside}\``, plan(outside).length === 0);
   }
+
+  // Hygiene perimeter: every other written file is read against the watching policies.
+  const hygieneOf = (rel) => plan(rel).map((p) => p.type).join(',');
+  check('a source file triggers hygiene', hygieneOf('src/index.ts') === 'hygiene');
+  check('a root markdown triggers hygiene', hygieneOf('README.md') === 'hygiene');
+  check('a development note triggers hygiene', hygieneOf('docs/new-developments/x/0. problem.md') === 'hygiene');
+  check('a manifest triggers hygiene', hygieneOf('package.json') === 'hygiene');
+  check('hygiene carries the written file as its target', plan('src/index.ts')[0].target === 'src/index.ts');
   check('path outside the root: no plan', plan(relativeToRoot('C:/other/x.md', R)).length === 0);
   check('missing path: no plan', plan(null).length === 0);
 
@@ -322,6 +455,55 @@ function selfCheck() {
   check('a rule with paths has no findings', policyFindings("---\npaths: ['src/**']\n---\n").length === 0);
   check('a rule without paths is a finding', policyFindings('---\nname: x\n---\n').length === 1);
   check('a rule without frontmatter is a finding', policyFindings('# prose\n').length === 1);
+
+  // --- source hygiene: policies, patterns and matches -----------------------
+  const backendPolicy = '---\npaths:\n  - "src/server/**"\nhygiene:\n  - "console.log"\n  - \'sk-\'\n---\n\n# Backend\n';
+  const parsed = hygieneOfPolicy(backendPolicy);
+  check('hygiene lists are read', parsed.paths.join(',') === 'src/server/**' && parsed.patterns.join(',') === 'console.log,sk-');
+  check('a policy without hygiene has no patterns', hygieneOfPolicy('---\npaths:\n  - "src/**"\n---\n').patterns.length === 0);
+  check('a policy without frontmatter watches nothing', hygieneOfPolicy('# prose\n').patterns.length === 0);
+  check('unquoted items are read too', hygieneOfPolicy('---\npaths:\n  - src/**\nhygiene:\n  - TODO\n---\n').patterns.join(',') === 'TODO');
+
+  check('`**` crosses folders', matchGlob('src/server/api/users.ts', 'src/server/**'));
+  check('`**` does not match the folder itself', matchGlob('src/server', 'src/server/**') === false);
+  check('`*` does not cross folders', !matchGlob('src/server/api/users.ts', 'src/server/*.ts'));
+  check('`*` matches inside one folder', matchGlob('src/server/app.ts', 'src/server/*.ts'));
+  check('`?` matches one character', matchGlob('src/a.ts', 'src/?.ts') && !matchGlob('src/ab.ts', 'src/?.ts'));
+
+  const dirty = 'import x from "./y";\nconsole.log("debug", x);\nconst key = "sk-abc123";\n';
+  const found = hygieneFindings(dirty, ['console.log', 'sk-']);
+  check('every matching line is found', found.total === 2 && found.hits.length === 2);
+  check('hits carry line and fragment', found.hits[0].line === 2 && found.hits[0].fragment === 'console.log');
+  check('clean text has no findings', hygieneFindings('const a = 1;\n', ['console.log']).total === 0);
+  const many = Array.from({ length: 25 }, (_, i) => `console.log(${i});`).join('\n');
+  const capped = hygieneFindings(many, ['console.log']);
+  check('matches past the cap are counted, not listed', capped.total === 25 && capped.hits.length === 10);
+
+  const watched = {
+    [`${R}/src/server/app.ts`]: dirty,
+    [`${R}/.daiku/policies/backend.md`]: backendPolicy,
+  };
+  const hygieneText = report('src/server/app.ts', R, fakeEnv(watched));
+  check('a watched dirty file reaches the report', !!hygieneText && hygieneText.includes('backend.md') && hygieneText.includes('src/server/app.ts:2'));
+  check('the hygiene report states it does not block', !!hygieneText && hygieneText.includes('block nothing'));
+  const unwatched = {
+    [`${R}/src/server/app.ts`]: dirty,
+    [`${R}/.daiku/policies/frontend.md`]: '---\npaths:\n  - "src/web/**"\nhygiene:\n  - "console.log"\n---\n',
+  };
+  check('a file no policy watches: no report', report('src/server/app.ts', R, fakeEnv(unwatched)) === null);
+  const cleanSrc = {
+    [`${R}/src/server/app.ts`]: 'const a = 1;\n',
+    [`${R}/.daiku/policies/backend.md`]: backendPolicy,
+  };
+  check('a watched clean file: no report', report('src/server/app.ts', R, fakeEnv(cleanSrc)) === null);
+  check('no policies on disk: no report', report('src/server/app.ts', R, fakeEnv({ [`${R}/src/server/app.ts`]: dirty })) === null);
+  const brokenPolicy = {
+    [`${R}/src/server/app.ts`]: dirty,
+    [`${R}/.daiku/policies/backend.md`]: backendPolicy,
+    [`${R}/.daiku/policies/broken.md`]: '# no frontmatter, no lists\n',
+  };
+  check('an unreadable policy watches nothing but breaks nothing', (report('src/server/app.ts', R, fakeEnv(brokenPolicy)) || '').includes('backend.md'));
+  check('missing written file: no report', report('src/server/app.ts', R, fakeEnv({ [`${R}/.daiku/policies/backend.md`]: backendPolicy })) === null);
 
   // --- the report: what it includes and what it omits -----------------------------------
   const clean = fakeEnv({ [`${R}/.claude/skills/review/SKILL.md`]: healthy });

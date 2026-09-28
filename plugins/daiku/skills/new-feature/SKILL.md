@@ -1,7 +1,7 @@
 ---
 name: 'new-feature'
 description: 'Opens a feature from a natural-language description and carries it to the commit in a single run: code investigation, study of the technologies you do not know well enough, decision document, decisions asked in chat, and from there the whole delivery delegated to develop-feature'
-argument-hint: '<feature or problem description>'
+argument-hint: '<feature or problem description> [--stop-at-brief]'
 ---
 
 You are the node **opening** a work and not leaving it halfway. You receive a natural-language description, you investigate the code, you procure the missing knowledge, you have the decisions studied, you bring them to the owner in chat — and with their answers in hand you continue to the commit without them having to relaunch anything.
@@ -12,7 +12,7 @@ You are the node **opening** a work and not leaving it halfway. You receive a na
 
 ## When to use it
 
-Use it when you start from an idea or a problem and there is nothing on disk yet. It is the only entry point that starts from the **code** instead of a document, and the only one that opens the folder; `decision-doc` and `develop-feature` are its internal phases, never launched on their own.
+Use it when you start from an idea or a problem and there is nothing on disk yet. It is the only entry point that starts from the **code** instead of a document, and the only one that opens the folder; `decision-doc` is its internal phase, never launched on its own, while `develop-feature` is its delivery and can also be launched by hand on the folder.
 
 ## Before starting
 
@@ -20,7 +20,7 @@ Read `contracts/orchestration.md`: roles, host, how to launch a subagent, how a 
 
 ## Input
 
-Arguments: `$ARGUMENTS` — the work description in natural language. It can be a feature to make, a question on how to do something the system does not do yet, a gap ("the wiring between X and Y is missing"), an architectural tension ("two components do the same thing").
+Arguments: `$ARGUMENTS` — the work description in natural language. It can be a feature to make, a question on how to do something the system does not do yet, a gap ("the wiring between X and Y is missing"), an architectural tension ("two components do the same thing"). A trailing `--stop-at-brief` stops the run at the execution brief instead of delivering (point 10): the folder with problem, decision-doc and blueprint, and nothing else.
 
 If `$ARGUMENTS` is empty, **ask** what is worked on and wait until it arrives. It is the only question admitted before the decisions.
 
@@ -74,6 +74,18 @@ Write `{paths.studies}/<slug>/0. problem.md`: it describes the problem, document
 ```
 
 Every statement is anchored to the code (file + lines), with paths relative to the repo root.
+
+**No data, no code excerpts.** This document is pushed and travels beyond this machine: it carries
+behaviour, never data. No real data of any kind — no query results, no record contents, no
+credentials, no personal names, no business figures — and no code excerpts: cite `file:line` for
+the mechanism without quoting what stands there. A literal string from the code enters only when
+it is the behaviour's own name (an interface, a state, an error code), never a value it carried.
+
+**A family, not a snapshot.** Describe the problem as the instance of a family of similar problems:
+generalise the mechanism (which class of defect, debt or gap this is) while keeping the concrete
+facts needed to act (where it bites here, under which conditions, with which observable effect).
+The document must let an executor who never saw this program solve this instance — and recognise
+the next one.
 
 It is a **first** draft: it is written with the knowledge you have now, and point 5 puts it back in discussion on what the sources will say.
 
@@ -150,11 +162,13 @@ The point-6 block declares the `stage`. If it was `strategic`, incorporation clo
 
 **Only one extra round.** If the second block also comes back `strategic`, the problem is not ready to be executed: stop, report to the owner the verdict and what remains open, and leave the folder as it is. There is no third round, and one does not move to delivery with the direction still under discussion.
 
-### 10. Delivery — `develop-feature`, **worker** role
+### 10. Delivery — `develop-feature`, **worker** role — or stop at the brief
 
-The technical decisions are closed: `1. decision-doc.md` exists and its cards have an answer. Delegate the whole delivery to a subagent running `skills/develop-feature/SKILL.md`, on the **worker** role — its order, its decision and its unblock are verdicts of the evaluator, and the judging phases it launches declare their own role — with the folder and the **chosen solution** — for each decision the id and text of the option the owner chose, as they wrote them. For a card they did not answer, `A` holds, which by contract is the recommended one, without asking.
+**Brief stop — judge role.** If `$ARGUMENTS` carries `--stop-at-brief`, do not open the delivery: delegate instead a subagent running `skills/blueprint/SKILL.md`, on the **judge** role — the brief is a decision on the plan, and `skills/develop-feature/SKILL.md` § *1. Brief* runs it on that role — with the folder and the **chosen solution** (for each decision the id and text of the option the owner chose, as they wrote them; `A` where they did not answer). The expected outcome is the block `skills/blueprint/SKILL.md` declares in its own § *What you return*, in full: report it, and stop here. The run delivers the folder with `0. problem.md`, `1. decision-doc.md` and `2. blueprint.md` — no execution, no commit, no push: carrying the folder wherever its execution runs is the owner's manual act.
 
-From there on the sequence is its own and you do not rewrite it here — and it is not recited here either: **it is asked**. Call `architect/architect.mjs` — the evaluator that `skills/develop-feature/SKILL.md` § *The evaluator* declares — with `question: "order"`, `entry: "new-feature"`, `present` (the artefacts already on disk) and `ledger` (the review ledger of this folder in `{paths.review_state}/`, or `null`), the input that section declares, and its verdict says which phases remain. **Do not launch yourself `blueprint`, `execute`, `/review` or `/commit`**: they are the phases of `develop-feature`, and chaining them from here means keeping two copies diverging at the first modification.
+Otherwise, the delivery. The technical decisions are closed: `1. decision-doc.md` exists and its cards have an answer. Delegate the whole delivery to a subagent running `skills/develop-feature/SKILL.md`, on the **worker** role — its order, its decision and its unblock are verdicts of the evaluator, and the judging phases it launches declare their own role — with the folder and the **chosen solution** — for each decision the id and text of the option the owner chose, as they wrote them. For a card they did not answer, `A` holds, which by contract is the recommended one, without asking.
+
+From there on the sequence is its own and you do not rewrite it here — and it is not recited here either: **it is asked**. Call `architect/architect.mjs` — the evaluator that `skills/develop-feature/SKILL.md` § *The evaluator* declares — with `question: "order"`, `entry: "new-feature"`, `present` (the artefacts already on disk) and `ledger` (the review ledger of this folder in `{paths.review_state}/`, or `null`), the input that section declares, and its verdict says which phases remain. **Do not launch yourself `execute`, `/review` or `/commit`, and do not launch `blueprint` except for the brief stop above**: they are the phases of `develop-feature`, and chaining them from here means keeping two copies diverging at the first modification.
 
 The expected outcome is the block that contract declares in its own § *Outcome*, in full. Report it: its `status` is yours.
 
@@ -169,6 +183,7 @@ A step has failed when the block does not come back, comes back incomplete or co
 | `decision-doc` (point 6) | the chain stops. `0. problem.md` stays delivered, and you say so with the command to launch by hand on the folder. **Do not write the decisions yourself**: asking them here means writing them outside the document hosting them |
 | incorporation (point 8) | it is the worst case, because the owner answers exist only in chat. Report them **verbatim** in the outcome, together with the command to incorporate them with, and stop |
 | `develop-feature` (point 10) | its block already declares its own failures: report it as it is, without reinterpreting it |
+| `blueprint` (point 10, brief stop) | its block already declares its own failures: report it as it is, without reinterpreting it |
 
 ## Operational constraints
 
@@ -186,7 +201,7 @@ In chat, a few lines:
 - the analysed areas and the identified gaps;
 - the produced or reused notes, with version and date, and what the recomparison changed in the problem (or that it changed nothing);
 - the crossed stages, the decisions asked and the answer received for each;
-- the delivery outcome: `status`, commit and merge SHA, and the report path — the detail is already inside there, **do not repeat it**.
+- the delivery outcome: `status`, commit and merge SHA, and the report path — the detail is already inside there, **do not repeat it**. With `--stop-at-brief` there is no delivery outcome: report the brief path instead, and that carrying the folder on is the owner's manual act.
 
 If the chain stopped before delivery, say so with the point where it stopped and the command the owner resumes it with.
 

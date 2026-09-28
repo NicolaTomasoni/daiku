@@ -48,4 +48,24 @@ layers:
 - `deny_imports` lists forbidden import fragments, as path substrings — not resolved
   modules — so the check stays a grep, in every language.
 
+A rule may also carry an **optional `hygiene:` list**: text fragments watched in the
+area's sources after every write — leftover `console.log`, secrets in clear text, the
+project's own smells. The post-edit hook reports the matching lines with file and line,
+and nothing else: it never blocks the write, never fixes it, never runs anything.
+
+```markdown
+---
+paths:
+  - "src/server/**"
+hygiene:
+  - "console.log"
+  - "sk-"
+---
+```
+
+- Each item is a plain substring, not a regular expression — the check stays a grep.
+- The file is watched only where `paths:` already covers it: a pattern without a path
+  watches nothing.
+- A rule without `hygiene:` stays a fully valid rule: the hook stays silent on its area.
+
 Shape, citation convention and the degradation rule live in the Daiku package, in its `contracts/project-contract.md`.

@@ -12,7 +12,7 @@
  * and, **in verdict mode, it opens no file of the project** — everything it needs to
  * know about the disk the agent passes it, because the agent already holds it. The one
  * file it does open is the package's own `schemas/blocks.json`, and only for the
- * `block` and `handoff` questions: that is not the project's disk, it is the contract it checks against. The price is
+ * `block` question: that is not the project's disk, it is the contract it checks against. The price is
  * declared: a wrong list gives a wrong verdict. It is accepted because a list passed
  * in the clear *ends up in the outcome* and can be inspected, while a `stat` made
  * inside a process leaves no trace.
@@ -30,7 +30,7 @@
  * **The root always arrives as an argument**, in both modes, and is never derived
  * from this file's position on disk: a program that deduces its own root is correct
  * until the first move of the tree and wrong in silence. Verdict mode reads the root only
- * for the `block` and `handoff` questions; it requires it on every question all the same, because a
+ * for the `block` question; it requires it on every question all the same, because a
  * single invocation form is one thing to get wrong once. The bench uses it to read the
  * contracts it compares itself against.
  *
@@ -45,7 +45,7 @@
  *
  * **Fields of the blocks it consumes that it deliberately does not read**, declared as
  * §4 point 2 of `contracts/orchestration.md` requires, each standing on the road of
- * none of the ten questions: `rounds` as a count (the rounds themselves live in the
+ * none of the nine questions: `rounds` as a count (the rounds themselves live in the
  * ledger, and the ledger is what this program reads), `disciplines_round_1`,
  * `independence`, `applied`, `severe`, `on_previous_fix`, `discarded`, `coverage` **of
  * the review block** (the ledger's is read, by the resumption and the readable-ledger
@@ -54,9 +54,9 @@
  * (of each item it is read, by the blocking condition), `commit_sha` (the resumption reads
  * `commit` alone, to know whether the cycle had closed), `report`. Not reading a field is
  * also why a missing one among these changes no verdict. Of the brief and execute blocks
- * the `handoff` question holds together, the content of `brief_path`, `note_review_path`,
- * `verify_detail` and `detail` is not read either — the prose of a step, not its evidence —
- * but their presence is: it is the form the `block` question checks before `handoff` reads.
+ * the content of `brief_path`, `note_review_path`, `verify_detail` and `detail` is not read
+ * either — the prose of a step, not its evidence — but their presence is: it is the form
+ * the `block` question checks.
  * Of each round of the ledger, the trees are read only as present — the `round` question
  * refuses a round after one without them — and the fast check only by its `status`; `cost`,
  * `deviations`, the fast check's `detail` and `files`, the trees' values themselves are not
@@ -64,7 +64,7 @@
  *
  * **A case the bench does not cover is a delivery that stops**, not a wrong verdict:
  * the verdict binds, and the bench is the only defence. That is the reason the bench
- * below counts one proof for every row of every table the ten questions copy, every
+ * below counts one proof for every row of every table the nine questions copy, every
  * entry point, every case of the ambiguity rule, and every row of the topology table.
  */
 
@@ -93,13 +93,14 @@ const GRAPH = {
   'decision-doc': ['new-feature'],
   research: ['owner', 'new-feature'],
   study: ['research'],
-  blueprint: ['develop-feature'],
+  blueprint: ['owner', 'develop-feature'],
   execute: ['develop-feature'],
-  'develop-feature': ['new-feature'],
+  'develop-feature': ['owner', 'new-feature'],
   review: ['owner', 'develop-feature'],
   'finder-prompt': ['review'],
   'code-review': ['owner', 'review'],
   'arch-check': ['review'],
+  'dead-code': ['review'],
   perf: ['review'],
   'test-coverage': ['review'],
   applier: ['review'],
@@ -357,7 +358,7 @@ function incoherence(input, question) {
 }
 
 /* ------------------------------------------------------------------------- *
- * The ten questions
+ * The nine questions
  * ------------------------------------------------------------------------- */
 
 /** Where in the chain the entry starts, cut at the furthest phase the artefacts prove. */
@@ -1065,134 +1066,6 @@ function askBlock(input, root) {
   });
 }
 
-/* ------------------------------------------------------------------------- *
- * 10. The handoff — `skills/develop-feature/SKILL.md` § *The handoff*
- * ------------------------------------------------------------------------- */
-
-/** The file a reference names: `<file>::<case>` and `<path>:<line>` lose their tail, `\` becomes `/`. */
-function fileOf(ref) {
-  return slashed(String(ref))
-    .replace(/::.*$/, '')
-    .replace(/:\d+(?::\d+)?$/, '')
-    .replace(/^\.\//, '');
-}
-
-/** A block handed to `handoff` is held to the form the `block` question checks, or refused loudly. */
-function heldBlock(input, key, name, root) {
-  const shape = askBlock({ question: 'block', name, block: input[key] }, root);
-  if (shape.verdict !== 'valid') throw new BadInput(`${key} is not a valid ${name} block — ${shape.blockers.join('; ')}`);
-  if (input[key].ok !== true) {
-    throw new BadInput(`${key}.ok is not true: a step that failed is the propagation question, not the handoff`);
-  }
-  return input[key];
-}
-
-/** The caller's own read-only measurements, never the executor's word. */
-function measuredOf(input) {
-  const measured = input.measured;
-  if (!measured || typeof measured !== 'object' || Array.isArray(measured)) {
-    throw new BadInput('measured is required: {"absence", "consumers", "open_tasks"}, the caller\'s own read-only searches');
-  }
-  if (!Array.isArray(measured.absence) || measured.absence.some((row) => !row || !nonEmpty(row.pattern) || !Number.isInteger(row.hits) || row.hits < 0)) {
-    throw new BadInput('measured.absence must be [{"pattern", "hits"}], one row per retired fact, hits counted from 0');
-  }
-  if (!Array.isArray(measured.consumers) || measured.consumers.some((row) => !row || !nonEmpty(row.symbol) || !Array.isArray(row.files) || !row.files.every(nonEmpty))) {
-    throw new BadInput('measured.consumers must be [{"symbol", "files"}], one row per interface of the brief');
-  }
-  if (!Array.isArray(measured.open_tasks) || !measured.open_tasks.every((line) => typeof line === 'string')) {
-    throw new BadInput('measured.open_tasks must be an array: the task lines of the brief still [ ] or [~]');
-  }
-  return measured;
-}
-
-function askHandoff(input, root) {
-  const brief = heldBlock(input, 'brief', 'blueprint', root);
-  const notes = heldBlock(input, 'notes', 'execute', root);
-  if (!Array.isArray(input.diff_files) || !input.diff_files.every(nonEmpty)) {
-    throw new BadInput('diff_files is required: the files of the diff as git prints them, relative to the technical root');
-  }
-  const measured = measuredOf(input);
-  const diff = new Set(input.diff_files.map(fileOf));
-  const blockers = [];
-  const replaced = [];
-
-  // 1. Every task the brief froze is answered for at closing: rerun, or replaced with a why;
-  //    and every check rerun — the brief's and those execute added — is green.
-  for (const task of brief.plan) {
-    const row = notes.checks.find((check) => check.task === task.task);
-    if (!rule('handoff.task-answered', !!row)) blockers.push(`task ${task.task}: its check was not rerun at closing, and no row says it was replaced`);
-    else if ('replaced' in row) replaced.push(task.task);
-  }
-  for (const row of notes.checks) {
-    if ('replaced' in row) continue;
-    if (!rule('handoff.check-green', row.exit === 0)) blockers.push(`task ${row.task}: its check is red on the final tree (exit ${row.exit})`);
-  }
-
-  // 2. A task that changes behaviour was seen red, and every proof is on a file this diff writes.
-  for (const task of brief.plan) {
-    if (!task.cases.length) continue;
-    if (!rule('handoff.behaviour-proven', notes.red_proofs.some((proof) => proof.task === task.task))) {
-      blockers.push(`task ${task.task}: it changes behaviour and no test of it was seen red`);
-    }
-  }
-  for (const proof of notes.red_proofs) {
-    if (!rule('handoff.proof-in-diff', diff.has(fileOf(proof.test)))) {
-      blockers.push(`red proof ${proof.test}: its file is not in the diff, so it is not a test this change writes`);
-    }
-  }
-
-  // 3. Every consumer the brief maps is checked green, and every file naming an interface is
-  //    either mapped by the brief or checked by execute.
-  const checked = new Set(notes.consumers_checked.filter((row) => row.exit === 0).map((row) => fileOf(row.consumer)));
-  for (const item of brief.interfaces) {
-    for (const consumer of item.consumers) {
-      const row = notes.consumers_checked.find((check) => check.consumer === consumer);
-      if (!rule('handoff.consumer-checked', !!row)) blockers.push(`${item.symbol}: consumer ${consumer} has no check`);
-      else if (!rule('handoff.consumer-green', row.exit === 0)) blockers.push(`${item.symbol}: the check of consumer ${consumer} is red (exit ${row.exit})`);
-    }
-    const found = measured.consumers.find((row) => row.symbol === item.symbol);
-    if (!found) {
-      throw new BadInput(`measured.consumers has no row for ${JSON.stringify(item.symbol)}: the search is the caller's, and a missing one is a guessed value`);
-    }
-    const mapped = new Set([fileOf(item.declared_in), ...item.consumers.map(fileOf)]);
-    for (const file of new Set(found.files.map(fileOf))) {
-      if (!rule('handoff.consumer-mapped', mapped.has(file) || checked.has(file))) {
-        blockers.push(`${item.symbol}: ${file} names it, and the brief does not map it nor did execute check it`);
-      }
-    }
-  }
-
-  // 4. Every fact the brief retires was searched, and the count is the caller's measurement.
-  for (const item of brief.retired) {
-    const measure = measured.absence.find((row) => row.pattern === item.pattern);
-    if (!measure) {
-      throw new BadInput(`measured.absence has no row for ${JSON.stringify(item.pattern)}: the search is the caller's, and a missing one is a guessed value`);
-    }
-    const row = notes.absence.find((absence) => absence.pattern === item.pattern);
-    if (!rule('handoff.retired-searched', !!row)) blockers.push(`retired "${item.fact}": no search recorded for ${JSON.stringify(item.pattern)}`);
-    else if (!rule('handoff.retired-count', row.hits === measure.hits)) {
-      blockers.push(`retired "${item.fact}": execute counted ${row.hits} hits, the search counts ${measure.hits} — the measurement holds`);
-    }
-  }
-
-  // 5. No quick check is red, and 6. no task is left open in the brief.
-  for (const row of notes.preflight) {
-    if (!rule('handoff.preflight-green', row.outcome !== 'red')) blockers.push(`preflight ${row.step} on ${row.area || 'no area'} is red: ${row.detail}`);
-  }
-  if (!rule('handoff.no-open-task', measured.open_tasks.length === 0)) {
-    blockers.push(...measured.open_tasks.map((line) => `task still open in the brief: ${line.trim()}`));
-  }
-
-  return block({
-    verdict: blockers.length ? 'not-ready' : 'ready',
-    blockers,
-    detail: blockers.length
-      ? `${blockers.length} pieces of evidence are missing: execute is relaunched once with them, and a second not-ready stops the delivery.`
-      : 'every task of the brief is answered for, every behaviour change was seen red, every consumer checked, every retired fact searched' +
-        (replaced.length ? `; replaced by the plan adaptation, with the why in the Journal: ${replaced.join(', ')}.` : '.'),
-  });
-}
-
 const ASKS = {
   decision: askDecision,
   closing: askClosing,
@@ -1203,7 +1076,6 @@ const ASKS = {
   round: askRound,
   layers: askLayers,
   block: askBlock,
-  handoff: askHandoff,
 };
 
 /**
@@ -1225,7 +1097,6 @@ const REQUIRES = {
   round: ['ledger', 'rounds_cap'],
   layers: ['layers', 'added'],
   block: ['name', 'block'],
-  handoff: ['brief', 'notes', 'diff_files', 'measured'],
 };
 
 /** Every answer goes through here: the keys of `REQUIRES` first, then the question. */
@@ -1394,17 +1265,6 @@ const EX_BLOCK = (extra = {}) => ({
   absence: [{ pattern: 'the retired wording', hits: 0, why: '' }],
   preflight: PREFLIGHT_STEPS.map((step) => ({ step, area: 'core', outcome: 'green', detail: '' })),
   detail: '', ...extra,
-});
-const HANDOFF = (extra = {}, measured = {}) => ({
-  question: 'handoff', brief: BP_BLOCK(), notes: EX_BLOCK(),
-  diff_files: ['test/a.test.mjs', 'architect/architect.mjs', 'skills/execute/SKILL.md'],
-  measured: {
-    absence: [{ pattern: 'the retired wording', hits: 0 }],
-    consumers: [{ symbol: 'red_proofs', files: ['skills/execute/SKILL.md', 'architect/architect.mjs'] }],
-    open_tasks: [],
-    ...measured,
-  },
-  ...extra,
 });
 
 /**
@@ -1773,59 +1633,6 @@ const CASES = [
     input: { question: 'block', name: 'execute', block: EX_BLOCK({ preflight: EX_BLOCK().preflight.filter((row) => row.step !== 'layers') }) },
     expect: { verdict: 'invalid', blockers_include: 'preflight has no layers row' } },
 
-  /* --- question: handoff — skills/develop-feature/SKILL.md § The handoff --- */
-  { id: 'handoff:ready', cites: { file: 'skills/develop-feature/SKILL.md', section: 'The handoff' },
-    input: HANDOFF(),
-    expect: { verdict: 'ready', blockers: [] } },
-  { id: 'handoff:a-replaced-task-is-answered-for', cites: { file: 'skills/develop-feature/SKILL.md', section: 'The handoff' },
-    input: HANDOFF({ notes: EX_BLOCK({ checks: [{ task: '0', check: 'x', exit: 0 }, { task: '1', check: 'x', exit: 0 }, { task: '2', replaced: 'merged into task 1' }] }) }),
-    expect: { verdict: 'ready' } },
-  { id: 'handoff:a-task-dropped-without-a-row', cites: { file: 'skills/develop-feature/SKILL.md', section: 'The handoff' },
-    input: HANDOFF({ notes: EX_BLOCK({ checks: [{ task: '0', check: 'x', exit: 0 }, { task: '1', check: 'x', exit: 0 }] }) }),
-    expect: { verdict: 'not-ready', blockers_include: 'task 2: its check was not rerun' } },
-  { id: 'handoff:a-check-red-on-the-final-tree', cites: { file: 'skills/execute/SKILL.md', section: 'Principles' },
-    input: HANDOFF({ notes: EX_BLOCK({ checks: [{ task: '0', check: 'x', exit: 0 }, { task: '1', check: 'x', exit: 0 }, { task: '2', check: 'x', exit: 0 }, { task: '3', check: 'added by execute', exit: 1 }] }) }),
-    expect: { verdict: 'not-ready', blockers_include: 'task 3: its check is red' } },
-  { id: 'handoff:a-behaviour-change-never-seen-red', cites: { file: 'skills/blueprint/SKILL.md', section: 'Principles' },
-    input: HANDOFF({ notes: EX_BLOCK({ red_proofs: [] }) }),
-    expect: { verdict: 'not-ready', blockers_include: 'task 1: it changes behaviour' } },
-  { id: 'handoff:a-proof-on-a-file-the-diff-does-not-write', cites: { file: 'skills/execute/SKILL.md', section: 'Principles' },
-    input: HANDOFF({ diff_files: ['architect/architect.mjs', 'skills/execute/SKILL.md'] }),
-    expect: { verdict: 'not-ready', blockers_include: 'is not in the diff' } },
-  { id: 'handoff:a-mapped-consumer-never-checked', cites: { file: 'skills/blueprint/SKILL.md', section: 'Principles' },
-    input: HANDOFF({ notes: EX_BLOCK({ consumers_checked: [] }) }),
-    expect: { verdict: 'not-ready', blockers_include: 'has no check' } },
-  { id: 'handoff:a-mapped-consumer-checked-red', cites: { file: 'skills/blueprint/SKILL.md', section: 'Principles' },
-    input: HANDOFF({ notes: EX_BLOCK({ consumers_checked: [{ consumer: 'architect/architect.mjs:900', check: 'x', exit: 2 }] }) }),
-    expect: { verdict: 'not-ready', blockers_include: 'is red (exit 2)' } },
-  { id: 'handoff:a-consumer-nobody-mapped', cites: { file: 'skills/develop-feature/SKILL.md', section: 'The handoff' },
-    input: HANDOFF({}, { consumers: [{ symbol: 'red_proofs', files: ['skills/execute/SKILL.md', 'architect/architect.mjs', 'skills/review/SKILL.md'] }] }),
-    expect: { verdict: 'not-ready', blockers_include: 'skills/review/SKILL.md names it' } },
-  { id: 'handoff:an-unmapped-consumer-execute-checked', cites: { file: 'skills/execute/SKILL.md', section: 'Principles' },
-    input: HANDOFF({ notes: EX_BLOCK({ consumers_checked: [...EX_BLOCK().consumers_checked, { consumer: 'skills/review/SKILL.md', check: 'x', exit: 0 }] }) }, { consumers: [{ symbol: 'red_proofs', files: ['skills/execute/SKILL.md', 'architect/architect.mjs', 'skills/review/SKILL.md'] }] }),
-    expect: { verdict: 'ready' } },
-  { id: 'handoff:a-retired-fact-never-searched', cites: { file: 'skills/blueprint/SKILL.md', section: 'Principles' },
-    input: HANDOFF({ notes: EX_BLOCK({ absence: [] }) }),
-    expect: { verdict: 'not-ready', blockers_include: 'no search recorded' } },
-  { id: 'handoff:a-count-the-measurement-contradicts', cites: { file: 'skills/develop-feature/SKILL.md', section: 'The handoff' },
-    input: HANDOFF({}, { absence: [{ pattern: 'the retired wording', hits: 2 }] }),
-    expect: { verdict: 'not-ready', blockers_include: 'the measurement holds' } },
-  { id: 'handoff:hits-left-and-answered-for', cites: { file: 'skills/execute/SKILL.md', section: 'Principles' },
-    input: HANDOFF({ notes: EX_BLOCK({ absence: [{ pattern: 'the retired wording', hits: 1, why: 'the changelog keeps the old entry' }] }) }, { absence: [{ pattern: 'the retired wording', hits: 1 }] }),
-    expect: { verdict: 'ready' } },
-  { id: 'handoff:a-quick-check-red', cites: { file: 'skills/execute/SKILL.md', section: 'Principles' },
-    input: HANDOFF({ notes: EX_BLOCK({ preflight: EX_BLOCK().preflight.map((row) => (row.step === 'check_fast' ? { ...row, outcome: 'red', detail: 'tsc: 1 error' } : row)) }) }),
-    expect: { verdict: 'not-ready', blockers_include: 'preflight check_fast on core is red' } },
-  { id: 'handoff:a-skipped-quick-check-is-not-a-block', cites: { file: 'contracts/project-contract.md', section: '6. Degradation' },
-    input: HANDOFF({ notes: EX_BLOCK({ preflight: EX_BLOCK().preflight.map((row) => (row.step === 'layers' ? { ...row, outcome: 'skipped', detail: 'no policy carries layers:' } : row)) }) }),
-    expect: { verdict: 'ready' } },
-  { id: 'handoff:a-task-left-open', cites: { file: 'skills/develop-feature/SKILL.md', section: 'The handoff' },
-    input: HANDOFF({}, { open_tasks: ['   - [~] Task 2: wire the caller'] }),
-    expect: { verdict: 'not-ready', blockers_include: 'task still open in the brief: - [~] Task 2' } },
-  { id: 'handoff:every-missing-piece-is-listed', cites: { file: 'skills/develop-feature/SKILL.md', section: 'The handoff' },
-    input: HANDOFF({ notes: EX_BLOCK({ red_proofs: [], consumers_checked: [], absence: [] }) }, { open_tasks: ['- [ ] Task 2: x'] }),
-    expect: { verdict: 'not-ready', blockers_length_at_least: 4 } },
-
   /* --- question: block — skills/decision-doc/SKILL.md § The block you return, skills/new-feature/SKILL.md § 7 --- */
   { id: 'block:decision-doc-technical', cites: { file: 'skills/decision-doc/SKILL.md', section: 'The block you return' },
     input: { question: 'block', name: 'decision-doc', block: DOC() },
@@ -1912,16 +1719,6 @@ const CASES = [
 
 /** The input that must be refused loudly. Nothing here is a verdict. */
 const REJECTED = [
-  { id: 'reject:handoff-brief-absent', input: (() => { const input = HANDOFF(); delete input.brief; return input; })() },
-  { id: 'reject:handoff-brief-malformed', input: HANDOFF({ brief: BP_BLOCK({ plan: [BP_TASK('1', { red_if: '' })] }) }) },
-  { id: 'reject:handoff-on-a-failed-execute', input: HANDOFF({ notes: EX_BLOCK({ ok: false, detail: 'stopped at task 2' }) }) },
-  { id: 'reject:handoff-diff-files-not-a-list', input: HANDOFF({ diff_files: 'architect/architect.mjs' }) },
-  { id: 'reject:handoff-measured-absent', input: (() => { const input = HANDOFF(); delete input.measured; return input; })() },
-  { id: 'reject:handoff-measured-counts-not-counts', input: HANDOFF({}, { absence: [{ pattern: 'the retired wording', hits: -1 }] }) },
-  { id: 'reject:handoff-measured-files-not-a-list', input: HANDOFF({}, { consumers: [{ symbol: 'red_proofs', files: 'a.mjs' }] }) },
-  { id: 'reject:handoff-open-tasks-not-a-list', input: HANDOFF({}, { open_tasks: 0 }) },
-  { id: 'reject:handoff-an-interface-nobody-searched', input: HANDOFF({}, { consumers: [] }) },
-  { id: 'reject:handoff-a-retired-fact-nobody-searched', input: HANDOFF({}, { absence: [] }) },
   { id: 'reject:unknown-question', input: { question: 'invented', entry: 'new-feature', present: [] } },
   { id: 'reject:unknown-entry', input: { question: 'order', entry: 'invented', present: [], ledger: null } },
   { id: 'reject:present-not-a-list', input: { question: 'order', entry: 'new-feature', present: 'x', ledger: null } },
