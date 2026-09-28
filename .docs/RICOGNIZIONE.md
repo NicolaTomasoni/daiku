@@ -574,7 +574,7 @@ progetto/
 | Oggi | Domani | Perché |
 |---|---|---|
 | `commands/*.md` (18, annidati) | `skills/<nome>/SKILL.md`, piatti | unico primitivo comune ai due host; `skills/` non annida |
-| `commands/README.md` | `plugins/daiku/README.md` | è la guida del pacchetto |
+| `commands/README.md` | `plugins/README.md` | è la guida del pacchetto |
 | `orchestration.md` | `contracts/orchestration.md` | non è una skill; sotto `skills/` Claude Code la scandirebbe (§3.4) |
 | `project-contract.md` | `contracts/project-contract.md` | idem |
 | *(da `CLAUDE.md` di ReforgIA)* | `templates/project/instructions.md` | il quinto livello (§5.3): diventa il file di istruzioni di ogni progetto |

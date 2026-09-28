@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="icon.png" alt="Daiku icon: a bonsai" width="200" />
+  <img src="daiku/icon.png" alt="Daiku icon: a bonsai" width="200" />
 </p>
 
 <h1 align="center">Daiku</h1>

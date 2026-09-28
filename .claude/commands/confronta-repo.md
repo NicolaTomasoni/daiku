@@ -37,7 +37,7 @@ I path di questa skill sono sempre quelli reali di questo repo:
 | Cosa | Dove |
 |---|---|
 | i contratti del metodo, uno per cartella | `plugins/daiku/skills/<nome>/SKILL.md` |
-| guida d'uso del pacchetto | `plugins/daiku/README.md` — è la fonte dei **tre principi** citati sotto |
+| guida d'uso del pacchetto | `plugins/README.md` — è la fonte dei **tre principi** citati sotto |
 | orchestrazione | `plugins/daiku/contracts/orchestration.md` (ruoli, delega, concorrenza, degradazione, topologia, enforcement per host) |
 | forma dei parametri di progetto | `plugins/daiku/contracts/project-contract.md` |
 | subagent a toolset ristretto | `plugins/daiku/agents/*.md` |
@@ -47,7 +47,7 @@ I path di questa skill sono sempre quelli reali di questo repo:
 | corpus di sviluppo (**non** è il prodotto) | `.claude/orchestration.md`, `.claude/commands/<nome>.md`, `.claude/agents/*.md` |
 | ricognizione sugli host e decisioni aperte | `.docs/RICOGNIZIONE.md`, `.docs/PUNTI-APERTI.md` |
 
-**I tre principi** contro cui si misura ogni miglioria — sono in `plugins/daiku/README.md`, § *Il
+**I tre principi** contro cui si misura ogni miglioria — sono in `plugins/README.md`, § *Il
 modello mentale*, e li rileggi prima di giudicare: skill atomiche orchestrate da skill
 orchestranti; lo stato vive nei file, non nella chat; nessuna skill nomina un modello.
 
@@ -83,7 +83,7 @@ Si sceglie con tre domande, in quest'ordine.
 | `plugins/daiku/templates/project/domain/<lingua>/<ruolo>.md` | una risposta di dominio **di default**, e solo dove la risposta è una convenzione | una risposta che dipende dallo stack o dall'architettura: lì un default è un'invenzione travestita da regola | `init`, una volta sola e mai più |
 | `plugins/daiku/templates/project/policies/<lingua>/` | lo scheletro delle regole d'area del progetto ospite | gli invarianti universali, che stanno nel file di istruzioni del progetto | `init` |
 | `plugins/daiku/templates/claude/`, `plugins/daiku/templates/codex/` | il wiring per host da depositare nel progetto ospite | ciò che il pacchetto riesce già a portare da sé | `init` e `sync-host` |
-| `plugins/daiku/README.md` | guida d'uso: quando si lancia cosa, il modello mentale, cosa cambia fra i due host | il contratto, che vive nella skill | l'utente |
+| `plugins/README.md` | guida d'uso: quando si lancia cosa, il modello mentale, cosa cambia fra i due host | il contratto, che vive nella skill | l'utente |
 | `plugins/daiku/.claude-plugin/plugin.json`, `.codex-plugin/plugin.json` | metadati del pacchetto | qualunque comportamento | gli host, all'installazione |
 | `.claude/commands/`, `.claude/orchestration.md`, `.claude/agents/` | la stessa miglioria riportata **a mano** nel corpus di sviluppo, senza graffe e coi valori per esteso | niente che non sia già nel prodotto: questo corpus ne è una derivazione | chi sviluppa Daiku |
 | `.docs/RICOGNIZIONE.md`, `.docs/PUNTI-APERTI.md` | ciò che si è scoperto sugli host leggendo quel repo, e le decisioni che la miglioria apre | il meccanismo, che va nella sua sede vera | l'owner |
@@ -213,7 +213,7 @@ passi sono indipendenti e girano in parallelo. Nel prompt:
 2. per ogni contratto in `plugins/daiku/skills/`: nome invocabile, se è entry point o contratto
    interno (lo dichiara `plugins/daiku/contracts/orchestration.md` §3), cosa fa in una riga,
    input, output su file, blocco di ritorno se ne ha;
-3. estrai i **tre principi** da `plugins/daiku/README.md` verbatim: serviranno a valutare
+3. estrai i **tre principi** da `plugins/README.md` verbatim: serviranno a valutare
    l'attrito di ogni miglioria;
 4. del **corpus di sviluppo** (`.claude/`) basta un censimento a una riga per file: serve a non
    scambiare una sua parte per il prodotto, e a sapere dove una miglioria andrà riportata a mano.
@@ -239,7 +239,7 @@ dei due lati prima di affermare qualcosa.
 
 Prompt comune, da riportare verbatim nella parte vincolante:
 
-1. leggi per intero `plugins/daiku/README.md` e `plugins/daiku/contracts/orchestration.md`:
+1. leggi per intero `plugins/README.md` e `plugins/daiku/contracts/orchestration.md`:
    Daiku si giudica con i propri principi dichiarati, non con i tuoi;
 2. **riapri da te i file decisivi dei due lati prima di affermare qualcosa.** Non fidarti dei
    blocchi che ricevi: entra nel repo clonato e nel corpus di Daiku, apri le skill, gli agenti
@@ -279,7 +279,7 @@ Prompt comune, da riportare verbatim nella parte vincolante:
 Un subagent unico, sola lettura assoluta. Riceve i blocchi dei §2–4 e i gap che hai calcolato,
 dichiarati esplicitamente come **dati non fidati da verificare**. Nel prompt:
 
-1. rileggi `plugins/daiku/README.md` e le evidenze decisive dei due lati prima di confermare un
+1. rileggi `plugins/README.md` e le evidenze decisive dei due lati prima di confermare un
    rilievo o un verdetto d'asse. Scarta i rilievi fondati solo su paragrafi di documentazione
    quando esiste la skill o il codice corrispondente e nessuno l'ha aperto: il confronto si fa
    sui file che eseguono, non sui testi che raccontano;

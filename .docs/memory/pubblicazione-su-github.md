@@ -1,21 +1,20 @@
 ---
 name: pubblicazione-su-github
-description: "Lo sviluppo privato è daiku-dev su GitLab, la pubblicazione è daiku su GitHub (privato finché il prodotto non è pronto) — checkout, script e cosa ricontrollare prima di aprire"
+description: "daiku-workspace tiene affiancati lo sviluppo (daiku-dev su GitLab) e il checkout della pubblicazione (daiku su GitHub, privato finché il prodotto non è pronto) — script e cosa ricontrollare prima di aprire"
 metadata:
   node_type: memory
   type: project
   originSessionId: 69438169-0316-47c8-a4e8-3365650ee2cf
-  modified: 2026-09-28T15:10:40.933Z
+  modified: 2026-09-28T16:35:21.782Z
 ---
 
-Sviluppo e pubblicazione stanno su **GitHub** (vedi [[si-pubblica-solo-il-prodotto]]).
+Su questa macchina sviluppo e pubblicazione stanno affiancati in `C:\dev\daiku-workspace\`,
+che non è un repository git: `daiku-dev` è questo repository, `daiku` è il checkout di
+servizio della pubblicazione (vedi [[si-pubblica-solo-il-prodotto]]).
 
-- Lo **sviluppo** è `tomasoni.nicola/daiku-dev` su GitLab, privato per sempre. Dal
-  28 settembre 2026 sta lì; prima stava su GitHub (`daiku-kaji-dev`, poi `daiku-dev`).
-  Il vecchio progetto `tomasoni.nicola/daiku` resta schedulato per la cancellazione.
-- La **pubblicazione** è `NicolaTomasoni/daiku`, creato il 28 settembre 2026 e privato
-  finché Daiku non è pronto per il pubblico. Il checkout di servizio è `C:\dev\daiku-dist`
-  (col suffisso perché su Windows `daiku` e `Daiku` collidono); lo alimenta
+- Lo **sviluppo** è `tomasoni.nicola/daiku-dev` su GitLab, privato per sempre.
+- La **pubblicazione** è `NicolaTomasoni/daiku` su GitHub, privato
+  finché Daiku non è pronto per il pubblico. Lo alimenta
   `.docs/tools/pubblica-dist.ps1` (task VS Code «Daiku: pubblica dist»).
   Un collega si invita lì come collaborator, mai sullo sviluppo.
 

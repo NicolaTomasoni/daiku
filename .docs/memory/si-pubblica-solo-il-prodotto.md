@@ -5,10 +5,12 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 69438169-0316-47c8-a4e8-3365650ee2cf
-  modified: 2026-09-28T15:10:42.154Z
+  modified: 2026-09-28T17:06:26.936Z
 ---
 
-Daiku sta in **due repository** (il secondo dal 18 settembre 2026).
+Daiku sta in **due repository** (il secondo dal 18 settembre 2026). Su questa macchina
+stanno affiancati in `C:\dev\daiku-workspace\`, che non è un repository git: `daiku-dev`
+è lo sviluppo, `daiku` è il checkout di servizio della pubblicazione.
 
 Lo **sviluppo** è questo: `tomasoni.nicola/daiku-dev` su GitLab, privato, con dentro tutto —
 `plugins/`, `.docs/`, `CLAUDE.md`, `.claude/`, `.vscode/`. Il
@@ -22,7 +24,7 @@ README e `.gitattributes` compresi. A ogni rilascio `.docs/tools/pubblica-dist.p
 contenuto di quella cartella e committa (task VS Code «Daiku: pubblica dist»). Là dentro non si
 lavora mai. Il repository è privato finché Daiku non è pronto per il pubblico.
 
-Si copia il contenuto di `plugins/` — le due vetrine, `daiku/`, `.gitattributes`, il README.
+Si copia il contenuto di `plugins/` — le due vetrine, `daiku/`, `.gitattributes`, `README.md`.
 
 **Why:** di norma il filtro «cosa esce» non sta nel repo ma nel passo di impacchettamento — il
 campo `files` di un `package.json`, `MANIFEST.in` in Python — e allora un repo solo basta. Per

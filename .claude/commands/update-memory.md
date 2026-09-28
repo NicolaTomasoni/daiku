@@ -65,7 +65,7 @@ Quattro sedi, quattro mestieri. Un fatto che sta nella sede sbagliata non è un 
 | **`.docs/PUNTI-APERTI.md`** | le decisioni che l'owner non ha ancora preso | tutto ciò che è già deciso: quando una voce si chiude, esce da qui |
 | **`.docs/memory/`** | i fatti **non deducibili** dal repository: perché una cosa è come è, cosa l'owner ha deciso, cosa si è già provato e non funziona | ciò che si legge dal codice, dai contratti o da `git log` |
 
-**Il `README.md` del pacchetto non è tuo.** `plugins/daiku/README.md` sta sotto il perimetro del
+**Il `README.md` del pacchetto non è tuo.** `plugins/README.md` sta sotto il perimetro del
 prodotto: se una consegna cambia ciò che il pacchetto offre, quel file lo aggiorna l'esecutore,
 dentro il proprio diff e dentro il proprio commit. Toccarlo da qui lo sposterebbe dal gruppo codice a
 quello memoria/documentazione, cioè in un commit che non è il suo — e chi legge la storia troverebbe

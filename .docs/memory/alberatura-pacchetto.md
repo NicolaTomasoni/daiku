@@ -5,10 +5,11 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 48eaa498-ed6e-4a36-847d-3f8fa95f7f21
-  modified: 2026-09-28T14:36:00.297Z
+  modified: 2026-09-28T17:06:25.722Z
 ---
 
-Il repo ospita il prodotto Daiku. **In radice non entra
+Il repo ospita il prodotto Daiku. Questo repository sta in `C:\dev\daiku-workspace\daiku-dev`,
+affiancato al checkout `daiku` della pubblicazione. **In radice non entra
 nessun file di prodotto**: ci sono le sedi di sviluppo e una cartella,
 che è per intero la radice del suo repository pubblico — `plugins/`.
 
@@ -37,8 +38,7 @@ che lo indica:
 - `plugins/.agents/plugins/marketplace.json` — per Codex
 
 Due file separati perché i due host cercano nomi diversi. Entrambi dicono la stessa cosa: «qui
-c'è un pacchetto che si chiama daiku, sta in `./daiku`». Con loro stanno il `.gitattributes` del
-prodotto e, quando nascerà, il README pubblico. Il marketplace locale si registra su
+c'è un pacchetto che si chiama daiku, sta in `./daiku`». Con loro stanno il `.gitattributes` del prodotto e il README pubblico. Il marketplace locale si registra su
 `<repo>/plugins`, non sulla radice del repo.
 
 ## 2. Lo sviluppo *obbligato* a stare in radice

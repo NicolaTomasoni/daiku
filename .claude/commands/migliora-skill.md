@@ -15,7 +15,7 @@ Argomenti: `$ARGUMENTS`, i nomi delle skill.
 
 ## Letture
 
-Prima di toccare la prima skill leggi `plugins/daiku/README.md` (punti di ingresso) e `contracts/orchestration.md` §3 (chi si lancia a mano, chi è interno). Basta questo. Altri file solo se un dubbio si scioglie lì.
+Prima di toccare la prima skill leggi `plugins/README.md` (punti di ingresso) e `contracts/orchestration.md` §3 (chi si lancia a mano, chi è interno). Basta questo. Altri file solo se un dubbio si scioglie lì.
 
 ## I cinque controlli
 

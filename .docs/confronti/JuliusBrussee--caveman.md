@@ -103,7 +103,7 @@ Primo giro: 13 voci totali dal giudice, 13 nuove, 0 conservate, 0 già in Daiku.
 | MG-007 | Path:line negli handoff | orchestrazione | scarta | — | — | — |
 | MG-010 | Tavola provider-discovery | portabilità | scarta | — | — | — |
 | MG-011 | Dry-run di init | capacità | adatta | media | skill init | plugins/daiku/skills/init/SKILL.md |
-| MG-012 | Nota Windows/PowerShell | portabilità | adatta | media | README | plugins/daiku/README.md |
+| MG-012 | Nota Windows/PowerShell | portabilità | adatta | media | README | plugins/README.md |
 | MG-006 | Oversize-con-split | orchestrazione | ispira | bassa | orchestration.md o review | plugins/daiku/contracts/orchestration.md |
 | MG-008 | Fail-closed su project.json illeggibile | enforcement | ispira | bassa | project-contract | plugins/daiku/contracts/project-contract.md |
 | MG-009 | Scansione source-derived dei riferimenti | enforcement | ispira | bassa | self-check | plugins/daiku/hooks/self-check.mjs |
@@ -194,7 +194,7 @@ Primo giro: 13 voci totali dal giudice, 13 nuove, 0 conservate, 0 già in Daiku.
 
 - Evidenza: assenza in Daiku di una nota sulle shell supportate, emersa dal confronto col repo.
 - Proposta: adattare una nota su shell supportate, path con `/` ed env del backend.
-- Sedi, col perché: `plugins/daiku/README.md` in inglese, perché è la porta d'ingresso del pacchetto e la nota serve a chi installa prima ancora di aprire una skill.
+- Sedi, col perché: `plugins/README.md` in inglese, perché è la porta d'ingresso del pacchetto e la nota serve a chi installa prima ancora di aprire una skill.
 - su_codex: sì, nota di README, valida per entrambi gli host.
 - Costo: basso.
 - Rischio: nullo.

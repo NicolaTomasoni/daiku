@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 69438169-0316-47c8-a4e8-3365650ee2cf
-  modified: 2026-09-26T19:05:02.052Z
+  modified: 2026-09-28T16:36:12.776Z
 ---
 
 Dal 26 settembre 2026 Kaji non sta più in `extensions/kaji/`: vive in `C:/dev/Kaji` come
@@ -21,7 +21,8 @@ da quelli di Daiku.
 
 **How to apply:**
 
-- In questo repo non resta traccia di Kaji.
+- In questo repo non resta traccia di Kaji. In `C:\dev` il workspace `daiku-workspace`
+  tiene solo `daiku-dev` e `daiku`; Kaji resta fuori, in `C:/dev/Kaji`.
 - Il remote di `C:/dev/Kaji` punta ancora al vecchio progetto GitLab
   `claude-code-router-extension`: la sede GitHub di Kaji non è decisa.
 - Ciò che i due prodotti condividono resta un contratto versionato per copia, non un file letto
