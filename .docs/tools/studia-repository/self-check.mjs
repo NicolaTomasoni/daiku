@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * I banchi dei due script fratelli in un colpo solo, più la scansione «l'attrezzo non installa».
+ * I banchi dei tre script fratelli in un colpo solo, più la scansione «l'attrezzo non installa».
  *
  * Attrezzo di sviluppo di questo repository, non del pacchetto: vive fuori da `plugins/`, non si
  * pubblica, non si installa in nessun progetto e non gira mai da un hook. Si lancia a mano, prima
@@ -8,13 +8,13 @@
  *
  *   node .docs/tools/studia-repository/self-check.mjs
  *
- * Non prende nessun argomento: `check-toolchain.mjs --self-check` e `check-run.mjs --self-check`
- * sanno collaudarsi da soli, con le proprie fixture in `os.tmpdir()`, e non hanno bisogno di una
- * radice reale. Il totale che stampa è **contato**: la somma dei `checks` dei due banchi più un
- * caso per ogni altro `.mjs` di questa cartella scandito dalla ricerca di comandi d'installazione
- * — non un numero scritto qui a mano.
+ * Non prende nessun argomento: `check-toolchain.mjs --self-check`, `check-run.mjs --self-check` e
+ * `lotto.mjs --self-check` sanno collaudarsi da soli, con le proprie fixture in `os.tmpdir()`, e
+ * non hanno bisogno di una radice reale. Il totale che stampa è **contato**: la somma dei `checks`
+ * dei tre banchi più un caso per ogni altro `.mjs` di questa cartella scandito dalla ricerca di
+ * comandi d'installazione — non un numero scritto qui a mano.
  *
- * Il proprio file è escluso dalla scansione: il suo unico spawn è `process.execPath` sui due
+ * Il proprio file è escluso dalla scansione: il suo unico spawn è `process.execPath` sui tre
  * fratelli, mai un comando d'installazione, e scandire sé stesso non aggiungerebbe nessuna
  * garanzia in più di quella che il codice sorgente qui sotto già mostra a chi lo legge.
  *
@@ -30,7 +30,7 @@ import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SELF_NAME = 'self-check.mjs';
-const SIBLINGS = ['check-toolchain.mjs', 'check-run.mjs'];
+const SIBLINGS = ['check-toolchain.mjs', 'check-run.mjs', 'lotto.mjs'];
 
 /** Le forme di comando d'installazione che nessuno script della cartella deve contenere. */
 const INSTALL_PATTERNS = [

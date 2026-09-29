@@ -6,7 +6,7 @@ Poi committa e pusha. Il filtro "cosa esce" sta tutto qui: mai "tutto
 il repository tranne".
 
 Uso: .\pubblica-dist.ps1 -Messaggio "aggiorna dist" [-Destinazione ...] [-SenzaPush]
-Task VS Code: "Daiku: pubblica dist".
+Lo chiama il comando /rilascia-daiku (.claude/commands/rilascia-daiku.md), passo 5.
 #>
 param(
   [string]$Messaggio = "",
