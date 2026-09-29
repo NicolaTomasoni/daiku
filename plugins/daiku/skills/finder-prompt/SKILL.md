@@ -31,9 +31,9 @@ If one of the first four is missing, **do not choose it yourself and do not ask 
 
 ## Rules
 
-1. **Read in full what your `Where it comes from` column indicates, before analysing.** Those contracts declare at home their own **Finder mode**: follow it — it is the part valid here, and it says what of the rest of the file is not run. Load `{instructions_file}` where needed.
+1. **Read in full what your `Where it comes from` column indicates, before analysing.** Those contracts declare at home their own **Finder mode**: follow it — it is the part valid here, and it says what of the rest of the file is not run. Load `{hosts.<host>.instructions_file}` where needed.
 
-2. **Only for `arch`**: the rules to verify live in the invariants of `{instructions_file}` and in the area rules in `.daiku/policies/`. The caller passes the policies whose `paths` frontmatter covers the scope files, as the scope measured them: **open** them. Do not take them as loaded: automatic loading triggers by opening a matching file, not by inspecting a diff. If an opened policy carries a `layers:` block, verify per the `skills/arch-check/SKILL.md` mapping; otherwise verify the prose.
+2. **Only for `arch`**: the rules to verify live in the invariants of `{hosts.<host>.instructions_file}` and in the area rules in `.daiku/policies/`. The caller passes the policies whose `paths` frontmatter covers the scope files, as the scope measured them: **open** them. Do not take them as loaded: automatic loading triggers by opening a matching file, not by inspecting a diff. If an opened policy carries a `layers:` block, verify per the `skills/arch-check/SKILL.md` mapping; otherwise verify the prose.
 
 3. **Scope**, which is the only thing changing between one round and the next: `git diff <from> <to> -- <files>`, run in `work_root`, and **read every added line in full** before judging. The range is tree against tree, so an untracked file shows like any other.
    - **round 1**: the range is the whole diff of the work.

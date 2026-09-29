@@ -186,7 +186,7 @@ When the answers arrive — from the prompt, in *incorporation* mode —:
 - incorporate **every** decision in `0. problem.md` with surgical modifications, propagating coherence (if a decision overturns a statement repeated elsewhere, correct **all** occurrences);
 - **close every decision in `0.5. strategic-study.md`**, where it is written: the chosen option, the date, and where it was incorporated. The discarded options stay — they serve whoever one day asks why it was not done otherwise.
 - if an answer is a free directive, it prevails over the options: apply it;
-- if the user declares an assumption "true, trust me" → do not touch the document; carry it into memory **only through the flow the memory contract authorises** — `.daiku/domain/memory-contract.md`, or `{instructions_file}` if that file does not exist — which is also what gives it the right form and the line in `{memory.index}`; in the summary declare the assumption as a point not to raise again;
+- if the user declares an assumption "true, trust me" → do not touch the document; carry it into memory **only through the flow the memory contract authorises** — `.daiku/domain/memory-contract.md`, or `{hosts.<host>.instructions_file}` if that file does not exist — which is also what gives it the right form and the line in `{memory.index}`; in the summary declare the assumption as a point not to raise again;
 - close with a summary by number: decision → what you wrote and where, plus the list of what possibly remains open.
 
 If after incorporation the problem is now well defined (no strategic decision remains open), move directly to **in-depth study mode** in the same run.

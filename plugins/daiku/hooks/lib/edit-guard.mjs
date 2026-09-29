@@ -19,11 +19,14 @@
  *    fault wearing a protection's looks. An agent editing a wrong *existing* file
  *    stays allowed: accepted coarse trade-off, declared here and in the footer.
  *  - **creating a new file is allowed only inside the create-seats**: `{code_root}`,
- *    the single-file seats (`{instructions_file}`, `{tech_doc}`, `{changelog}`,
+ *    the single-file seats (`{hosts.<host>.instructions_file}` — both hosts and their
+ *    parked `<name>.old` copies — `{tech_doc}`, `{changelog}`,
  *    `{version.file}` and `{version.replicated_in}`), the folder seats
  *    (`{memory.root}`, `{paths.studies}`, `{paths.lib_notes}`, `{paths.review_state}`,
  *    `.daiku/policies/`, `.daiku/domain/`, `{temp_dir}` plus the OS temp directory),
- *    and `.daiku/project.json` itself (which `init` writes). Everywhere else —
+ *    and the `.daiku/` JSON files themselves — `project.json`, `environment.json` and
+ *    the machine's `environment.local.json`, which `init` writes and the user creates.
+ *    Everywhere else —
  *    including outside the repository — a create is denied, except inside
  *    `{paths.review_state}`, `{temp_dir}` or the OS temp dir when those sit outside
  *    the repo.
@@ -33,7 +36,7 @@
  * policies. This guard owns the coarse perimeter; placement stays with `arch`.
  *
  * All seats resolve from **existing keys** — `.daiku/project.json` for the project
- * seats, `environment.json` for `{temp_dir}` — plus the `.daiku/` conventions and the
+ * seats, `environment.json` for `{temp_dir}` and `{hosts.<host>.instructions_file}` — plus the `.daiku/` conventions and the
  * OS temp dir as a system fact. No new key was added, so no `contract` bump. A
  * missing key contributes nothing (§6 of `contracts/project-contract.md`, applied to
  * a hook): edits still pass, creates there are denied, nothing is invented.
@@ -191,7 +194,14 @@ function dirSeats(ctx, root, sysTmp) {
 
 /** Single-file seats: creating exactly this file is legitimate. */
 function fileSeats(ctx) {
-  const seats = [ctx.instructionsFile, ctx.techDoc, ctx.changelog, ctx.projectJson];
+  const seats = [
+    ...(ctx.instructionsFiles || []),
+    ctx.techDoc,
+    ctx.changelog,
+    ctx.projectJson,
+    ctx.environmentFile,
+    ctx.environmentLocalFile,
+  ];
   for (const f of ctx.versionFiles || []) seats.push(f);
   return seats.filter(Boolean);
 }
@@ -319,7 +329,7 @@ function fakeEnv(existing = [], sysTmp = 'C:/Temp') {
 
 const CTX_FULL = fakeContext({
   codeRoot: `${R}/src`,
-  instructionsFile: `${R}/CLAUDE.md`,
+  instructionsFiles: [`${R}/CLAUDE.md`, `${R}/CLAUDE.old`, `${R}/AGENTS.md`, `${R}/AGENTS.old`],
   memoryRoot: `${R}/docs/memory`,
   techDoc: `${R}/docs/tech.md`,
   changelog: `${R}/CHANGELOG.md`,
@@ -330,6 +340,8 @@ const CTX_FULL = fakeContext({
   policiesDir: `${R}/.daiku/policies`,
   domainDir: `${R}/.daiku/domain`,
   projectJson: `${R}/.daiku/project.json`,
+  environmentFile: `${R}/.daiku/environment.json`,
+  environmentLocalFile: `${R}/.daiku/environment.local.json`,
   tempDir: 'C:/dev/tmp',
 });
 
@@ -353,10 +365,17 @@ const CASES = [
   // --- create-restrict: new files only in seats -------------------------------
   ['create under code_root', 'src/server/api/orders.ts', R, 'allow', '', CTX_FULL, []],
   ['create instructions file', 'CLAUDE.md', R, 'allow', '', CTX_FULL, []],
+  ["create the other host's instructions file", 'AGENTS.md', R, 'allow', '', CTX_FULL, []],
+  ['create the parked previous copy', 'CLAUDE.old', R, 'allow', '', CTX_FULL, []],
+  ['create a parked copy of an undeclared host', 'CODEX.old', R, 'deny', 'is denied', CTX_FULL, []],
   ['create memory file', 'docs/memory/auth.md', R, 'allow', '', CTX_FULL, []],
   ['create study file', 'docs/studies/x.md', R, 'allow', '', CTX_FULL, []],
   ['create lib note', 'docs/lib-notes/pg.md', R, 'allow', '', CTX_FULL, []],
   ['create policy', '.daiku/policies/backend.md', R, 'allow', '', CTX_FULL, []],
+  ['create project.json', '.daiku/project.json', R, 'allow', '', CTX_FULL, []],
+  ['create environment.json', '.daiku/environment.json', R, 'allow', '', CTX_FULL, []],
+  ['create the machine local environment', '.daiku/environment.local.json', R, 'allow', '', CTX_FULL, []],
+  ['create a stray file under .daiku/', '.daiku/scratch.json', R, 'deny', 'is denied', CTX_FULL, []],
   ['create stray note at root', 'notes-random.md', R, 'deny', 'is denied', CTX_FULL, []],
   ['create stray doc outside seats', 'docs/scratch.md', R, 'deny', 'is denied', CTX_FULL, []],
   ['create outside the repo', 'C:/other/x.md', R, 'deny', 'outside the repository', CTX_FULL, []],
@@ -440,35 +459,61 @@ function selfCheck() {
   });
   const proj = {
     'C:/dev/project/.daiku/project.json': JSON.stringify({
-      contract: 2,
+      contract: 1,
       code_root: 'src/',
-      instructions_file: 'CLAUDE.md',
       memory: { root: 'docs/memory', index: 'MEMORY.md' },
       paths: { studies: 'docs/studies', lib_notes: 'docs/lib-notes' },
     }),
-    'C:/dev/project/.daiku/environment.json': JSON.stringify({ contract: 2, temp_dir: 'tmp-env' }),
+    'C:/dev/project/.daiku/environment.json': JSON.stringify({
+      contract: 1,
+      temp_dir: 'tmp-env',
+      hosts: {
+        claude: { instructions_file: 'CLAUDE.md' },
+        codex: { instructions_file: 'AGENTS.md' },
+      },
+    }),
   };
   ran += 1;
-  const read = loadContext('C:/dev/project', readers(proj), { home: 'C:/Users/me' });
+  const read = loadContext('C:/dev/project', readers(proj));
   if (!read.present || !isInside('C:/dev/project/src/a.ts', read.codeRoot)) {
     failed.push('code seat does not resolve from project.json');
   }
   ran += 1;
   if (!read.tempDir || !isInside('C:/dev/project/tmp-env/x', read.tempDir)) {
-    failed.push('tempDir does not resolve from the project override first');
+    failed.push('tempDir does not resolve from the project environment file');
   }
   ran += 1;
-  const homeOnly = loadContext('C:/dev/project', readers({
-    'C:/dev/project/.daiku/project.json': '{"contract": 2}',
-    'C:/Users/me/.daiku/environment.json': JSON.stringify({ contract: 2, temp_dir: 'C:/Users/me/tmp-home' }),
-  }), { home: 'C:/Users/me' });
-  if (!homeOnly.tempDir || !isInside('C:/Users/me/tmp-home/x', homeOnly.tempDir)) {
-    failed.push('tempDir does not fall back to the home file');
+  // Both hosts' files, each with its parked copy: the seat is per host, and `init`
+  // parks the file it found before writing the new one.
+  const seats = (read.instructionsFiles || []).map((p) => resolve(p).replace(/\\/g, '/'));
+  for (const wanted of [
+    'C:/dev/project/CLAUDE.md',
+    'C:/dev/project/CLAUDE.old',
+    'C:/dev/project/AGENTS.md',
+    'C:/dev/project/AGENTS.old',
+  ]) {
+    ran += 1;
+    if (!seats.includes(wanted)) failed.push(`instructions seat does not resolve: ${wanted}`);
+  }
+  ran += 1;
+  const localWins = loadContext('C:/dev/project', readers({
+    ...proj,
+    'C:/dev/project/.daiku/environment.local.json': JSON.stringify({ contract: 1, temp_dir: 'tmp-local' }),
+  }));
+  if (!localWins.tempDir || !isInside('C:/dev/project/tmp-local/x', localWins.tempDir)) {
+    failed.push('tempDir does not let the machine local file win whole');
+  }
+  ran += 1;
+  const noTemp = loadContext('C:/dev/project', readers({
+    'C:/dev/project/.daiku/project.json': '{"contract": 1}',
+  }));
+  if (noTemp.tempDir !== null) {
+    failed.push('an absent temp_dir must read as null, not as a guessed path');
   }
   ran += 1;
   const brokenJson = loadContext('C:/dev/project', readers({
-    'C:/dev/project/.daiku/project.json': '{"contract": 2,}',
-  }), { home: 'C:/Users/me' });
+    'C:/dev/project/.daiku/project.json': '{"contract": 1,}',
+  }));
   if (brokenJson.present !== false) failed.push('broken JSON must read as absent');
 
   process.stdout.write(

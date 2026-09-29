@@ -65,7 +65,9 @@ codex plugin add daiku@daiku
 Only requirement: **Node.js**. Without it the five protection hooks stay silent, and the method's
 evaluator does not start at all: its verdict binds, so a delivery stops there instead of degrading.
 
-**2. Open it on your project** — once per project, from the repository root:
+**2. Open it on your project** — once per project, from the project's **technical root**: the
+folder carrying your instructions file, which is the repository root unless the code lives in a
+subfolder — then run it from there.
 
 ```text
 /init
@@ -82,7 +84,9 @@ worth reading carefully.
 ```
 
 It realigns protections and roles inside the project (on Claude Code no need: the
-package carries them and they update alone). Then approve changed hooks with `/hooks` inside Codex.
+package carries them and they update alone). Its last block is the one you cannot omit — four
+gestures Codex asks of you: approve the changed hooks, trust the project, declare the pool, reopen
+the session. Skip it and Codex reports a clean install while no guardrail is active.
 
 ## Skills are behaviour only
 
@@ -91,7 +95,10 @@ never *with which values*. Anything project-specific lives one level down:
 
 - `.daiku/project.json` — paths and literal commands (gates, fixers, coverage, changelog,
   version file). A gate is the exact line plus its cwd, never a description.
-- `~/.daiku/environment.json` — host, model per role, backends, machine paths.
+- `.daiku/environment.json` — host, model per role, backends, machine paths. A machine may
+  replace it whole with its own `.daiku/environment.local.json`. Nothing under `.daiku/` is
+  versioned: the folder is the machine's working state, `.gitignore` keeps it out of the history,
+  and a clone runs `/init` again.
 - `.daiku/domain/` — local judgement: conventions and criteria that need a *why*.
 - `.daiku/policies/` — architectural rules valid only for certain paths.
 - memory and `tech_doc` — facts not deducible from the code: decisions and whys.
@@ -198,3 +205,5 @@ Daiku stands on the shoulders of public work that explored the same space before
 - [everything-claude-code](https://github.com/WorldFlowAI/everything-claude-code) — a Claude Code toolkit of agents, commands, skills, rules and hooks, studied in a full repo confrontation: E2E journeys with flaky quarantine, security defect classes, the dead-code discipline, policy-guided source hygiene, open-ledger reminders and the host-manifest bench all came from there.
 - [superpowers](https://github.com/obra/superpowers) — an agentic skills framework and software development methodology.
 - [ponytail](https://github.com/DietrichGebert/ponytail) — a minimal-code ruleset pushing agents toward the smallest change that works.
+- [agent-skills](https://github.com/addyosmani/agent-skills) — a production-grade pack of twenty-five skills spanning the whole DEFINE→SHIP cycle across a dozen agents, studied in a full repo confrontation: a deterministic eval of skill routing with a ratchet, a linter over the skill corpus and a diff-scoped floor-guard against a lowered quality bar are its most transferable mechanisms.
+- [andrej-karpathy-skills](https://github.com/multica-ai/andrej-karpathy-skills) — a single-file behavioural preamble for coding agents, from Andrej Karpathy's notes on how LLM agents write code: studied in a full repo confrontation, its four conduct rules turned out to be, in substance, the ones Daiku already carries in the project instructions file.

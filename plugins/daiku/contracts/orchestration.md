@@ -9,8 +9,8 @@ which role runs on each step. The skills in `skills/` describe *what* is to be d
 Every key in braces in this contract resolves on the project parameter files, never from
 memory and never by assumption: the rules are in §5 of `contracts/project-contract.md`, which also
 says in which language to write and what to do when a key is missing. The keys this file
-consumes are those of §7 below, and they live in `environment.json` — in `~/.daiku/`, except for
-the project override that §8 of that contract declares.
+consumes are those of §7 below, and they live in `environment.json`, under `.daiku/` — whose
+local override, and the order in which the two are looked up, are §8 of that contract.
 
 It applies to every host declared in `{hosts}`. A skill's canonical contract always lives in
 `skills/<name>/SKILL.md`; a host that requires a pointer to invoke it finds it under
@@ -242,7 +242,7 @@ Rules valid on every host:
    the copy that the subagents read.
 
    **Resolved parameters, and state by path.** The keys in braces the child's contract cites and
-   that you already hold resolved — `{code_root}`, `{instructions_file}`, `{memory.index}`,
+   that you already hold resolved — `{code_root}`, `{hosts.<host>.instructions_file}`, `{memory.index}`,
    `{language.chat}`, an area's commands — go in the prompt as `key = value` lines, copied from the
    parameter file and never paraphrased. The child uses a passed value as it is and resolves on §5
    of `contracts/project-contract.md` only a key it was not passed: a value resolved once is not
@@ -358,9 +358,9 @@ Steps touching the same working tree (build, test, commit, computing a base-ref)
 
 ## 7. The `environment.json` keys
 
-The file lives in `~/.daiku/environment.json`, one per owner and per machine; a project may
-override it wholesale with its own `.daiku/environment.json`. The two locations, and the order in which
-they are looked up, are §8 of `contracts/project-contract.md`.
+The file lives in `.daiku/environment.json` in the technical root; a machine may override it
+wholesale with `.daiku/environment.local.json`. The two seats, and the order in which they are
+looked up, are §8 of `contracts/project-contract.md`.
 
 | Key | Purpose |
 |---|---|
@@ -372,6 +372,7 @@ they are looked up, are §8 of `contracts/project-contract.md`.
 | `hosts.<host>.models.<role>` | the model of the role the skill declared for that step (§2) |
 | `hosts.<host>.models.judge` | model the judge role runs on for that host |
 | `hosts.<host>.models.worker` | model the worker role runs on for that host |
+| `hosts.<host>.instructions_file` | instructions file that host loads on every session — `CLAUDE.md` on Claude Code, `AGENTS.md` on Codex — at the technical root; a project carrying both declares both, and each skill reads the one of the host it runs on |
 | `hosts.<host>.skill_pointers` | folder where the host looks for the invocable skills' pointers; absent if the host requires none |
 | `hosts.<host>.enforcement` | `harness` if the host enforces with `deny`, hooks and a tool's **absence** — never a Bash command's content; `prose` if the invariants hold only because they are written (§4) |
 | `hosts.<host>.settings_file` | file where the host keeps the session's environment configuration |
@@ -381,11 +382,9 @@ they are looked up, are §8 of `contracts/project-contract.md`.
 | `backends.<backend>.base_url` | URL the environment points at when that backend is active; absent on the host's native backend |
 | `backends.<backend>.sequential_fanout` | declared only on backends whose fan-out must be sequentialised (§5) |
 | `backends.<backend>.caveats` | that backend's warnings to report in summary, one per line; absent if there are none |
-| `temp_dir` | machine's temporary directory, for artefacts that must not end up in the repository |
+| `temp_dir` | machine's temporary directory, for artefacts that must not end up in the repository; **absent is the normal case** — the readers fall back on the operating system's, which is the right answer on every machine |
 
 No key is mandatory besides `contract`: for everything else the degradation of
 §6 of `contracts/project-contract.md` applies.
 
-**The current form is 2.** A file at form `1` declares the judge's model under
-`hosts.<host>.models.giudice`, a key no skill reads: the `judge` role's model would not resolve,
-without anything saying so. It is exactly the case the number exists to make recognisable.
+**The current form is 1.**

@@ -912,7 +912,7 @@ function runBench(root) {
     const policies = join(dir, 'policies');
     mkdirSync(policies, { recursive: true });
     put(join(dir, 'project.json'), JSON.stringify({
-      contract: 2,
+      contract: 1,
       areas: {
         web: { paths: ['src/'], gate: { cwd: '.', run: ['true'] }, check_fast: { cwd: '.', run: ['true <FILES>'] } },
         docs: { paths: ['docs/'], gate: { cwd: '.', run: ['true'] } },

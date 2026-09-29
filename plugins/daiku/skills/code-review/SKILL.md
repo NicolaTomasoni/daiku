@@ -42,7 +42,7 @@ Only correctness defects **introduced by the diff**, and only high-signal ones:
 
 - code that does not compile or does not parse: syntax or type errors, missing imports, unresolved references;
 - logic producing the wrong result **regardless of inputs**;
-- violations of `{instructions_file}` for which you can cite the exact rule;
+- violations of `{hosts.<host>.instructions_file}` for which you can cite the exact rule;
 - real defects on scenarios **reachable** from the flow, even if they manifest only on specific inputs or states: name in `description` the scenario reaching them. They are exactly the ones the cycle classifies as severe. Only unreachable scenarios stay out.
 - security defects the diff introduces, on scenarios reachable from the flow: hardcoded secrets or credentials; injection from unvalidated input (SQL, command, LDAP, XPath, template); unescaped output reaching a page, a mail or a document (XSS); missing or bypassable authentication and authorisation checks; weak cryptography or predictable randomness for security purposes; user-controlled paths reaching the network or the filesystem (SSRF, path traversal); sensitive data written to logs or error messages. Name the reachable scenario in `description`; `change` carries the fix.
 
@@ -54,7 +54,7 @@ The reading perimeter is fixed by the **effort** the caller passes you, not by t
 - code that looks like a bug but is correct;
 - nitpicks a senior would not report;
 - what a linter catches (do not launch the linter to verify);
-- generic quality not required by `{instructions_file}`;
+- generic quality not required by `{hosts.<host>.instructions_file}`;
 - violations silenced in the code (e.g. a linter ignore comment);
 - environment configuration and its values (hosts, keys, toggles, thresholds): values, not method — unless the diff hardcodes a secret, which is a finding of § *What you look for*.
 

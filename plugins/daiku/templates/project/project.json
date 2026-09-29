@@ -3,7 +3,6 @@
   "name": "<project name, as it appears in text addressed to the user>",
   "repo_root": "<absolute path of the repository root, with forward slashes>",
   "code_root": "<root of the application code, with a trailing slash>",
-  "instructions_file": "<instructions file the host loads at every session>",
   "language": {
     "chat": "<language of chat, summaries and the documents the method produces>",
     "commit": "<language of commit messages and changelog entries>"
@@ -18,7 +17,7 @@
   "paths": {
     "studies": "<folder holding the working folders, one per problem>",
     "lib_notes": "<folder of the notes on a technology>",
-    "review_state": "<folder of the review ledger, outside version control>"
+    "review_state": "<folder of the review ledger, inside the tree but outside version control>"
   },
   "memory": {
     "root": "<root of the persistent memory corpus>",

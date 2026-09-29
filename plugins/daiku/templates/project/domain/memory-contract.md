@@ -9,8 +9,9 @@ the instructions file declares, and says so in its report.
 
 ## Where the corpus lives, and who writes it
 
-`memory.root` in `.daiku/project.json` — a folder **inside the repository**, versioned alongside
-the code. It has two writers, and they never coordinate:
+`memory.root` in `.daiku/project.json` — a folder **inside the repository**, and **never under
+`.daiku/`**, which carries no group into a commit; it is versioned alongside the code. It has two
+writers, and they never coordinate:
 
 - **the host**, whenever it notices mid-session something worth keeping;
 - **`/update-memory`**, which runs on every commit and aligns the corpus to the diff.

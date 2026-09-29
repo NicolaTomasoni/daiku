@@ -19,7 +19,7 @@ between the two passes, is in §8.
 | Level | Location | Contains | Ships with the skill |
 |---|---|---|---|
 | **Method** | `skills/**` | what is to be done, in what order, with which constraints | yes, byte-identical |
-| **Environment** | `~/.daiku/environment.json` | host, model per role, backend, machine paths | yes: one per owner, not copied into projects (§8) |
+| **Environment** | `.daiku/environment.json` | host, model per role, backend, machine paths | yes, as a **skeleton to be overwritten** (§8) |
 | **Parameters** | `.daiku/project.json` | paths, literal commands, file names, existing areas | no, one per project |
 | **Domain** | `.daiku/domain/*.md` | lists, taxonomies, local judgement criteria | yes, as a **skeleton to be overwritten** (§5.4) |
 
@@ -34,7 +34,7 @@ of a file, the presence or absence of an area. Three prohibitions, in order of s
   way parameterisation can worsen the result instead of preserving it.
 - **No key requiring an explanation to be understood.** If using a value requires knowing
   *why* it exists, that is domain knowledge and belongs in `.daiku/domain/`.
-- **No duplication of `CLAUDE.md` or `.daiku/policies/`.** The JSON holds no invariants,
+- **No duplication of `{hosts.<host>.instructions_file}` or `.daiku/policies/`.** The JSON holds no invariants,
   layer boundaries, style conventions or architectural criteria: they already have their home, and the
   skill reads them from there. It is how this file stops being a parameter file.
 
@@ -62,7 +62,6 @@ of a file, the presence or absence of an area. Three prohibitions, in order of s
 | `name` | project name, as it appears in user-facing texts |
 | `repo_root` | absolute path of the repository root |
 | `code_root` | application code root, with trailing slash; it is also the Git pathspec delimiting every code perimeter |
-| `instructions_file` | instructions file the host loads on every session and carrying the project's invariants; it is `CLAUDE.md` on one host, `AGENTS.md` on another |
 | `language.chat` | language of what is written for a person: chat replies, summaries, reports and the method's documents (§5.5) |
 | `language.commit` | language of what ends up in the repository's history: commit messages and changelog entries (§5.5) |
 | `tech_doc` | path of the technical document a human reader opens to learn what the system does and why; absent if the project has none |
@@ -72,8 +71,8 @@ of a file, the presence or absence of an area. Three prohibitions, in order of s
 | `version.replicated_in` | other files carrying the same version and updated together; empty or absent list if there are none |
 | `paths.studies` | folder hosting the work folders, one per problem, with the method's numbered files inside |
 | `paths.lib_notes` | folder of notes on a studied technology |
-| `paths.review_state` | folder where a review's ledger lives; it sits **outside** the versioned repository but is stable, not session-scoped |
-| `memory.root` | root of the persistent memory corpus, inside the repository; on Claude Code it is also the folder where the host writes its own memory (§4.2) |
+| `paths.review_state` | folder where a review's ledger lives; it stands **inside the repository tree**, under the technical root, but **outside version control** — a `.gitignore` line excludes it — and it is **never under `.daiku/`**, which `init` regenerates per machine and no group of `commit` carries (§8); stable, not session-scoped |
+| `memory.root` | root of the persistent memory corpus, inside the repository and **never under `.daiku/`** (§8); on Claude Code it is also the folder where the host writes its own memory (§4.2) |
 | `memory.index` | index file of the corpus, the one read first |
 | `commit.memory_prefix` | prefix of the memory-and-documentation commit message |
 | `worktree.pool` | delivery-worktree pool directory, relative to the technical root |
@@ -90,30 +89,38 @@ of a file, the presence or absence of an area. Three prohibitions, in order of s
 
 No key is mandatory besides `contract`: everything else is subject to §6.
 
+**Which file covers a path outside version control.** `paths.review_state` and `memory.root`
+stand outside what Git versions, and "is this path ignored?" is answered by the repository's own
+`.gitignore`: a **machine's global excludes file** (`core.excludesFile`) covers a path for that
+machine alone and is never the project's line, so a clone carries none of it.
+`git check-ignore -v <path>` names the file that covers it, and that is what `init` and `review`
+run before declaring a path covered or uncovered.
+
 ### 4.1 The key a hook reads
 
 The command guard reads one key, `worktree.pool`, which lights its worktree branch: a declared pool
 *is* the declaration that those directories belong to Daiku. The guard's other five branches
-(junction, `.daiku/`, `--no-verify`, push, agent attribution) deny on every project that opened Daiku,
-with no switch. `hooks/README.md` carries the full branch table.
+(junction, `.daiku/`, `--no-verify`, push, agent attribution) deny on
+every project that opened Daiku, with no switch. `hooks/README.md` carries the full branch table.
 
 ### 4.2 The key the host reads
 
 `memory.root` has a second reader that is neither a skill nor a hook: it is **the host**, on Claude
 Code, where the memory the agent writes for itself is a folder of files and its location is declared
 with `autoMemoryDirectory`. `init` points it there, and from that moment that corpus has two writers
-— the host on its own initiative, `update-memory` on every commit's diff — and a single location, versioned
-together with the code. It is why this folder sits inside the repository and not beside it: a
-memory that does not enter a diff is re-read by nobody, corrected by nobody and dies with the
-laptop it was born on.
+— the host on its own initiative, `update-memory` on every commit's diff — and a single location,
+**versioned together with the code**. It is why this folder sits inside the repository and not
+beside it: a memory that does not enter a diff is re-read by nobody, corrected by nobody and dies
+with the laptop it was born on. And it is why the folder never stands under `.daiku/`, which is the
+machine's working state and carries no group into a commit: the memory group would be denied by the
+guard, and the corpus would be written where nobody can freeze it.
 
 Two consequences, and neither is an installation detail.
 
-**The pointing is not committed.** Claude Code ignores `autoMemoryDirectory` when it arrives from a
-versioned `.claude/settings.json` — a cloned repository must not be able to divert where the agent
-writes — so that key lives in `.claude/settings.local.json`, which belongs to that machine and
-stays out of the repository. The memory files are committed; the line telling the host to
-write them there is not. On a clone the memory falls back to the default **silently**, and no skill notices:
+**The pointing is not committed.** That key lives in `.claude/settings.local.json`, which belongs
+to that machine and stays out of the repository: a versioned file carrying it would declare one
+machine's seat as the project's, and the error would show only in silence, on whoever clones. The
+memory files are committed; the line telling the host to write them there is not. On a clone the memory falls back to the default **silently**, and no skill notices:
 `{memory.root}` is opened by path and found where it was. The remedy is to re-run `/init`
 on that machine.
 
@@ -268,9 +275,19 @@ the only one that imposes no choice nobody made.
 
 The two keys of §5.5 say how the skills speak to a person and what they leave in the repository's
 history. **They do not say in which language Daiku is made.** The skeletons the package carries —
-`project.json`, the instructions file, the `domain/` and `policies/` READMEs, the domain
-defaults — arrive in English, and `init` compiles them in English whatever the user
+`project.json`, `environment.json`, the instructions file, the `domain/` and `policies/` READMEs,
+the domain defaults — arrive in English, and `init` compiles them in English whatever the user
 answered.
+
+**One exception, and it concerns the instructions file alone.** Where that file already exists and
+is written in another language, **its language is the file's**: `init` keeps the project's own
+lines verbatim in the language they were written in, and carries the skeleton's prose and section
+titles into that same language. Everything else it deposits stays English either way, and a file
+created from scratch is English.
+
+The exception is the rule below applied rather than stated: what must not exist is a
+**half-translated file**. English headings over the project's own prose is two languages in one
+file — worse than either, and it doubles what a session loads on every opening.
 
 The corpus lives in a single language because the skills re-read it on every run, because a
 project changes hands, and because a half-translated instructions file is the worst of both forms.
@@ -316,17 +333,16 @@ a skill that gets it wrong. It is the intended direction.
   every project, then the skills reading the new form. Until that round is closed,
   updating the skills is no longer atomic — which is why the number exists.
 
-The current form is **2**.
+The current form is **1**.
 
 ## 8. Project or environment — in which of the two files
 
-There are two parameter files, and a single question separates them: **does that value change from
-project to project, or does it stay the same across all of one owner's projects?**
+There are two parameter files, and a single question separates them: **does that value describe the
+codebase in front of you, or the machine, the host and the owner running it?**
 
-- **Varies per project** → `.daiku/project.json`, with the §4 keys.
-- **Constant for the owner, varying at most per machine or per host** → `~/.daiku/environment.json`,
-  with the keys declared in `contracts/orchestration.md` §7, which is their main
-  consumer.
+- **Describes the project** → `.daiku/project.json`, with the §4 keys.
+- **Describes the machine, the host or the owner** → `.daiku/environment.json`, with the keys
+  declared in `contracts/orchestration.md` §7, which is their main consumer.
 
 The two files have the **same form**: leading `contract` (§7), literal values and never
 descriptions (§2), same brace-citation convention inside a code span (§5.2), same
@@ -336,25 +352,45 @@ changes, and the file the skill opens.
 
 ### Where each of the two lives
 
-`project.json` lives **in the project**, under `.daiku/`: it belongs to the project, is versioned with it, and whoever
-clones it finds it already written.
+Both live **in the project**, under `.daiku/`, and the folder is the machine's **working state**:
+`init` regenerates it per machine, `.gitignore` excludes it, and **nothing under it enters the
+shared history** — no group of `commit` carries it, and the command guard denies the gesture as
+well. A clone starts without parameters and runs `/init` again: what a clone must find is the code,
+not the card somebody filled in for it.
 
-`environment.json` does not: it lives in `~/.daiku/environment.json`, **one per owner and per machine**. If
-it lived inside every project it would be exactly the duplication this section condemns —
-changing a model's alias would mean repeating the same identical change in N projects —
-and on top of that it would carry into a repository's shared history values belonging to the machine
-of whoever works there.
+**Nothing of Daiku stands outside the repository.** A folder in the user home is a seat no clone
+carries, no `git diff` shows and no reviewer corrects — and it is the first thing a guardrail
+loses, because a perimeter drawn around the working roots does not reach it. What a project needs
+to run is inside the project. Inside the project and out of its history are two different things,
+and `.daiku/` is the first: the parameters are regenerable, and one machine's answer is not the
+next machine's.
 
-**A project may still override it.** Whoever reads it looks in this order:
+**The one thing that never stands there is `{memory.root}`.** The corpus is the project's and is
+read by a human in a diff — §4.2 says why — and a memory written under an ignored folder can never
+be committed: the memory group of `commit` would be denied by the guard. The seat `init` proposes
+therefore stands at the technical root, outside `.daiku/`.
 
-1. `.daiku/environment.json` in the technical root, if it exists;
-2. `~/.daiku/environment.json`.
+`environment.json` standing in every project has a price, and it is declared: the same change to a
+model's alias is repeated in N projects — and, the folder carrying no group, once per machine that
+clones one of them. It is paid knowingly, because the two alternatives are worse — the home folder
+above, or a value that lives nowhere and is guessed every time.
 
-**The first one found wins, and is taken whole**: the two are not merged. A project override is
-a complete file, not a list of differences — so what is read stays a single file, and nobody
-must reconstruct in their head which of the two locations each key comes from. It serves where an owner's home
-is missing (a CI, a container) or where one precise project runs on a backend the
-others do not use.
+**A machine may still override it, and the override stands beside it.** Whoever reads it looks in
+this order:
+
+1. `.daiku/environment.local.json` in the technical root, if it exists;
+2. `.daiku/environment.json`.
+
+**The first one found wins, and is taken whole**: the two are not merged. The local file is a
+complete alternative file, not a list of differences — so what is read stays a single file, and
+nobody must reconstruct in their head which of the two each key comes from. It is the same pair as
+`settings.json` and `settings.local.json` (§4.2), under the same rule: neither file, and nothing
+else under `.daiku/`, enters the shared history. `.gitignore` excludes the folder; `init` declares
+the line rather than writing it, because it never touches `.gitignore`.
+
+**One thing the file does not carry: `temp_dir`.** An absent `temp_dir` is not a degradation, it is
+the normal case: the readers fall back on the operating system's temporary directory, which is the
+correct answer on every machine anyway. Write it only where that fallback is wrong.
 
 **When a value seems to belong in both**, whoever would update it at the next
 change decides: if putting it in `project.json` forced repeating the same identical change in

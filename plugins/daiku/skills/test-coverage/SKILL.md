@@ -6,7 +6,7 @@ user-invocable: false
 
 Skill for **creating unit tests** with a two-phase flow: first it measures and shows coverage by macro-category, **stops** and waits for you to choose what to work on and with which % target; then it writes the tests respecting the project conventions and quality rules.
 
-The architectural rules stay those of the project — the invariants of `{instructions_file}` and the area rules in `.daiku/policies/`: this skill does not replace them, it also applies them to tests.
+The architectural rules stay those of the project — the invariants of `{hosts.<host>.instructions_file}` and the area rules in `.daiku/policies/`: this skill does not replace them, it also applies them to tests.
 
 > **Parameters.** Every key in braces in this contract resolves on the project parameter files, never from memory and never by assumption: the rules are in §5 of `contracts/project-contract.md`, which also says **in which language to write** and what to do when a key is missing.
 
@@ -88,13 +88,13 @@ Immediately translate the choice into a verifiable goal, e.g. `coverage of <cate
 The concrete conventions — test framework and style, double form, comment language, where fixtures live, how the filesystem is isolated — stand in `.daiku/domain/test-strategy.md` and are mirrored to the letter: they are what the sibling files already follow. Above them still hold:
 
 - **Explicit doubles, not opaque mocks**: for each external system inject a double, in the form the sibling uses, **scripting the outputs** and **recording the calls**. An explicit double says what happens readably; a generic mock hides the contract.
-- **Filesystem only from the access point** the project rules declare — `{instructions_file}` and `.daiku/policies/` — pointed at a temporary directory; if they declare none, still isolate in temporary. **Never** real data, sandboxes or artefacts: no test writes in the user repo nor in the application runtime directories.
+- **Filesystem only from the access point** the project rules declare — `{hosts.<host>.instructions_file}` and `.daiku/policies/` — pointed at a temporary directory; if they declare none, still isolate in temporary. **Never** real data, sandboxes or artefacts: no test writes in the user repo nor in the application runtime directories.
 - **Golden fixtures** for parsing/mapping: real output of the external tool saved as a fixture file and read by the test. If a new fixture is needed, capture realistic output and put it where the others live, not giant inline strings.
 - **Total determinism**: no network, no real subprocesses, no real time or random. If the code already accepts the instant as an argument, pass it instead of mocking the clock.
 
 ### 3.3 Per-layer strategy
 
-Each layer is tested from its architectural strength point: which it is — what to assert, what to fake, what must never be truly called, and which layers return most per written line — `.daiku/domain/test-strategy.md` says. Do not deduce it from the folder name: the boundaries between layers are those of `{instructions_file}` and of the area rules in `.daiku/policies/`.
+Each layer is tested from its architectural strength point: which it is — what to assert, what to fake, what must never be truly called, and which layers return most per written line — `.daiku/domain/test-strategy.md` says. Do not deduce it from the folder name: the boundaries between layers are those of `{hosts.<host>.instructions_file}` and of the area rules in `.daiku/policies/`.
 
 ### 3.4 What makes a test "quality" here
 

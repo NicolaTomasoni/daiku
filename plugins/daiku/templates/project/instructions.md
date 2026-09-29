@@ -49,6 +49,7 @@ precision, but use judgement on trivial tasks.
   architecturally correct path.
 - Turn the task into verifiable criteria; for bugs and validations prefer a test that reproduces
   the behaviour.
+- For multi-step work expose a short plan with a check per step; trivial changes need none.
 - Report failing tests, skipped checks and limits you hit faithfully.
 
 ## Hard rules
@@ -74,8 +75,8 @@ what portable skills cite, because numbering differs from project to project.
    over-engineering against today's need. Building it once costs less than building it twice.
    Where the future scale is not known, the minimalism of *Behaviour* stands.
 
-<additional invariants observed in this repository, numbered on from here, each with its own
-stable slug>
+<additional invariants observed in this repository, each with its own stable slug, and numbered on
+from the project's last one where the project already numbers them>
 
 ### Git and commits
 

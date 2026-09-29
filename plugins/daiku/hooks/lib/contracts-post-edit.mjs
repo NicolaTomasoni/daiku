@@ -15,9 +15,11 @@
  *     value containing `: ` closes the key halfway (happens in every `description`
  *     with an aside), and one starting with `[` reads as a flow sequence (happens in
  *     every `argument-hint`, which is made of `[folder] [solution]`).
- *  2. **The two `.daiku/` JSON files.** `project.json` and `environment.json` are the only source
- *     of project values: every contract opens them before acting. An unparsable JSON
- *     switches them all off together.
+ *  2. **The `.daiku/` JSON files.** `project.json`, `environment.json` and the machine's
+ *     `environment.local.json` are the only source of project values: every contract
+ *     opens them before acting. An unparsable JSON switches them all off together — and
+ *     one key a table forbids is reported too, not only the syntax: a `base_url` on a
+ *     host's native backend, which §7 of `contracts/orchestration.md` wants absent.
  *  3. **Area rules in `.daiku/policies/`.** They are selected by their frontmatter
  *     `paths`: without that key the rule exists but is never picked.
  *  4. **The guards themselves.** A rewritten guard is verified with its own test bench,
@@ -92,7 +94,7 @@ export function plan(rel) {
     return [{ label: 'contract frontmatter', type: 'frontmatter', target: rel }];
   }
 
-  if (rel === '.daiku/project.json' || rel === '.daiku/environment.json') {
+  if (rel === '.daiku/project.json' || /^\.daiku\/environment(\.[a-z]+)?\.json$/.test(rel)) {
     return [{ label: `syntax of ${rel.split('/').pop()}`, type: 'json', target: rel }];
   }
 
@@ -194,6 +196,40 @@ export function jsonFindings(text) {
   } catch (error) {
     return [`not valid JSON (${error.message}) — every contract opening it stops here`];
   }
+}
+
+/**
+ * Findings on `environment.json` beyond its syntax. One rule, the one §7 of
+ * `contracts/orchestration.md` states in a table and nothing enforced: a backend that is
+ * some host's native backend carries no `base_url` — the host already points there, so a
+ * URL declared on it silently points the native backend somewhere else.
+ */
+export function environmentFindings(text) {
+  let doc;
+  try {
+    doc = JSON.parse(text);
+  } catch {
+    return []; // the syntax check has its own say, and a file that does not parse is judged there
+  }
+  const hosts = doc && typeof doc === 'object' ? doc.hosts : null;
+  const backends = doc && typeof doc === 'object' ? doc.backends : null;
+  if (!hosts || typeof hosts !== 'object' || !backends || typeof backends !== 'object') return [];
+
+  const findings = [];
+  const seen = new Set();
+  for (const [host, entry] of Object.entries(hosts)) {
+    const native = entry && typeof entry === 'object' ? entry.native_backend : null;
+    if (typeof native !== 'string' || seen.has(native)) continue;
+    const declared = backends[native];
+    if (!declared || typeof declared !== 'object') continue;
+    if (!Object.prototype.hasOwnProperty.call(declared, 'base_url')) continue;
+    seen.add(native);
+    findings.push(
+      `\`backends.${native}.base_url\` is declared and \`${native}\` is a host's native backend ` +
+        `(\`${host}\`): §7 of \`contracts/orchestration.md\` wants the key absent there. Drop it.`
+    );
+  }
+  return findings;
 }
 
 /**
@@ -333,7 +369,12 @@ function runStep(step, root, env) {
       ? frontmatterFindings(text)
       : step.type === 'policy'
         ? policyFindings(text)
-        : jsonFindings(text);
+        : [
+            ...jsonFindings(text),
+            ...(/^\.daiku\/environment(\.[a-z]+)?\.json$/.test(step.target)
+              ? environmentFindings(text)
+              : []),
+          ];
 
   if (!findings.length) return [];
   return [`**${step.label}** — ${findings.length} findings:`, ...findings.map((f) => `- ${f}`)];
@@ -395,6 +436,10 @@ function selfCheck() {
   check('a package SKILL.md triggers frontmatter', typesOf('plugins/daiku/skills/review/SKILL.md') === 'frontmatter');
   check('project.json triggers the JSON check', typesOf('.daiku/project.json') === 'json');
   check('environment.json triggers the JSON check', typesOf('.daiku/environment.json') === 'json');
+  check(
+    'environment.local.json triggers the JSON check',
+    typesOf('.daiku/environment.local.json') === 'json'
+  );
   check('an area rule triggers its frontmatter', typesOf('.daiku/policies/backend.md') === 'policy');
   check('a Codex guard recalls its own bench', typesOf('.codex/hooks/command-guard.mjs') === 'reminder');
   check('a Claude guard recalls its own bench', typesOf('.claude/hooks/command-guard.mjs') === 'reminder');
@@ -455,6 +500,38 @@ function selfCheck() {
   check('a rule with paths has no findings', policyFindings("---\npaths: ['src/**']\n---\n").length === 0);
   check('a rule without paths is a finding', policyFindings('---\nname: x\n---\n').length === 1);
   check('a rule without frontmatter is a finding', policyFindings('# prose\n').length === 1);
+
+  // --- environment.json: the one conditional absence ------------------------
+  const nativeWithUrl = JSON.stringify({
+    hosts: { claude: { native_backend: 'anthropic' } },
+    backends: { anthropic: { base_url: 'https://api.example' }, other: { base_url: 'https://other' } },
+  });
+  check(
+    '`base_url` on a native backend is a finding',
+    environmentFindings(nativeWithUrl).some((r) => r.includes('`backends.anthropic.base_url`'))
+  );
+
+  const nativeWithoutUrl = JSON.stringify({
+    hosts: { claude: { native_backend: 'anthropic' } },
+    backends: { anthropic: {}, other: { base_url: 'https://other' } },
+  });
+  check('the same key on another backend is not', environmentFindings(nativeWithoutUrl).length === 0);
+  check('two hosts on the same native backend report it once', environmentFindings(
+    JSON.stringify({
+      hosts: { claude: { native_backend: 'anthropic' }, other: { native_backend: 'anthropic' } },
+      backends: { anthropic: { base_url: 'https://api.example' } },
+    })
+  ).length === 1);
+  check('a file that does not parse is judged by the syntax check alone', environmentFindings('{').length === 0);
+  check('no backends declared: nothing to say', environmentFindings('{"temp_dir": "/tmp"}').length === 0);
+  check('a backend the hosts do not declare native stays silent', environmentFindings(
+    JSON.stringify({ hosts: { claude: { native_backend: 'anthropic' } }, backends: { other: { base_url: 'https://other' } } })
+  ).length === 0);
+
+  const envText = report('.daiku/environment.json', R, fakeEnv({ [`${R}/.daiku/environment.json`]: nativeWithUrl }));
+  check('the rule reaches the report', !!envText && envText.includes('native backend'));
+  const envLocalText = report('.daiku/environment.local.json', R, fakeEnv({ [`${R}/.daiku/environment.local.json`]: nativeWithUrl }));
+  check('the machine override is judged too', !!envLocalText && envLocalText.includes('native backend'));
 
   // --- source hygiene: policies, patterns and matches -----------------------
   const backendPolicy = '---\npaths:\n  - "src/server/**"\nhygiene:\n  - "console.log"\n  - \'sk-\'\n---\n\n# Backend\n';

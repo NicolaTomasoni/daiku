@@ -40,7 +40,7 @@ Arguments: `$ARGUMENTS`. **The default is the normal case, and it requires no ar
 
 Read §2, §4, §5 and §6 of `contracts/orchestration.md` — how a role resolves its model, how a step is delegated and its block validated, concurrency, what no skill may do — and not the rest: who calls whom is named in this file. Each phase declares its own role and you resolve the model with the rule of its §2 — never from here.
 
-Every child prompt carries the parameters its contract cites **already resolved**, and the state on disk **by path** (§4 point 1 of `contracts/orchestration.md`): `{code_root}`, `{instructions_file}`, `{memory.index}`, `{language.chat}` as `key = value` lines, and the ledger's path instead of its content.
+Every child prompt carries the parameters its contract cites **already resolved**, and the state on disk **by path** (§4 point 1 of `contracts/orchestration.md`): `{code_root}`, `{hosts.<host>.instructions_file}`, `{memory.index}`, `{language.chat}` as `key = value` lines, and the ledger's path instead of its content.
 
 ### When review runs on a worktree
 
@@ -82,7 +82,7 @@ Two parts, and only one is a judgement.
 
 ### Baseline and ledger
 
-The `scope` action did both halves. **The baseline is frozen**: every round uses that `BASE`, not a recomputed `HEAD` — the fixes you apply enter the diff, and a base recomputed each round would move the scope under the feet of the cycle. **The ledger is open**: `{paths.review_state}/review-ledger-<first seven digits of BASE>-<HHMMSS>.json`, under the technical root and outside the versioned repository — if `.gitignore` does not cover it, say so in closing instead of writing inside it anyway — but **stable**, not at session expiry. It is the file making later rounds cheap. The name carries baseline and time because several reviews can run in the same session and a resumed delivery restarts from the same commit.
+The `scope` action did both halves. **The baseline is frozen**: every round uses that `BASE`, not a recomputed `HEAD` — the fixes you apply enter the diff, and a base recomputed each round would move the scope under the feet of the cycle. **The ledger is open**: `{paths.review_state}/review-ledger-<first seven digits of BASE>-<HHMMSS>.json`, under the technical root and outside the versioned repository — if no `.gitignore` of the repository covers it, say so in closing instead of writing inside it anyway: `git check-ignore -v` names the file that covers it, and a machine's global excludes file is not the project's (§4 of `contracts/project-contract.md`) — but **stable**, not at session expiry. It is the file making later rounds cheap. The name carries baseline and time because several reviews can run in the same session and a resumed delivery restarts from the same commit.
 
 **The ledger declares whose it is.** Next to `base` stands `item`: the **work folder**, normalised with `/` slashes, when the input was `4. review-notes.md` or the folder containing it; `null` on a review launched by hand on a naked base-ref. The baseline **alone does not identify a review**: two different reviews can share the same `base`.
 
@@ -294,7 +294,7 @@ When it runs, delegate it to a **judge** subagent fully reading `skills/commit/S
 
 `independence` is `lost` **only** if the round-1 fan-out did not run on independent subagents: delegation was unavailable and you evaluated the disciplines inline, in the same context. A sequential fan-out on a backend imposing it stays `intact` — contexts are still fresh and blind to each other (§4 of `contracts/orchestration.md`, *Depth and degradation*). It is what distinguishes, downstream, a review from a single pass.
 
-3. **Memory and documentation are neither your task nor the user task.** The "only `{code_root}`" constraint stays: `{instructions_file}`, `.daiku/policies/`, `{memory.root}` and `{tech_doc}` belong to `update-memory`, which `/commit` **always** delegates. So **never close with a reminder to the user** like "remember to realign the technical document": what comes out of here with green gate is decided, and a decided work carries its own artefacts itself — a line turning it over to whoever reads only makes it likely not to happen.
+3. **Memory and documentation are neither your task nor the user task.** The "only `{code_root}`" constraint stays: `{hosts.<host>.instructions_file}`, `.daiku/policies/`, `{memory.root}` and `{tech_doc}` belong to `update-memory`, which `/commit` **always** delegates. So **never close with a reminder to the user** like "remember to realign the technical document": what comes out of here with green gate is decided, and a decided work carries its own artefacts itself — a line turning it over to whoever reads only makes it likely not to happen.
 
    If in the cycle you saw a **behaviour change visible to the user** (new flow, action, default or semantics a human reader should now read differently), name it in the report as a **fact on the diff**: it serves whoever reads to understand what is being delivered. It is not a code finding and it **does not** enter `to_confirm`.
 

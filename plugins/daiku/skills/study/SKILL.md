@@ -47,7 +47,7 @@ Goal: make the file clear, ordered, without duplicates — without losing a sing
 
 ## Operational constraints
 
-- Respect the runtime constraints that `{instructions_file}` declares, and in any case: **no whole-filesystem searches**; every file access stays inside the project and the `{paths.lib_notes}/` folder.
+- Respect the runtime constraints that `{hosts.<host>.instructions_file}` declares, and in any case: **no whole-filesystem searches**; every file access stays inside the project and the `{paths.lib_notes}/` folder.
 - **Do not commit** and do not push: the command produces only the received file, reordered.
 - Work autonomously end to end on the received file, without asking for confirmation.
 

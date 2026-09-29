@@ -144,7 +144,7 @@ Your caller opens the file you give: if it is still raw they see it by themselve
 
 ## Operational constraints
 
-- Respect the runtime constraints that `{instructions_file}` declares, and in any case: **no whole-filesystem searches**; every file access stays inside the project and the `{paths.lib_notes}/` folder.
+- Respect the runtime constraints that `{hosts.<host>.instructions_file}` declares, and in any case: **no whole-filesystem searches**; every file access stays inside the project and the `{paths.lib_notes}/` folder.
 - **Do not commit** and do not push: the command produces only the file (collected by you, reordered by `study`).
 - Work autonomously end to end without asking for confirmation, except when `$ARGUMENTS` is empty.
 

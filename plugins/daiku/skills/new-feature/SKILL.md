@@ -187,7 +187,7 @@ A step has failed when the block does not come back, comes back incomplete or co
 
 ## Operational constraints
 
-- Respect the runtime constraints `{instructions_file}` declares, and in any case: **no searches on the whole filesystem**.
+- Respect the runtime constraints `{hosts.<host>.instructions_file}` declares, and in any case: **no searches on the whole filesystem**.
 - **Do not commit** and do not push: commit belongs to delivery, which runs on its own worktree.
 - Outside the problem folder one writes only in `{paths.lib_notes}/`, and `research` (collection) and `study` only via `research` (reordering) write there.
 - **Always use paths relative to the repo root** for file links.

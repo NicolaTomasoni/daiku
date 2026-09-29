@@ -224,12 +224,12 @@ function selfCheck() {
   // --- the location read from a real project.json ----------------------------------
   const withSite = {
     exists: (p) => String(p).replace(/\\/g, '/').endsWith('.daiku/project.json'),
-    read: () => '{"contract": 2, "paths": {"studies": "documentation/works"}}',
+    read: () => '{"contract": 1, "paths": {"studies": "documentation/works"}}',
   };
   check('paths.studies comes from the JSON', loadContext(R, withSite).studies[0] === 'documentation/works');
   const withoutSite = {
     exists: (p) => String(p).replace(/\\/g, '/').endsWith('.daiku/project.json'),
-    read: () => '{"contract": 2}',
+    read: () => '{"contract": 1}',
   };
   check('paths.studies missing: no location', loadContext(R, withoutSite).studies.length === 0);
 

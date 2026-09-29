@@ -107,7 +107,7 @@ The file is written **addressing the executor** (second person, operational impe
 ## Constraints and perimeter        ← guardrails for autonomous execution
 - Surgical changes: touch only what the solution needs. No
   refactoring or improvements out of scope.
-- Respect the project's architectural rules (`{instructions_file}` and
+- Respect the project's architectural rules (`{hosts.<host>.instructions_file}` and
   `.daiku/policies/`).
 - Target paths: <the `{code_root}`-relative paths and areas the solution will touch,
   derived from the policies `paths`/`layers` before opening code>
