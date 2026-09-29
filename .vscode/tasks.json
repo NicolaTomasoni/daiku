@@ -15,7 +15,10 @@
         "deepseek"
       ],
       "problemMatcher": [],
-      "presentation": { "reveal": "always", "panel": "shared" }
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
     },
     {
       "label": "LLM: switch to Muse Spark 1.3",
@@ -31,7 +34,10 @@
         "muse"
       ],
       "problemMatcher": [],
-      "presentation": { "reveal": "always", "panel": "shared" }
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
     },
     {
       "label": "LLM: switch to GLM 5.3",
@@ -47,7 +53,136 @@
         "glm"
       ],
       "problemMatcher": [],
-      "presentation": { "reveal": "always", "panel": "shared" }
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "LLM: switch to Kimi K3 (OpenCode Go)",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${env:USERPROFILE}\\.claude\\llm-switch.ps1",
+        "-Mode",
+        "go",
+        "-GoModel",
+        "kimi-k3"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "LLM: switch to MiniMax M3 (OpenCode Go)",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${env:USERPROFILE}\\.claude\\llm-switch.ps1",
+        "-Mode",
+        "go",
+        "-GoModel",
+        "minimax-m3"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "LLM: switch to Qwen3.8 Max (OpenCode Go)",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${env:USERPROFILE}\\.claude\\llm-switch.ps1",
+        "-Mode",
+        "go",
+        "-GoModel",
+        "qwen3.8-max"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "LLM: switch to Qwen3.8 Flash (OpenCode Go)",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${env:USERPROFILE}\\.claude\\llm-switch.ps1",
+        "-Mode",
+        "go",
+        "-GoModel",
+        "qwen3.8-flash"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "LLM: switch to DeepSeek V4.1 Flash (OpenCode Go)",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${env:USERPROFILE}\\.claude\\llm-switch.ps1",
+        "-Mode",
+        "go",
+        "-GoModel",
+        "deepseek-v4.1-flash"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "LLM: switch to DeepSeek V4 Pro (OpenCode Go)",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${env:USERPROFILE}\\.claude\\llm-switch.ps1",
+        "-Mode",
+        "go",
+        "-GoModel",
+        "deepseek-v4-pro"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
     },
     {
       "label": "LLM: switch to Claude Code",
@@ -63,7 +198,10 @@
         "claude"
       ],
       "problemMatcher": [],
-      "presentation": { "reveal": "always", "panel": "shared" }
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
     },
     {
       "label": "LLM: status",
@@ -79,7 +217,10 @@
         "status"
       ],
       "problemMatcher": [],
-      "presentation": { "reveal": "always", "panel": "shared" }
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
     },
     {
       "label": "Nuovo progetto: crea e pubblica su GitLab",
@@ -93,10 +234,13 @@
         "${workspaceFolder}/.docs/scripts/new-project.ps1"
       ],
       "problemMatcher": [],
-      "presentation": { "reveal": "always", "panel": "shared" }
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
     },
     {
-      "label": "Daiku: pubblica dist",
+      "label": "Daiku: gestisci guardie (amministratore)",
       "type": "shell",
       "command": "powershell",
       "args": [
@@ -104,68 +248,13 @@
         "-ExecutionPolicy",
         "Bypass",
         "-File",
-        "${workspaceFolder}/.docs/tools/pubblica-dist.ps1",
-        "-Messaggio",
-        "${input:messaggioDist}"
+        "C:\\Program Files\\ClaudeCode\\tools\\gestisci-guardie.ps1"
       ],
       "problemMatcher": [],
-      "presentation": { "reveal": "always", "panel": "shared" }
-    },
-    {
-      "label": "Daiku: rilascio major",
-      "type": "shell",
-      "command": "node",
-      "args": [
-        "${workspaceFolder}/.docs/tools/rilascia-daiku.mjs",
-        "--bump",
-        "major",
-        "--notes",
-        "${input:noteRilascio}"
-      ],
-      "problemMatcher": [],
-      "presentation": { "reveal": "always", "panel": "shared" }
-    },
-    {
-      "label": "Daiku: rilascio minor",
-      "type": "shell",
-      "command": "node",
-      "args": [
-        "${workspaceFolder}/.docs/tools/rilascia-daiku.mjs",
-        "--bump",
-        "minor",
-        "--notes",
-        "${input:noteRilascio}"
-      ],
-      "problemMatcher": [],
-      "presentation": { "reveal": "always", "panel": "shared" }
-    },
-    {
-      "label": "Daiku: rilascio patch",
-      "type": "shell",
-      "command": "node",
-      "args": [
-        "${workspaceFolder}/.docs/tools/rilascia-daiku.mjs",
-        "--bump",
-        "patch",
-        "--notes",
-        "${input:noteRilascio}"
-      ],
-      "problemMatcher": [],
-      "presentation": { "reveal": "always", "panel": "shared" }
-    }
-  ],
-  "inputs": [
-    {
-      "id": "noteRilascio",
-      "type": "promptString",
-      "description": "Note di rilascio in inglese: 'auto' le fa scrivere all'AI dal diff, testo per forzarle, vuoto per la sola versione",
-      "default": "auto"
-    },
-    {
-      "id": "messaggioDist",
-      "type": "promptString",
-      "description": "Messaggio del commit nel repo di distribuzione",
-      "default": "aggiorna dist da plugins/"
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
     }
   ]
 }
