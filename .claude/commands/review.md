@@ -210,9 +210,10 @@ Nel prompt di ciascun finder metti **solo ciò che cambia**, già risolto:
   dall'applicatore nel giro precedente;
 - il livello di **effort** del ciclo;
 - dal giro 2: **applicati** e **scartati** dei giri precedenti, letti dal ledger;
-- `CLAUDE.md`, e — se il diff tocca contratti, manifest o collocazione di file —
-  `.docs/RICOGNIZIONE.md`: sono le due fonti contro cui si misura una violazione, e un finder che
-  non le ha citerà regole che non esistono;
+- `CLAUDE.md`, e — se il diff tocca contratti, manifest o collocazione di file — le memorie sui due
+  host (`.docs/memory/cosa-i-due-host-accettano.md`, `.docs/memory/cosa-codex-fa-allinstallazione.md`):
+  sono le due fonti contro cui si misura una violazione, e un finder che non le ha citerà regole che
+  non esistono;
 - il vincolo di **sola lettura**, ripetuto: l'agent `finder` non ha Edit né Write, ma ha `Bash`, e
   lì il confine non è imposto da nessuno.
 

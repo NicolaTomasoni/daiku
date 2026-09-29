@@ -31,10 +31,9 @@ prove già eseguite — o, peggio, chiude da sola una decisione che è dell'owne
 1. **`.docs/PUNTI-APERTI.md`** — le decisioni ancora da prendere. Se il tuo problema è uno di
    quei punti, **dillo in apertura del documento e non deciderlo**: il tuo mestiere è istruirlo,
    non chiuderlo.
-2. **`.docs/RICOGNIZIONE.md`** — il documento di riferimento: cosa offrono i due host, cosa
-   manca, cosa si butta e perché ogni file sta dove sta, con le prove eseguite sui validatori
-   reali e la data. Un gap che il capitolo 5 ha già censito non è una tua scoperta; una prova che
-   il capitolo 8 ha già eseguito non si rifà a memoria.
+2. **Le memorie sui due host** — cosa offrono, cosa accettano e rifiutano, come si installa e si
+   aggiorna un pacchetto, con le prove eseguite sui validatori reali e la data. Un fatto che hanno
+   già stabilito non è una tua scoperta; una prova che hanno già eseguito non si rifà a memoria.
 3. **`CLAUDE.md`** — gli invarianti di chi sviluppa Daiku: la divisione fra prodotto e sviluppo, la
    regola di pubblicazione, come si verifica il pacchetto.
 4. **`.docs/memory/MEMORY.md`** e le memorie che l'area del problema tocca. Se il chiamante te
@@ -96,8 +95,7 @@ Lancia **subagent worker in parallelo** (ruolo e modo di lanciarli da `.claude/o
   a decidere cosa esce, non più il `.gitignore`;
 - **il codice eseguibile**: `hooks/lib/*.mjs`, `architect/*.mjs`, i loro `--self-check` e cosa
   contano davvero;
-- **il confronto con il documento di riferimento**: cosa `RICOGNIZIONE.md` dichiara sull'area, e se
-  regge ancora.
+- **il confronto con le memorie sui due host**: cosa dichiarano sull'area, e se regge ancora.
 
 Per ogni agente, specifica: i file da leggere (path concreti), l'obiettivo dell'analisi, il vincolo
 di **sola lettura** ripetuto nel prompt, e la consegna (una sezione markdown pronta da incollare).
@@ -120,7 +118,7 @@ Crea `.docs/nuovi-sviluppi/<slug>/0. problem.md` con questa struttura:
 > Descrizione del problema, senza soluzione. Indagine sul pacchetto.
 >
 > **Area.** <una delle cinque>
-> **Contesto.** <riferimento a RICOGNIZIONE.md / PUNTI-APERTI.md / memorie pertinenti>
+> **Contesto.** <riferimento a PUNTI-APERTI.md / memorie pertinenti>
 > **Stato:** analisi al <data>.
 
 ---
@@ -183,7 +181,7 @@ zero:
   nella modalità *Da `studia-problema`* che quel file dichiara;
 - l'**input risolto**: la cartella `.docs/nuovi-sviluppi/<slug>/` e, dentro, il `0. problem.md`
   che hai appena scritto — è già il documento base, non c'è nulla da concatenare;
-- i **documenti di riferimento**: `CLAUDE.md`, `.docs/RICOGNIZIONE.md` e, se il problema tocca
+- i **documenti di riferimento**: `CLAUDE.md`, le memorie sui due host e, se il problema tocca
   una decisione già in lista, `.docs/PUNTI-APERTI.md`;
 - la **memoria pertinente**: `.docs/memory/MEMORY.md` e i **path** delle memorie che hai aperto,
   con l'istruzione di aprirle prima di lavorare. Sono le stesse che hanno delimitato la tua

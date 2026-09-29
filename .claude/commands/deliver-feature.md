@@ -91,8 +91,9 @@ Subagent che produce il brief. Nel prompt:
 
 - leggi per intero `.claude/commands/blueprint.md` e segui quel contratto alla lettera;
 - cartella `<cartella>` (contiene `1. decision-doc.md`), soluzione scelta `<verbatim>`;
-- `CLAUDE.md` e `.docs/RICOGNIZIONE.md`, da caricare prima di costruire il piano: gli invarianti
-  di sviluppo e i fatti verificati sui due host sono ciò contro cui un task regge o non regge;
+- `CLAUDE.md` e le memorie sui due host (i path li dà il punto qui sotto), da caricare prima di
+  costruire il piano: gli invarianti di sviluppo e i fatti verificati sui due host sono ciò contro
+  cui un task regge o non regge;
 - `.docs/memory/MEMORY.md` e i path delle memorie che il perimetro tocca, da aprire prima di
   decidere (§4.1 di `.claude/orchestration.md`);
 - se `<cartella>/2. blueprint.md` esiste già, **non** rieseguire il brief: restituisci `ok: true`

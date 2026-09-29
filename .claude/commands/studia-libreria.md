@@ -48,9 +48,9 @@ Quando una pagina web e un validatore su disco dicono cose diverse, **ha ragione
 e il disallineamento si scrive negli appunti: è successo già una volta, con la sezione «Field
 guide» che mostrava `"hooks": "./hooks.json"` in un manifest che il validatore rifiuta.
 
-Prima di aprire il browser, guarda se `.docs/RICOGNIZIONE.md` risponde già: il capitolo 3
-raccoglie prove eseguite sui validatori reali di entrambi gli host, con la data. Se risponde e ti
-sembra superato, verificalo — non riscriverlo a memoria.
+Prima di aprire il browser, guarda se le memorie sui due host rispondono già: raccolgono prove
+eseguite sui validatori reali di entrambi gli host, con la data. Se rispondono e ti sembrano
+superate, verificale — non riscriverle a memoria.
 
 ## Obiettivo del contenuto
 
@@ -169,6 +169,6 @@ verbatim.
 
 Al termine, riferisci in sintesi: il path del file prodotto, la versione e la data di ciò che hai
 studiato, i blocchi coperti, e i punti rimasti `[da verificare]` — sono i posti dove non fidarti
-prima di controllare. Se hai trovato un fatto che smentisce `.docs/RICOGNIZIONE.md`, **dillo
-esplicitamente**: quel documento è la base su cui poggiano le decisioni del pacchetto, e una sua
-riga superata vale più di dieci righe di appunti nuovi.
+prima di controllare. Se hai trovato un fatto che smentisce le memorie sui due host, **dillo
+esplicitamente**: sono la base su cui poggiano le decisioni del pacchetto, e una loro riga superata
+vale più di dieci righe di appunti nuovi.

@@ -3,6 +3,14 @@ In questo repository sviluppiamo **Daiku**, un'estensione per Claude Code e Code
 ## Comportamento
 Non chiedere mai permessi o conferme: lavora sempre in bypass, in autonomia, senza fermarti ad approvare.
 
+Più sessioni lavorano in questo repository in parallelo, e il working tree cambia sotto di te: file
+che appaiono, numeri che si spostano, righe di `git status` che spariscono. **Non segnalarlo mai.**
+L'owner lo sa già, non è il tuo lavoro, e una diagnosi che nessuno ha chiesto allunga ogni risposta
+di rumore. L'unica eccezione è il caso grave — una modifica altrui che contraddice ciò che stai
+facendo, che ti fa perdere un aggiornamento o che rompe il pacchetto — e anche lì basta una riga,
+senza indagare. Vale anche per una memoria o un documento che trovi invecchiato rispetto al lavoro
+in corso: è il delta che un `update-memory` chiuderà al commit, non una correzione da fare adesso.
+
 ## Questo file non fa parte dei prodotti
 
 `CLAUDE.md` è come si **sviluppa** Daiku, non è Daiku. Lo stesso vale per
@@ -18,7 +26,7 @@ cartella, che è **per intero** la radice del repository pubblico del prodotto: 
 | `plugins/.claude-plugin/marketplace.json` | vetrina Claude Code, punta a `./daiku` |
 | `plugins/.agents/plugins/marketplace.json` | vetrina Codex, stessa destinazione |
 | `plugins/daiku/` | il pacchetto Daiku — ciò che gli host installano |
-| `.docs/` | ricognizione, punti aperti, memoria, esempi, appunti, strumenti |
+| `.docs/` | memoria, confronti, esempi, strumenti di sviluppo |
 | `CLAUDE.md`, `.claude/`, `.vscode/`, `.gitignore`, `.gitattributes` | sviluppo, obbligati in radice dagli host e da git |
 
 Prima di aggiungere un file, decidi se serve a chi *usa* Daiku o a chi lo *costruisce*. Se
@@ -47,8 +55,8 @@ diventa mai pubblico, e la sua storia non si ripulisce: porta `CLAUDE.md` nel co
 La **pubblicazione** è il repository `NicolaTomasoni/daiku` su GitHub, che non è un branch
 di questo né un fork: è un albero generato, inglese sempre e tutto — riceve il contenuto di
 `plugins/`, che è inglese per intero, e non gli si aggiunge niente in pubblicazione. A ogni rilascio lo script
-`.docs/tools/pubblica-dist.ps1` copia lì il contenuto di `plugins/` e committa
-(task VS Code «Daiku: pubblica dist»). Là dentro non si lavora mai; il suo checkout
+`.docs/tools/pubblica-dist.ps1`, chiamato dal comando `/rilascia-daiku`, copia lì il contenuto di
+`plugins/` e committa. Là dentro non si lavora mai; il suo checkout
 di servizio sta in `C:\dev\daiku-workspace\daiku`.
 
 | Prodotto | Repository di pubblicazione | Cosa si copia |
@@ -88,9 +96,10 @@ Non segnalarli a meno che non ti venda chiesto.
 
 ## Dove sta ogni cosa
 
-`.docs/RICOGNIZIONE.md` è il documento di riferimento di Daiku: dice cosa offrono i due host,
-cosa manca, cosa è stato buttato e perché ogni file sta dove sta — con le prove eseguite sui
-validatori reali di Claude Code e Codex.
+I fatti verificati sui due host — cosa offrono, cosa accettano e rifiutano, come si installa e si
+aggiorna un pacchetto — vivono in `.docs/memory/`, nelle memorie sugli host, con la prova eseguita
+e la data. Sono la base su cui poggiano le decisioni del pacchetto: si leggono prima di toccare
+manifest, vetrine, frontmatter di una skill o collocazione di un file.
 
 Le skill di `.claude/commands/` sono scritte sulla forma di Daiku: leggono `plugins/daiku/`, lanciano i suoi validatori, rispettano le
 sue liste di copia.
@@ -105,8 +114,7 @@ nuova va riscritto, altrimenti la memoria torna silenziosamente sotto `~/.claude
 Un refactor non finisce quando il pacchetto è coerente: finisce quando **anche la memoria lo è**.
 Ogni volta che rinomini una cartella o una skill, sposti un file, cambi cosa entra in git o
 ribalti una scelta di struttura, riapri `.docs/memory/` e correggi ogni memoria che parla di
-ciò che hai toccato — insieme a `RICOGNIZIONE.md` e `PUNTI-APERTI.md`, che invecchiano allo stesso
-modo.
+ciò che hai toccato — insieme a `PUNTI-APERTI.md`, che invecchia allo stesso modo.
 
 Non è pignoleria. Una memoria è una cosa che un agente legge **credendoci**, senza riaprire il
 file per verificarla: finché dice `contratti/` quando la cartella è `contracts/`, o «il gruppo
@@ -119,6 +127,13 @@ Tre cose da guardare ogni volta: i **nomi** (path, cartelle, skill, ruoli di sub
 scelta può restare giusta dopo che la ragione per cui fu presa è evaporata, e allora si riscrive
 il perché invece di lasciare in piedi quello vecchio. Se una correzione cambia il metodo e non
 solo un fatto, fermati e chiedi invece di deciderla da solo.
+
+## Il `contract` non si incrementa da solo
+
+Finché Daiku non è in produzione non esiste niente con cui essere incompatibili: una modifica
+alla forma dei due contratti (`project-contract.md`, `orchestration.md`) è una modifica alla
+forma corrente, non una forma nuova. Il numero si incrementa solo su decisione dell'owner, mai
+in autonomia — e lo scheletro viaggia sempre alla pari del documento che lo dichiara.
 
 ## Togliere vuol dire togliere
 
@@ -171,10 +186,11 @@ vale come le altre due:
 node plugins/daiku/hooks/self-check.mjs
 ```
 
-Lancia insieme i sei banchi di prova — i quattro hook, il valutatore deterministico
-(`architect/architect.mjs`) e lo strumento del ledger della review (`architect/ledger.mjs`) —
-stampa il totale contato ed esce `1` al primo caso rosso. Il banco del ledger lavora con Git vero
-su repository usa e getta nella cartella temporanea di sistema: vuole `git` nel `PATH`.
+Lancia insieme i banchi di prova di tutto ciò che il pacchetto esegue — i moduli di
+`plugins/daiku/hooks/lib/`, il banco dei manifest degli host e i due programmi di
+`plugins/daiku/architect/` — stampa il totale contato ed esce `1` al primo caso rosso: quanti
+banchi e quanti controlli siano lo dice la sua uscita, non questa riga. Il banco del ledger lavora
+con Git vero su repository usa e getta nella cartella temporanea di sistema: vuole `git` nel `PATH`.
 
 ```bash
 node .docs/tools/check-topology.mjs plugins/daiku
@@ -183,3 +199,21 @@ node .docs/tools/check-topology.mjs plugins/daiku
 Verifica la topologia del corpus (nodi su disco = righe di tabella, handoff fra chiamanti,
 rimandi di sezione), con totale contato ed uscita `1` al primo caso rosso. Si lancia a mano
 prima di un rilascio, accanto al self-check.
+
+Nessuno dei tre guarda le **due vetrine** del repository pubblicato — la sola parte che il
+repository studiato ha rotto senza accorgersene, e l'unica il cui errore non si vede in locale ma
+solo in chi installa:
+
+```bash
+claude plugin validate plugins
+node .docs/tools/check-marketplace.mjs plugins
+```
+
+La prima è il validatore dell'host sulla vetrina di Claude Code, e becca esattamente quel guasto:
+un manifest che il parser rifiuta. La seconda verifica entrambe le vetrine — che siano leggibili,
+che ogni voce risolva a una cartella vera dentro l'albero e che le due portino allo stesso
+pacchetto — e ha il suo banco, da lanciare accanto al controllo:
+
+```bash
+node .docs/tools/check-marketplace.mjs --self-check
+```

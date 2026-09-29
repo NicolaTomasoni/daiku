@@ -1,5 +1,5 @@
 ---
-description: 'Passo obbligatorio prima del commit: allinea CLAUDE.md, .docs/memory/, RICOGNIZIONE.md e PUNTI-APERTI.md al diff di plugins/daiku appena consegnato. Delta minimo, nessuna scrittura se il diff non la giustifica, nessun commit.'
+description: 'Passo obbligatorio prima del commit: allinea CLAUDE.md, .docs/memory/ e PUNTI-APERTI.md al diff di plugins/daiku appena consegnato. Delta minimo, nessuna scrittura se il diff non la giustifica, nessun commit.'
 argument-hint: '[commit o range, opzionale — default: il diff in index]'
 ---
 
@@ -55,15 +55,14 @@ Argomenti: `$ARGUMENTS` — `[commit o range]`.
 
 ## La divisione della documentazione di questo progetto
 
-Quattro sedi, quattro mestieri. Un fatto che sta nella sede sbagliata non è un fatto scritto male:
+Tre sedi, tre mestieri. Un fatto che sta nella sede sbagliata non è un fatto scritto male:
 è un fatto che nessuno troverà quando servirà.
 
 | Sede | Cosa ci va | Cosa NON ci va |
 |---|---|---|
 | **`CLAUDE.md`** | gli invarianti di chi sviluppa Daiku: la divisione fra prodotto e sviluppo, la regola di pubblicazione, come si verifica il pacchetto, come ci si comporta | dettaglio su un singolo contratto, fatti che cambiano con una consegna |
-| **`.docs/RICOGNIZIONE.md`** | i **fatti verificati**: cosa offrono i due host, cosa manca, cosa si è buttato e perché ogni file sta dove sta — ciascuno con la prova eseguita e la data | intenzioni, decisioni ancora aperte, opinioni |
 | **`.docs/PUNTI-APERTI.md`** | le decisioni che l'owner non ha ancora preso | tutto ciò che è già deciso: quando una voce si chiude, esce da qui |
-| **`.docs/memory/`** | i fatti **non deducibili** dal repository: perché una cosa è come è, cosa l'owner ha deciso, cosa si è già provato e non funziona | ciò che si legge dal codice, dai contratti o da `git log` |
+| **`.docs/memory/`** | i fatti **non deducibili** dal repository — perché una cosa è come è, cosa l'owner ha deciso, cosa si è già provato e non funziona — **e i fatti verificati sugli host**, con il comando eseguito e la data | ciò che si legge dal codice, dai contratti o da `git log` |
 
 **Il `README.md` del pacchetto non è tuo.** `plugins/README.md` sta sotto il perimetro del
 prodotto: se una consegna cambia ciò che il pacchetto offre, quel file lo aggiorna l'esecutore,
@@ -115,24 +114,24 @@ che vale la pena scrivere, non un errore.
 ## Principi
 
 1. **Nessun aggiornamento non giustificato.** Se il diff non cambia nulla che questi artefatti
-   debbano riflettere, non scrivi nulla. Una consegna che non tocca né invarianti né ricognizione né
-   memoria è l'esito atteso, non un fallimento: molte consegne sono dettaglio puro.
-2. **Cerca prima di creare.** Vale per la memoria (sopra) e per la ricognizione: una sezione che già
-   copre l'argomento si aggiorna, non si affianca.
-3. **Classifica prima di scrivere.** Un fatto verificato con una prova va in `RICOGNIZIONE.md` con
-   la prova e la data; un fatto non deducibile ma non verificabile con un comando va in `memory/`;
-   un invariante che vale in ogni sessione va in `CLAUDE.md`; una decisione che si è chiusa esce da
-   `PUNTI-APERTI.md`. Non degradare mai un fatto con un perché a una riga descrittiva senza il
-   perché: il perché è la sola parte che non si ricostruisce.
+   debbano riflettere, non scrivi nulla. Una consegna che non tocca né invarianti né memoria è
+   l'esito atteso, non un fallimento: molte consegne sono dettaglio puro.
+2. **Cerca prima di creare.** Un fatto che una memoria già copre si aggiorna lì: una memoria che
+   affianca un'altra sullo stesso confine è un fatto che diverge.
+3. **Classifica prima di scrivere.** Un fatto non deducibile dal repository va in `memory/`, con la
+   prova eseguita e la data quando una prova c'è; un invariante che vale in ogni sessione va in
+   `CLAUDE.md`; una decisione che si è chiusa esce da `PUNTI-APERTI.md`. Non degradare mai un fatto
+   con un perché a una riga descrittiva senza il perché: il perché è la sola parte che non si
+   ricostruisce.
 4. **Mai revocare da solo un fatto o una decisione dell'owner.** Se il diff sembra contraddire una
    memoria, o non ne consente più la verifica, **non cancellarla, non correggerla, non riassumerla e
    non fonderla alterandone il significato**: lasciala intatta e segnalala in `confirm_with_owner`.
 5. **Delta minimo.** Niente pulizie opportunistiche di memorie non correlate al diff, niente
    riscritture di prosa già corretta, niente campo «aggiornato» solo per certificare una revisione
    senza cambiamento sostanziale.
-6. **La data e la prova non si inventano.** `RICOGNIZIONE.md` è credibile perché ogni suo fatto dice
-   *dove* è stato verificato e *quando*. Se scrivi lì dentro senza aver eseguito la prova, dichiara
-   che è un'assunzione — o esegui la prova, che di solito costa un comando.
+6. **La data e la prova non si inventano.** Una memoria è credibile perché dice *dove* un fatto è
+   stato verificato e *quando*. Se scrivi senza aver eseguito la prova, dichiara che è un'assunzione
+   — o esegui la prova, che di solito costa un comando.
 7. **Non è un audit.** Non stai rivedendo l'intero corpus di memoria: guardi solo cosa il diff di
    *questa* consegna giustifica.
 
@@ -151,15 +150,15 @@ che vale la pena scrivere, non un errore.
    - **`CLAUDE.md`** — solo se è cambiato un invariante valido in ogni sessione: la divisione fra
      prodotto e sviluppo, la regola di pubblicazione, come si verifica il pacchetto, dove sta una
      cosa. Mai dettaglio su un singolo contratto.
-   - **`.docs/RICOGNIZIONE.md`** — se una prova eseguita durante la consegna ha confermato o
-     **smentito** una sua riga. Una riga smentita è la modifica più preziosa che tu possa fare: quel
-     documento è la base su cui poggiano le decisioni del pacchetto. Aggiorna con l'esito verbatim e
-     la data.
    - **`.docs/PUNTI-APERTI.md`** — se la consegna ha chiuso una di quelle decisioni, la voce esce
      con la risposta e la data. Se ne ha aperta una nuova che è dell'owner, entra.
    - **`.docs/memory/`** — segui § *La forma della memoria di questo progetto* alla lettera:
      leggi `MEMORY.md` per intero, individua il file più vicino, classifica, aggiorna o fondi, e
      **aggiorna `MEMORY.md` nella stessa modifica** se crei, rinomini, sposti o fondi una memoria.
+     È qui che va anche una prova eseguita durante la consegna che abbia confermato o **smentito** un
+     fatto sugli host: una riga smentita è la modifica più preziosa che tu possa fare, perché quelle
+     memorie sono la base su cui poggiano le decisioni del pacchetto. Va scritta con l'esito verbatim
+     e la data.
 
 3. **Applica le modifiche minime** ai soli artefatti che il passo 2 ha giustificato. Se nessuno lo
    è, fermati qui: non produrre nulla.

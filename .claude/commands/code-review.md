@@ -54,7 +54,7 @@ modifica, e a divergere per prima è sempre la riga che qualcuno ha aggiunto dop
 
 ### 3. Violazioni degli invarianti dichiarati
 
-Si citano con la regola esatta, e la regola sta in `CLAUDE.md` o in `.docs/RICOGNIZIONE.md`. Le
+Si citano con la regola esatta, e la regola sta in `CLAUDE.md` o nelle memorie sui due host. Le
 ricorrenti:
 
 - **un modello nominato dentro una skill.** Una skill dichiara un **ruolo**; il modello lo risolve
@@ -179,8 +179,9 @@ Vale tutto ciò che sta sopra — le cinque famiglie e la lista dei falsi positi
 2. **Leggi il diff**: `gh pr diff <N>`, più titolo e descrizione della PR, che dicono l'intento
    dell'autore.
 
-3. **Carica gli invarianti**: il `CLAUDE.md` in radice, e `.docs/RICOGNIZIONE.md` se il diff
-   tocca manifest, skill o collocazione di file. Sono le due fonti contro cui si cita una
+3. **Carica gli invarianti**: il `CLAUDE.md` in radice, e le memorie sui due host
+   (`.docs/memory/cosa-i-due-host-accettano.md`, `.docs/memory/cosa-codex-fa-allinstallazione.md`) se
+   il diff tocca manifest, skill o collocazione di file. Sono le due fonti contro cui si cita una
    violazione.
 
 4. **Lancia due worker in parallelo** sullo stesso diff, ciechi fra loro, con lo stesso prompt: le

@@ -95,10 +95,11 @@ Prima di analizzare, apri:
    che stai per porre **è** uno di quei punti, non chiuderla: portala come decisione, con il
    riferimento al numero, e mettila in `punti_aperti_toccati`. Una decisione di quella lista chiusa
    dentro una cartella di lavoro è una decisione presa da te al posto suo.
-2. **`.docs/RICOGNIZIONE.md`** — i fatti verificati sui due host, con le prove eseguite e la
-   data. Un'opzione che quel documento ha già dimostrato impossibile (un manifest Codex che porta
-   `hooks`, una skill di sola consultazione dichiarata nel frontmatter) non è un'opzione: citala
-   come vincolo, non come strada.
+2. **Le memorie sui due host** — `.docs/memory/cosa-i-due-host-accettano.md`,
+   `cosa-codex-fa-allinstallazione.md` e `installazione-e-versionamento.md`: i fatti verificati, con
+   la prova eseguita e la data. Un'opzione che quelle memorie hanno già dimostrato impossibile (un
+   manifest Codex che porta `hooks`, una skill di sola consultazione dichiarata nel frontmatter) non
+   è un'opzione: citala come vincolo, non come strada.
 3. **`CLAUDE.md`** — gli invarianti di sviluppo: la divisione fra prodotto e sviluppo, la regola di
    pubblicazione, come si verifica il pacchetto.
 4. **`.docs/memory/MEMORY.md`** e le memorie che l'area tocca. Se il chiamante non te le passa,
@@ -278,7 +279,8 @@ Oltre ai soliti (complessità, costo, manutenibilità), questo progetto ne ha qu
 decisione che non li nomina non è stata studiata:
 
 - **Regge su entrambi gli host?** Una soluzione che funziona solo su Claude Code è legittima, ma va
-  dichiarata tale, con cosa succede su Codex. `RICOGNIZIONE.md` §3 dice cosa i due accettano.
+  dichiarata tale, con cosa succede su Codex. `.docs/memory/cosa-i-due-host-accettano.md` dice cosa
+  i due accettano.
 - **Sopravvive all'installazione?** Il pacchetto viene **copiato** in una cache il cui path cambia
   a ogni aggiornamento, e nessun host lascia che un pacchetto scriva nel progetto dell'utente. Un
   rimando che è un path assoluto, o un file che il pacchetto dovrebbe depositare fuori di sé, non

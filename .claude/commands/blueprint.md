@@ -46,9 +46,10 @@ questi, perché un brief che non li ha letti produce task che non reggono:
   più il confine e non c'è nessuna lista di ammissione da aggiornare. Un task che crea un file fuori
   da `plugins/` va detto esplicitamente; un task che ne crea uno dentro **pubblica**, e il brief deve
   dirlo.
-- **`.docs/RICOGNIZIONE.md`** — i fatti verificati sui due host. Se il piano tocca manifest,
-  marketplace, frontmatter di una skill o collocazione di un file, il capitolo 3 dice già cosa i
-  validatori accettano e rifiutano.
+- **Le memorie sui due host** — `.docs/memory/cosa-i-due-host-accettano.md`,
+  `cosa-codex-fa-allinstallazione.md`, `installazione-e-versionamento.md`: i fatti verificati. Se il
+  piano tocca manifest, marketplace, frontmatter di una skill o collocazione di un file, dicono già
+  cosa i validatori accettano e rifiutano.
 - **I file che la soluzione tocca**, letti davvero. Il documento di decisione è ad alta astrazione
   e può non riflettere lo stato attuale del pacchetto.
 

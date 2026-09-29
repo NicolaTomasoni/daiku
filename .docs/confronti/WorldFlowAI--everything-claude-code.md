@@ -86,7 +86,7 @@ Primo giro: 13 voci totali dal giudice, 13 nuove, 0 conservate, 0 già in Daiku.
 | MG-001 | Journey E2E con quarantena flaky | capacità | adatta | media | skill test-coverage | plugins/daiku/skills/test-coverage/SKILL.md |
 | MG-002 | Classi di sicurezza in code-review | enforcement | adatta | media | skill code-review | plugins/daiku/skills/code-review/SKILL.md |
 | MG-003 | Dead-code in skill più orchestration più architect.mjs | capacità | adatta | bassa | skill più orchestration più valutatore | plugins/daiku/skills/*, plugins/daiku/contracts/orchestration.md, plugins/daiku/architect/architect.mjs |
-| MG-004 | Mappe codice | orchestrazione | ispira | bassa | ricognizione | .docs/RICOGNIZIONE.md |
+| MG-004 | Mappe codice | orchestrazione | ispira | bassa | memoria | .docs/memory/ |
 | MG-005 | Quando compattare execute più develop-feature | orchestrazione | adatta | bassa | skill execute e develop-feature | plugins/daiku/skills/execute/SKILL.md, plugins/daiku/skills/develop-feature/SKILL.md |
 | MG-006 | Igiene sorgente report-only in contracts-post-edit più policies | enforcement | adatta | media | contracts-post-edit più policies | plugins/daiku/contracts/post-edit.md, plugins/daiku/templates/policies/ |
 | MG-007 | Avviso ledger aperti in stop-advice più review più template Codex | orchestrazione | adatta | bassa | hook stop-advice più skill review più template Codex | plugins/daiku/hooks/stop-advice.mjs, plugins/daiku/skills/review/SKILL.md, plugins/daiku/templates/codex/ |
@@ -131,7 +131,7 @@ Primo giro: 13 voci totali dal giudice, 13 nuove, 0 conservate, 0 già in Daiku.
 
 - Evidenza: comando `update-codemaps` del clone; estratto: rigenerazione delle mappe del codice a corredo del repo.
 - Proposta: ispirare, non adattare: valutare se le mappe servono alla ricognizione.
-- Sedi, col perché: `.docs/RICOGNIZIONE.md` come appunto di ricognizione, perché non è ancora una regola di prodotto ma un'idea da studiare.
+- Sedi, col perché: `.docs/memory/` come appunto da studiare, perché non è ancora una regola di prodotto ma un'idea.
 - su_codex: non applicabile.
 - Costo: basso come studio.
 - Rischio: basso.

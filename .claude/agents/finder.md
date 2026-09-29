@@ -26,5 +26,5 @@ il tool non c'è. Il terzo no, ed è scritto qui perché tu lo tenga.
   lettura, non scriverla: nessun diniego arriverà a fermarti.
 
 In questo repository il perimetro di lettura utile è quasi sempre `plugins/daiku/`, più i
-documenti di contesto che il prompt ti passa (`CLAUDE.md`, `.docs/RICOGNIZIONE.md`,
-`.docs/memory/`). Non andare a cercare fuori dal repository.
+documenti di contesto che il prompt ti passa (`CLAUDE.md`, `.docs/memory/`). Non andare a cercare
+fuori dal repository.

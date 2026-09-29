@@ -38,11 +38,12 @@ Ogni path è **relativo alla radice del repository** (`C:/dev/daiku-workspace/da
 | `.claude/orchestration.md` | questo file |
 | `.claude/commands/<nome>.md` | i contratti di sviluppo; un subagent ne riceve il **path**, non il nome |
 | `.claude/agents/finder.md` | il subagent a toolset ristretto dei finder di `/review` |
-| `.docs/RICOGNIZIONE.md` | il documento di riferimento: i due host, cosa manca, perché ogni file sta dove sta |
 | `.docs/PUNTI-APERTI.md` | le decisioni ancora da prendere |
 | `.docs/memory/` + `.docs/memory/MEMORY.md` | la memoria persistente e il suo indice |
 | `.docs/nuovi-sviluppi/<slug>/` | la cartella di un lavoro, con i file numerati `0.`–`5.` ◦ |
 | `.docs/appunti-lib/<slug>.md` | gli appunti che `studia-libreria` deposita ◦ |
+| `.docs/studia-repository/<slug>/` | i documenti di una corsa di `studia-repository`: `run.json` e i tre documenti ◦ |
+| `.docs/features/<feature>/` | il catalogo delle feature: un contributo per corsa, `<slug-corsa>.md` — cresce da repo diversi e non appartiene a nessuna corsa ◦ |
 | `.docs/consegne.md` | il registro append-only delle consegne di `deliver-feature` ◦ |
 | `.docs/runtime/review/` | i ledger dei giri di `review`, uno per ciclo ◦ |
 | `.docs/esempi/reforgia/` | dominio e politiche di ReforgIA, come esempio compilato |
@@ -128,7 +129,9 @@ rende un passo ripetibile.
    dal repository raggiungono chi parte da zero.
 
    **Documenti di riferimento.** Per un lavoro che tocca la forma del pacchetto, i due host o la
-   collocazione di un file, al prompt si aggiunge `.docs/RICOGNIZIONE.md` — e
+   collocazione di un file, al prompt si aggiungono i path delle memorie che raccolgono i fatti sui
+   due host — `.docs/memory/cosa-i-due-host-accettano.md`, `.docs/memory/cosa-codex-fa-allinstallazione.md`,
+   `.docs/memory/installazione-e-versionamento.md`, `.docs/memory/come-si-provano-i-fatti-sugli-host.md` — e
    `.docs/PUNTI-APERTI.md` quando il lavoro rischia di decidere per conto proprio qualcosa che
    è già in quella lista. Un subagent che non li ha riscopre a sue spese prove già eseguite sui
    validatori reali, e nel caso peggiore chiude da solo una decisione che è dell'owner.
@@ -169,9 +172,21 @@ sono i due nodi che la §5 dichiara orchestranti **anche quando sono figli** —
 finder, applicatore, gate e commit, e `commit`, che delega l'allineamento a `update-memory`. Ogni
 altro passo delegato è una **foglia**.
 
-Gli altri nodi che ri-delegano — `deliver-feature`, `studia-problema`, `studia-libreria`, `studia-repository` — lo fanno
-solo come **entry point**, cioè quando li lanci tu: nessuno li invoca mai come figli, e la §5 lo
-dichiara nella colonna *Chi lo invoca*. `code-review` è il caso che tiene insieme le due cose:
+Gli altri nodi che ri-delegano — `deliver-feature`, `studia-problema`, `studia-libreria`,
+`studia-repository`, `studia-repository-lotto` — lo fanno solo come **entry point**, cioè quando li
+lanci tu: nessuno li invoca mai come figli, e la §5 lo dichiara nella colonna *Chi lo invoca*.
+
+**`studia-repository-lotto` è l'unica eccezione dichiarata, e sta fuori dal grafo.** Non delega un
+passo a un subagent: lancia **una sessione headless di Claude Code per target**, con
+`.docs/tools/studia-repository/lotto.mjs`. È la cosa che questa §4 chiede — un contesto fresco per
+ogni corsa — presa alla radice invece che un livello sotto, per due ragioni. La prima: una corsa di
+`studia-repository` è già essa stessa un orchestratore che delega dieci passi, e tenerla dentro la
+sessione madre la farebbe crescere di una corsa intera per ogni target. La seconda: il presidio di
+macchina nega le righe di comando che contengono un token che comincia per `/` — lo scambia per un
+path assoluto fuori dal perimetro — quindi `/studia-repository …` non si può scrivere da un tool
+Bash, e chi lo lancia deve essere un processo, non un comando. Le corse che ne escono non sono
+figlie nel senso di questa §4: hanno la propria catena di delega, e il lotto le guarda
+dall'esterno — non riceve i loro blocchi di ritorno, legge i loro file e i loro gate. `code-review` è il caso che tiene insieme le due cose:
 ri-delega quando lo lanci su una pull request, **non** ri-delega quando `review` lo invoca come
 finder — ed è il suo file a dichiararlo, non chi lo chiama.
 
@@ -204,7 +219,8 @@ contenuto vive nel file del nodo, che resta l'unico posto in cui si modifica.
 | `update-memory` | owner, `deliver-feature` fase 5b, `commit` § *Allineamento* | diff in index, cartella dell'item dove depositare il proprio artefatto (da `deliver-feature`) | § *Procedura* 7 del suo file | no |
 | `commit` | owner, `review` § *Chiusura* (sempre, salvo `--no-commit`) | perimetro del gruppo codice | § *Procedura* 8 del suo file, in chat | sì — `update-memory` |
 | `deliver-feature` | owner | cartella, soluzione scelta | § *Esito* del suo file | sì — le sue fasi, e `review` come figlio orchestrante |
-| `studia-repository` | owner | target (repo, pacchetto o path locale), `--assi`, `--versione`, `--focus`, `--cwd`, `--deep`, `--shallow-only` facoltativi | i documenti in `.docs/studia-repository/<slug>/` e § *Esito in chat* del suo file | sì — leggera, triage, acquisizione, grafo, lettori, verificatori, confronto, giudice, report; foglie |
+| `studia-repository` | owner, `studia-repository-lotto` | target (repo, pacchetto o path locale), `--assi`, `--versione`, `--focus`, `--cwd`, `--deep`, `--shallow-only` facoltativi | i documenti in `.docs/studia-repository/<slug>/` e § *Esito in chat* del suo file | sì — leggera, triage, acquisizione, grafo, lettori, verificatori, confronto, giudice, report; foglie |
+| `studia-repository-lotto` | owner | elenco dei target (file o riga di comando), le opzioni comuni a tutte le corse, `--parallelo`, `--budget`, `--modello` | le corse sotto `.docs/studia-repository/`, ciascuna con l'esito di `studia-repository`, e § *Esito in chat* del suo file | sì — lancia N corse di `studia-repository` come **sessioni headless**, non come subagent (§4) |
 
 **Un arco nuovo si dichiara qui.** Collegare un nodo a un chiamante che non lo aveva significa
 aggiornare la sua riga — i chiamanti, l'input che ora riceve risolto, il permesso che
