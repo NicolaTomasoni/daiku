@@ -1,0 +1,12 @@
+{
+  "name": "daiku",
+  "owner": { "name": "Nicola Tomasoni" },
+  "description": "The Daiku method: autonomous development contracts for Claude Code and Codex.",
+  "plugins": [
+    {
+      "name": "daiku",
+      "source": "./daiku",
+      "description": "Architecture-first autonomous development method: skill contracts, role orchestration, and parameter contracts."
+    }
+  ]
+}

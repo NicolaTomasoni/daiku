@@ -1,0 +1,5 @@
+interface:
+  display_name: "Study"
+  short_description: "Internal contract, opened by research"
+policy:
+  allow_implicit_invocation: false

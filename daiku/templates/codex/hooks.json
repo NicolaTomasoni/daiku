@@ -1,0 +1,54 @@
+{
+  "description": "Daiku's guardrails for this project on Codex. `/sync-host` writes this file; re-run it to realign the hooks after a package update. The paths below are absolute because a Codex hook gets no variable pointing at the project, so they have to be rewritten if this repository moves.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell|shell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"<REPO_ROOT>/.codex/hooks/command-guard.mjs\"",
+            "timeout": 15,
+            "statusMessage": "Destructive command guard"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit|apply_patch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"<REPO_ROOT>/.codex/hooks/edit-guard.mjs\"",
+            "timeout": 15,
+            "statusMessage": "Coarse edit perimeter"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit|apply_patch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"<REPO_ROOT>/.codex/hooks/contracts-post-edit.mjs\"",
+            "timeout": 30,
+            "statusMessage": "Deterministic corpus checks"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"<REPO_ROOT>/.codex/hooks/session-advice.mjs\"",
+            "timeout": 10,
+            "statusMessage": "Daiku status for this project"
+          }
+        ]
+      }
+    ]
+  }
+}

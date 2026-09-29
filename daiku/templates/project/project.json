@@ -1,0 +1,60 @@
+{
+  "contract": 1,
+  "name": "<project name, as it appears in text addressed to the user>",
+  "repo_root": "<absolute path of the repository root, with forward slashes>",
+  "code_root": "<root of the application code, with a trailing slash>",
+  "language": {
+    "chat": "<language of chat, summaries and the documents the method produces>",
+    "commit": "<language of commit messages and changelog entries>"
+  },
+  "tech_doc": "<path of the technical document, or drop this key>",
+  "changelog": "<path of the log of released versions, or drop this key>",
+  "version": {
+    "file": "<file that carries the canonical version>",
+    "field": "<the exact spot in that file where the version lives>",
+    "replicated_in": []
+  },
+  "paths": {
+    "studies": "<folder holding the working folders, one per problem>",
+    "lib_notes": "<folder of the notes on a technology>",
+    "review_state": "<folder of the review ledger, inside the tree but outside version control>"
+  },
+  "memory": {
+    "root": "<root of the persistent memory corpus>",
+    "index": "<index file of the corpus>"
+  },
+  "commit": {
+    "memory_prefix": "<prefix of the memory and documentation commit message>"
+  },
+  "worktree": {
+    "pool": "<directory of the worktree pool>",
+    "prefix": "<prefix of the pool's worktree names>",
+    "max": 0,
+    "branch_prefix": "<prefix of each worktree's branch>"
+  },
+  "areas": {
+    "<area name>": {
+      "paths": ["<a path belonging to the area, usable as a Git pathspec>"],
+      "gate": {
+        "cwd": "<directory to run from>",
+        "run": ["<the exact line to run, not a description of it>"]
+      },
+      "check_fast": {
+        "cwd": "<directory to run from>",
+        "run": ["<the line that compiles, type-checks or lints <FILES> without writing anything>"]
+      },
+      "lint_fix": {
+        "cwd": "<directory to run from>",
+        "run": ["<the line that applies only the safe lint fixes to <FILES>>"]
+      },
+      "test_targeted": {
+        "cwd": "<directory to run from>",
+        "run": ["<the line that runs only the tests <FILES>>"]
+      },
+      "coverage": {
+        "cwd": "<directory to run from>",
+        "run": ["<the lines that produce the area's coverage measurement>"]
+      }
+    }
+  }
+}

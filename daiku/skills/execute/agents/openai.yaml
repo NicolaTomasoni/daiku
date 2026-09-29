@@ -1,0 +1,5 @@
+interface:
+  display_name: "Execute"
+  short_description: "Internal contract, opened by develop-feature"
+policy:
+  allow_implicit_invocation: false

@@ -1,0 +1,5 @@
+interface:
+  display_name: "Develop Feature"
+  short_description: "Internal contract, opened by new-feature"
+policy:
+  allow_implicit_invocation: false

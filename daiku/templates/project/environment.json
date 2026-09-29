@@ -1,0 +1,37 @@
+{
+  "contract": 1,
+  "default_host": "claude",
+  "hosts": {
+    "claude": {
+      "models": {
+        "judge": "opus",
+        "worker": "sonnet"
+      },
+      "instructions_file": "CLAUDE.md",
+      "enforcement": "harness",
+      "settings_file": "<file where this host keeps the session's environment configuration, or drop this key>",
+      "base_url_env": "<name of the variable pointing at the active backend, or drop this key>",
+      "native_backend": "claude"
+    },
+    "codex": {
+      "models": {
+        "judge": "<alias of the model the judge role runs on>",
+        "worker": "<alias of the model the worker role runs on>"
+      },
+      "instructions_file": "AGENTS.md",
+      "enforcement": "prose",
+      "settings_file": "<file where this host keeps the session's environment configuration, or drop this key>",
+      "skill_pointers": "<folder where this host looks for the invocable skills' pointers, or drop this key>",
+      "native_backend": "codex"
+    }
+  },
+  "backends": {
+    "claude": {},
+    "codex": {},
+    "<name of a backend native to neither host, or drop this key>": {
+      "base_url": "<URL the environment points to while this backend is active>",
+      "sequential_fanout": true,
+      "caveats": ["<a caveat of this backend to carry into summaries, one per line>"]
+    }
+  }
+}

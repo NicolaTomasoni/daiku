@@ -1,0 +1,5 @@
+interface:
+  display_name: "Finder Prompt"
+  short_description: "Internal contract, opened by review"
+policy:
+  allow_implicit_invocation: false
