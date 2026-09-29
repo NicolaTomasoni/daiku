@@ -41,13 +41,17 @@ scelte dell'owner le fanno divergere e non sono reversibili per copia:
   nell'indice, e `deliver-feature` lo committa in una fase propria, dopo il report perché il
   registro delle consegne è di quel gruppo.
 
-Il prodotto ha **diciotto** contratti, questo corpus ne ha **dodici** derivati, su **tredici**
-comandi: l'altro, `studia-repository.md`, è il comando dell'owner senza
-un gemello nel prodotto. Gli otto non derivati sono
-`applier`, `arch-check`, `finder-prompt`, `init`, `perf`,
-`research`, `sync-host`, `test-coverage`. Di questi, `finder-prompt` e `applier` sono stati **assorbiti**
-dentro `review`, che quindi qui scrive in casa propria il prompt del finder e il mestiere
-dell'applicatore; gli altri sei semplicemente non servono a sviluppare Daiku.
+Il prodotto ha **diciannove** contratti, questo corpus ha **sedici** comandi: **dieci** derivano da
+un contratto del prodotto — sette con lo stesso nome (`blueprint`, `code-review`, `commit`,
+`decision-doc`, `execute`, `review`, `update-memory`) e tre rinominati qui (`deliver-feature`,
+`studia-libreria`, `studia-problema`) — e **sei** sono del cantiere, senza gemello nel prodotto:
+`collauda-init`, `migliora-skill`, `rilascia-daiku`, `studia-repository`, `studia-repository-lotto`,
+`translate-skill`.
+
+Nove contratti del prodotto non hanno un comando qui: `applier`, `arch-check`, `finder-prompt`,
+`init`, `perf`, `research`, `sync-host`, `test-coverage`, `dead-code`. Di questi, `finder-prompt` e
+`applier` sono stati **assorbiti** dentro `review`, che quindi qui scrive in casa propria il prompt
+del finder e il mestiere dell'applicatore; gli altri semplicemente non servono a sviluppare Daiku.
 
 **`memory-review` non ha un gemello nel prodotto**, e la ragione vale la pena tenerla: se il corpus
 avesse bisogno di una revisione periodica, vorrebbe dire che il modo in cui cresce non funziona, e
@@ -104,6 +108,11 @@ l'intoccabilità è contro l'allineamento automatico, non contro gli ordini. Il 
 si costruisce, e un tavolo non deve assomigliare al mobile. Anche una modifica che varrebbe per
 entrambi i corpus si scrive solo nel prodotto e lì si ferma. Nessuno dei due alberi aggiorna l'altro, e nessuna skill di
 questo corpus scrive dentro `plugins/daiku/skills/` per allinearlo a sé stessa.
+
+**E dal 29 settembre 2026 non si nomina nemmeno.** L'owner ha chiesto che il disallineamento non
+compaia in chat, nei punti aperti, nella ricognizione o in una memoria se non è lui a nominarlo: non
+è un problema, e un elenco di ciò che è rimasto indietro costa attenzione senza cambiare niente. Vedi
+[[cantiere-mai-nominarlo]].
 
 **Il confine di git non è il `.gitignore`.** Il `.gitignore` del repository esclude soltanto
 `.claude/settings.local.json`: i file di questo corpus — `CLAUDE.md`, `.docs/**`, `.claude/**` —

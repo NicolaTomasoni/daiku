@@ -22,10 +22,10 @@ perché i due host cercano file con nomi diversi e ignorano quelli dell'altro.
 
 | Dentro il pacchetto | Cosa c'è | Chi lo legge |
 |---|---|---|
-| `skills/` | i **18 contratti** del metodo, uno per cartella | **entrambi** gli host, stessi identici file |
+| `skills/` | i **19 contratti** del metodo, uno per cartella | **entrambi** gli host, stessi identici file |
 | `contracts/` | `orchestration.md`, `project-contract.md` | le skill li aprono per path; non sono skill loro stessi |
 | `agents/` | `finder` — l'unico subagent a toolset ristretto | solo Claude Code: Codex lo rifiuta |
-| `hooks/` | il wiring `hooks.json`, i **quattro hook** in `lib/` e i **due moduli** che importano (`project-root.mjs`, `daiku-config.mjs`); accanto, fuori da `lib/`, `self-check.mjs` e `README.md`, che sono di chi sviluppa il pacchetto e non si trasportano | solo Claude Code: su Codex `plugin_hooks` è rimossa |
+| `hooks/` | il wiring `hooks.json`, i **cinque hook** in `lib/` e i **due moduli** che importano (`project-root.mjs`, `daiku-config.mjs`); accanto, fuori da `lib/`, `self-check.mjs`, `template-check.mjs` e `README.md`, che sono di chi sviluppa il pacchetto e non si trasportano | solo Claude Code: su Codex `plugin_hooks` è rimossa |
 | `architect/` | `architect.mjs`: il **valutatore deterministico** — risponde a nove domande meccaniche e tiene l'ordine della catena; `ledger.mjs`: lo **strumento lato disco della review** — legge Git, scrive il ledger e chiede i verdetti al valutatore. Ciascuno col suo banco, che `hooks/self-check.mjs` lancia (vedi [[valutatore-deterministico]]) | l'agente, che li invoca: non sono hook, nessun `hooks.json` li nomina, e non si installano in un progetto |
 | `schemas/` | `blocks.json`: lo specchio controllabile dei blocchi di ritorno — la prosa del nodo resta normativa | i controlli scritti a mano e gli umani che scrivono i nodi |
 | `templates/` | gli scheletri che `init` copierà nel progetto ospite | nessuno: non vengono mai letti in place |
@@ -61,22 +61,23 @@ solo `.gitignore` e `.gitattributes` del repository di sviluppo.
 
 `.docs/` tiene tutto ciò che serve a costruire il prodotto e che *non* era obbligato in radice:
 
-- `RICOGNIZIONE.md` — il documento di riferimento: cosa offrono i due host, cosa manca, perché
-  ogni file sta dove sta, con le prove eseguite sui validatori reali
-- `PUNTI-APERTI.md` — le decisioni ancora da prendere
-- `appunti.md` — gli appunti sparsi dell'owner
-- `nuovi-sviluppi/<slug>/` — la cartella di un lavoro, con i file numerati `0.`–`5.`
-- `consegne.md` — il registro ad append delle consegne di `deliver-feature`
-- `runtime/review/` — i ledger dei giri di `review`
-- `audit/` — i report del prompt audit, con il loro diff
-- `scripts/` — script personali dell'owner, come `new-project.ps1` che `.vscode/tasks.json` lancia
 - `memory/` — questa memoria; è versionata come tutto il resto, ma non viene pubblicata
-- `backup/skill-estratte.md` — il registro ad append di ciò che è stato tolto dalle skill
+- `runtime/review/` — i ledger dei giri di `review`
+- `confronti/` — le letture di repository di terzi fatte a mano, con le voci numerate e la loro
+  sede di atterraggio
 - `esempi/reforgia/` — dominio e politiche di ReforgIA, come esempio di un livello Dominio
   compilato davvero
+- `backup/skill-estratte.md` — il registro ad append di ciò che è stato tolto dalle skill
+- `studia-repository/<slug>/` — i documenti di una corsa di `studia-repository`
 - `tools/check-topology.mjs` — verifica la topologia del corpus, nel gate e a mano prima del
   rilascio; sta qui e non sotto `plugins/` così non viaggia con ciò che si pubblica
+- `tools/check-marketplace.mjs` — verifica le due vetrine del repository pubblicato: che siano
+  leggibili, che ogni voce risolva a una cartella vera dentro l'albero e che le due portino allo
+  stesso pacchetto; ha il suo banco in `--self-check`. È il solo controllo che guarda le vetrine,
+  e copre il punto in cui il repository di `multica-ai/andrej-karpathy-skills` è inciampato
 - `tools/studia-repository/` — gli attrezzi deterministici del comando `studia-repository`
+- `tools/` — accanto, il banco della prova di `init` (`collauda-init.mjs`), la pubblicazione
+  (`pubblica-dist.ps1`) e `macchina/`, i sorgenti delle guardie di macchina (vedi [[guardie-di-macchina]])
 
 ## I nomi che si somigliano e non c'entrano niente
 

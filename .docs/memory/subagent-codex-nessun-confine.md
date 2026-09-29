@@ -26,10 +26,9 @@ scriverci `sandbox_mode`**: dichiarerebbe un confine che nessuno impone, e chi l
 di ripetere il vincolo nel prompt. Su Codex `{hosts.codex.enforcement}` resta `prosa`, e
 l'unico confine vero dell'host è la sandbox di sessione, che sceglie chi lancia Codex.
 
-Per le prove riga per riga, §3.6 di `.docs/RICOGNIZIONE.md`. Vale la pena ricordare che anche
-su Claude Code il confine è parziale: la riga `tools:` toglie davvero Edit e Write, ma
-`Bash(git diff:*)` non restringe nulla. Vedi [[alberatura-pacchetto]] e
+Vale la pena ricordare che anche su Claude Code il confine è parziale: la riga `tools:` toglie
+davvero Edit e Write, ma `Bash(git diff:*)` non restringe nulla. Vedi [[alberatura-pacchetto]] e
 [[tre-livelli-di-parametro]].
 
-Una sessione Codex va aperta passando `-m` a mano: il `model` di `config.toml` (`gpt-5.2`) non è
-servibile da questo account. I validi li elenca `codex debug models`.
+Il banco che l'ha provato, i quattro esiti e l'ambiente su cui è girato stanno in
+[[come-si-provano-i-fatti-sugli-host]].

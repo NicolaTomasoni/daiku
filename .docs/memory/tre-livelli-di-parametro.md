@@ -9,19 +9,29 @@ metadata:
 ---
 
 Un valore tolto da una skill ha tre destinazioni possibili, e la domanda che le separa non è
-«quanto è specifico» ma **chi lo aggiornerebbe al prossimo cambiamento**: `.daiku/project.json`
-se cambia da progetto a progetto, `~/.daiku/environment.json` se è costante per l'owner e varia per
-macchina, `.daiku/domain/<role>.md` se per usarlo serve sapere *perché* esiste — cioè se è
-giudizio e non valore.
+«quanto è specifico» ma **chi lo aggiornerebbe al prossimo cambiamento**: `.daiku/project.json` se
+descrive il codice davanti a te, `.daiku/environment.json` se descrive la macchina, l'host o
+l'owner che lo esegue, `.daiku/domain/<role>.md` se per usarlo serve sapere *perché* esiste — cioè
+se è giudizio e non valore.
 
-**L'ambiente sta nella home, non nel progetto, dal 19 settembre 2026.** Prima `init` lo scriveva in
-`.daiku/environment.json` dentro ogni progetto, che era la duplicazione condannata dalla §8 del
-`project-contract.md` stesso: cambiare l'alias di un modello voleva dire ripetere la stessa
-modifica in N progetti, e la storia condivisa di un repository si portava dietro valori della
-macchina di chi ci lavorava. Resta possibile un **override di progetto** in
-`.daiku/environment.json`: chi legge prende il primo dei due che trova e lo prende **intero**, non
-li fonde. Serve dove una home dell'owner non c'è — una CI, un container — o dove un progetto solo
-gira su un backend diverso dagli altri.
+**L'ambiente sta nel progetto, dal 29 settembre 2026.** `init` lo scrive in
+`.daiku/environment.json` accanto a `project.json`, e niente di Daiku vive più nella home
+dell'owner: quella è una sede che nessun clone porta, nessun `diff` mostra, e su una macchina col
+recinto di Daiku nessun agente può nemmeno aprire, perché le radici di lavoro non la contengono —
+`init` non poteva né leggerla né scriverla. Una macchina lo sostituisce **intero** con
+`.daiku/environment.local.json`: chi legge prende il primo dei due che trova e non li fonde, come
+per `settings.json` e `settings.local.json`. Nessuno dei due si versiona, e con loro nessun altro
+file della cartella: vedi [[daiku-non-versionato]].
+
+Il prezzo è dichiarato e si paga lo stesso: cambiare l'alias di un modello si ripete in N progetti
+— e, la cartella non essendo condivisa, una volta per ogni macchina che ne clona uno. Le due
+alternative sono peggiori — la cartella in home, o un valore che non vive da nessuna parte e viene
+indovinato ogni volta. La valvola per l'owner multiplo o per la macchina con uno switcher diverso
+resta `environment.local.json`.
+
+**`temp_dir` non si scrive.** Assente significa la cartella temporanea del sistema operativo, che è
+la risposta giusta su ogni macchina e che i lettori usano già: dichiararla serve solo dove quel
+ripiego è sbagliato, e così l'unico path di macchina è uscito dal file dei parametri.
 
 **Why:** il 18 settembre 2026 il corpus è stato separato dal progetto su cui era nato, e la scelta
 è stata di non aprire un quarto livello: i tre bastavano tutti e tre, e un livello nuovo avrebbe
@@ -42,7 +52,7 @@ graffa lì resta letterale e la skill si descrive con un segnaposto. Nel frontma
 prosa; le graffe vivono solo nel corpo.
 
 Secondo, **`init` è l'unica skill che non può citare nessuna chiave**, nemmeno
-`{instructions_file}`: gira prima che `.daiku/project.json` esista ed è lei a scriverlo. Ogni
+`{hosts.<host>.instructions_file}`: gira prima che `.daiku/project.json` esista ed è lei a scriverlo. Ogni
 riscrittura di massa che sostituisce path con chiavi la tocca per errore — va ricontrollata a
 mano.
 
