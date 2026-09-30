@@ -25,8 +25,9 @@
  *    (`{memory.root}`, `{paths.studies}`, `{paths.lib_notes}`, `{paths.review_state}`,
  *    `.daiku/policies/`, `.daiku/domain/`, `{temp_dir}` plus the OS temp directory),
  *    and the `.daiku/` JSON files themselves — `project.json`, `environment.json` and
- *    the machine's `environment.local.json`, which `init` writes and the user creates.
- *    Everywhere else —
+ *    the machine's `environment.local.json`, which `init` writes and the user creates —
+ *    and the machine's `.claude/settings.local.json`, the one file `init` creates under
+ *    `.claude/`, after `project.json` has already opened this gate. Everywhere else —
  *    including outside the repository — a create is denied, except inside
  *    `{paths.review_state}`, `{temp_dir}` or the OS temp dir when those sit outside
  *    the repo.
@@ -201,6 +202,7 @@ function fileSeats(ctx) {
     ctx.projectJson,
     ctx.environmentFile,
     ctx.environmentLocalFile,
+    ctx.hostLocalSettings,
   ];
   for (const f of ctx.versionFiles || []) seats.push(f);
   return seats.filter(Boolean);
@@ -342,6 +344,7 @@ const CTX_FULL = fakeContext({
   projectJson: `${R}/.daiku/project.json`,
   environmentFile: `${R}/.daiku/environment.json`,
   environmentLocalFile: `${R}/.daiku/environment.local.json`,
+  hostLocalSettings: `${R}/.claude/settings.local.json`,
   tempDir: 'C:/dev/tmp',
 });
 
@@ -376,6 +379,8 @@ const CASES = [
   ['create environment.json', '.daiku/environment.json', R, 'allow', '', CTX_FULL, []],
   ['create the machine local environment', '.daiku/environment.local.json', R, 'allow', '', CTX_FULL, []],
   ['create a stray file under .daiku/', '.daiku/scratch.json', R, 'deny', 'is denied', CTX_FULL, []],
+  ['create the machine host settings', '.claude/settings.local.json', R, 'allow', '', CTX_FULL, []],
+  ['create a stray file under .claude/', '.claude/settings.json', R, 'deny', 'is denied', CTX_FULL, []],
   ['create stray note at root', 'notes-random.md', R, 'deny', 'is denied', CTX_FULL, []],
   ['create stray doc outside seats', 'docs/scratch.md', R, 'deny', 'is denied', CTX_FULL, []],
   ['create outside the repo', 'C:/other/x.md', R, 'deny', 'outside the repository', CTX_FULL, []],
@@ -494,6 +499,10 @@ function selfCheck() {
   ]) {
     ran += 1;
     if (!seats.includes(wanted)) failed.push(`instructions seat does not resolve: ${wanted}`);
+  }
+  ran += 1;
+  if (read.hostLocalSettings !== resolve('C:/dev/project/.claude/settings.local.json')) {
+    failed.push('host local settings seat does not resolve under the technical root');
   }
   ran += 1;
   const localWins = loadContext('C:/dev/project', readers({

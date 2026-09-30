@@ -132,7 +132,14 @@ declared it, and they are checked before the key is left out.
   — `backends.<backend>.base_url` on the host's native backend, which §7 of
   `contracts/orchestration.md` wants absent — the contract wins, you leave the key out and declare
   it in the report. A project's file overrules a manifest, never the form the package fixed. The
-  manifest is what you fall back on for the keys that file does not carry. **A file of an older form, or one that
+  manifest is what you fall back on for the keys that file does not carry. **Precedence chooses
+  between two lines; it does not vouch that the one it picks runs.** A line whose tool is declared
+  in no dependency manifest or lock file of its area — the module after `-m`, the binary after
+  `exec`, the runner called bare — fails on the first skill that runs it, and a key that fails is
+  what the first rule of this step forbids: it stays out, and the report carries the line with the
+  dependency that is missing. The check is on what the repository **declares**, like every other
+  read here: a tool listed in `requirements-dev.txt` or `devDependencies` passes, whether or not it
+  is installed on this machine. **A file of an older form, or one that
   is missing keys, is no reason to take nothing**: you read the values it does declare and derive
   the rest as below, instead of copying it as it is and leaving the project with the holes of a
   form it has outgrown.
@@ -257,7 +264,7 @@ It is the file the host loads on every session — `CLAUDE.md` on Claude Code, `
 
 The *Documentation map* lists the artefacts existing **in this project**, with the trade of each: one line per real artefact, and the line of one missing is removed instead of staying with an invented path inside. Hunt them through the README's links, the root documents and `docs/` — studies folders, library notes, queues, technical documents, changelogs — and give each its trade in one line.
 
-The *Stack and local environment* is the technological inventory of *Step 2*, written in full: **one line per package of the workspace** — the folder, its runtime and versions, its framework, its data stores, its build and test chain, how it starts — plus the shared toolchain and the environment variables that must stay consistent. A package the file does not name is a part of the project the file does not declare, and it is the section making the file useful from the first minute. **It is added, not substituted**: where the project already wrote lines in that section, they stay whole and the inventory goes beside them, even where a line of theirs says less than the manifest does. Filling a placeholder never licenses rewriting a line that was there, and the section's title stays the project's. It is also the only placeholder you can fill in without risking anything, because every line has a manifest behind.
+The *Stack and local environment* is the technological inventory of *Step 2*, written in full: **one line per package of the workspace** — the folder, its runtime and versions, its framework, its data stores, its build and test chain, how it starts — plus the shared toolchain and the environment variables that must stay consistent. A package the file does not name is a part of the project the file does not declare, and it is the section making the file useful from the first minute. **It is added, not substituted**: where the project already wrote lines in that section, they stay whole and the inventory goes beside them, even where a line of theirs says less than the manifest does. Filling a placeholder never licenses rewriting a line that was there, and the section's title stays the project's. **Beside is not again**: a fact a kept line already states — a port, a start command, a URL — is not repeated in the inventory line of the same package, which carries only what the kept lines do not say (*One rule, one line* holds here too). It is also the only placeholder you can fill in without risking anything, because every line has a manifest behind.
 
 The **hard rules beyond the four standard ones** are the delicate part, and they have a single rule: **write an invariant only where you saw it stated** — in an instructions file already there, in a repository document, or in a rule the structure respects without visible exceptions. **The numbering is the project's, and you never restart it**: where the file you found carried numbered rules, the ones you add take the next free numbers, because the project cites them by number in its own documents and memories, and renumbering makes those citations lie. A project without numbers gets the ones the skeleton proposes. Conventions visible only in history — commit grouping, message prefixes — do not go here: they are `{commit.*}` values and domain answers, already seated elsewhere. An invariant deduced from a glimpsed architecture is a half-hour impression disguised as a rule, and its trouble is that it does not distinguish itself from the others: in six months nobody will ever know which line was observed and which invented, and nobody will trust deleting one. When in doubt you do not write it and you list it among the things to fill in.
 
@@ -367,7 +374,9 @@ needing nothing to install — `node -e` and `grep` — before the report:
   `<...>` placeholder residue remains (hunt it against `templates/`, which is where every
   placeholder comes from). **The one exception is `<FILES>` in `project.json`**: §3 of
   `contracts/project-contract.md` admits it inside a command and it is written there on purpose.
-  The residue to hunt is every other `<...>`, not the one placeholder that must stay;
+  The residue to hunt is every other `<...>`, not the one placeholder that must stay; and every
+  command's tool is declared in a dependency manifest or lock file of its area (*Where each value
+  is read*) — `grep` the module or binary name there;
 - for **the instructions file**: no `<...>` residue remains.
 
 A file failing the recheck is fixed now, not reported as done: a placeholder surviving in a
