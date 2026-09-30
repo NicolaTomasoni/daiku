@@ -2,17 +2,19 @@
 
 Copia il contenuto di plugins/ (e nient'altro) nella radice del checkout
 di distribuzione, dopo aver svuotato la destinazione (tranne .git).
-Poi committa e pusha. Il filtro "cosa esce" sta tutto qui: mai "tutto
+Poi committa. Il filtro "cosa esce" sta tutto qui: mai "tutto
 il repository tranne".
 
-Uso: .\pubblica-dist.ps1 -Messaggio "aggiorna dist" [-Destinazione ...] [-SenzaPush]
+Uso: .\pubblica-dist.ps1 -Messaggio "aggiorna dist" [-Destinazione ...]
 Lo chiama il comando /rilascia-daiku (.claude/commands/rilascia-daiku.md), passo 6, dopo il
 commit in dev del passo 5: la copia porta plugins/ com'è, quindi dev deve essere già committato.
+
+Non pusha mai. Il push e' un gesto manuale dell'owner, e questo script non lo fa al posto suo:
+committa nel dist e si ferma, lasciando il push a chi lo decide.
 #>
 param(
   [string]$Messaggio = "",
-  [string]$Destinazione = "C:\dev\daiku-workspace\daiku",
-  [switch]$SenzaPush
+  [string]$Destinazione = "C:\dev\daiku-workspace\daiku"
 )
 
 $ErrorActionPreference = 'Stop'
@@ -43,5 +45,5 @@ if (-not $Stato) { Write-Host 'Dist aggiornata: niente da pubblicare.'; exit 0 }
 if (-not $Messaggio) { $Messaggio = "aggiorna dist da plugins/ ($(Get-Date -Format 'yyyy-MM-dd HH:mm'))" }
 git -C $Destinazione add -A
 git -C $Destinazione commit -m $Messaggio --quiet
-if (-not $SenzaPush) { git -C $Destinazione push --quiet }
 Write-Host "Dist aggiornata: $Messaggio"
+Write-Host "Non pushato: il push sul dist resta all'owner."

@@ -1,5 +1,5 @@
 ---
-description: 'Rilascia Daiku con bump di versione: verifiche, versione nei due manifest e nel badge, prosa AI, commit in dev, poi pubblicazione dist con un commit solo'
+description: 'Rilascia Daiku con bump di versione: verifiche, versione nei due manifest e nel badge, prosa AI, commit in dev, poi pubblicazione dist con un commit solo e senza push'
 argument-hint: '[major | minor | patch]'
 ---
 
@@ -124,12 +124,15 @@ e lancia:
 .docs/tools/pubblica-dist.ps1 -Messaggio '<messaggio>'
 ```
 
-Fa gate stretto, riversa `plugins/` nel dist con UN commit solo e pusha.
+Fa gate stretto, riversa `plugins/` nel dist e committa là con UN commit solo. **Non pusha**: il
+push è un gesto manuale dell'owner, e nessuno lo fa al posto suo — né questo comando, né lo
+script. Il commit nel dist resta locale finché l'owner non lo pusha.
 
 ## 7. Report
 
-Versione vecchia e nuova, i commit del rilascio su dev con i loro SHA, il messaggio pubblicato,
-e cosa contiene il rilascio in una riga. Chiudi con la prova che la copia è fedele:
+Versione vecchia e nuova, i commit del rilascio su dev con i loro SHA, il commit della dist col
+suo SHA — **e che il push resta all'owner**. Poi cosa contiene il rilascio in una riga, e la prova
+che la copia è fedele:
 
 ```bash
 diff -rq plugins/ ../daiku -x .git

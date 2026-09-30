@@ -38,6 +38,9 @@ residuo del working tree, con l'albero pulito prima di copiare — e solo dopo l
 `pubblica-dist.ps1` in UN commit. **Dev è la fonte, la dist è la copia:** pubblicare prima di
 committare lascia in dev una versione che non esiste in nessun commit, e il rilascio successivo
 calcolerebbe il perimetro da un albero sbagliato.
+**Il push non è della macchina:** `pubblica-dist.ps1` committa nel dist e si ferma — pushava da
+sé fino al 30 settembre 2026, quando un rilascio uscì prima che l'owner lo decidesse. Il push
+resta un gesto manuale, e in questo repository `.claude/settings.json` lo nega.
 È l'unico percorso di rilascio: la versione la scrive la sessione nei tre punti.
 `pubblica-dist.ps1` esegue a ogni pubblicazione il gate stretto (path di questa macchina,
 nome utente, segnaposto non sostituiti, nome del repo di sviluppo). Il gate largo resta
