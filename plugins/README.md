@@ -51,11 +51,11 @@
 
 ```text
 # on Claude Code, from the chat:
-/plugin marketplace add <marketplace-address>
-/plugin install daiku@daiku
+claude plugin marketplace add NicolaTomasoni/daiku
+claude plugin install daiku@daiku
 
 # on Codex, from the terminal:
-codex plugin marketplace add <marketplace-address>
+codex plugin marketplace add NicolaTomasoni/daiku
 codex plugin add daiku@daiku
 ```
 

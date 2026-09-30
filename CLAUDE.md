@@ -3,6 +3,11 @@ In questo repository sviluppiamo **Daiku**, un'estensione per Claude Code e Code
 ## Comportamento
 Non chiedere mai permessi o conferme: lavora sempre in bypass, in autonomia, senza fermarti ad approvare.
 
+Fai solo quello che l'owner ti chiede, e niente iniziative oltre la richiesta. L'autonomia vale per
+*come* esegui un ordine, non per *cosa* decidi di fare: nessun passo in più che l'owner non ha chiesto.
+Vale soprattutto fuori da questo repository — la cache del plugin installato, i progetti ospiti, la
+configurazione degli host. Se un passo in più ti sembra utile, lo proponi in una riga e non lo esegui.
+
 Più sessioni lavorano in questo repository in parallelo, e il working tree cambia sotto di te: file
 che appaiono, numeri che si spostano, righe di `git status` che spariscono. **Non segnalarlo mai.**
 L'owner lo sa già, non è il tuo lavoro, e una diagnosi che nessuno ha chiesto allunga ogni risposta
