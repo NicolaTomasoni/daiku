@@ -6,7 +6,8 @@ Poi committa e pusha. Il filtro "cosa esce" sta tutto qui: mai "tutto
 il repository tranne".
 
 Uso: .\pubblica-dist.ps1 -Messaggio "aggiorna dist" [-Destinazione ...] [-SenzaPush]
-Lo chiama il comando /rilascia-daiku (.claude/commands/rilascia-daiku.md), passo 5.
+Lo chiama il comando /rilascia-daiku (.claude/commands/rilascia-daiku.md), passo 6, dopo il
+commit in dev del passo 5: la copia porta plugins/ com'è, quindi dev deve essere già committato.
 #>
 param(
   [string]$Messaggio = "",

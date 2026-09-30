@@ -33,7 +33,11 @@ per questo; lo sviluppo sta su GitLab, dove la forma breve non serve.
 **How to apply:** il rilascio ha un percorso solo, `.claude/commands/rilascia-daiku.md`: verifiche
 verdi — le due vetrine comprese, perché il loro guasto si vede solo in chi installa —, versione
 scritta nei due manifest e nel badge del README con la verifica di rilettura, prosa AI (voce di
-changelog e messaggio `release X.Y.Z`), pubblicazione con `pubblica-dist.ps1` in UN commit.
+changelog e messaggio `release X.Y.Z`), **commit in dev** — la versione, il changelog e ogni
+residuo del working tree, con l'albero pulito prima di copiare — e solo dopo la pubblicazione con
+`pubblica-dist.ps1` in UN commit. **Dev è la fonte, la dist è la copia:** pubblicare prima di
+committare lascia in dev una versione che non esiste in nessun commit, e il rilascio successivo
+calcolerebbe il perimetro da un albero sbagliato.
 È l'unico percorso di rilascio: la versione la scrive la sessione nei tre punti.
 `pubblica-dist.ps1` esegue a ogni pubblicazione il gate stretto (path di questa macchina,
 nome utente, segnaposto non sostituiti, nome del repo di sviluppo). Il gate largo resta

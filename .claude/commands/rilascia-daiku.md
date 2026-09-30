@@ -1,5 +1,5 @@
 ---
-description: 'Rilascia Daiku con bump di versione: verifiche, versione nei due manifest e nel badge, prosa AI, pubblicazione dist con un commit solo'
+description: 'Rilascia Daiku con bump di versione: verifiche, versione nei due manifest e nel badge, prosa AI, commit in dev, poi pubblicazione dist con un commit solo'
 argument-hint: '[major | minor | patch]'
 ---
 
@@ -94,7 +94,28 @@ manca, crealo con `# Changelog` in testa):
 <note, o la riga di rimando al commit>
 ```
 
-## 5. Pubblicazione
+## 5. Commit in dev
+
+**La versione nasce in dev, e il commit viene prima della copia.** Dev è la fonte, la dist è la
+copia: pubblicare senza il commit a monte lascia in dev una versione che non esiste in nessun
+commit, e la §3 del rilascio successivo calcolerebbe il perimetro da un albero sbagliato.
+
+Committa in dev tutto ciò che compone questo rilascio: la versione nei tre punti della §2, la
+voce di changelog della §4, e ogni altra modifica del working tree che appartiene al rilascio.
+Sono gruppi distinti, e vanno in commit separati secondo la convenzione del repository: lancia
+`/commit` (`.claude/commands/commit.md`), che li conosce già.
+
+Poi verifica che l'albero sia **pulito**:
+
+```bash
+git status --porcelain
+```
+
+Se resta qualcosa, la copia della §6 lo porterebbe in pubblicazione senza che nessun commit di
+dev lo dichiari: committalo, o toglilo dall'albero prima di copiare. **Un rilascio non parte
+con dev sporco.**
+
+## 6. Pubblicazione
 
 Componi il messaggio — `release <nuova>`, più ` — <prima riga delle note>` se le note ci sono —
 e lancia:
@@ -103,9 +124,15 @@ e lancia:
 .docs/tools/pubblica-dist.ps1 -Messaggio '<messaggio>'
 ```
 
-Fa gate stretto, riversa `plugins/` nel dist con UN commit solo e pusha. Il bump e il
-changelog nel working tree di dev non li committi qui: seguono il flusso normale.
+Fa gate stretto, riversa `plugins/` nel dist con UN commit solo e pusha.
 
-## 6. Report
+## 7. Report
 
-Versione vecchia e nuova, messaggio pubblicato, cosa contiene il rilascio in una riga.
+Versione vecchia e nuova, i commit del rilascio su dev con i loro SHA, il messaggio pubblicato,
+e cosa contiene il rilascio in una riga. Chiudi con la prova che la copia è fedele:
+
+```bash
+diff -rq plugins/ ../daiku -x .git
+```
+
+Nessuna riga di output e uscita `0`: la dist è identica a ciò che dev ha committato.
