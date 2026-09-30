@@ -87,7 +87,7 @@ Primo giro: 13 voci totali dal giudice, 13 nuove, 0 conservate, 0 già in Daiku.
 | MG-002 | Classi di sicurezza in code-review | enforcement | adatta | media | skill code-review | plugins/daiku/skills/code-review/SKILL.md |
 | MG-003 | Dead-code in skill più orchestration più architect.mjs | capacità | adatta | bassa | skill più orchestration più valutatore | plugins/daiku/skills/*, plugins/daiku/contracts/orchestration.md, plugins/daiku/architect/architect.mjs |
 | MG-004 | Mappe codice | orchestrazione | ispira | bassa | memoria | .docs/memory/ |
-| MG-005 | Quando compattare execute più develop-feature | orchestrazione | adatta | bassa | skill execute e develop-feature | plugins/daiku/skills/execute/SKILL.md, plugins/daiku/skills/develop-feature/SKILL.md |
+| MG-005 | Quando compattare execute più ship-feature | orchestrazione | adatta | bassa | skill execute e ship-feature | plugins/daiku/skills/execute/SKILL.md, plugins/daiku/skills/ship-feature/SKILL.md |
 | MG-006 | Igiene sorgente report-only in contracts-post-edit più policies | enforcement | adatta | media | contracts-post-edit più policies | plugins/daiku/contracts/post-edit.md, plugins/daiku/templates/policies/ |
 | MG-007 | Avviso ledger aperti in stop-advice più review più template Codex | orchestrazione | adatta | bassa | hook stop-advice più skill review più template Codex | plugins/daiku/hooks/stop-advice.mjs, plugins/daiku/skills/review/SKILL.md, plugins/daiku/templates/codex/ |
 | MG-008 | Banco chiavi ignote in self-check più template Codex | enforcement | adatta | media | self-check più template Codex | plugins/daiku/hooks/self-check.mjs, plugins/daiku/templates/codex/ |
@@ -137,11 +137,11 @@ Primo giro: 13 voci totali dal giudice, 13 nuove, 0 conservate, 0 già in Daiku.
 - Rischio: basso.
 - Confidenza: media.
 
-### MG-005 — Quando compattare execute più develop-feature
+### MG-005 — Quando compattare execute più ship-feature
 
 - Evidenza: skill `strategic-compact` del clone; estratto: regola su quando compattare il contesto a metà catena.
-- Proposta: adattare il «quando compattare» in execute più develop-feature.
-- Sedi, col perché: `plugins/daiku/skills/execute/SKILL.md` e `plugins/daiku/skills/develop-feature/SKILL.md`, perché la compattazione interrompe la catena e solo quelle due sedi sanno dove è sicuro farlo.
+- Proposta: adattare il «quando compattare» in execute più ship-feature.
+- Sedi, col perché: `plugins/daiku/skills/execute/SKILL.md` e `plugins/daiku/skills/ship-feature/SKILL.md`, perché la compattazione interrompe la catena e solo quelle due sedi sanno dove è sicuro farlo.
 - su_codex: sì, regola di metodo.
 - Costo: basso.
 - Rischio: basso.

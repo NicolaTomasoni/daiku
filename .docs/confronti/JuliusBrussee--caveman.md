@@ -68,7 +68,7 @@ Nota del giudice: discrepanza nel conteggio, 71 contro 59 rimisurati (limitation
 
 ### 4.2 Lato Daiku
 
-- 19 SKILL.md: blueprint, code-review, decision-doc, develop-feature, execute, finder-prompt, init, new-feature, review, sync-host, test-coverage più le restanti
+- 19 SKILL.md: blueprint, code-review, decision-doc, ship-feature, execute, finder-prompt, init, new-feature, review, sync-host, test-coverage più le restanti
 - 2 contratti: `plugins/daiku/contracts/orchestration.md` più `project-contract.md`
 - `agents/finder.md`
 - hook: command-guard, edit-guard, contracts-post-edit, session-advice, stop-advice, self-check (`hooks/lib/command-guard.mjs` fail-open)

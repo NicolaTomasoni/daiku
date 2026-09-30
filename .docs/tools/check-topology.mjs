@@ -158,7 +158,7 @@ const ROLE_FIXTURES = [
   { id: 'role-in-the-list', ok: true, text: '## Step 2\n\nLaunch a subagent:\n\n- the **contract to read**: `skills/study/SKILL.md`;\n- the **step role**: **worker**;' },
   { id: 'role-in-the-lead-in', ok: true, text: '### 5. Memory\n\n**5b. Update — judge role.** In the prompt:\n\n- read in full `skills/update-memory/SKILL.md`' },
   { id: 'role-on-the-line', ok: true, text: '### Closing\n\nDelegate it to a **judge** subagent fully reading `skills/commit/SKILL.md`.' },
-  { id: 'no-role-anywhere', ok: false, text: '### 10. Delivery — `develop-feature`\n\nDelegate the whole delivery to a subagent running `skills/develop-feature/SKILL.md`.' },
+  { id: 'no-role-anywhere', ok: false, text: '### 10. Delivery — `ship-feature`\n\nDelegate the whole delivery to a subagent running `skills/ship-feature/SKILL.md`.' },
   { id: 'a-role-of-another-section', ok: false, text: '### 1. Brief — **judge** role\n\nx\n\n### 3. Review\n\nFully run `skills/review/SKILL.md`.' },
   { id: 'a-role-of-another-paragraph', ok: false, text: '### 3. Review\n\nThe **worker** of phase 2 left notes.\n\nFully run `skills/review/SKILL.md`.' },
 ];

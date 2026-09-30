@@ -92,20 +92,17 @@ Preponi la voce a `plugins/CHANGELOG.md`, subito sotto l'intestazione (se il fil
 manca, crealo con `# Changelog` in testa):
 
 ```markdown
-<titolo del livello, vedi sotto>
-<sub><oggi YYYY-MM-DD></sub>
+### <nuova> — <oggi YYYY-MM-DD>
 
 <note, o la riga di rimando al commit>
 ```
 
-La data è il sottotitolo, sulla riga subito sotto il titolo e mai inline con la versione. Il
-titolo porta solo la versione, e dipende dal livello del bump:
+Versione e data stanno sulla stessa riga, separate da un dash lungo. Il livello del titolo è
+sempre lo stesso, quale che sia il bump: un titolo più alto porta con sé una linea propria, e
+accanto a quella orizzontale farebbe due righe di fila.
 
-| Bump | Titolo |
-|---|---|
-| `major` | `## $\color{#3b82f6}{\textsf{<nuova>}}$` — colorato, lo stesso blu del badge |
-| `minor` | `## <nuova>` |
-| `patch` | `### <nuova>` — più piccolo |
+Fra una voce e quella sotto va **sempre** una linea orizzontale, preceduta e seguita da una riga
+vuota.
 
 Il corpo di una `patch` è **sempre un elenco puntato**, una voce per modifica, anche quando la
 modifica è una sola.
