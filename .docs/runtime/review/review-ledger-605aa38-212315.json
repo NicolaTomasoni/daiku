@@ -1,0 +1,268 @@
+{
+  "base": "605aa3882d23f038f25e44d4b497c5955736c52c",
+  "item": null,
+  "giri": [
+    {
+      "n": 1,
+      "finder_tornati": 2,
+      "finder_mancati": 0,
+      "applicati": [
+        {
+          "file": "plugins/daiku/hooks/README.md",
+          "simbolo": "§ They degrade open, and that is why they have a bench",
+          "ancora": "They are the six above, `lib/project-root.mjs`, the two programs of `architect/` —",
+          "riga": 108,
+          "cosa": "L'enumerazione elencava dieci banchi contro l'«all eleven benches at once» dell'intestazione: mancava `lib/project-root.mjs`, che è un banco vero (19 checks, verde nel self-check). Aggiunto all'elenco; corretta anche la § *The six hooks* che glielo negava («They have no bench of their own», vero solo di `daiku-config.mjs`).",
+          "grave": true,
+          "su_fix_precedente": false
+        },
+        {
+          "file": "plugins/daiku/hooks/self-check.mjs",
+          "simbolo": "module header docstring",
+          "ancora": "green, `1` on the first red, and prints the **counted** total — the sum of what the",
+          "riga": 7,
+          "cosa": "Il docstring portava conteggi che contraddicono il banco che documenta: «the eight benches really ran», «one of the five», «a file that all four import», mentre la corsa contata è undici banchi e sei hook. Verificato lanciando il banco (11 benches, 1177 checks) e contando i moduli: otto→undici, cinque→sei, quattro→sei.",
+          "grave": true,
+          "su_fix_precedente": false
+        },
+        {
+          "file": "plugins/daiku/skills/new-feature/SKILL.md",
+          "simbolo": "§ 7. Decisions are asked in chat",
+          "ancora": "**Before the question, the message.** In chat, decision by decision and in the",
+          "riga": 146,
+          "cosa": "Il paragrafo affermava incondizionatamente che il messaggio prima della domanda è «the functional content of `1. decision-doc.md`». Il punto 7 gira anche sul blocco del punto 6 quando il suo stadio è `strategic` (il punto 9 lo rimanda lì), e lì le carte stanno in `0.5. strategic-study.md`, accanto a cui `1. decision-doc.md` non esiste ancora. Rimando reso consapevole dello stadio: il documento che ospita le decisioni, nominato per entrambi gli stadi.",
+          "grave": true,
+          "su_fix_precedente": false
+        },
+        {
+          "file": "plugins/daiku/skills/decision-doc/SKILL.md",
+          "simbolo": "§ Input: the problem folder",
+          "ancora": "- **The material the request came with** — a brief, an analysis, a plan — arrives",
+          "riga": 111,
+          "cosa": "La sezione degli input del nodo enumerava solo la cartella, la clausola di sottoinsieme e il canale memoria, mentre `contracts/orchestration.md` §3 e il punto 6 di new-feature passano ora «the material the request came with» — l'input su cui gira il giudizio di stadio. Dichiarato come input, come materiale da interrogare e proposta, mai direzione già stabilita.",
+          "grave": false,
+          "su_fix_precedente": false
+        }
+      ],
+      "scartati": [
+        {
+          "file": "plugins/daiku/hooks/self-check.mjs",
+          "simbolo": "module header docstring",
+          "riga": 3,
+          "perche": "Fuori dai rilievi: l'apertura descrive i banchi senza un conteggio e omette `lib/project-root.mjs` e `hooks/template-check.mjs`, ma non è un numero falso e nessuno dei due finder la nomina."
+        }
+      ],
+      "da_confermare": [
+        {
+          "file": "plugins/daiku/contracts/project-contract.md",
+          "riga": 74,
+          "scenario": "`paths.features` è una chiave nuova di questo diff: la dichiara `contracts/project-contract.md` (§4 e il paragrafo sulle tre chiavi sotto `.daiku/`), la elenca `schemas/blocks.json`, la scrive `init` in `templates/project/project.json`, la legge `hooks/lib/daiku-config.mjs` e la usa come sede `hooks/lib/edit-guard.mjs` (col suo caso di banco). Ma nessun contratto la cita come parametro operativo e nessuna skill del pacchetto scrive o legge un catalogo di feature: il concetto vive nel cantiere, dove lo produce `.claude/commands/studia-repository.md` su `.docs/features/`, fuori dal pacchetto. Il bivio: un produttore lato prodotto è previsto ma non ancora scritto — la chiave resta come predisposizione — oppure è un residuo del cantiere da togliere insieme a tutte le sedi che la nominano. Le due strade toccano sei file e cambiano cosa porta il `project.json` di un utente.",
+          "bloccante": false
+        }
+      ],
+      "oscillazione": [],
+      "verdetto": "continua",
+      "perche": "Tre fix gravi applicati (README.md, self-check.mjs, new-feature/SKILL.md): il perimetro conteneva abbastanza difetti reali da contenerne ancora, e i fix sono materiale che nessun finder ha letto. Regola 2 del contratto: un altro giro, senza discutere."
+    },
+    {
+      "n": 2,
+      "finder_tornati": 1,
+      "finder_mancati": 0,
+      "applicati": [
+        {
+          "file": "plugins/daiku/hooks/self-check.mjs",
+          "simbolo": "tryOne — il commento del ramo «nessun output»",
+          "ancora": "// No output: either the module has no bench — the case of `daiku-config.mjs`, an",
+          "riga": 110,
+          "cosa": "Il commento del ramo «nessun output» elencava `project-root.mjs` fra i moduli senza banco, ma project-root ha il proprio `--self-check` (19 casi) ed è contato da `benches()`. Rimosso dall'elenco: nomina ora il solo `daiku-config.mjs`. Verificata anche la riga ~140 («no bench: an imported module»): resta valida, perché dopo il fix l'unico modulo senza banco è `daiku-config.mjs`.",
+          "grave": false,
+          "su_fix_precedente": false
+        },
+        {
+          "file": "plugins/daiku/skills/sync-host/SKILL.md",
+          "simbolo": "§ 4. Try every hook before hooking it",
+          "ancora": "- No output, or unparsable output → treat it as red. The imported module `daiku-config.mjs`",
+          "riga": 93,
+          "cosa": "Il bullet diceva che i due moduli importati — `project-root.mjs` e `daiku-config.mjs` — non hanno banco, ma project-root porta il suo; la § *The six hooks* di `hooks/README.md`, corretta al giro 1, dice ora l'opposto. Riscritto: solo `daiku-config.mjs` è senza banco; corretto anche il conteggio stantio «the other four».",
+          "grave": true,
+          "su_fix_precedente": false
+        },
+        {
+          "file": "plugins/daiku/hooks/README.md",
+          "simbolo": "§ They do not reach both hosts the same way",
+          "ancora": "**Two hooks are Claude Code's alone, and they are declared rather than left to be",
+          "riga": 164,
+          "cosa": "La frase diceva «One hook is Claude Code's alone», riferendosi al solo `run-advice`. Ma `templates/codex/hooks.json` cabla quattro dei sei hook e non cabla né `UserPromptSubmit` né `Stop`: anche `stop-advice` è di Claude Code soltanto. Al base l'unico hook Claude-only era `stop-advice`; il diff ha aggiunto `run-advice` senza portare «one» a «two». Riscritto e aggiunta la ragione di `stop-advice`.",
+          "grave": true,
+          "su_fix_precedente": false
+        },
+        {
+          "file": "plugins/daiku/hooks/README.md",
+          "simbolo": "§ They do not reach both hosts the same way",
+          "ancora": "`skills/new-feature/SKILL.md` § *7. Decisions are asked in chat* and in the *Operational",
+          "riga": 169,
+          "cosa": "La frase diceva che il § 7 di `new-feature` «is the only seat the rule has», ma la stessa regola sta anche nelle *Operational constraints* in coda allo stesso file. Tolta l'esclusività: la frase nomina ora entrambe le sedi.",
+          "grave": false,
+          "su_fix_precedente": false
+        }
+      ],
+      "scartati": [],
+      "da_confermare": [],
+      "oscillazione": [],
+      "verdetto": "continua",
+      "perche": "Due fix gravi, e stanno su materiale che il giro 1 aveva appena riscritto: il fatto «project-root porta un banco» e il conteggio degli hook. Il giro 2 ne ha trovate copie rimaste indietro in file che il giro 1 non aveva aperto (`sync-host/SKILL.md`). Il caso sano di un fix che ne allinea un altro non è ancora esaurito: giro 3. Segnali verificati: nessuna ancora del giro 1 è sparita dai suoi file (git grep), nessuna collisione di ancora."
+    },
+    {
+      "n": 3,
+      "finder_tornati": 1,
+      "finder_mancati": 0,
+      "applicati": [
+        {
+          "file": "plugins/daiku/hooks/lib/daiku-config.mjs",
+          "simbolo": "module header docstring",
+          "ancora": "It exists because five of the six guards need the same two facts — **did this",
+          "riga": 4,
+          "cosa": "Il docstring dichiarava «four of the five guards» mentre la riga 9 dello stesso file dice «all six hooks»: due totali divergenti nello stesso commento. Contati gli import reali dei sei hook: cinque importano `daiku-config.mjs`; `contracts-post-edit.mjs` importa solo `project-root.mjs`. Riga 4 portata a «five of the six», ora riconciliata con la riga 9.",
+          "grave": false,
+          "su_fix_precedente": false
+        },
+        {
+          "file": "plugins/daiku/hooks/README.md",
+          "simbolo": "§ Not a security barrier",
+          "ancora": "These six sit below that line and cover something else: **distraction**. Gestures that",
+          "riga": 25,
+          "cosa": "La § *Not a security barrier* diceva «These four sit below that line», mentre lo stesso file dichiara sei hook (titolo riga 1, apertura riga 3, tabella righe 8-13). Il referente è l'intero insieme degli hook della tabella, non un sottoinsieme: la giustificazione che segue descrive `command-guard`, quindi lo include. Fossile dell'era a quattro hook: il giro 1 aveva riscritto titolo e apertura ma non questa riga, che era l'ultimo conteggio rimasto al valore precedente. «These four» → «These six».",
+          "grave": true,
+          "su_fix_precedente": false
+        }
+      ],
+      "scartati": [
+        {
+          "file": "plugins/daiku/hooks/self-check.mjs",
+          "simbolo": "module header docstring",
+          "riga": 13,
+          "perche": "Il referente della frase non è `daiku-config.mjs` ma il modulo che ogni hook importa, `project-root.mjs`. La storia lo prova: a 2fb7b68 (tre hook) la riga diceva «all three import» e tutti e tre importavano `project-root.mjs`, mentre solo due importavano `daiku-config.mjs`; a c03c124 (quattro hook) «all four import», con quattro su project-root e tre su daiku-config. La frase ha sempre contato gli importatori di `project-root.mjs`; su questo albero tutti e sei gli hook lo importano, quindi «all six import» è vero e il referente non si è spostato. Alla base il numero era fermo a quattro: il passaggio a «six» corregge un conteggio invecchiato, non introduce una divergenza."
+        }
+      ],
+      "da_confermare": [],
+      "oscillazione": [],
+      "verdetto": "continua",
+      "perche": "Un grave solo, ma `hooks/README.md` è l'area più calda del diff — toccata da tutti e tre i giri — e il grave del giro 3 è un conteggio falso proprio lì, in una sezione che i giri precedenti non avevano riscritto: materiale ancora da rileggere dopo l'ultima scrittura. Il trend è decrescente (3 → 2 → 1 gravi) e lo scarto del giro è una confutazione solida, ma la regola 3 del contratto dice «continua se i gravi toccano un contratto che il giro ha modificato in più punti»: un giro 4 sul solo materiale appena scritto chiude la classe. Segnali verificati: tutte e otto le ancore dei giri 1-2 ancora presenti nei loro file (git grep), nessuna collisione di ancora."
+    },
+    {
+      "n": 4,
+      "finder_tornati": 1,
+      "finder_mancati": 0,
+      "applicati": [
+        {
+          "file": "plugins/daiku/hooks/lib/daiku-config.mjs",
+          "simbolo": "fakeContext",
+          "ancora": "/** A hand-built context: what the five hooks' test benches use. Seat fields resolve",
+          "riga": 255,
+          "cosa": "Il commento di `fakeContext` diceva «the six hooks' test benches», ma i moduli che la usano davvero sono cinque (command-guard, edit-guard, run-advice, session-advice, stop-advice); `contracts-post-edit.mjs` non importa `daiku-config.mjs` e il suo banco non costruisce contesti. Il diff aveva portato la riga da «five» a «six» lasciando la riga 4 a «five of the six guards»: cinque in testa e sei qui. Portata a «five», riconciliata con la riga 4.",
+          "grave": false,
+          "su_fix_precedente": false
+        },
+        {
+          "file": "plugins/daiku/hooks/README.md",
+          "simbolo": "§ Nothing switches itself on",
+          "ancora": "**`run-advice` is not a branch of this table, because it denies nothing.** `run-advice`",
+          "riga": 53,
+          "cosa": "Il paragrafo, aggiunto da questo diff, apriva con «The sixth hook», ma nella tabella `run-advice` è la quarta riga e la sesta è `stop-advice`: l'ordinale senza referente mandava il lettore sull'hook sbagliato. Sostituito il riferimento ambiguo con il nome dell'hook, che non invecchia.",
+          "grave": false,
+          "su_fix_precedente": false
+        },
+        {
+          "file": "plugins/daiku/hooks/README.md",
+          "simbolo": "§ They do not reach both hosts the same way",
+          "ancora": "`skills/new-feature/SKILL.md` § *7. Decisions are asked in chat* and in the *Operational",
+          "riga": 169,
+          "cosa": "La frase diceva che la regola sta in `new-feature/SKILL.md` anche nelle *Operational constraints* «that close that file», ma quella sezione è seguita da *Outcome*, *Self-deceptions* e *Cut rule*, che chiude il file: il qualificatore di posizione era falso. Rimosso, tenendo il rimando alle due sedi. Il qualificatore era stato introdotto dal giro 2, che la mia modifica riscrive.",
+          "grave": false,
+          "su_fix_precedente": true
+        }
+      ],
+      "scartati": [],
+      "da_confermare": [],
+      "oscillazione": [],
+      "scostamento_dal_blocco": "Sull'ultimo fix la mia misura e il blocco dell'applicatore divergono su entrambi i segnali, e li annoto. (a) `su_fix_precedente`: l'applicatore lo dichiara `true`; la misura stretta (`git grep -F '<ancora del giro 2>'`) lo direbbe `false`, perché l'ancora del giro 2 è ancora nel file — la riga è stata riscritta solo **oltre** il punto di troncamento a ~80 caratteri. (b) `oscillazione`: le due ancore (giro 2 e giro 4) coincidono **come stringa** per lo stesso file e simbolo, e il giro 2 precede il giro dell'ultimo fix; la misura stretta direbbe `true`. Ho adottato `su_fix_precedente: true` e `oscillazione: []` perché il discriminante che il contratto stesso dà fra i due segnali è semantico — `oscillazione` è «si torna indietro», `su_fix_precedente` è «un fix che ne corregge un altro avanzando» — e sul file non si torna indietro: la sezione è **tutta nuova di questo diff** (alla base `605aa38` non esiste), il giro 2 ha scritto «…*Operational constraints* that close that file», e il giro 4 ne ha tolto la qualifica falsa producendo un **terzo** stato. La collisione di stringa è un artefatto del troncamento: il testo che distingue le due versioni cade dopo l'ottantesimo carattere, quindi entrambe le ancore tronche sono identiche pur essendo le righe diverse. Registrato qui perché il contratto chiede di annotare lo scostamento accanto al fix.",
+      "verdetto": "continua",
+      "perche": "Nessun fix grave, ma uno ha `su_fix_precedente: true` — il primo del ciclo, e su una riga che il giro 2 aveva scritto: la regola 3 del contratto impone `continua` quando anche un solo fix riscrive una correzione registrata. Va detto che qui la regressione non è del tipo che la regola teme (il fix non disfa il giro 2, ne corregge una qualifica falsa), ma il trigger è deterministico e non lo aggiro. Giro 5 sui due file appena scritti."
+    },
+    {
+      "n": 5,
+      "finder_tornati": 1,
+      "finder_mancati": 0,
+      "applicati": [
+        {
+          "file": "plugins/daiku/hooks/lib/daiku-config.mjs",
+          "simbolo": "module header docstring",
+          "ancora": "Hence the rule governing five of the six hooks:",
+          "riga": 9,
+          "cosa": "Il diff aveva portato questa riga a «all six hooks», ma la regola «Without `.daiku/project.json` the guards stay silent» ne governa cinque: `contracts-post-edit.mjs` importa solo `project-root.mjs`, non legge il contesto, e il suo docstring dichiara «No gate on `.daiku/`, and that is deliberate», confermato da `hooks/README.md` § *Nothing switches itself on*. La riga 4 dello stesso docstring diceva già «five of the six guards»: ora la 9 vi si riconcilia.",
+          "grave": true,
+          "su_fix_precedente": false
+        },
+        {
+          "file": "plugins/daiku/skills/new-feature/SKILL.md",
+          "simbolo": "Operational constraints",
+          "ancora": "a write made from here outside those seats and the `{write_roots}` the machine declares",
+          "riga": 201,
+          "cosa": "Il bullet diceva «outside those two seats» (cartella del problema e `{paths.lib_notes}`), ma `runSeats()` in `hooks/lib/run-advice.mjs` misura tre sedi: `{paths.studies}`, `{paths.lib_notes}` e `ctx.writeRoots` — e dentro una cartella di `write_roots` il promemoria non arriva. Aggiunta la terza sede, allineando la skill al codice e alla sede gemella `hooks/README.md`, che elenca `{write_roots}` fra le sedi del run.",
+          "grave": true,
+          "su_fix_precedente": false
+        }
+      ],
+      "scartati": [],
+      "da_confermare": [],
+      "oscillazione": [],
+      "verdetto": "continua",
+      "perche": "Due fix gravi (sotto la soglia della regola 2, che ne chiede tre per imporre un altro giro senza discutere) e nessun `su_fix_precedente`. Ma uno dei due sta nel docstring di `daiku-config.mjs`, che i giri 3, 4 e 5 hanno riscritto in tre punti diversi: la regola 3 dice `continua` quando i gravi stanno su materiale appena riscritto o toccano un contratto modificato in più punti. Il daiku-config ne ha già pagati tre. Giro 6 — l'ultimo consentito dal guardrail. Segnali verificati: tutte e dodici le ancore registrate ancora presenti nei loro file (git grep), nessuna collisione di ancora."
+    },
+    {
+      "n": 6,
+      "finder_tornati": 1,
+      "finder_mancati": 0,
+      "applicati": [
+        {
+          "file": "plugins/daiku/hooks/lib/run-advice.mjs",
+          "simbolo": "notice()",
+          "ancora": "`{paths.studies}`, `{paths.lib_notes}` and `{write_roots}`. It is",
+          "riga": 255,
+          "cosa": "La stringa emessa all'apertura nominava due sedi; `runSeats()` ne somma tre (`ctx.studies`, `ctx.libNotes`, `ctx.writeRoots`). Aggiunto `{write_roots}`: il modello non legge più un perimetro di due cartelle mentre il codice ne applica tre. Il docstring dello stesso file, `hooks/README.md` e `skills/new-feature/SKILL.md` ne nominavano già tre.",
+          "grave": true,
+          "su_fix_precedente": false
+        },
+        {
+          "file": "plugins/daiku/hooks/lib/run-advice.mjs",
+          "simbolo": "reminder()",
+          "ancora": "run owns (`{paths.studies}`, `{paths.lib_notes}`, `{write_roots}`). A",
+          "riga": 270,
+          "cosa": "Stessa divergenza nella stringa emessa al write fuori sede: nominava due sedi, il codice ne misura tre. Aggiunto `{write_roots}`, testo invariato altrove.",
+          "grave": true,
+          "su_fix_precedente": false
+        },
+        {
+          "file": "plugins/daiku/hooks/lib/daiku-config.mjs",
+          "simbolo": "module header docstring",
+          "ancora": "Hence the rule governing four of the six hooks — `session-advice` excepted,",
+          "riga": 9,
+          "cosa": "La riga dichiarava la regola del silenzio per cinque dei sei hook, ma `session-advice` la infrange: `installWarning()` non passa dal contesto, legge `.daiku/` e `project.json` con `env`, e parla proprio quando `.daiku/` esiste e `project.json` manca; `warnings()` lo include sempre e `main()` lo emette su `SessionStart` (banco verde «`.daiku/` without project.json: warning»). Gli altri quattro tacciono davvero, verificati sul codice. Numero portato a quattro e nominata l'eccezione. **Seconda riscrittura consecutiva del numero su questa stessa riga** — l'applicatore stesso la segnala come instabile.",
+          "grave": true,
+          "su_fix_precedente": true
+        }
+      ],
+      "scartati": [],
+      "da_confermare": [],
+      "oscillazione": [],
+      "verdetto": "continua",
+      "perche": "Tre fix, tutti e tre gravi: la regola 2 del contratto impone un altro giro senza discutere. E uno porta `su_fix_precedente: true` — il secondo del ciclo, e sulla stessa riga del giro 5, che il numero lo aveva già riscritto una volta (sei → cinque → quattro): la regola 3 impone `continua` anche per quello. Il guardrail a 6 impedisce il giro 7, quindi l'uscita è `giri-esauriti`. Segnali verificati: l'ancora del giro 5 su `daiku-config.mjs` riga 9 è sparita dal file (riscritta) → `su_fix_precedente: true` confermato; tutte le altre tredici ancore registrate sono ancora al loro posto; nessuna collisione di ancora."
+    }
+  ],
+  "uscita": "giri-esauriti",
+  "gate": "verde",
+  "gate_detail": "Perimetro ricalcolato dal gate: 25 file modificati + 1 nuovo = 26. (1) `claude plugin validate plugins/daiku` → PASSATO, exit 0, «Validation passed». (2) `python ~/.codex/skills/.system/plugin-creator/scripts/validate_plugin.py plugins/daiku` → PASSATO, exit 0, «Plugin validation passed» (pyyaml presente, nessun ModuleNotFoundError). (3) `node .docs/tools/check-topology.mjs plugins/daiku` → PASSATO, exit 0, checks=381, passed=381, failed=[]. (4) `node plugins/daiku/hooks/self-check.mjs` → ESEGUITO (il perimetro tocca `hooks/` e `architect/`): 11 banchi, 1177 checks, tutti verdi, exit 0. Totali per banco: command-guard 93, contracts-post-edit 82, edit-guard 83, project-root 19, run-advice 53, session-advice 26, stop-advice 40, architect/architect.mjs 565, architect/ledger.mjs 74, skills/init/scan.mjs 34, hooks/template-check.mjs 108; `daiku-config.mjs` nessun banco proprio (modulo importato, coperto dai banchi di chi lo importa). (5) `git check-ignore -v` → ESEGUITO (il diff introduce file nuovi): l'unico file non tracciato sotto `plugins/` è `plugins/daiku/hooks/lib/run-advice.mjs`, NON ignorato → si pubblica al prossimo commit. Verificato in proprio: i due file di `skills/ship-feature/` sono rinomine di file tracciati (`R099`, `R077`), non file nuovi. (6) Audit del testo per il modello (`claude-api` prompt-audit via tool Skill, sola lettura, diff proposto NON applicato, audit disponibile ed eseguito): nessun rilievo ad alta confidenza su righe aggiunte o modificate → il colore non cambia. Rilievi a media/bassa confidenza sulle stesse righe: (a) MEDIA — `hooks/lib/edit-guard.mjs`, commento aggiunto «and the only thing that changed is that the denial now names the key that admits it», frase relativa a una versione precedente del messaggio di diniego; riscrittura proposta: dire solo cosa il diniego fa ora. (b) BASSA — `hooks/lib/stop-advice.mjs`, commento aggiunto con una misura datata 30 settembre 2026: è la prova empirica che giustifica la guardia, quindi resta. (c) BASSA — `hooks/lib/run-advice.mjs`, commento «(owner's decision, 30 September 2026)»: provenienza datata di una decisione, non un racconto di ciò che c'era prima. Rilievi su righe che il diff non ha toccato: 0. Nessun comando non eseguito per condizione non verificata, nessun comando fallito, nessun rosso da comando che non è tornato. Correzioni applicate dal gate: nessuna; la versione dei due manifest è già allineata a 1.0.4.",
+  "commit": "saltato",
+  "commit_perche": "Uscita `giri-esauriti`: una delle condizioni di § Chiusura la vieta. Il ciclo ha esaurito il guardrail a 6 senza convergere — il giro 6 ha applicato tre fix gravi, quindi per la regola 2 avrebbe voluto un giro 7. Non è una condizione che si possa aggirare: consegnerebbe un diff la cui ultima scrittura nessun finder ha letto.",
+  "commit_sha": null
+}
