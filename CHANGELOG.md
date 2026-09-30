@@ -1,14 +1,29 @@
 # Changelog
 
-## 1.0.2 — 2026-09-30
+### 1.0.3
+<sub>2026-09-30</sub>
 
-`init` now points Claude Code's memory into the repository instead of being stopped by its own write guard, leaves out commands whose tool no dependency manifest declares, and no longer repeats in the stack section what the project's own lines already say.
+- `init` runs in one shot after the two language questions: no further question, and a report with nothing left for you to do.
+- `init` points the domain roles and area policies at the rule files your project already keeps, instead of listing them for you to write.
+- `init` adds to your `.gitignore` the lines Daiku needs, and keeps `.daiku/` and the memory folder versioned.
+- On Codex, `init` installs guardrails and subagent roles itself by running `sync-host`.
+- A machine can declare in `environment.local.json` the folders outside the repository where agents may create files (`write_roots`).
 
-## 1.0.1 — 2026-09-30
+### 1.0.2
+<sub>2026-09-30</sub>
 
-Project parameters, domain and policies now travel with the repository: `.daiku/` is versioned, only the machine's override stays out, and the guard that blocked those commits is gone. The end-of-session notice no longer mistakes unrelated files in the review state folder for open cycles.
+- `init` now points Claude Code's memory into the repository instead of being stopped by its own write guard.
+- `init` leaves out commands whose tool no dependency manifest declares.
+- `init` no longer repeats in the stack section what the project's own lines already say.
 
-## 1.0.0 — 2026-09-28
+### 1.0.1
+<sub>2026-09-30</sub>
+
+- Project parameters, domain and policies now travel with the repository: `.daiku/` is versioned, only the machine's override stays out, and the guard that blocked those commits is gone.
+- The end-of-session notice no longer mistakes unrelated files in the review state folder for open cycles.
+
+## $\color{#3b82f6}{\textsf{1.0.0}}$
+<sub>2026-09-28</sub>
 
 Daiku 1.0: autonomous development contracts for Claude Code and Codex. AI agents work fast and autonomously, inside the architectural constraints you decide — enforced by checks that really fire, not by advice.
 

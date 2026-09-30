@@ -4,9 +4,10 @@ A file in here is named after the **role** a skill cites (`.daiku/domain/<role>.
 name is the address, the content is this project's domain and judgement. Whoever writes here
 answers a question a skill asks; whoever reads a skill never finds the answer written twice.
 
-**Everything in this folder is yours.** Daiku drops some of these with a default already written,
-the first time `/init` runs, and never touches them again: no package update overwrites what you
-changed. If a default does not suit you, rewrite it. If you delete it, the skill that cites it
+**Everything in this folder is yours.** The first time `/init` runs, it writes a role here as a
+pointer to the file where your project already answers it, or drops the package's default where
+there is one and your project has no answer; it never touches them again: no package update
+overwrites what you changed. If a default does not suit you, rewrite it. If you delete it, the skill that cites it
 degrades and says so — it does not break.
 
 Shape, citation convention and the degradation rule live in the Daiku package, in its `contracts/project-contract.md`.

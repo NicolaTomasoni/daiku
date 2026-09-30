@@ -30,7 +30,8 @@
  *    `.claude/`, after `project.json` has already opened this gate. Everywhere else —
  *    including outside the repository — a create is denied, except inside
  *    `{paths.review_state}`, `{temp_dir}` or the OS temp dir when those sit outside
- *    the repo.
+ *    the repo, and inside the `{write_roots}` the machine declares: there, outside the
+ *    repository, editing and creating both pass.
  *
  * Layer placement *inside* `{code_root}` is deliberately not enforced here: a path
  * cannot say whether the layer is right, only the `arch` finder can, by reading the
@@ -254,7 +255,7 @@ function evaluate(filePath, cwd, env, ctx, root) {
   const creating = !exists;
 
   const inRepo = root ? isInside(absolute, root) || resolve(absolute) === resolve(root) : false;
-  const outsideSeats = [ctx.reviewState, ctx.tempDir, sysTmp].filter(Boolean);
+  const outsideSeats = [ctx.reviewState, ctx.tempDir, sysTmp, ...(ctx.writeRoots || [])].filter(Boolean);
   const outsideAllowed = insideAny(absolute, outsideSeats);
 
   if (!inRepo) {
@@ -262,7 +263,7 @@ function evaluate(filePath, cwd, env, ctx, root) {
     return {
       reason:
         `\`${filePath}\` stands outside the repository, and it is not inside ` +
-        `one of the outside seats (\`{paths.review_state}\`, \`{temp_dir}\`, OS temp): ` +
+        `one of the outside seats (\`{paths.review_state}\`, \`{temp_dir}\`, OS temp, \`{write_roots}\`): ` +
         `a skill writes either under the repository root or in its declared outside seats. ` +
         `If this target is legitimate, declare it — do not work around this denial.`,
     };
@@ -389,6 +390,10 @@ const CASES = [
   ['create in OS temp', 'C:/Temp/work.json', R, 'allow', '', CTX_FULL, []],
   ['create in home', 'C:/Users/me/x.md', R, 'deny', 'outside the repository', CTX_FULL, []],
   ['edit existing outside seat file', 'C:/dev/review-state/ledger.json', R, 'allow', '', CTX_FULL, ['C:/dev/review-state/ledger.json']],
+  ['create inside a write root outside repo', 'C:/dev/work/x.md', R, 'allow', '', fakeContext({ writeRoots: ['C:/dev/work'] }), []],
+  ['edit inside a write root outside repo', 'C:/dev/work/x.md', R, 'allow', '', fakeContext({ writeRoots: ['C:/dev/work'] }), ['C:/dev/work/x.md']],
+  ['create beside a write root, not inside', 'C:/dev/workshop/x.md', R, 'deny', 'outside the repository', fakeContext({ writeRoots: ['C:/dev/work'] }), []],
+  ['no write roots: outside stays denied', 'C:/dev/work/x.md', R, 'deny', 'outside the repository', CTX_FULL, []],
   ['missing tech_doc key: create there denied', 'docs/tech.md', R, 'deny', 'is denied', CTX_BARE, []],
   ['missing keys: edit still passes', 'README.md', R, 'allow', '', CTX_BARE, ['C:/dev/project/README.md']],
   ['../ escape denied', '../evil.md', R, 'deny', 'outside the repository', CTX_FULL, []],
@@ -511,6 +516,23 @@ function selfCheck() {
   }));
   if (!localWins.tempDir || !isInside('C:/dev/project/tmp-local/x', localWins.tempDir)) {
     failed.push('tempDir does not let the machine local file win whole');
+  }
+  ran += 1;
+  const rootsLocal = loadContext('C:/dev/project', readers({
+    ...proj,
+    'C:/dev/project/.daiku/environment.local.json': JSON.stringify({ contract: 1, write_roots: ['C:/dev/work'] }),
+  }));
+  if (!(rootsLocal.writeRoots || []).some((r) => isInside('C:/dev/work/x.md', r))) {
+    failed.push('write_roots does not resolve from the machine local file');
+  }
+  ran += 1;
+  const rootsWhole = loadContext('C:/dev/project', readers({
+    'C:/dev/project/.daiku/project.json': '{"contract": 1}',
+    'C:/dev/project/.daiku/environment.local.json': '{"contract": 1}',
+    'C:/dev/project/.daiku/environment.json': JSON.stringify({ contract: 1, write_roots: ['C:/dev/work'] }),
+  }));
+  if ((rootsWhole.writeRoots || []).length !== 0) {
+    failed.push('write_roots must take the local file whole, not fall through to the project one');
   }
   ran += 1;
   const noTemp = loadContext('C:/dev/project', readers({

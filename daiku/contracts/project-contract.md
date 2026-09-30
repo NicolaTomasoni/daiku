@@ -152,7 +152,7 @@ diverge at the first change: a reference reaches the rules without duplicating t
 
 - a path appearing in the §4 table → `.daiku/project.json`;
 - a path appearing in §7 of `contracts/orchestration.md` — `hosts`, `backends`,
-  `default_host`, `temp_dir` → `environment.json`, whose §8 says where to look.
+  `default_host`, `temp_dir`, `write_roots` → `environment.json`, whose §8 says where to look.
 
 No key lives in both (§8), so the cited path is enough to say where to look.
 
@@ -211,7 +211,9 @@ strength each layer is tested", not the macrocategories' list.
 The package **may** carry a default domain file, under
 `templates/project/domain/<role>.md`. `init` deposits it in `.daiku/domain/<role>.md`
 the first time and **never touches it again**: from then on it belongs to the user, who rewrites it as they
-please without any update taking it away.
+please without any update taking it away. Where the project already answers that role in a file of
+its own, `init` writes there a pointer to that file instead of the default: the project's answer
+wins, and its single text stays the one that is changed.
 
 It is the opposite choice to the obvious one, and the reason is practical: a role without a default forces every
 project to write one from scratch before getting full behaviour, and meanwhile the skill
@@ -361,8 +363,8 @@ loses, because a perimeter drawn around the working roots does not reach it. Wha
 to run is inside the project, and inside its history as well.
 
 **One path under `.daiku/` stays out, and it is the machine's override**: the `.gitignore` line
-excluding `.daiku/environment.local.json`. `init` declares it rather than writing it, because it
-never touches `.gitignore`.
+excluding `.daiku/environment.local.json`. `init` writes it in the repository's `.gitignore` when
+no line of the repository covers it yet.
 
 `environment.json` standing in every project has a price, and it is declared: the same change to a
 model's alias is repeated in N projects. It is paid knowingly, because the alternatives are worse —
@@ -383,6 +385,10 @@ not, and the local one is the only path under `.daiku/` staying out of the histo
 **One thing the file does not carry: `temp_dir`.** An absent `temp_dir` is not a degradation, it is
 the normal case: the readers fall back on the operating system's temporary directory, which is the
 correct answer on every machine anyway. Write it only where that fallback is wrong.
+
+**Nor does it carry `write_roots`**: the folders outside the repository a machine lets its agents
+write in are that machine's, and they go in `environment.local.json`. Absent, the write guard keeps
+every write outside the repository to the declared outside seats.
 
 **When a value seems to belong in both**, whoever would update it at the next
 change decides: if putting it in `project.json` forced repeating the same identical change in

@@ -82,7 +82,7 @@ can reach because they run *before* there is a chain:
 | Entry point | Why |
 |---|---|
 | `init` | it is the first of all: it opens `.daiku/` on a project that does not have it, and until it runs no other contract has the values to work with |
-| `sync-host` | it carries guardrails and subagent roles into the host layer that cannot receive them from the package, and it is re-launched on every update |
+| `sync-host` | it carries guardrails and subagent roles into the host layer that cannot receive them from the package; `init` launches it on Codex as its last step, and it is re-launched on every update |
 
 Everything else — `decision-doc`, `update-memory`, `execute`,
 `finder-prompt`, `applier`, `arch-check`, `perf`, `dead-code`, `test-coverage`, `study` — is an **internal contract**: a
@@ -126,8 +126,8 @@ rebuilding the graph from the caller's prose.
 
 | Node | Invoked by | Receives already resolved | Returns | Re-delegates |
 |---|---|---|---|---|
-| `init` | owner | technical root, or nothing and the current directory applies | the report of § *Report* in its file: written, left as it was, to fill in | no |
-| `sync-host` | owner | technical root, or nothing and the current directory applies | the report of § *Report* in its file: copied, hooked, not hooked, roles written, and the gestures left to the user | no |
+| `init` | owner | technical root, or nothing and the current directory applies | the report of § *Report* in its file: written, left as it was, not declared | yes — `sync-host` on Codex, as its last step |
+| `sync-host` | owner, `init` on Codex | technical root, or nothing and the current directory applies | the report of § *Report* in its file: copied, hooked, not hooked, roles written, and the gestures left to the user | no |
 | `new-feature` | owner | description of the feature or problem, in natural language | § *Outcome* of its file: the opened folder, the documents the chain produced and the delivery outcome | yes — per-area investigation, `research`, `decision-doc` twice, and `develop-feature` as orchestrating child |
 | `decision-doc` | `new-feature` § *The study of decisions* and § *Incorporation* | problem folder, optional subset to analyse, the already written document, the paths of the `research` notes and of the relevant memories, and on receiving the owner's answers by number | `0.5. strategic-study.md` or `1. decision-doc.md` on disk, with `0. problem.md` refined, and the block of § *The block you return* of its file | no |
 | `research` | owner, `new-feature` § *The missing knowledge* | name of the technology; from `new-feature` also the version in use in the project and the questions the notes must answer | path of the file in `{paths.lib_notes}/`, in both modes, nothing else | yes — fan-out per thematic block (leaves) + `study` as leaf child |
@@ -383,6 +383,7 @@ looked up, are §8 of `contracts/project-contract.md`.
 | `backends.<backend>.sequential_fanout` | declared only on backends whose fan-out must be sequentialised (§5) |
 | `backends.<backend>.caveats` | that backend's warnings to report in summary, one per line; absent if there are none |
 | `temp_dir` | machine's temporary directory, for artefacts that must not end up in the repository; **absent is the normal case** — the readers fall back on the operating system's, which is the right answer on every machine |
+| `write_roots` | folders **outside the repository** where the write guard admits writing and creating — a machine's own paths, so they belong in `environment.local.json`; **absent is the normal case**: outside the repository only `{paths.review_state}`, `{temp_dir}` and the operating system's temporary directory are writable |
 
 No key is mandatory besides `contract`: for everything else the degradation of
 §6 of `contracts/project-contract.md` applies.

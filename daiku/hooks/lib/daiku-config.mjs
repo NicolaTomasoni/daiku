@@ -44,6 +44,7 @@ const ABSENT = Object.freeze({
   environmentLocalFile: null,
   hostLocalSettings: null,
   tempDir: null,
+  writeRoots: Object.freeze([]),
 });
 
 /** A path from the JSON, resolved against the technical root (§3 of the contract). */
@@ -115,6 +116,7 @@ export function loadContext(root, reads = REAL_READS) {
       environmentLocalFile: resolve(join(root, '.daiku', 'environment.local.json')),
       hostLocalSettings: resolve(join(root, '.claude', 'settings.local.json')),
       tempDir: resolveTempDir(root, reads),
+      writeRoots: resolveWriteRoots(root, reads),
     };
   } catch {
     return ABSENT;
@@ -146,6 +148,31 @@ function resolveTempDir(root, reads) {
     }
   }
   return null;
+}
+
+/**
+ * The `writeRoots` seats: folders outside the repository where writing is admitted.
+ * The environment file of §8 — the machine's local one first, **taken whole**: where it
+ * exists and parses, the project one is not read. Absent is the normal case, and reads
+ * as no root at all.
+ */
+function resolveWriteRoots(root, reads) {
+  for (const file of [
+    join(root, '.daiku', 'environment.local.json'),
+    join(root, '.daiku', 'environment.json'),
+  ]) {
+    let json;
+    try {
+      if (!reads.exists(file)) continue;
+      json = JSON.parse(reads.read(file));
+    } catch {
+      continue;
+    }
+    if (!json || typeof json !== 'object') continue;
+    const declared = Array.isArray(json.write_roots) ? json.write_roots : [];
+    return Object.freeze(declared.map((x) => resolvePath(x, root)).filter(Boolean));
+  }
+  return Object.freeze([]);
 }
 
 /**
@@ -242,5 +269,6 @@ export function fakeContext(fields = {}) {
     environmentLocalFile: seat(fields.environmentLocalFile),
     hostLocalSettings: seat(fields.hostLocalSettings),
     tempDir: seat(fields.tempDir),
+    writeRoots: Array.isArray(fields.writeRoots) ? fields.writeRoots.map(seat).filter(Boolean) : [],
   };
 }
