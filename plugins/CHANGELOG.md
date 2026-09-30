@@ -8,7 +8,7 @@
 - When the write guard denies a new file, it now names the key that admits it — and a folder you declare in `write_roots` is a seat inside the repository and outside it alike.
 - `develop-feature` is now `ship-feature`.
 - The three folders of the method's own documents — work folders, technology notes, feature catalogue — stand under `.daiku/`, and `init` assigns them instead of adopting a folder of yours that looks like them.
-- `init` closes in the language you chose instead of answering in English whatever you answered.
+- Various fixes.
 
 ---
 
