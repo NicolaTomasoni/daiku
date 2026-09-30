@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 7f30fa0d-9a97-482d-ba1b-c32231e0c9e1
-  modified: 2026-09-26T00:08:47.000Z
+  modified: 2026-09-30T13:27:13.689Z
 ---
 
 **Deciso il 19 settembre 2026, preparando gli hook per la distribuzione.** Un pacchetto si
@@ -52,8 +52,8 @@ dove un divieto può avere una sede deterministica, ce l'ha sempre. Fa eccezione
 davvero dal progetto (oggi solo il pool dei worktree): quello nasce **spento**, con la sua chiave
 nel JSON, e nel banco un caso che prova che da spento **non** nega. Ogni ramo ha la sua riga nella
 tabella di `plugins/daiku/hooks/README.md`, e i banchi di tutto ciò che il pacchetto esegue — i
-moduli di `hooks/lib/` con un banco, il banco dei manifest e i due programmi di `architect/` — si
-lanciano insieme con `node plugins/daiku/hooks/self-check.mjs`, che somma i controlli e esce `1` al
+moduli di `hooks/lib/` con un banco, il banco dei manifest, i due programmi di `architect/` e la
+scansione di `init` (`skills/init/scan.mjs`) — si lanciano insieme con `node plugins/daiku/hooks/self-check.mjs`, che somma i controlli e esce `1` al
 primo rosso: va aggiunto a ogni verifica di rilascio accanto ai due validatori. Il numero dei banchi
 e dei controlli lo dice l'uscita dello strumento, non questo file.
 

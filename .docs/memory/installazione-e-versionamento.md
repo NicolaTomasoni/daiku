@@ -2,7 +2,10 @@
 name: installazione-e-versionamento
 description: "I comandi di installazione e aggiornamento sui due host, cosa governa l'aggiornamento, il cachebuster di Codex in sviluppo locale e il terzo canale di distribuzione"
 metadata:
+  node_type: memory
   type: project
+  originSessionId: 74fa8bc9-dbb1-4c77-bf91-e6ec34544097
+  modified: 2026-09-30T13:27:32.355Z
 ---
 
 **I comandi, verificati il 18 settembre 2026.** Su Claude Code `/plugin marketplace add
@@ -25,6 +28,13 @@ relativo alla radice del marketplace, che sta **due livelli sopra** il `marketpl
 **Cosa governa l'aggiornamento: il campo `version` del manifest, in semver stretto.** Si bumpa
 quello e i due host tirano la versione nuova; finché non si bumpa, nessuno aggiorna. Claude Code
 tiene ogni versione in una cartella propria e conserva le orfane per 14 giorni.
+
+**Su Claude Code l'aggiornamento da riga di comando è in due tempi**, verificato il 30 settembre
+2026 su `claude` 2.1.276 con `--help`: `claude plugin marketplace update [name]` («Update
+marketplace(s) from their source»), poi `claude plugin update <plugin>` («Update a plugin to the
+latest version (restart required to apply)»). Il pacchetto li porta al progetto ospite in
+quest'ordine, come task VS Code `daiku: update` che `init` deposita. Che `plugin update` da solo non
+rinfreschi il catalogo del marketplace è un'assunzione, non una prova.
 
 **In sviluppo locale, su Codex, il bump non è la via: c'è il cachebuster.** Si sostituisce il
 suffisso dopo `+` nella versione — `0.1.0` → `0.1.0+codex.local-20260918-143000` — e si reinstalla

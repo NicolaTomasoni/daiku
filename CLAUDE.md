@@ -194,16 +194,16 @@ segnalare le skill che si caricherebbero con i metadati vuoti.
 
 Nessuno dei due però guarda dentro il codice eseguibile del pacchetto: gli hook, tutti
 **fail-open** — davanti a un guasto tacciono ed escono `0`, quindi rotti e silenziosi si
-assomigliano — e i due programmi di `plugins/daiku/architect/`. La terza verifica è la loro, e
-vale come le altre due:
+assomigliano — i due programmi di `plugins/daiku/architect/` e la scansione di `init`,
+`plugins/daiku/skills/init/scan.mjs`. La terza verifica è la loro, e vale come le altre due:
 
 ```bash
 node plugins/daiku/hooks/self-check.mjs
 ```
 
 Lancia insieme i banchi di prova di tutto ciò che il pacchetto esegue — i moduli di
-`plugins/daiku/hooks/lib/`, il banco dei manifest degli host e i due programmi di
-`plugins/daiku/architect/` — stampa il totale contato ed esce `1` al primo caso rosso: quanti
+`plugins/daiku/hooks/lib/`, il banco dei manifest degli host, i due programmi di
+`plugins/daiku/architect/` e `skills/init/scan.mjs` — stampa il totale contato ed esce `1` al primo caso rosso: quanti
 banchi e quanti controlli siano lo dice la sua uscita, non questa riga. Il banco del ledger lavora
 con Git vero su repository usa e getta nella cartella temporanea di sistema: vuole `git` nel `PATH`.
 

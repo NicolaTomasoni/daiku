@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 48eaa498-ed6e-4a36-847d-3f8fa95f7f21
-  modified: 2026-09-30T12:10:33.792Z
+  modified: 2026-09-30T13:27:27.045Z
 ---
 
 Il repo ospita il prodotto Daiku. Questo repository sta in `C:\dev\daiku-workspace\daiku-dev`,
@@ -22,13 +22,13 @@ perché i due host cercano file con nomi diversi e ignorano quelli dell'altro.
 
 | Dentro il pacchetto | Cosa c'è | Chi lo legge |
 |---|---|---|
-| `skills/` | i **19 contratti** del metodo, uno per cartella | **entrambi** gli host, stessi identici file |
+| `skills/` | i **19 contratti** del metodo, uno per cartella; accanto alla `SKILL.md` di `init` sta `scan.mjs`, il programma che misura cosa manca sul disco prima che `init` scriva, col banco che `hooks/self-check.mjs` lancia | **entrambi** gli host, stessi identici file |
 | `contracts/` | `orchestration.md`, `project-contract.md` | le skill li aprono per path; non sono skill loro stessi |
 | `agents/` | `finder` — l'unico subagent a toolset ristretto | solo Claude Code: Codex lo rifiuta |
 | `hooks/` | il wiring `hooks.json`, i **cinque hook** in `lib/` e i **due moduli** che importano (`project-root.mjs`, `daiku-config.mjs`); accanto, fuori da `lib/`, `self-check.mjs`, `template-check.mjs` e `README.md`, che sono di chi sviluppa il pacchetto e non si trasportano | solo Claude Code: su Codex `plugin_hooks` è rimossa |
 | `architect/` | `architect.mjs`: il **valutatore deterministico** — risponde a nove domande meccaniche e tiene l'ordine della catena; `ledger.mjs`: lo **strumento lato disco della review** — legge Git, scrive il ledger e chiede i verdetti al valutatore. Ciascuno col suo banco, che `hooks/self-check.mjs` lancia (vedi [[valutatore-deterministico]]) | l'agente, che li invoca: non sono hook, nessun `hooks.json` li nomina, e non si installano in un progetto |
 | `schemas/` | `blocks.json`: lo specchio controllabile dei blocchi di ritorno — la prosa del nodo resta normativa | i controlli scritti a mano e gli umani che scrivono i nodi |
-| `templates/` | gli scheletri che `init` copierà nel progetto ospite | nessuno: non vengono mai letti in place |
+| `templates/` | gli scheletri che finiscono nel progetto ospite: `init` copia `project/` sotto `.daiku/` e nel file di istruzioni, e `vscode/tasks.json`, che porta il task `daiku: update`; `sync-host` copia `codex/hooks.json` | nessuno: non vengono mai letti in place |
 | `.claude-plugin/`, `.codex-plugin/` | i due manifest, uno per host | gli host, all'installazione |
 
 Accanto, nella radice di `plugins/`, le due **vetrine** — non sono il pacchetto, sono il cartello

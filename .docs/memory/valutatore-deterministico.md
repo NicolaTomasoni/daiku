@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 43bcfac4-1cc3-4310-acf9-530699fcf261
-  modified: 2026-09-28T14:35:52.739Z
+  modified: 2026-09-30T13:27:14.948Z
 ---
 
 **Dal 23 settembre 2026 il prodotto ha un valutatore deterministico.** È
@@ -60,7 +60,7 @@ riporta accanto al totale `never_red`, le regole che nessuna sua fixture ha mai 
 sempre passata non si distingue da una che non può fallire. I due banchi stanno accanto ai due
 programmi e non in `hooks/lib/`, che viene copiata nel progetto dell'utente; quello di `ledger.mjs`
 lavora con Git vero su repository usa e getta nella cartella temporanea di sistema. Si lanciano con
-gli altri con `node plugins/daiku/hooks/self-check.mjs`, che da qui lancia **sei** banchi.
+gli altri con `node plugins/daiku/hooks/self-check.mjs`.
 
 **E c'è un campo che misura.** `architect_agreement`, nell'esito di `develop-feature`, dice se la
 lettura dell'agente coincideva col verdetto: è il primo uso del valutatore per misurare Daiku
