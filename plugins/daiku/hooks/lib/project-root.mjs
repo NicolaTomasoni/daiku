@@ -15,12 +15,14 @@
  *  2. **the closest ancestor of the cwd that carries them**, climbing and stopping at the git
  *     root: that is where the command runs, and a nested project's parameters are nearer than
  *     an outer project's;
- *  3. **the main tree, when the cwd stands in a linked worktree.** A worktree carries no
- *     `.daiku/` — the folder is not versioned, so `git worktree add` does not bring it — and the
- *     delivery runs *inside* a worktree. The parameters are then read from the main tree, at the
- *     same relative position the command occupies here: the worktree is a copy, and the technical
- *     root sits in the same place in both. Leaving this to the caller would make a fail-open
- *     guard depend on a prose step of another skill, which is the one thing it cannot do;
+ *  3. **the main tree, when the cwd stands in a linked worktree carrying no parameters.**
+ *     `.daiku/` is versioned, so a worktree normally has its own and step 2 already resolved it —
+ *     but a project that has not committed the folder yet, or a worktree born from an older
+ *     branch, has none, and the delivery runs *inside* a worktree. The parameters are then read
+ *     from the main tree, at the same relative position the command occupies here: the worktree is
+ *     a copy, and the technical root sits in the same place in both. Leaving this to the caller
+ *     would make a fail-open guard depend on a prose step of another skill, which is the one thing
+ *     it cannot do;
  *  4. **the directory the host declares**, even without parameters, then the git root, then the
  *     cwd — the degradation ladder. A project that never opened Daiku reaches `loadContext`
  *     with a root that has no parameters, which is exactly the answer it expects.

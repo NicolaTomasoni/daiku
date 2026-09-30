@@ -35,15 +35,14 @@ ones that never saw Daiku. So `command-guard`'s first question is not "is this
 command dangerous?" but "did this project ask for anything?".
 
 1. **Without `.daiku/project.json` it denies nothing**, ever, without even reading the line.
-2. **Only one branch has its own switch**: `{worktree.pool}`. The other five deny
+2. **Only one branch has its own switch**: `{worktree.pool}`. The other four deny
    always — an agent is never left free to push, to skip commit
-   hooks, to commit what stands under `.daiku/`, or to sign a commit as its author:
+   hooks, or to sign a commit as its author:
    never trust an LLM.
 
 | Branch | Switched on by | What it denies |
 |---|---|---|
 | Windows links | *no switch*: `.daiku/` is enough | a recursive removal crossing a junction and emptying the real directory on the other side |
-| `.daiku/` | *no switch*: `.daiku/project.json` is enough | every commit carrying the folder or anything inside it — an explicit pathspec in `add`/`commit`, or already in the stage (read with a read-only `git status`, degrading to allowed when it fails). `.gitignore` keeps the folder out, and this is the backstop for when that line is missing or was bypassed with `-f` |
 | worktree pool | `worktree.pool` | removals inside a pool worktree, and `pnpm install` run from one |
 | `--no-verify` | *no switch*: `.daiku/project.json` is enough | `git commit` with `-n` or `--no-verify`, wherever the flag stands |
 | push | *no switch*: `.daiku/project.json` is enough | `git push`, even inside a wrapper or queued after another command; `--dry-run` no |
@@ -52,12 +51,9 @@ command dangerous?" but "did this project ask for anything?".
 
 The first branch has no switch because it is not a policy: `rm -rf` entering a junction and
 destroying what sits on the other side is an operating-system fact, true in every
-project, and a junction cannot be seen by reading the command line. The second has none by
-owner decision, not by system fact: a file describing one machine has no business in the
-shared history of a repository, and the ban holds in any case — which is why it is not
-declared. Same for
-`--no-verify`, push and agent attribution, by owner decision: an agent is never left any of
-those freedoms. Wherever a ban can have a deterministic seat, it always has one — never trust an
+project, and a junction cannot be seen by reading the command line. The others have none by
+owner decision: an agent is never left free to `--no-verify`, to push or to sign a commit as
+its author. Wherever a ban can have a deterministic seat, it always has one — never trust an
 LLM.
 
 The worktree pool is a decision of whoever keeps the repository, and Daiku does not presume it. It is §6 of

@@ -71,8 +71,8 @@ of a file, the presence or absence of an area. Three prohibitions, in order of s
 | `version.replicated_in` | other files carrying the same version and updated together; empty or absent list if there are none |
 | `paths.studies` | folder hosting the work folders, one per problem, with the method's numbered files inside |
 | `paths.lib_notes` | folder of notes on a studied technology |
-| `paths.review_state` | folder where a review's ledger lives; it stands **inside the repository tree**, under the technical root, but **outside version control** — a `.gitignore` line excludes it — and it is **never under `.daiku/`**, which `init` regenerates per machine and no group of `commit` carries (§8); stable, not session-scoped |
-| `memory.root` | root of the persistent memory corpus, inside the repository and **never under `.daiku/`** (§8); on Claude Code it is also the folder where the host writes its own memory (§4.2) |
+| `paths.review_state` | folder where a review's ledger lives; it stands **inside the repository tree**, under the technical root, but **outside version control** — a `.gitignore` line excludes it — and it is **never under `.daiku/`**, which is versioned (§8); stable, not session-scoped |
+| `memory.root` | root of the persistent memory corpus, inside the repository (§8); on Claude Code it is also the folder where the host writes its own memory (§4.2) |
 | `memory.index` | index file of the corpus, the one read first |
 | `commit.memory_prefix` | prefix of the memory-and-documentation commit message |
 | `worktree.pool` | delivery-worktree pool directory, relative to the technical root |
@@ -89,8 +89,8 @@ of a file, the presence or absence of an area. Three prohibitions, in order of s
 
 No key is mandatory besides `contract`: everything else is subject to §6.
 
-**Which file covers a path outside version control.** `paths.review_state` and `memory.root`
-stand outside what Git versions, and "is this path ignored?" is answered by the repository's own
+**Which file covers a path that stays out of version control.** `paths.review_state`
+stands outside what Git versions, and "is this path ignored?" is answered by the repository's own
 `.gitignore`: a **machine's global excludes file** (`core.excludesFile`) covers a path for that
 machine alone and is never the project's line, so a clone carries none of it.
 `git check-ignore -v <path>` names the file that covers it, and that is what `init` and `review`
@@ -99,8 +99,8 @@ run before declaring a path covered or uncovered.
 ### 4.1 The key a hook reads
 
 The command guard reads one key, `worktree.pool`, which lights its worktree branch: a declared pool
-*is* the declaration that those directories belong to Daiku. The guard's other five branches
-(junction, `.daiku/`, `--no-verify`, push, agent attribution) deny on
+*is* the declaration that those directories belong to Daiku. The guard's other four branches
+(junction, `--no-verify`, push, agent attribution) deny on
 every project that opened Daiku, with no switch. `hooks/README.md` carries the full branch table.
 
 ### 4.2 The key the host reads
@@ -111,9 +111,7 @@ with `autoMemoryDirectory`. `init` points it there, and from that moment that co
 — the host on its own initiative, `update-memory` on every commit's diff — and a single location,
 **versioned together with the code**. It is why this folder sits inside the repository and not
 beside it: a memory that does not enter a diff is re-read by nobody, corrected by nobody and dies
-with the laptop it was born on. And it is why the folder never stands under `.daiku/`, which is the
-machine's working state and carries no group into a commit: the memory group would be denied by the
-guard, and the corpus would be written where nobody can freeze it.
+with the laptop it was born on.
 
 Two consequences, and neither is an installation detail.
 
@@ -352,28 +350,23 @@ changes, and the file the skill opens.
 
 ### Where each of the two lives
 
-Both live **in the project**, under `.daiku/`, and the folder is the machine's **working state**:
-`init` regenerates it per machine, `.gitignore` excludes it, and **nothing under it enters the
-shared history** — no group of `commit` carries it, and the command guard denies the gesture as
-well. A clone starts without parameters and runs `/init` again: what a clone must find is the code,
-not the card somebody filled in for it.
+Both live **in the project**, under `.daiku/`, and the folder **is versioned**: `project.json`,
+`environment.json`, `domain/` and `policies/` are the configuration the project wrote for itself,
+part of it by hand, and a clone must find it without running `/init` again. The folder stands inside
+the repository and enters a diff like any other source file.
 
 **Nothing of Daiku stands outside the repository.** A folder in the user home is a seat no clone
 carries, no `git diff` shows and no reviewer corrects — and it is the first thing a guardrail
 loses, because a perimeter drawn around the working roots does not reach it. What a project needs
-to run is inside the project. Inside the project and out of its history are two different things,
-and `.daiku/` is the first: the parameters are regenerable, and one machine's answer is not the
-next machine's.
+to run is inside the project, and inside its history as well.
 
-**The one thing that never stands there is `{memory.root}`.** The corpus is the project's and is
-read by a human in a diff — §4.2 says why — and a memory written under an ignored folder can never
-be committed: the memory group of `commit` would be denied by the guard. The seat `init` proposes
-therefore stands at the technical root, outside `.daiku/`.
+**One path under `.daiku/` stays out, and it is the machine's override**: the `.gitignore` line
+excluding `.daiku/environment.local.json`. `init` declares it rather than writing it, because it
+never touches `.gitignore`.
 
 `environment.json` standing in every project has a price, and it is declared: the same change to a
-model's alias is repeated in N projects — and, the folder carrying no group, once per machine that
-clones one of them. It is paid knowingly, because the two alternatives are worse — the home folder
-above, or a value that lives nowhere and is guessed every time.
+model's alias is repeated in N projects. It is paid knowingly, because the alternatives are worse —
+the home folder above, or a value that lives nowhere and is guessed every time.
 
 **A machine may still override it, and the override stands beside it.** Whoever reads it looks in
 this order:
@@ -384,9 +377,8 @@ this order:
 **The first one found wins, and is taken whole**: the two are not merged. The local file is a
 complete alternative file, not a list of differences — so what is read stays a single file, and
 nobody must reconstruct in their head which of the two each key comes from. It is the same pair as
-`settings.json` and `settings.local.json` (§4.2), under the same rule: neither file, and nothing
-else under `.daiku/`, enters the shared history. `.gitignore` excludes the folder; `init` declares
-the line rather than writing it, because it never touches `.gitignore`.
+`settings.json` and `settings.local.json` (§4.2): the shared file is versioned, the local one is
+not, and the local one is the only path under `.daiku/` staying out of the history.
 
 **One thing the file does not carry: `temp_dir`.** An absent `temp_dir` is not a degradation, it is
 the normal case: the readers fall back on the operating system's temporary directory, which is the
