@@ -1,5 +1,17 @@
 # Changelog
 
+### 1.0.5 — 2026-09-30
+
+- A conversation that opened a run no longer does the work itself: a turn of yours asking for something to be made is delegated to a subagent, and a notice repeats the rule at the one write that would break it — nothing is blocked.
+- A study no longer settles a direction nobody chose: before it goes technical, `decision-doc` says whose direction it is and what it rests on, and the study stage follows.
+- The end-of-session notice about open review ledgers arrives once per session, instead of restarting the turn at every stop.
+- When the write guard denies a new file, it now names the key that admits it — and a folder you declare in `write_roots` is a seat inside the repository and outside it alike.
+- `develop-feature` is now `ship-feature`.
+- The three folders of the method's own documents — work folders, technology notes, feature catalogue — stand under `.daiku/`, and `init` assigns them instead of adopting a folder of yours that looks like them.
+- `init` closes in the language you chose instead of answering in English whatever you answered.
+
+---
+
 ### 1.0.4 — 2026-09-30
 
 - `init` checks what is already in place before doing anything: on a project already set up it answers `Daiku is already set up here.` without asking anything, and otherwise adds only the missing pieces.
