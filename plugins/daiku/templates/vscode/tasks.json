@@ -1,0 +1,14 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "daiku: update",
+      "detail": "Refresh the daiku marketplace and update the Daiku plugin on Claude Code",
+      "type": "process",
+      "command": "node",
+      "args": [".daiku/update.mjs"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    }
+  ]
+}

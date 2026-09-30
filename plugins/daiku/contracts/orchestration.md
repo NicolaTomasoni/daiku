@@ -126,7 +126,7 @@ rebuilding the graph from the caller's prose.
 
 | Node | Invoked by | Receives already resolved | Returns | Re-delegates |
 |---|---|---|---|---|
-| `init` | owner | technical root, or nothing and the current directory applies | the report of § *Report* in its file: written, left as it was, not declared | yes — `sync-host` on Codex, as its last step |
+| `init` | owner | technical root, or nothing and the current directory applies | § *Report* of its file: `You're all set.`, or the steps that did not go through; `Daiku is already set up here.` when § *Scan first* finds nothing missing | yes — `sync-host` on Codex, as its last step |
 | `sync-host` | owner, `init` on Codex | technical root, or nothing and the current directory applies | the report of § *Report* in its file: copied, hooked, not hooked, roles written, and the gestures left to the user | no |
 | `new-feature` | owner | description of the feature or problem, in natural language | § *Outcome* of its file: the opened folder, the documents the chain produced and the delivery outcome | yes — per-area investigation, `research`, `decision-doc` twice, and `develop-feature` as orchestrating child |
 | `decision-doc` | `new-feature` § *The study of decisions* and § *Incorporation* | problem folder, optional subset to analyse, the already written document, the paths of the `research` notes and of the relevant memories, and on receiving the owner's answers by number | `0.5. strategic-study.md` or `1. decision-doc.md` on disk, with `0. problem.md` refined, and the block of § *The block you return* of its file | no |

@@ -30,6 +30,8 @@ const ABSENT = Object.freeze({
   studies: [],
   guardrails: Object.freeze({}),
   codeRoot: null,
+  repoRoot: null,
+  repoGitignore: null,
   instructionsFiles: Object.freeze([]),
   memoryRoot: null,
   techDoc: null,
@@ -43,6 +45,8 @@ const ABSENT = Object.freeze({
   environmentFile: null,
   environmentLocalFile: null,
   hostLocalSettings: null,
+  updateScript: null,
+  editorTasks: null,
   tempDir: null,
   writeRoots: Object.freeze([]),
 });
@@ -62,9 +66,12 @@ function resolvePath(value, root) {
  * skill may legitimately create, resolved absolute. All come from existing keys —
  * `.daiku/project.json` (§4 of the contract) for the project seats,
  * `environment.json` for `tempDir` (contract §8 order: the local file first, then the
- * project one, taken whole, never merged) — plus three constants: `.daiku/policies/`
- * and `.daiku/domain/`, which are a convention, not a key, and the machine's
- * `.claude/settings.local.json`, where `init` points the host memory (its *Step 7*). A missing or
+ * project one, taken whole, never merged) — plus five constants: `.daiku/policies/`
+ * and `.daiku/domain/`, which are a convention, not a key, the machine's
+ * `.claude/settings.local.json`, where `init` points the host memory (its *Step 7*), and
+ * `.daiku/update.mjs` with the `.vscode/tasks.json` that runs it (its *Step 5-bis*). `repo_root`
+ * widens the repository past the technical root where the two differ, and its `.gitignore` —
+ * the technical root's when `repo_root` is absent — is the file `init` aligns (its *Step 8*). A missing or
  * unresolvable key contributes `null`, never a guessed path: §6 of the contract,
  * applied to a hook. Nothing is read outside the project: no seat of Daiku lives in
  * the user home.
@@ -96,12 +103,15 @@ export function loadContext(root, reads = REAL_READS) {
       .filter((x) => typeof x === 'string' && x.trim())
       .map((x) => resolvePath(x, root))
       .filter(Boolean);
+    const repoRoot = resolvePath(json.repo_root, root);
     return {
       present: true,
       pool: resolvePath(json.worktree && json.worktree.pool, root),
       studies,
       guardrails: declared && typeof declared === 'object' ? declared : {},
       codeRoot: resolvePath(json.code_root, root),
+      repoRoot,
+      repoGitignore: resolve(join(repoRoot || root, '.gitignore')),
       instructionsFiles: resolveInstructionsFiles(root, reads),
       memoryRoot: resolvePath(json.memory && json.memory.root, root),
       techDoc: resolvePath(json.tech_doc, root),
@@ -115,6 +125,8 @@ export function loadContext(root, reads = REAL_READS) {
       environmentFile: resolve(join(root, '.daiku', 'environment.json')),
       environmentLocalFile: resolve(join(root, '.daiku', 'environment.local.json')),
       hostLocalSettings: resolve(join(root, '.claude', 'settings.local.json')),
+      updateScript: resolve(join(root, '.daiku', 'update.mjs')),
+      editorTasks: resolve(join(root, '.vscode', 'tasks.json')),
       tempDir: resolveTempDir(root, reads),
       writeRoots: resolveWriteRoots(root, reads),
     };
@@ -251,6 +263,8 @@ export function fakeContext(fields = {}) {
     studies: fields.studies || [],
     guardrails: fields.guardrails || {},
     codeRoot: seat(fields.codeRoot),
+    repoRoot: seat(fields.repoRoot),
+    repoGitignore: seat(fields.repoGitignore),
     instructionsFiles: Array.isArray(fields.instructionsFiles)
       ? fields.instructionsFiles.map(seat).filter(Boolean)
       : [],
@@ -268,6 +282,8 @@ export function fakeContext(fields = {}) {
     environmentFile: seat(fields.environmentFile),
     environmentLocalFile: seat(fields.environmentLocalFile),
     hostLocalSettings: seat(fields.hostLocalSettings),
+    updateScript: seat(fields.updateScript),
+    editorTasks: seat(fields.editorTasks),
     tempDir: seat(fields.tempDir),
     writeRoots: Array.isArray(fields.writeRoots) ? fields.writeRoots.map(seat).filter(Boolean) : [],
   };

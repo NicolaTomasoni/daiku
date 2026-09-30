@@ -357,6 +357,10 @@ Both live **in the project**, under `.daiku/`, and the folder **is versioned**: 
 part of it by hand, and a clone must find it without running `/init` again. The folder stands inside
 the repository and enters a diff like any other source file.
 
+Beside them stands `update.mjs`, which `init` copies from `templates/project/` together with the
+`daiku: update` task of `.vscode/tasks.json` that runs it: it refreshes the `daiku` marketplace and
+updates the package on Claude Code. It is not a parameter — no skill and no hook reads it.
+
 **Nothing of Daiku stands outside the repository.** A folder in the user home is a seat no clone
 carries, no `git diff` shows and no reviewer corrects — and it is the first thing a guardrail
 loses, because a perimeter drawn around the working roots does not reach it. What a project needs
