@@ -30,16 +30,43 @@
  * rummage through a folder picked from memory.
  *
  * Contract: **fail-open and silent**. Nothing open, unreadable file, missing
- * folder, any error → prints nothing and exits 0. It never blocks a stop, and
+ * folder, any error → prints nothing and exits 0. It never refuses a stop, and
  * never speaks just to say every ledger landed: a notice that arrives every
  * time stops being read.
  *
- * Test bench: `node stop-advice.mjs --self-check`. It runs on a simulated
- * filesystem and touches nothing of the project's; the one file it opens is the package's own
- * schema, to prove the form below mirrors it. The total is **counted**, not hard-coded.
+ * **Speaking at a stop continues the turn.** A `Stop` hook's `additionalContext` is
+ * delivered at the end of the turn *and the conversation goes on* — so a notice emitted at
+ * every stop restarts the turn at every stop. Measured on a project with one review in
+ * flight, 30 September 2026: nine consecutive blocks before the harness overrode the hook
+ * and ended the turn. Two guards answer it, each sufficient on its own:
+ *
+ *  - **`stop_hook_active`**, read from the input: `true` when the stop being handled is
+ *    already the continuation an earlier notice caused. The hook goes silent there — it is
+ *    the remedy the harness itself names when it overrides a looping hook.
+ *  - **the mark of the session**: the digest of what was announced, written where the host
+ *    keeps the session's own scratch files (`scratchpad_dir` of the event, or the OS
+ *    temporary directory keyed by `session_id` where the host has none). The same text is
+ *    never announced twice, so the notice arrives **once per session** instead of once per
+ *    stop — and a host reporting `stop_hook_active` wrongly does not send it in a loop.
+ *
+ * The mark is the only thing this hook writes, and it is written **outside the
+ * project**: a state folder of Daiku's inside the repository would be one more seat to keep.
+ * The session ends and the host cleans up its own scratch; an abandoned mark in the temporary
+ * directory costs one small file.
+ *
+ * The notice is written in **descriptive voice**, and says what it is: the same host
+ * reference warns that text shaped like an out-of-band system instruction trips the reader's
+ * prompt-injection defences, and a reader who takes it for the user's next message changes
+ * subject on his own. It reports a state, it does not give an order.
+ *
+ * Test bench: `node stop-advice.mjs --self-check`. It runs on a simulated filesystem and
+ * touches nothing of the project's; the one file it opens is the package's own schema, to
+ * prove the form below mirrors it. The total is **counted**, not hard-coded.
  */
 
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { invokedDirectly, projectRoot } from './project-root.mjs';
@@ -114,6 +141,11 @@ const REAL_ENV = {
       return [];
     }
   },
+  tmpdir: () => tmpdir(),
+  write: (path, text) => {
+    mkdirSync(dirname(path), { recursive: true });
+    writeFileSync(path, text, 'utf-8');
+  },
 };
 
 /** Ledgers left open: `outcome` still `null`, with their blocking count. */
@@ -160,22 +192,102 @@ export function advice(root, env, ctx) {
     .join('\n');
   const single = open.length === 1;
   return (
-    `${single ? 'One review ledger is' : `${open.length} review ledgers are`} still open: the ` +
-    `cycle stopped before writing its outcome.\n\n${listing}\n\n` +
-    `**Resume from the ledger, not from zero.** Hand its path back to the review with the ` +
-    `same base and item; reopening the diff without it loses the anchors every later ` +
-    `signal is measured on. If the work is dead instead, remove the ledger — while it ` +
-    `stays, this warning returns at every stop.`
+    `${single ? 'One review ledger is' : `${open.length} review ledgers are`} still open — a ` +
+    `review cycle started and stopped before writing its outcome.\n\n${listing}\n\n` +
+    `A ledger is what a review resumes from: reopened from the diff alone instead of from ` +
+    `the same base and item, it loses the anchors every later signal is measured on. Where ` +
+    `the work is dead instead, the ledger comes off.\n\n` +
+    `*Daiku status notice, written at the end of the turn — not a message from the user, and ` +
+    `nothing being worked on has to change. It is delivered once per session, and returns in ` +
+    `a new one while a ledger stays open.*`
   );
+}
+
+// --- the mark of the session ---------------------------------------------------
+
+/** The digest of what was announced: the text itself, reduced to a comparison. */
+function digest(text) {
+  return createHash('sha256').update(text).digest('hex');
+}
+
+/**
+ * Where the mark goes: the session's own scratch directory — the `scratchpad_dir` the host
+ * gives the event, or, where it gives none, the OS temporary directory under the
+ * `session_id`. `null` when the event carries neither, and then the mark is simply not
+ * written: silence is the fallback, never a guess at a shared path.
+ *
+ * **Never the project.** The six hooks write nothing inside the repository; a folder of
+ * Daiku's own there would be one more seat to keep, and a hook that writes where it guards
+ * is a hook that has to be guarded itself.
+ */
+export function markPath(event, env) {
+  const scratchpad = typeof event.scratchpad_dir === 'string' ? event.scratchpad_dir.trim() : '';
+  if (scratchpad) return join(scratchpad, 'daiku-stop-advice.json');
+  const session = typeof event.session_id === 'string' ? event.session_id.trim() : '';
+  if (!session) return null;
+  let base;
+  try {
+    base = env.tmpdir();
+  } catch {
+    return null; // no temporary directory: no mark, and the notice still speaks
+  }
+  if (!base) return null;
+  return join(base, 'daiku-stop-advice', `${session.replace(/[^A-Za-z0-9._-]/g, '_')}.json`);
+}
+
+/** What this session already heard, or `null`. An unreadable mark counts as no mark. */
+function announced(env, path) {
+  if (!path) return null;
+  try {
+    const mark = JSON.parse(env.read(path));
+    return mark && typeof mark === 'object' && typeof mark.announced === 'string'
+      ? mark.announced
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Writes the mark, and stays silent if it cannot: the notice is worth more than the mark. */
+function markAnnounced(env, path, fingerprint) {
+  if (!path) return;
+  try {
+    env.write(path, JSON.stringify({ announced: fingerprint }));
+  } catch {
+    /* fail-open: the notice goes out anyway, and the next stop repeats it at worst */
+  }
+}
+
+/**
+ * What one stop event answers: the notice, or `null` for silence. This is the whole
+ * decision — reading the input, the `stop_hook_active` guard, the mark of the session —
+ * and it lives here, without leaving the process, so the bench calls it.
+ */
+export function notice(event, root, env, ctx) {
+  if (event && event.stop_hook_active === true) return null; // already a continuation: silence
+  const text = advice(root, env, ctx);
+  if (!text) return null;
+  const path = markPath(event || {}, env);
+  const fingerprint = digest(text);
+  if (announced(env, path) === fingerprint) return null; // this session already heard this
+  markAnnounced(env, path, fingerprint);
+  return text;
 }
 
 // --- test bench -----------------------------------------------------------
 
-/** A simulated environment: a path → content map, files only. */
-function fakeEnv(files) {
+/**
+ * A simulated environment: a path → content map, files only. What the hook writes lands in
+ * the same map, so a second call sees the mark the first one left.
+ */
+function fakeEnv(files, tmp = 'C:/Temp/daiku') {
   const key = (p) => String(p).replace(/\\/g, '/').replace(/\/+$/, '').toLowerCase();
   const map = new Map(Object.entries(files).map(([k, v]) => [key(k), v]));
   return {
+    tmpdir: () => tmp,
+    write: (p, text) => {
+      map.set(key(p), text);
+    },
     exists: (p) => map.has(key(p)) || [...map.keys()].some((path) => path.startsWith(key(p) + '/')),
     read: (p) => {
       if (!map.has(key(p))) throw new Error(`ENOENT ${p}`);
@@ -289,9 +401,19 @@ function selfCheck() {
   check('open ledger: warning', !!textOpen && textOpen.includes('gamma'));
   check('the warning names base and ledger file', !!textOpen && textOpen.includes('abc1234') && textOpen.includes('review-ledger-abc1234-120000.json'));
   check('the warning counts the blocking items', !!textOpen && textOpen.includes('1 blocking item'));
-  check('the warning says to resume from the ledger', !!textOpen && textOpen.includes('not from zero'));
-  check('the warning says how to stop it', !!textOpen && textOpen.includes('remove the ledger'));
+  check('the warning says a review resumes from the ledger', !!textOpen && textOpen.includes('resumes from'));
+  check('the warning says how to close it', !!textOpen && textOpen.includes('comes off'));
   check('a single ledger agrees in the singular', !!textOpen && textOpen.includes('One review ledger is'));
+  // The reader took the notice for the user's next message once, and changed subject on his
+  // own. A status line says what it is, and does not read as an order.
+  check(
+    'the notice says it is not a message from the user',
+    !!textOpen && textOpen.includes('not a message from the user')
+  );
+  check(
+    'the notice says it comes once per session',
+    !!textOpen && textOpen.includes('once per session')
+  );
 
   const two = {
     [`${STATE}/review-ledger-abc1234-120000.json`]: OPEN_LEDGER,
@@ -337,6 +459,78 @@ function selfCheck() {
   const textInterrupted = advice(R, fakeEnv(interrupted), CTX());
   check('an interrupted review is listed once, its findings file beside it', !!textInterrupted && textInterrupted.includes('One review ledger is'));
 
+  // --- one notice per session, and never on a continuation ---------------------
+  // Speaking at a stop continues the turn: the same notice at every stop loops until the
+  // harness overrides the hook. These are the two guards, and each one alone is enough.
+  const stop = (extra = {}) => ({ hook_event_name: 'Stop', session_id: 'sess-1', ...extra });
+
+  check(
+    'a stop the hook itself caused: silence',
+    notice(stop({ stop_hook_active: true }), R, fakeEnv(open), CTX()) === null
+  );
+  check(
+    '`stop_hook_active: false` is a fresh stop, not a continuation',
+    !!notice(stop({ stop_hook_active: false }), R, fakeEnv(open), CTX())
+  );
+
+  const session = fakeEnv(open);
+  check('the first stop of a session speaks', !!notice(stop(), R, session, CTX()));
+  check('the same session hears it once', notice(stop(), R, session, CTX()) === null);
+  check('a third stop stays silent too', notice(stop(), R, session, CTX()) === null);
+  check(
+    'another session hears it again',
+    !!notice(stop({ session_id: 'sess-2' }), R, session, CTX())
+  );
+
+  // The mark is the digest of the text, so a set that moved is said again: a review that
+  // lands while another stays open is news, and stays news once.
+  const moving = fakeEnv(two);
+  check('a first set speaks', !!notice(stop(), R, moving, CTX()));
+  check('the same set does not repeat', notice(stop(), R, moving, CTX()) === null);
+  moving.write(`${STATE}/review-ledger-abc1234-120000.json`, CLOSED_LEDGER);
+  const afterOneLanded = notice(stop(), R, moving, CTX());
+  check(
+    'a set that changed speaks again',
+    !!afterOneLanded && afterOneLanded.includes('One review ledger is')
+  );
+  check('and the new set is not repeated either', notice(stop(), R, moving, CTX()) === null);
+
+  // No session to mark: the notice is not silenced across sessions by a shared path, and
+  // `stop_hook_active` stays the only guard there.
+  const anonymous = fakeEnv(open);
+  check('without a session there is no mark to keep', markPath({ hook_event_name: 'Stop' }, anonymous) === null);
+  check('an event without a session still speaks', !!notice({ hook_event_name: 'Stop' }, R, anonymous, CTX()));
+
+  // The host's own scratch directory wins over the temporary one, and the two paths differ.
+  check(
+    'the scratchpad of the event is where the mark goes',
+    markPath(stop({ scratchpad_dir: 'C:/Temp/scratch' }), session) === join('C:/Temp/scratch', 'daiku-stop-advice.json')
+  );
+  check(
+    'without a scratchpad the mark is keyed by the session id',
+    markPath(stop(), session) === join('C:/Temp/daiku', 'daiku-stop-advice', 'sess-1.json')
+  );
+
+  // A mark that cannot be written or read never silences the notice.
+  const brokenMark = fakeEnv(open);
+  const readable = brokenMark.read;
+  brokenMark.write = () => {
+    throw new Error('read-only');
+  };
+  brokenMark.read = (p) => {
+    if (String(p).includes('daiku-stop-advice')) throw new Error('unreadable mark');
+    return readable(p);
+  };
+  check('an unwritable mark still lets the notice out', !!notice(stop(), R, brokenMark, CTX()));
+
+  // A closed ledger is no notice, mark or no mark: nothing is announced, so nothing is remembered.
+  const noLedger = fakeEnv({ [`${STATE}/review-ledger-abc1234-120000.json`]: CLOSED_LEDGER });
+  check('nothing open: silence', notice(stop(), R, noLedger, CTX()) === null);
+  check(
+    'nothing open: no mark written either',
+    noLedger.exists(join('C:/Temp/daiku', 'daiku-stop-advice', 'sess-1.json')) === false
+  );
+
   // --- the form the hook recognises mirrors the schema -------------------------
   // The one read this bench makes on disk: `schemas/blocks.json` is the seat declaring the
   // ledger's form, and the list copied in this file must move with it. It is not reachable from
@@ -359,8 +553,27 @@ function selfCheck() {
   return failed.length ? 1 : 0;
 }
 
-function main() {
-  const text = advice(ROOT, REAL_ENV, loadContext(ROOT, REAL_READS));
+/** The event on stdin, or `null` when there is none to read. */
+async function readEvent() {
+  if (process.stdin.isTTY) return null;
+  const pieces = [];
+  for await (const piece of process.stdin) pieces.push(piece);
+  const raw = Buffer.concat(pieces).toString('utf-8');
+  if (!raw.trim()) return null;
+  try {
+    const event = JSON.parse(raw);
+    return event && typeof event === 'object' && !Array.isArray(event) ? event : null;
+  } catch {
+    return null;
+  }
+}
+
+async function main() {
+  // No parsable event, no notice: without the input this hook cannot know whether the stop
+  // it is handling is already a continuation, and guessing there is what loops.
+  const event = await readEvent();
+  if (!event) return;
+  const text = notice(event, ROOT, REAL_ENV, loadContext(ROOT, REAL_READS));
   if (!text) return;
   process.stdout.write(
     JSON.stringify({
@@ -373,10 +586,5 @@ if (invokedDirectly(import.meta.url)) {
   if (process.argv.includes('--self-check')) {
     process.exit(selfCheck());
   }
-  try {
-    main();
-  } catch {
-    /* fail-open: never block a stop */
-  }
-  process.exit(0);
+  main().catch(() => process.exit(0));
 }

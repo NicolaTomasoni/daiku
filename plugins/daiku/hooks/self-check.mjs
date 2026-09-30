@@ -1,16 +1,16 @@
 #!/usr/bin/env node
 /**
- * The test benches of the five hooks, of the two programs in `architect/` and of `init`'s scan
+ * The test benches of the six hooks, of the two programs in `architect/` and of `init`'s scan
  * (`skills/init/scan.mjs`), in a single shot.
  *
  * `node hooks/self-check.mjs` from the package root. Exits `0` if every case is
- * green, `1` on the first red, and prints the **counted** total — the sum of what the eight
+ * green, `1` on the first red, and prints the **counted** total — the sum of what the eleven
  * benches really ran, not a number written here.
  *
- * It exists because five fail-open hooks are five ways of staying silent, and a fault in
- * one of the five is indistinguishable from silence until somebody runs its bench. A single
+ * It exists because six fail-open hooks are six ways of staying silent, and a fault in
+ * one of the six is indistinguishable from silence until somebody runs its bench. A single
  * command makes that move repeatable before a release, in a CI, or after touching a file
- * that all four import.
+ * that all six import.
  *
  * The fifth bench is `architect/architect.mjs`, and it is the opposite kind of program: it
  * does not fail open, it fails loudly, and its verdict binds — so a case it does not cover
@@ -107,9 +107,9 @@ function tryOne(bench) {
 
   if (outcome.error) return { name: bench.label, status: 'does not start', detail: outcome.error.message };
   if (!outcome.stdout || !outcome.stdout.trim()) {
-    // No output: either the module has no bench — the case of `project-root.mjs` and
-    // `daiku-config.mjs`, imported modules with no entry point of their own — or it exited
-    // badly, and then the exit code says so.
+    // No output: either the module has no bench — the case of `daiku-config.mjs`, an
+    // imported module with no entry point of its own — or it exited badly, and then the
+    // exit code says so.
     return { name: bench.label, status: outcome.status === 0 ? 'no bench' : 'silent', detail: (outcome.stderr || '').trim() };
   }
 
