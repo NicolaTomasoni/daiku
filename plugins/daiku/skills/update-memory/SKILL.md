@@ -1,6 +1,6 @@
 ---
 name: 'update-memory'
-description: 'Internal contract — the step aligning the instructions file, .daiku/policies/, the memory corpus and the technical document to the feature diff in index, following the memory contract written elsewhere: never duplicate it, minimum delta, no writing if the diff does not justify it. It runs at every /commit invocation and as the Memory phase of /develop-feature, never alone.'
+description: 'Internal contract — the step aligning the instructions file, .daiku/policies/, the memory corpus and the technical document to the feature diff in index, following the memory contract written elsewhere: never duplicate it, minimum delta, no writing if the diff does not justify it. It runs at every /commit invocation and as the Memory phase of /ship-feature, never alone.'
 user-invocable: false
 ---
 
@@ -10,11 +10,11 @@ You are the step keeping the non-code artefacts of the project aligned — `{hos
 
 > **Parameters.** Every key in braces in this contract resolves on the project parameter files, never from memory and never by assumption: the rules are in §5 of `contracts/project-contract.md`, which also says **in which language to write** and what to do when a key is missing.
 
-**You are always a subagent: this contract is not launched by hand.** You are invoked in two ways: **inside the delivery**, as a mandatory step **before** the commit (`Memory` phase of `develop-feature`, on the diff already in index under `{code_root}`); and **inside a commit**, delegated by `commit` on the diff about to be frozen.
+**You are always a subagent: this contract is not launched by hand.** You are invoked in two ways: **inside the delivery**, as a mandatory step **before** the commit (`Memory` phase of `ship-feature`, on the diff already in index under `{code_root}`); and **inside a commit**, delegated by `commit` on the diff about to be frozen.
 
 The second has no exceptions: **every** invocation of `commit` runs you, whatever the diff, and no condition skips it. It is the reason in the package no periodic revision of the corpus exists — none is needed if every commit passes through here, and if one were needed it would mean this step does not work. It is also the reason you are not launched alone: an alignment not attached to a commit is an alignment somebody must remember to do.
 
-**You never touch the index of `{code_root}`** and do not commit the code group: that is the perimeter of whoever called you, in both cases. The **commit of your group** — `{memory.root}`, `{hosts.<host>.instructions_file}`, `{tech_doc}`, `.daiku/policies/` — instead depends on the **invocation**, not on you: you do so **only if whoever invokes you declares it to you in the prompt**, and the default in absence of that line is **no** — you prepare the modifications, leave the written and unstaged files, and return `committed: null`. It is not caution: it is that the right value changes with the caller. `/commit` authorises you, because your group is a commit it would otherwise have to redo by reading files it did not write; `develop-feature` does not, because it has a commit order to respect — first the feature, then doc and memory — and that order is its own. Never `git push`, in no case and under no authorisation.
+**You never touch the index of `{code_root}`** and do not commit the code group: that is the perimeter of whoever called you, in both cases. The **commit of your group** — `{memory.root}`, `{hosts.<host>.instructions_file}`, `{tech_doc}`, `.daiku/policies/` — instead depends on the **invocation**, not on you: you do so **only if whoever invokes you declares it to you in the prompt**, and the default in absence of that line is **no** — you prepare the modifications, leave the written and unstaged files, and return `committed: null`. It is not caution: it is that the right value changes with the caller. `/commit` authorises you, because your group is a commit it would otherwise have to redo by reading files it did not write; `ship-feature` does not, because it has a commit order to respect — first the feature, then doc and memory — and that order is its own. Never `git push`, in no case and under no authorisation.
 
 The diff arrives before the commit, not after, because it is there it is needed: no feature is frozen in a commit without the artefacts realigned on the same identical diff.
 

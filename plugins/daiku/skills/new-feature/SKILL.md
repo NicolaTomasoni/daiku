@@ -1,6 +1,6 @@
 ---
 name: 'new-feature'
-description: 'Opens a feature from a natural-language description and carries it to the commit in a single run: code investigation, study of the technologies you do not know well enough, decision document, decisions asked in chat, and from there the whole delivery delegated to develop-feature'
+description: 'Opens a feature from a natural-language description and carries it to the commit in a single run: code investigation, study of the technologies you do not know well enough, decision document, decisions asked in chat, and from there the whole delivery delegated to ship-feature'
 argument-hint: '<feature or problem description> [--stop-at-brief]'
 ---
 
@@ -12,7 +12,7 @@ You are the node **opening** a work and not leaving it halfway. You receive a na
 
 ## When to use it
 
-Use it when you start from an idea or a problem and there is nothing on disk yet. It is the only entry point that starts from the **code** instead of a document, and the only one that opens the folder; `decision-doc` is its internal phase, never launched on its own, while `develop-feature` is its delivery and can also be launched by hand on the folder.
+Use it when you start from an idea or a problem and there is nothing on disk yet. It is the only entry point that starts from the **code** instead of a document, and the only one that opens the folder; `decision-doc` is its internal phase, never launched on its own, while `ship-feature` is its delivery and can also be launched by hand on the folder.
 
 ## Before starting
 
@@ -133,6 +133,7 @@ A subagent in a fresh context. In the prompt:
 
 - the **contract to read**: `skills/decision-doc/SKILL.md`, in full, before acting, in the *From `new-feature` — study* mode that file declares;
 - the **resolved input**: the `{paths.studies}/<slug>/` folder and, inside, `0. problem.md` — it is already the base document of the problem, there is nothing to concatenate;
+- the **material the request came with**: a brief, an analysis, a plan, when they exist outside that folder. They travel as material **to interrogate**, never as a direction already settled — and an implementation plan or a list of open decisions among them is the first thing the stage judgement has to face, not the frame it inherits: a direction resting on them is `material` in the block, and the stage that follows is `strategic`;
 - the **note paths** point 4 produced or reused, with the instruction to open them before studying the options. They are the reason you spent that fan-out: a technical option motivated on model memory, when the source is on disk, is the defect this chain exists to avoid;
 - the **pertinent memory**: `{memory.index}` and the paths you opened at point 1;
 - the **perimeter constraint**: it writes only inside that folder, does not commit and does not push;
@@ -140,17 +141,25 @@ A subagent in a fresh context. In the prompt:
 
 ### 7. Decisions are asked in chat
 
-The block came back and carries **structured** `decisions`. You ask them of the owner as a structured question, per § *Ask the owner* of `contracts/orchestration.md`, which says how that form renders on the current host.
+The block came back and carries **structured** `decisions`, and the phase that produced it is closed: every subagent of this run has returned, and nothing is still in flight. You ask them of the owner as a structured question, per § *Ask the owner* of `contracts/orchestration.md`, which says what precedes the ask, how that form renders on the current host, and what interrupts it.
+
+**Before the question, the message.** In chat, decision by decision and in the block's own order, you report what it carries as it came back: the title, the problem, each option with its letter and with what it entails and costs, the recommended one with its why. It is the functional content of the document hosting them — `1. decision-doc.md` at the technical stage, `0.5. strategic-study.md` at the strategic one — the same cards, nothing summarised and nothing reordered — and it is what the owner reads before choosing: the chat goes quiet, they read the problems and the proposed solutions, and only then the options appear.
+
+**Before it, two declarations.** The block carries whose direction this stage executes (`direction`, with the owner's words) and the claims it rests on (`premises`, with the source of each): report both as they came back, in two lines. They are what the owner checks fastest, and the only place where a direction that is not theirs — one the material proposed, that nobody confirmed — is seen by them before it becomes an answer.
 
 From each block item you derive a single question: the title and the problem in question form, its 2-4 options **in the same order of the block** (by contract the recommended is always `A` and already stands first), each with one line on what it entails, and `A` declared as recommended. The recommended is said by `recommended_id`, never by bold in the document: you do not infer it, you read it.
 
 - **Do not summarise and do not reorder** what the subagent wrote, and add no options. A summarised list is a list to which the owner answers with less than was studied.
-- **Whether the block has its shape is asked, not eyeballed.** Call `architect/architect.mjs` — the evaluator that `skills/develop-feature/SKILL.md` § *The evaluator* declares — with `question: "block"`, `name: "decision-doc"` and `block` (what came back, parsed, or `null`). It checks the fields and domains `schemas/blocks.json` declares, and the rules of `skills/decision-doc/SKILL.md` § *The block you return*: `decisions` an array or `null`, `recommended_id` always `"A"`, options `A`, `B` (, `C`, `D`) in order, 2 to 4 of them. On `invalid` the step has failed (§4.2 of `contracts/orchestration.md`): relaunch it only once with the identical prompt, and `blockers` says what was wrong.
+- **Whether the block has its shape is asked, not eyeballed.** Call `architect/architect.mjs` — the evaluator that `skills/ship-feature/SKILL.md` § *The evaluator* declares — with `question: "block"`, `name: "decision-doc"` and `block` (what came back, parsed, or `null`). It checks the fields and domains `schemas/blocks.json` declares, and the rules of `skills/decision-doc/SKILL.md` § *The block you return*: `decisions` an array or `null`, `recommended_id` always `"A"`, options `A`, `B` (, `C`, `D`) in order, 2 to 4 of them. On `invalid` the step has failed (§4.2 of `contracts/orchestration.md`): relaunch it only once with the identical prompt, and `blockers` says what was wrong.
 - **Do not add a "decide yourself" option**: the recommended is already that, and the owner with no preferences confirms it in one gesture.
 - **Do not turn into a question what is not a decision.** The verdict, the already applied fixes and the findings judged legitimate choices stand in the block for you to **report** them, not to ask them.
 - If the owner answers **outside** the options, that answer prevails and passes verbatim to incorporation.
 
-**It is the only point where you stop.** When the answers arrive you do not ask confirmation to continue: continue.
+**It is the only point where you stop.** When the answers arrive you do not ask confirmation to continue: continue. **An answer that asks is not an answer**: if the owner's reply carries a question, you answer it in chat and the run stops there — no second question, the decisions stay open — and it is the owner who asks to resume the chain, launching this node again on the same problem: the folder is already there, and point 1 asks confirmation before working inside it.
+
+**A turn that asks for work is neither an answer nor a question.** A reply asking for something to be **made** — a correction to `0. problem.md`, another technology to study, a decision reconsidered, and code as well, once the delivery has run — is work, and work is not done here. You **delegate it**: one subagent in a fresh context, on the **worker** role where the work applies a delimited change and on the **judge** role where it decides, with the contract of the step of this sequence that owns the artefact it touches, and the owner's request **verbatim** as its resolved input. What comes back is its block, and you report that. Writing it here is what fills this window with the work itself, and the window is the thing the run exists to keep small: it is the same rule by which no phase of the sequence is done in here (§4 of `contracts/orchestration.md`), applied to the turns that arrive from outside it.
+
+**This holds inside this run, and only inside it.** The rule is the run's, not the method's: a conversation that did not open this node — the owner working on his own, a feature delivered in another session — owes it nothing, and there the work is done where it arrives. And when the request is not a change to what this run produced but a **different problem**, you do not improvise a step for it: you say so, and the owner opens it as its own run with its own folder.
 
 ### 8. Incorporation — `decision-doc`, **judge** role
 
@@ -162,13 +171,13 @@ The point-6 block declares the `stage`. If it was `strategic`, incorporation clo
 
 **Only one extra round.** If the second block also comes back `strategic`, the problem is not ready to be executed: stop, report to the owner the verdict and what remains open, and leave the folder as it is. There is no third round, and one does not move to delivery with the direction still under discussion.
 
-### 10. Delivery — `develop-feature`, **worker** role — or stop at the brief
+### 10. Delivery — `ship-feature`, **worker** role — or stop at the brief
 
-**Brief stop — judge role.** If `$ARGUMENTS` carries `--stop-at-brief`, do not open the delivery: delegate instead a subagent running `skills/blueprint/SKILL.md`, on the **judge** role — the brief is a decision on the plan, and `skills/develop-feature/SKILL.md` § *1. Brief* runs it on that role — with the folder and the **chosen solution** (for each decision the id and text of the option the owner chose, as they wrote them; `A` where they did not answer). The expected outcome is the block `skills/blueprint/SKILL.md` declares in its own § *What you return*, in full: report it, and stop here. The run delivers the folder with `0. problem.md`, `1. decision-doc.md` and `2. blueprint.md` — no execution, no commit, no push: carrying the folder wherever its execution runs is the owner's manual act.
+**Brief stop — judge role.** If `$ARGUMENTS` carries `--stop-at-brief`, do not open the delivery: delegate instead a subagent running `skills/blueprint/SKILL.md`, on the **judge** role — the brief is a decision on the plan, and `skills/ship-feature/SKILL.md` § *1. Brief* runs it on that role — with the folder and the **chosen solution** (for each decision the id and text of the option the owner chose, as they wrote them; `A` where they did not answer). The expected outcome is the block `skills/blueprint/SKILL.md` declares in its own § *What you return*, in full: report it, and stop here. The run delivers the folder with `0. problem.md`, `1. decision-doc.md` and `2. blueprint.md` — no execution, no commit, no push: carrying the folder wherever its execution runs is the owner's manual act.
 
-Otherwise, the delivery. The technical decisions are closed: `1. decision-doc.md` exists and its cards have an answer. Delegate the whole delivery to a subagent running `skills/develop-feature/SKILL.md`, on the **worker** role — its order, its decision and its unblock are verdicts of the evaluator, and the judging phases it launches declare their own role — with the folder and the **chosen solution** — for each decision the id and text of the option the owner chose, as they wrote them. For a card they did not answer, `A` holds, which by contract is the recommended one, without asking.
+Otherwise, the delivery. The technical decisions are closed: `1. decision-doc.md` exists and its cards have an answer. Delegate the whole delivery to a subagent running `skills/ship-feature/SKILL.md`, on the **worker** role — its order, its decision and its unblock are verdicts of the evaluator, and the judging phases it launches declare their own role — with the folder and the **chosen solution** — for each decision the id and text of the option the owner chose, as they wrote them. For a card they did not answer, `A` holds, which by contract is the recommended one, without asking.
 
-From there on the sequence is its own and you do not rewrite it here — and it is not recited here either: **it is asked**. Call `architect/architect.mjs` — the evaluator that `skills/develop-feature/SKILL.md` § *The evaluator* declares — with `question: "order"`, `entry: "new-feature"`, `present` (the artefacts already on disk) and `ledger` (the review ledger of this folder in `{paths.review_state}/`, or `null`), the input that section declares, and its verdict says which phases remain. **Do not launch yourself `execute`, `/review` or `/commit`, and do not launch `blueprint` except for the brief stop above**: they are the phases of `develop-feature`, and chaining them from here means keeping two copies diverging at the first modification.
+From there on the sequence is its own and you do not rewrite it here — and it is not recited here either: **it is asked**. Call `architect/architect.mjs` — the evaluator that `skills/ship-feature/SKILL.md` § *The evaluator* declares — with `question: "order"`, `entry: "new-feature"`, `present` (the artefacts already on disk) and `ledger` (the review ledger of this folder in `{paths.review_state}/`, or `null`), the input that section declares, and its verdict says which phases remain. **Do not launch yourself `execute`, `/review` or `/commit`, and do not launch `blueprint` except for the brief stop above**: they are the phases of `ship-feature`, and chaining them from here means keeping two copies diverging at the first modification.
 
 The expected outcome is the block that contract declares in its own § *Outcome*, in full. Report it: its `status` is yours.
 
@@ -182,14 +191,14 @@ A step has failed when the block does not come back, comes back incomplete or co
 | `research` | proceed **without** those notes, and in the document mark `[to verify]` the points they had to cover. Do not write from memory the facts the study had to carry: it is exactly what was being avoided |
 | `decision-doc` (point 6) | the chain stops. `0. problem.md` stays delivered, and you say so with the command to launch by hand on the folder. **Do not write the decisions yourself**: asking them here means writing them outside the document hosting them |
 | incorporation (point 8) | it is the worst case, because the owner answers exist only in chat. Report them **verbatim** in the outcome, together with the command to incorporate them with, and stop |
-| `develop-feature` (point 10) | its block already declares its own failures: report it as it is, without reinterpreting it |
+| `ship-feature` (point 10) | its block already declares its own failures: report it as it is, without reinterpreting it |
 | `blueprint` (point 10, brief stop) | its block already declares its own failures: report it as it is, without reinterpreting it |
 
 ## Operational constraints
 
 - Respect the runtime constraints `{hosts.<host>.instructions_file}` declares, and in any case: **no searches on the whole filesystem**.
 - **Do not commit** and do not push: commit belongs to delivery, which runs on its own worktree.
-- Outside the problem folder one writes only in `{paths.lib_notes}/`, and `research` (collection) and `study` only via `research` (reordering) write there.
+- Outside the problem folder one writes only in `{paths.lib_notes}/`, and `research` (collection) and `study` only via `research` (reordering) write there. **A notice repeats the rule where a write would break it**: while the run it opened is open, a write made from here outside those seats and the `{write_roots}` the machine declares is where the reminder arrives — it is work, and work is a subagent, whose own write passes. Nothing is blocked, and no file is an exception for existing: the reminder says the rule, and the judgement stays here.
 - **Always use paths relative to the repo root** for file links.
 - Save in the project encoding, without degrading non-ASCII characters.
 
@@ -213,7 +222,10 @@ If the chain stopped before delivery, say so with the point where it stopped and
 | "The notes came back, I pass them downstream and go" | Point 5 is not a handoff: it is you putting back in discussion what you wrote before knowing them. |
 | "I summarise the decisions, so the owner reads less" | Decisions are asked verbatim. What you cut is exactly what you are not letting them choose on. |
 | "I ask confirmation before launching delivery" | They already answered. The extra confirmation is the gesture this skill exists to spare them. |
-| "I do the brief myself, since I have everything in mind" | Having it in mind is the problem: every phase is a subagent in a fresh context, and delivery belongs to `develop-feature`. |
+| "I ask the decisions while a fan-out is still running, so they answer sooner" | The answer lands on a state the work in flight can still change. The ask is the last act and it is emitted alone (§ *Ask the owner* of `contracts/orchestration.md`). |
+| "They asked me something, so I explain and re-ask the options" | A reply carrying a question is a discussion, not an answer: you answer and the run stops. Re-asking makes them choose before they have finished asking. |
+| "I do the brief myself, since I have everything in mind" | Having it in mind is the problem: every phase is a subagent in a fresh context, and delivery belongs to `ship-feature`. |
+| "The owner asked me for one small change, I make it here" | It is work, and work is a subagent: one fresh context, the contract of the step that owns what it touches. Made here it fills the window with the work itself, which is what the run exists to prevent — and a notice repeats the rule at that very write. |
 | "The decision-doc I write here, it is faster" | The document is written by the node hosting it. Written here, it originates inside the context that just investigated — that is already convinced. |
 | "The stage is still strategic but the direction is clear to me: I proceed" | If it were clear, the `judge` step would not have stopped it there. Two rounds, and then one stops. |
 | "I use the biggest model, this step looks hard to me" | The model comes from the role declared by the step, resolved with §2 of `contracts/orchestration.md`. |

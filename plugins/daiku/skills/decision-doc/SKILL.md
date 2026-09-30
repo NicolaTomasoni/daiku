@@ -24,7 +24,7 @@ What holds in both, and is not derogated:
 
 - **You ask nothing of the owner**, in no case. You have no channel to them: a question asked in here becomes an assumption silently taken or a step left hanging (§ *Ask the owner* of `contracts/orchestration.md`). A true choice you **return** in your block, and whoever called you carries it into chat.
 - **Write only inside the problem folder** you received. You do not commit, you do not push.
-- **You do not delegate delivery**, and you do not launch `blueprint`, `execute`, `review` or `commit`: the chain from there on belongs to `new-feature`, which opens `develop-feature` with the chosen solution.
+- **You do not delegate delivery**, and you do not launch `blueprint`, `execute`, `review` or `commit`: the chain from there on belongs to `new-feature`, which opens `ship-feature` with the chosen solution.
 - **Always close with the block** of § *The block you return*, in full.
 
 ### From `new-feature` — study
@@ -43,7 +43,7 @@ You are a second subagent, fresh context, and in the prompt there are the **owne
 - **strategic document** (`0.5. strategic-study.md`) → **Phase 4**, which closes every decision with the owner choice and refines `0. problem.md` accordingly;
 - **technical document** (`1. decision-doc.md`) → **point 6 of the technical Procedure**, which writes the choice at the tail of the decision card hosting it.
 
-**If after incorporation the direction is closed, continue to the technical stage here and now**: produce `1. decision-doc.md` and return the new decision list in your block, with `stage` `technical`. It is the only case where a single invocation crosses the two stages.
+**If after incorporation the direction is closed, continue to the technical stage here and now**: produce `1. decision-doc.md` and return the new decision list in your block, with `stage` `technical`. It is the only case where a single invocation crosses the two stages, and the direction is now the owner's: the block says so — `owner-answer`, with where they said it — and it carries the premises the direction rests on.
 
 ## The block you return
 
@@ -52,10 +52,22 @@ You are a second subagent, fresh context, and in the prompt there are the **owne
 ```json
 {
   "stage": "strategic|technical",
-  "stage_why": "<a sentence on why this stage and not the other>",
+  "stage_why": "<a sentence on why this stage and not the other; never a document this chain produced>",
+  "direction": {"kind": "owner-request|owner-answer|material", "where": "<the owner's words, or the memory that records their decision>"} | null,
   "file": "<path of the produced or updated document>",
   "verdict": "<the opening synthesis of the sceptical revision, or null at the technical stage>",
   "applied_fixes": ["<file and what you fixed, one per Phase 2 fix>"],
+  "premises": [
+    {"claim": "<a claim about the system the chosen direction rests on>", "evidence": "<where it was verified: file:line, the note and its section, or the command whose output showed it>"}
+  ],
+  "precedents": [
+    {
+      "decision": "<a decision already closed, touching this problem>",
+      "where": "<its seat: the memory, or the folder in {paths.studies}>",
+      "stands": "yes|no",
+      "answered_by": "<the title of the decision of this list that puts it to the owner, when stands is no>"
+    }
+  ],
   "decisions": [
     {
       "n": 1,
@@ -75,6 +87,12 @@ You are a second subagent, fresh context, and in the prompt there are the **owne
 }
 ```
 
+`direction`, `premises` and `precedents` are **declarations the stage turns on**, and they are not prose the block can carry loosely:
+
+- `direction` says **whose words settled the direction** — `owner-request` (the owner asked for the work, and their words were the goal, not a plan to execute), `owner-answer` (their answer to a question this chain asked, which includes a decision recorded in memory), `material` (the direction is proposed by material that was already in the folder when the chain opened it). At the **technical** stage it is `owner-request` or `owner-answer`, and never `material`: a direction that comes from material is a proposal, and turning it into a question is exactly what the strategic stage is for. Where it is `material`, the stage is strategic and the proposal enters `decisions`. The direction is `null` when nothing proposes one at all.
+- `premises` are the claims about the system the chosen direction rests on, each with the source that corroborates it. At the **technical** stage it is never empty — a study resting on no verified claim rests on nothing — and at the **strategic** one it is `[]`, because there the unproven assumptions are the findings of Phase 1 and not premises of a direction nobody chose. On the two stages alike, a premise with an empty `evidence` is the assumption this whole chain exists to catch.
+- `precedents` are the decisions already closed that touch this problem. A precedent of the project that says the opposite of what is proposed is a **question for the owner**, never a note dismissed here by deduction: `stands` is `no` and `answered_by` names the decision of this list that asks it. With no decision to point at, the precedent stays open — and an open direction question means the stage above is not technical.
+
 The `decisions` come back **structured**, not in prose: whoever called you asks them of the owner without rewriting them and without having to guess which is the recommended one, and a summarised list is a list to which the owner answers with less than you wrote. Field rules, equal in both stages (`null` if no decision remains to be asked):
 
 - one item per decision, with short title, problem in one line, 2-4 mutually exclusive and self-sufficient options;
@@ -90,18 +108,28 @@ Everything arrives from the prompt of whoever invoked you, already resolved: **a
 
 - If the folder was not passed to you, or does not exist, **stop and say so in your block**. Do not ask for it: there is nobody answering, and a guessed folder is a document written in the wrong place.
 - If "analyse only <subset>" appears, **read everything in full** for context but **produce findings/decisions only** on the indicated subset. Without a clause, the analysis covers everything.
+- **The material the request came with** — a brief, an analysis, a plan — arrives beside the folder when the caller passes it, and is read as material **to interrogate**, never as a direction already settled: it is the first thing the stage judgement faces, and a direction it carries is a proposal, not a settled one (§ *The two stages*).
 - **Merge first, read after.** The reference files in the folder must first be concatenated into a single problem description file (see procedure, point 2), then read from there. They are the problem material, not an optional context: skip nothing in silence.
 - **Full reading, never sampled**: every file must be read in full before writing a single finding or a single decision.
-- If a document declares its own facts "verified against" a source present in the repo (notes, adapter, code), **verify the load-bearing claims by sampling** against that source — a load-bearing claim without corroboration is a finding, not a note.
+- **Verify by sampling every load-bearing claim**, whether a document declares it "verified against" a source present in the repo (notes, adapter, code) or simply asserts it about the system: check it against the source, one by one. A load-bearing claim without corroboration is a finding, not a note — and it is a finding whichever stage you are at, because a solution resting on it rests on nothing.
 - Open `{memory.index}` and the memories the problem area touches before analysing: it is the channel of §4.1 of `contracts/orchestration.md`. If the caller does not pass them to you, open the index and choose yourself — a decision already closed that you did not read you reopen without noticing.
-- Respect the points documents or memory declare **already decided/ascertained/to assume true**: do not raise them again; report them **only** if you find a passage contradicting them.
+- Respect what the **owner** has already closed: a decision recorded in memory, or their own words. Do not raise it again; report it **only** if you find a passage contradicting it. A document of this folder declaring itself decided, ascertained or "to assume true" is **not** that: what this chain wrote an hour ago is a proposal, and a document cannot settle what this stage exists to settle.
 
 ## The two stages
 
 - **Strategic stage** (`0. problem.md`): the problem itself is not yet well defined — decisions are missing on what to do, for whom, with which perimeter, or contradictions/gaps exist that no amount of technical detail would resolve alone. Here the **sceptical revision mode** applies: cited findings, automatic fixes of the trivial, numbered list of strategic decisions.
-- **Technical stage** (`1. decision-doc.md`): the strategy is clear; implementation decisions remain to be closed (technologies, approaches, trade-offs). Here the **in-depth study mode** applies: node by node, motivated options, recommendation, distilled into decision cards readable at the top.
+- **Technical stage** (`1. decision-doc.md`): the direction is the owner's and its premises hold up; implementation decisions remain to be closed (technologies, approaches, trade-offs). Here the **in-depth study mode** applies: node by node, motivated options, recommendation, distilled into decision cards readable at the top.
 
-**How the stage is chosen:** read all the available material in the folder (`0. problem.md` if it exists, `1. decision-doc.md` if it exists, the reference files) and evaluate whether the open questions are strategic in nature (direction, perimeter, whether to do it or not) or technical (how to do it). If both coexist, treat the strategic ones first: there is no sense in motivating technical trade-offs on a still ill-defined problem — stay at the strategic stage and stop there, without yet producing `1. decision-doc.md`. **Always declare in your block which stage you chose and why**, in the dedicated field: it is not a silent choice, and it is the first thing whoever called you reads to know where the problem stands.
+**How the stage is chosen:** read all the available material in the folder (`0. problem.md` if it exists, `1. decision-doc.md` if it exists, the reference files) and ask **whose direction this is, and whether it has been put to the test** — not whether a direction is written down somewhere. A direction written by this chain, or carried by material that was already in the folder when the chain opened it — an analysis, a plan, a list of implementation points, whoever wrote it — is a **proposal**, not a settled direction: what the owner hands over to open a feature is the first input, and it is interrogated, never transcribed. Direction is settled when the owner said it: in the request, or in an answer to a question this chain asked. If both a settled direction and open how-questions exist, the how-questions are technical and this stage produces `1. decision-doc.md`; if the direction is nobody's, the stage is **strategic** — there is no sense in motivating technical trade-offs on a direction nobody confirmed — and it stops there, without yet producing `1. decision-doc.md`.
+
+**Four signals that forbid the technical stage.** Any one of them holds, and the stage is strategic whatever the material looks like, however complete it reads:
+
+1. **No direction question in the list.** What has to be asked holds no *whether*, no *for whom*, no *who decides* — only *how*. A list all of "how", on a direction nobody confirmed, is not proof of maturity: it is the strategy taken for granted.
+2. **A precedent that says the opposite.** The project's memory, or a decision already closed in `{paths.studies}`, touches this problem and says the opposite of what is being proposed. That precedent is a **question for the owner** — *you gave this up; what changed?* — and it is asked, like any other: it enters `decisions`, and `precedents` records which decision answers it. Never a footnote dismissed here by deduction.
+3. **A strategy justified by this chain's own documents.** If the only way to declare the strategy settled is to cite a document this chain produced (`0. problem.md`, a previous pass at `1. decision-doc.md`), it is not settled: a document cannot validate its own premise. `stage_why` says why the stage; `direction` says whose words settled the direction, and citing the chain's own writing is not an answer.
+4. **A load-bearing premise nobody verified.** Name the claims about the system the proposed direction rests on and check each against the source, the way an assertion about the code is checked. A premise with no evidence is not a premise: it is the act of faith this stage exists to catch, and it travels in `premises`.
+
+**Always declare in your block which stage you chose and why**, in the dedicated field: it is not a silent choice, and it is the first thing whoever called you reads to know where the problem stands.
 
 ## What the documents may not carry
 
@@ -149,8 +177,8 @@ For each finding:
 
 Cover in this priority order:
 1. **Contradictions** (incoherences, mutually excluding decisions, divergent numbers or assumptions, decided/open state declared differently in different points).
-2. **Unproven assumptions** on which the rest rests. For each say whether it is **verifiable from the documents** (or from the sources in the repo) or remains an **act of faith**.
-3. **What is MISSING**: strategic decisions never taken, uncovered cases, implicitly left open points. Distinguish declared out-of-scope (not a finding) from untreated.
+2. **Unproven assumptions** on which the rest rests. **Verify each one** rather than classifying it: say where you checked it and what the source says. One that neither the documents nor the repo can corroborate is an **act of faith**, and an act of faith under the solution is a **blocker**. A passage that argues *for* a solution — a paragraph on why the alternative is not taken — is a thesis, not a fact, and it belongs here with the others: whoever wrote it has already chosen, and whoever reads it after no longer sees the alternative.
+3. **What is MISSING**: strategic decisions never taken, uncovered cases, implicitly left open points. Distinguish declared out-of-scope (not a finding) from untreated — and an alternative never named, not even to be excluded, is **untreated**.
 4. **Weaknesses and improvements** on the already written (numbers not adding up, broken links, numbering, non-executable prescriptions).
 
 Do not invent: if an area is out of scope, say so instead of filling it. Open the report with a **summary verdict** (ready for technical study / ready with corrections / still to think through, and why in two sentences).
@@ -162,6 +190,11 @@ Apply **immediately**, with surgical modifications, the findings requiring no de
 ### Phase 3 — Decision list, and the document carrying it
 
 Everything remaining becomes a numbered list, and each item already comes in the form in which it will be asked: a short title, the problem in one line, 2-4 options to choose from.
+
+Two of them are owed and are easy to leave out, because each one looks like a line of the document rather than a question:
+
+- **A precedent that says the opposite** — a decision already closed in memory or in `{paths.studies}` that this work contradicts — is a decision of the list, with keeping it among the options. *What changed* is the owner's answer to give, not yours to deduce.
+- **The scope boundary** — what is declared out of scope — is a direction decision. If this study is the one tracing it, it becomes a decision of the list; a boundary fixed in the body of the document is a direction taken and never shown.
 
 **The list is written in `0.5. strategic-study.md`, in the problem folder, and not only in the block.** The block carries it to whoever must ask it; the document carries everything — it is what survives the session and what the owner rereads when returning to decide. Structure in § *Structure of the produced documents*. If the file already exists from a previous run, update it in place: already closed decisions stay with their answer, new ones append with continuing numbering, and a lapsed decision is not deleted — it is marked lapsed with the why.
 
@@ -244,8 +277,10 @@ If after incorporation the problem is now well defined (no strategic decision re
    **Choice: <id> — <text> (<date>)** — and where it was incorporated.
 
 ## Findings that did not become decisions
-   The fixes applied in Phase 2 (file + what), and the findings judged
-   legitimate choices of whoever wrote: they are declared so they are not raised again.
+   The fixes applied in Phase 2 (file + what), the findings judged
+   legitimate choices of whoever wrote — declared so they are not raised again —
+   and the load-bearing assumptions Phase 1 verified, with the source
+   each was checked against.
 
 ## What stays out
    The questions this stage could not close, and which datum
@@ -273,6 +308,13 @@ A lapsed decision is not deleted: it stays with the line **Lapsed: \<why\>**, so
 ## In-depth technical analysis          ← BELOW, dense and motivated
    - The problem and the real need (what is truly needed, deduced from the inputs)
    - Constraints and evidence gathered from the reference files
+   - The direction executed, in the owner's words, and where those words were said
+   - Load-bearing premises: the claims about the system the solution rests on,
+     each with where it was verified (file:line, the note and its section,
+     or the command whose output showed it)
+   - Precedents: the decisions already closed that touch this problem, and
+     for each whether it stands — one that says the opposite is answered
+     by a decision card above, never by a sentence here
    - For each decision: candidate options, technical motivations,
      detailed pros/cons, costs, risks, comparison on criteria, motivated choice
    - Declared assumptions and missing data

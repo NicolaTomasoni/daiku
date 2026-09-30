@@ -3,13 +3,16 @@
   "blocks": {
     "decision-doc": {
       "producer": "skills/decision-doc/SKILL.md § The block you return",
-      "required": ["stage", "stage_why", "file", "verdict", "applied_fixes", "decisions", "incorporated", "open_items"],
+      "required": ["stage", "stage_why", "direction", "file", "verdict", "applied_fixes", "premises", "precedents", "decisions", "incorporated", "open_items"],
       "optional": [],
       "enums": {
         "stage": ["strategic", "technical"],
+        "direction.kind": ["owner-request", "owner-answer", "material"],
+        "precedents.stands": ["yes", "no"],
         "decisions.classification": ["blocker", "serious risk", "weakness", "improvement"],
         "decisions.recommended_id": ["A"]
-      }
+      },
+      "note": "The three fields between `stage_why` and `decisions` are the ones the stage turns on, and `direction` is null when nothing proposes one. Which of them the stage admits — a technical stage executes the owner's direction and rests on verified premises, a strategic one carries no premises of a direction nobody chose — is not expressible as an enum: it is SHAPES['decision-doc'] of architect/architect.mjs."
     },
     "blueprint": {
       "producer": "skills/blueprint/SKILL.md § What you return",
@@ -105,10 +108,10 @@
       "required": [],
       "optional": [],
       "enums": {},
-      "note": "No JSON block of its own: reports the develop-feature block verbatim; its status is that block's status."
+      "note": "No JSON block of its own: reports the ship-feature block verbatim; its status is that block's status."
     },
     "architect": {
-      "producer": "skills/develop-feature/SKILL.md § The evaluator (architect-internal, no producer file)",
+      "producer": "skills/ship-feature/SKILL.md § The evaluator (architect-internal, no producer file)",
       "required": ["ok", "verdict", "remaining", "resume_from", "blockers", "retry", "fallback", "readings", "violations", "detail"],
       "optional": [],
       "enums": {
@@ -116,8 +119,8 @@
       },
       "note": "The effective domain of `verdict` depends on `question`: this enum is the union of the nine domains, one per question — decision, closing, unblock, propagation, resumption, order, round, layers, block — and `verdict` is `null` when the question does not apply, that is `propagation` on a block that came back. `remaining` and `resume_from` are filled by `order` and `resumption` alone; `retry` and `fallback` by `propagation` alone; `readings` by the ambiguity rule alone; `violations` by `layers` alone, one `{file, line, policy, layer, fragment, text}` per violating line. Field names of the blocks this one consumes are not renamed on either side: `gate`, `gate_detail`, `outcome`, `missing_disciplines`, `blocking`, `to_confirm`, `base`, `item`, `rounds`, `commit`, `commit_sha`."
     },
-    "develop-feature-outcome": {
-      "producer": "skills/develop-feature/SKILL.md § Outcome",
+    "ship-feature-outcome": {
+      "producer": "skills/ship-feature/SKILL.md § Outcome",
       "required": ["folder", "status", "worktree", "commit_sha", "merge_sha", "memory_updated", "memory_committed", "memory_commit_sha", "version_commit_sha", "architect_agreement", "report_path", "reason"],
       "optional": [],
       "enums": {
@@ -125,26 +128,26 @@
         "architect_agreement": ["match", "divergence"]
       }
     },
-    "develop-feature-acquisition": {
-      "producer": "skills/develop-feature/SKILL.md § Acquisition",
+    "ship-feature-acquisition": {
+      "producer": "skills/ship-feature/SKILL.md § Acquisition",
       "required": ["ok", "worktree", "worktree_root", "detail"],
       "optional": [],
       "enums": {}
     },
-    "develop-feature-stage": {
-      "producer": "skills/develop-feature/SKILL.md § Stage",
+    "ship-feature-stage": {
+      "producer": "skills/ship-feature/SKILL.md § Stage",
       "required": ["staged", "files", "detail"],
       "optional": [],
       "enums": {}
     },
-    "develop-feature-merge": {
-      "producer": "skills/develop-feature/SKILL.md § Merge",
+    "ship-feature-merge": {
+      "producer": "skills/ship-feature/SKILL.md § Merge",
       "required": ["merged", "merge_sha", "conflicts", "detail"],
       "optional": [],
       "enums": {}
     },
-    "develop-feature-report": {
-      "producer": "skills/develop-feature/SKILL.md § Report",
+    "ship-feature-report": {
+      "producer": "skills/ship-feature/SKILL.md § Report",
       "required": ["ok", "report_path", "detail"],
       "optional": [],
       "enums": {}
@@ -163,7 +166,7 @@
   },
   "params": {
     "producer": "contracts/project-contract.md §4 and contracts/orchestration.md §7",
-    "project_json": ["contract", "name", "repo_root", "code_root", "language.chat", "language.commit", "tech_doc", "changelog", "version.file", "version.field", "version.replicated_in", "paths.studies", "paths.lib_notes", "paths.review_state", "memory.root", "memory.index", "commit.memory_prefix", "worktree.pool", "worktree.prefix", "worktree.max", "worktree.branch_prefix", "areas", "areas.<area>.paths", "areas.<area>.gate", "areas.<area>.check_fast", "areas.<area>.lint_fix", "areas.<area>.test_targeted", "areas.<area>.coverage"],
+    "project_json": ["contract", "name", "repo_root", "code_root", "language.chat", "language.commit", "tech_doc", "changelog", "version.file", "version.field", "version.replicated_in", "paths.studies", "paths.lib_notes", "paths.features", "paths.review_state", "memory.root", "memory.index", "commit.memory_prefix", "worktree.pool", "worktree.prefix", "worktree.max", "worktree.branch_prefix", "areas", "areas.<area>.paths", "areas.<area>.gate", "areas.<area>.check_fast", "areas.<area>.lint_fix", "areas.<area>.test_targeted", "areas.<area>.coverage"],
     "environment_json": ["contract", "default_host", "hosts", "backends", "hosts.<host>.models", "hosts.<host>.models.<role>", "hosts.<host>.models.judge", "hosts.<host>.models.worker", "hosts.<host>.instructions_file", "hosts.<host>.skill_pointers", "hosts.<host>.enforcement", "hosts.<host>.settings_file", "hosts.<host>.base_url_env", "hosts.<host>.native_backend", "backends.<backend>", "backends.<backend>.base_url", "backends.<backend>.sequential_fanout", "backends.<backend>.caveats", "temp_dir", "write_roots"],
     "contract_expected": {
       "project_json": 1,

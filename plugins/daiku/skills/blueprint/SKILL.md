@@ -1,6 +1,6 @@
 ---
 name: 'blueprint'
-description: 'From the decision document and the chosen solution it produces an autonomous execution brief (2. blueprint.md) and stops there, without executing — launched by hand to stop at the brief, or by develop-feature as its phase 1.'
+description: 'From the decision document and the chosen solution it produces an autonomous execution brief (2. blueprint.md) and stops there, without executing — launched by hand to stop at the brief, or by ship-feature as its phase 1.'
 argument-hint: '<folder with 1. decision-doc.md> + chosen solution (one option id and text per decision)'
 ---
 
@@ -14,10 +14,10 @@ You, here, **do not execute** the plan: you only **prepare** it. The file remain
 
 ## Invocation modes
 
-**You are launched by hand or by `develop-feature` phase 1.** The brief is the same either way; what changes is where the input comes from and where the block goes.
+**You are launched by hand or by `ship-feature` phase 1.** The brief is the same either way; what changes is where the input comes from and where the block goes.
 
 - **By hand (`owner`).** `$ARGUMENTS` carries the folder and, for each decision of `1. decision-doc.md`, the id and text of the chosen option. If the solution is missing or ambiguous against the document, do not ask and do not guess: stop, and list the decisions and options the document truly declares, so the owner relaunches you with the choice. Close with the block of § *What you return* in chat, and stop there: carrying the folder wherever its execution runs is the owner's manual act, no automated flow performs it.
-- **From `develop-feature` phase 1.** Folder, chosen solution and memories arrive resolved in the prompt, and the block returns to the caller. The constraints below hold unchanged, and they are not rewritten in the caller prompt.
+- **From `ship-feature` phase 1.** Folder, chosen solution and memories arrive resolved in the prompt, and the block returns to the caller. The constraints below hold unchanged, and they are not rewritten in the caller prompt.
 
 ## Input: folder and chosen solution
 
@@ -180,7 +180,7 @@ Finish here: your only output is `2. blueprint.md` and the return block. Do not 
 
 ## What you return
 
-Summarise in chat (Procedure point 7) and **close with this block — you are the Brief phase of `develop-feature`** — which is the only format on which the caller decides whether to continue:
+Summarise in chat (Procedure point 7) and **close with this block — you are the Brief phase of `ship-feature`** — which is the only format on which the caller decides whether to continue:
 
 ```json
 {"ok": true, "brief_path": "<path of 2. blueprint.md>", "plan": [{"task": "<the task's number, as a string>", "check": "<the Check line>", "red_if": "<the Red if line>", "cases": [{"input": "<input>", "expected": "<expected outcome>"}]}], "interfaces": [{"symbol": "<literal string>", "declared_in": "<path:line>", "consumers": ["<path:line>"]}], "retired": [{"fact": "<old wording>", "pattern": "<fixed string>"}], "detail": "<if ok=false, the exact reason>"}
@@ -190,10 +190,10 @@ Summarise in chat (Procedure point 7) and **close with this block — you are th
 - **`interfaces`** and **`retired`** are the two sections of the same name, item by item. An empty list says the change touches no interface, or retires no fact: the key is never omitted.
 - With `ok: false` the three lists are `[]`.
 
-**The block stands in the file, and that is its seat.** Write it verbatim in the *Handoff* section of `2. blueprint.md` and return that same object: a delivery resumed after this phase reads it there (`skills/develop-feature/SKILL.md` § *Progress and findings*), because the chat that carried it is gone. It is the plan **as you froze it**: the executor adapts the Memory, never the *Handoff* section, and answers for every task of it in its own block — which is how a task dropped along the way stays visible.
+**The block stands in the file, and that is its seat.** Write it verbatim in the *Handoff* section of `2. blueprint.md` and return that same object: a delivery resumed after this phase reads it there (`skills/ship-feature/SKILL.md` § *Progress and findings*), because the chat that carried it is gone. It is the plan **as you froze it**: the executor adapts the Memory, never the *Handoff* section, and answers for every task of it in its own block — which is how a task dropped along the way stays visible.
 
 If `2. blueprint.md` already existed, do **not** rerun the brief: `ok: true` and the block its *Handoff* section carries. If that section is missing or does not have this form — a brief written before it existed, or a relaunch after the caller found it malformed — rewrite that section alone from the file's own tasks and sections, completing there what they lack (a `red_if`, a consumer map, a search for a retired fact) as principles 4 to 7 ask: it is the only change you make to an existing brief.
 
-**Whoever receives it checks its form, not its quality.** The caller hands it to the `block` question of the evaluator (`skills/develop-feature/SKILL.md` § *1. Brief*), which refuses an empty `check` or `red_if`, a behaviour table without input or expected outcome, a consumer that is not a string: a `Red if` it finds non-empty can still be banal, and whether it catches a real wrong state stays with you.
+**Whoever receives it checks its form, not its quality.** The caller hands it to the `block` question of the evaluator (`skills/ship-feature/SKILL.md` § *1. Brief*), which refuses an empty `check` or `red_if`, a behaviour table without input or expected outcome, a consumer that is not a string: a `Red if` it finds non-empty can still be banal, and whether it catches a real wrong state stays with you.
 
 The schema lives here, in the file of the node that produces it, and whoever invokes you cites it instead of copying it (§4.2 of `contracts/orchestration.md`): a block rewritten in the caller diverges from this one at the first modification, and the first to diverge is always the line somebody added afterwards.

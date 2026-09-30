@@ -156,13 +156,13 @@ The command every job starts with. You tell it the idea in natural language — 
 
 Then `decision-doc` studies the options and comes to ask its questions, with a recommended answer: you answer and it records, until every decision is closed.
 
-At that point, `develop-feature` takes over delivery: `blueprint` writes the work plan, `execute` runs it, `/review` checks it, `update-memory` aligns memory and documentation, and `commit` closes the feature. It always works in a separate worktree, merged and cleaned at the end.
+At that point, `ship-feature` takes over delivery: `blueprint` writes the work plan, `execute` runs it, `/review` checks it, `update-memory` aligns memory and documentation, and `commit` closes the feature. It always works in a separate worktree, merged and cleaned at the end.
 
 ```mermaid
 flowchart TD
     RS["research"] --> DD["decision-doc"]
-    DD --> DF["develop-feature"]
-    DF --> BP["blueprint"]
+    DD --> SF["ship-feature"]
+    SF --> BP["blueprint"]
     BP --> EX["execute"]
     EX --> RV["review"]
     RV --> UM["update-memory"]
