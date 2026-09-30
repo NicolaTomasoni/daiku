@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <img alt="version 1.0.3" src="https://img.shields.io/badge/version-1.0.3-3b82f6?style=flat" /> <br>
+  <img alt="version 1.0.4" src="https://img.shields.io/badge/version-1.0.4-3b82f6?style=flat" /> <br>
   <a href="https://code.claude.com"><img alt="Claude Code" src="https://img.shields.io/badge/Claude_Code-D97757?style=flat&logo=claude&logoColor=white" /></a>
   <a href="https://developers.openai.com/codex"><img alt="OpenAI Codex" src="https://img.shields.io/badge/OpenAI_Codex-000000?style=flat&logo=openai&logoColor=white" /></a>
 </p>
@@ -74,9 +74,9 @@ subfolder — then run it from there.
 ```
 
 It asks only two things — which language for the chat and which for commits — and from there
-writes everything in one run.
-What your repository does not declare it names at the end, and the skills already know how to work
-without it. On Codex it also installs protections and roles, by running `/sync-host` itself.
+writes everything in one run, then answers `You're all set.` What your repository does not declare
+it leaves out, and the skills already know how to work without it. On Codex it also installs
+protections and roles, by running `/sync-host` itself.
 
 **3. If you are on Codex**, after every package update re-run:
 
@@ -124,8 +124,7 @@ resolves that name its own way.
 
 This is the normal case, not an error:
 
-1. `/init` on an empty repo leaves out what the repository does not declare yet, and names it in
-   its *Not declared* block.
+1. `/init` on an empty repo leaves out what the repository does not declare yet.
 2. Define stack and language with the agent, then re-run `/init` from the same root.
    It runs in completion mode: it never overwrites, it writes only the missing pieces.
    That is how `project.json` evolves when the project takes shape — `update-memory`

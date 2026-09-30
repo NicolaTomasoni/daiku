@@ -1,5 +1,13 @@
 # Changelog
 
+### 1.0.4
+<sub>2026-09-30</sub>
+
+- `init` checks what is already in place before doing anything: on a project already set up it answers `Daiku is already set up here.` without asking anything, and otherwise adds only the missing pieces.
+- `init` ends with a single line, `You're all set.`, and lists only the steps that did not go through.
+- `init` adds a `daiku: update` VS Code task that refreshes the marketplace and updates Daiku in one click.
+- In a monorepo, the write guard no longer blocks the root `.gitignore` or a changelog above the folder where Daiku runs.
+
 ### 1.0.3
 <sub>2026-09-30</sub>
 

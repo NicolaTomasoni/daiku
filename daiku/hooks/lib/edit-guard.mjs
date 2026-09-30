@@ -26,8 +26,11 @@
  *    `.daiku/policies/`, `.daiku/domain/`, `{temp_dir}` plus the OS temp directory),
  *    and the `.daiku/` JSON files themselves — `project.json`, `environment.json` and
  *    the machine's `environment.local.json`, which `init` writes and the user creates —
- *    and the machine's `.claude/settings.local.json`, the one file `init` creates under
- *    `.claude/`, after `project.json` has already opened this gate. Everywhere else —
+ *    the machine's `.claude/settings.local.json`, the one file `init` creates under
+ *    `.claude/`, and the update task — `.daiku/update.mjs` and the `.vscode/tasks.json`
+ *    that runs it — and the repository's `.gitignore`, all after `project.json` has already
+ *    opened this gate. Where `{repo_root}` sits above the technical root, the repository
+ *    is that whole tree: editing there passes, creating follows the same seats. Everywhere else —
  *    including outside the repository — a create is denied, except inside
  *    `{paths.review_state}`, `{temp_dir}` or the OS temp dir when those sit outside
  *    the repo, and inside the `{write_roots}` the machine declares: there, outside the
@@ -204,6 +207,9 @@ function fileSeats(ctx) {
     ctx.environmentFile,
     ctx.environmentLocalFile,
     ctx.hostLocalSettings,
+    ctx.updateScript,
+    ctx.editorTasks,
+    ctx.repoGitignore,
   ];
   for (const f of ctx.versionFiles || []) seats.push(f);
   return seats.filter(Boolean);
@@ -254,7 +260,10 @@ function evaluate(filePath, cwd, env, ctx, root) {
   if (exists === null) return null; // unreachable disk: fail-open
   const creating = !exists;
 
-  const inRepo = root ? isInside(absolute, root) || resolve(absolute) === resolve(root) : false;
+  // The repository reaches past the technical root when `repo_root` is declared above it: the
+  // root `.gitignore`, a changelog at the top of a monorepo, sit there.
+  const repoRoots = [root, ctx.repoRoot].filter(Boolean);
+  const inRepo = repoRoots.some((r) => isInside(absolute, r) || resolve(absolute) === resolve(r));
   const outsideSeats = [ctx.reviewState, ctx.tempDir, sysTmp, ...(ctx.writeRoots || [])].filter(Boolean);
   const outsideAllowed = insideAny(absolute, outsideSeats);
 
@@ -346,7 +355,18 @@ const CTX_FULL = fakeContext({
   environmentFile: `${R}/.daiku/environment.json`,
   environmentLocalFile: `${R}/.daiku/environment.local.json`,
   hostLocalSettings: `${R}/.claude/settings.local.json`,
+  updateScript: `${R}/.daiku/update.mjs`,
+  editorTasks: `${R}/.vscode/tasks.json`,
+  repoGitignore: `${R}/.gitignore`,
   tempDir: 'C:/dev/tmp',
+});
+
+/** A monorepo: the technical root `R` sits under the repository root `C:/dev`. */
+const CTX_MONO = fakeContext({
+  codeRoot: `${R}/src`,
+  repoRoot: 'C:/dev',
+  repoGitignore: 'C:/dev/.gitignore',
+  changelog: 'C:/dev/CHANGELOG.md',
 });
 
 const CTX_ABSENT = fakeContext({ present: false });
@@ -382,6 +402,15 @@ const CASES = [
   ['create a stray file under .daiku/', '.daiku/scratch.json', R, 'deny', 'is denied', CTX_FULL, []],
   ['create the machine host settings', '.claude/settings.local.json', R, 'allow', '', CTX_FULL, []],
   ['create a stray file under .claude/', '.claude/settings.json', R, 'deny', 'is denied', CTX_FULL, []],
+  ['create the update script', '.daiku/update.mjs', R, 'allow', '', CTX_FULL, []],
+  ['create the editor tasks file', '.vscode/tasks.json', R, 'allow', '', CTX_FULL, []],
+  ['create a stray file under .vscode/', '.vscode/settings.json', R, 'deny', 'is denied', CTX_FULL, []],
+  ['monorepo: edit the root .gitignore above the technical root', 'C:/dev/.gitignore', R, 'allow', '', CTX_MONO, ['C:/dev/.gitignore']],
+  ['monorepo: create the root .gitignore above the technical root', 'C:/dev/.gitignore', R, 'allow', '', CTX_MONO, []],
+  ['monorepo: edit a changelog above the technical root', 'C:/dev/CHANGELOG.md', R, 'allow', '', CTX_MONO, ['C:/dev/CHANGELOG.md']],
+  ['monorepo: create a stray file above the technical root', 'C:/dev/notes.md', R, 'deny', 'is denied', CTX_MONO, []],
+  ['no repo_root: a file above the technical root stays outside', 'C:/dev/.gitignore', R, 'deny', 'outside the repository', CTX_FULL, ['C:/dev/.gitignore']],
+  ['create the .gitignore of the technical root', '.gitignore', R, 'allow', '', CTX_FULL, []],
   ['create stray note at root', 'notes-random.md', R, 'deny', 'is denied', CTX_FULL, []],
   ['create stray doc outside seats', 'docs/scratch.md', R, 'deny', 'is denied', CTX_FULL, []],
   ['create outside the repo', 'C:/other/x.md', R, 'deny', 'outside the repository', CTX_FULL, []],
@@ -508,6 +537,25 @@ function selfCheck() {
   ran += 1;
   if (read.hostLocalSettings !== resolve('C:/dev/project/.claude/settings.local.json')) {
     failed.push('host local settings seat does not resolve under the technical root');
+  }
+  ran += 1;
+  if (read.updateScript !== resolve('C:/dev/project/.daiku/update.mjs')) {
+    failed.push('update script seat does not resolve under the technical root');
+  }
+  ran += 1;
+  if (read.editorTasks !== resolve('C:/dev/project/.vscode/tasks.json')) {
+    failed.push('editor tasks seat does not resolve under the technical root');
+  }
+  ran += 1;
+  if (read.repoRoot !== null || read.repoGitignore !== resolve('C:/dev/project/.gitignore')) {
+    failed.push('without repo_root the .gitignore seat must be the technical root one');
+  }
+  ran += 1;
+  const mono = loadContext('C:/dev/project', readers({
+    'C:/dev/project/.daiku/project.json': JSON.stringify({ contract: 1, repo_root: 'C:/dev' }),
+  }));
+  if (mono.repoRoot !== resolve('C:/dev') || mono.repoGitignore !== resolve('C:/dev/.gitignore')) {
+    failed.push('repo_root does not resolve the repository root and its .gitignore');
   }
   ran += 1;
   const localWins = loadContext('C:/dev/project', readers({

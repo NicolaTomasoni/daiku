@@ -13,7 +13,10 @@
  * What it checks, on both files: they parse; their top-level keys are the ones
  * the host reads; no event list is empty; every `command` resolves to a `.mjs`
  * the package really carries; every hook of `lib/` with a bench is hooked in
- * the package file. What it deliberately does not check: key-level acceptance by
+ * the package file. It also checks the update task `init` lays down: the
+ * `templates/vscode/tasks.json` skeleton carries one `daiku: update` task running
+ * `.daiku/update.mjs`, and `templates/project/update.mjs` runs the two update commands
+ * in order. What it deliberately does not check: key-level acceptance by
  * the hosts — neither real validator looks inside these files (verified with
  * `validate_plugin.py`, which is silent on hooks, on 2026-09-26), so `description`
  * stays in the Codex template until a validator rejects it for real. The day a
@@ -175,6 +178,33 @@ function selfCheck() {
   for (const name of lib) {
     check(`lib hook ${name} is hooked in the package manifest`, hooked.has(name));
   }
+
+  // The update task `init` lays down: one task, the label users call it by, running the
+  // script `init` copies beside it — and the script runs the two update commands, in order.
+  let tasks = null;
+  try {
+    tasks = readJson('templates/vscode/tasks.json');
+    check('vscode tasks template parses', true);
+  } catch {
+    check('vscode tasks template parses', false);
+  }
+  const updateTasks = ((tasks && tasks.tasks) || []).filter((t) => t && t.label === 'daiku: update');
+  check('vscode tasks template carries exactly one daiku: update task', updateTasks.length === 1);
+  const task = updateTasks[0] || {};
+  check(
+    'daiku: update runs node on .daiku/update.mjs',
+    task.command === 'node' && Array.isArray(task.args) && task.args.join(' ') === '.daiku/update.mjs'
+  );
+  let script = '';
+  try {
+    script = readFileSync(join(ROOT, 'templates', 'project', 'update.mjs'), 'utf-8');
+  } catch {
+    script = '';
+  }
+  check('update script template exists', script !== '');
+  const marketplace = script.indexOf("'claude plugin marketplace update daiku'");
+  const plugin = script.indexOf("'claude plugin update daiku@daiku'");
+  check('update script refreshes the marketplace, then updates the plugin', marketplace !== -1 && plugin > marketplace);
 
   process.stdout.write(JSON.stringify({ checks: ran, passed: ran - failed.length, failed }, null, 2) + '\n');
   return failed.length ? 1 : 0;

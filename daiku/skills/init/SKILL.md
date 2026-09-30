@@ -6,7 +6,7 @@ argument-hint: '[technical root, optional — default: current directory]'
 
 You are the step making a project **usable by Daiku**. Neither host lets a package write inside the user project: the Parameters and Domain levels cannot be delivered by installation, they can only be **generated** by a command the user launches. That command is you, and you are the only admitted way.
 
-**You run in one shot.** The two languages of *Step 0* are the only thing you ask; after them you ask the user nothing — not a choice, not a confirmation, not a follow-up — and you hand back nothing to do: whatever the repository lets you derive, you write; whatever it does not declare, does not exist in this project (§6 of `contracts/project-contract.md`) and you say so. When the run ends the project is open, and the report is the account of a finished job, never a list of chores or an offer to continue.
+**You run in one shot.** The two languages of *Step 0* are the only thing you ask; after them you ask the user nothing — not a choice, not a confirmation, not a follow-up — and you hand back nothing to do: whatever the repository lets you derive, you write; whatever it does not declare, does not exist in this project (§6 of `contracts/project-contract.md`) and the skills already know how to work without it. When the run ends the project is open, and you say so in one line (*Step 10*).
 
 ## You have no project parameters, and you are the only one
 
@@ -23,7 +23,21 @@ The **technical root** is the directory the skills run from, the one carrying th
 - With an argument, it is that. Without an argument, it is the current directory.
 - Then run exactly `git -C "<technical root>" rev-parse --show-toplevel`, on both hosts and both shells. Do not choose another command and do not add checks around it: the exit code is the verdict, and its stdout is the repository root you reuse at *Step 2*.
 - If the exit code is not `0`, stop here with exactly these two lines and nothing else: `Cannot initialise Daiku here: <technical root> is not inside a Git repository.` on the first line, `Not written: nothing was written.` on the second. You do not initialise a repository in place of the user.
-- If `.daiku/` already exists, it is not an error: continue in **completion** mode (see *Idempotence*).
+## Scan first
+
+Before reading, asking or writing anything, measure what is already there. Run exactly:
+
+```
+node "<package root>/skills/init/scan.mjs" "<technical root>" <host>
+```
+
+— `<package root>` the folder two levels above this file, `<host>` `claude` or `codex` (*Step 1*). It prints one JSON object, `{fresh, missing}`, and its answer decides the run; you do not second-guess it:
+
+- **`fresh: true`** — the project has no `.daiku/project.json`: run the whole *Procedure*.
+- **`fresh: false` and `missing` empty** — Daiku is already open here and nothing is missing. Your whole answer is one line, `Daiku is already set up here.`, and the run ends: no question, no reading, no write.
+- **`fresh: false` and `missing` not empty** — **completion** mode. Each entry names the step that writes it (`step`): run those steps and only those, for those pieces and only those. *Step 0* is skipped — the languages live in `project.json`, which already stands and is never rewritten — and so is *Step 2*, unless `instructions` is listed. Then run the scan again: what it still lists is a step that did not go through (*Step 10*).
+
+The scan reads only what `init` writes. A domain role the project answered in a file written after the first run is not something it can see: whoever writes that file writes the pointer.
 
 ## Where the skeletons stand
 
@@ -36,6 +50,8 @@ Under `templates/`, at the package root — the folder containing `skills/`, `co
 | `templates/project/domain/` | `.daiku/domain/` | you copy its README, and each role's default unless the project already answers that role: see *Step 5* |
 | `templates/project/policies/` | `.daiku/policies/` | you copy its README, and write one policy per area the project already keeps rules for: see *Step 5* |
 | `templates/project/instructions.md` | the instructions file, in the technical root | you **fill it**: see *Step 6* |
+| `templates/project/update.mjs` | `.daiku/update.mjs` | you copy it as it is: see *Step 5-bis* |
+| `templates/vscode/tasks.json` | `.vscode/tasks.json`, in the technical root | you copy it, or add its task to the file already there: see *Step 5-bis* |
 
 **Everything you write is in English**, whatever language the user chose at *Step 0*. Those two keys say in which language the skills will talk to the user and write commits; they do not say in which language Daiku is made. The skeletons arrive in English and you fill them in English: a half-translated instructions file is the worst of the two forms, and a corpus in a single language is the only thing staying readable when the project changes hands.
 
@@ -47,20 +63,20 @@ The skeletons are read on every run, and **you lay down all the ones you find**,
 
 ### 0. Ask the two languages
 
-It is **the only thing you ask**, and you ask it because it is the only thing the repository cannot tell you with certainty: two identical projects may want different languages, and erring here shows in every line the skills will write from now on.
+Only on a `fresh` run (*Scan first*). It is **the only thing you ask**, and you ask it because it is the only thing the repository cannot tell you with certainty: two identical projects may want different languages, and erring here shows in every line the skills will write from now on.
 
 They are two questions, not one, because they are two different audiences (§5.5 of `contracts/project-contract.md`):
 
 1. **the chat language** — answers, summaries, reports and the documents the method produces;
 2. **the commit language** — commit messages and changelog entries, that is what remains in the shared history of the repository.
 
-They concern **the future**, not this run: neither changes one line of what you are about to write, which is in English however they answer. Ask them just the same, and before everything else, because they end up in `project.json` and because the report you close with is the first text they apply to.
+They concern **the future**, not this run: neither changes one line of what you are about to write, which is in English however they answer. Ask them just the same, and before everything else, because they end up in `project.json`.
 
 **Ask bare, with no preamble.** Use `AskUserQuestion` with two questions: `Chat language` — `Which language for chat replies, summaries, reports and method documents?` — and `Commit language` — `Which language for commit messages and changelog entries?` Options in both: Italiano, English. Do not add `Other`: the tool appends it by itself, and listing it again shows it twice. You may mark one option as recommended from what you read (`README.md` and the instructions file for chat, `git log --oneline -30` for commits); the question text stays exactly as above, with nothing added.
 
-If the user does not answer — because you are running inside a chain, or because the session has no interactive channel — **do not invent**: leave the two keys out of `project.json` and name them under *Not declared*. §5.5 already declares what happens without them, and a silent default here is worse than their absence.
+If the user does not answer — because you are running inside a chain, or because the session has no interactive channel — **do not invent**: leave the two keys out of `project.json`. §5.5 already declares what happens without them, and a silent default here is worse than their absence.
 
-**From the answer on, you run in one shot**: nothing else is asked until the report.
+**From the answer on, you run in one shot**: nothing else is asked.
 
 ### 1. Recognise the host
 
@@ -77,7 +93,7 @@ This reading serves two very different things: the parameters of *Step 3*, which
 Collect, read-only:
 
 - the repository root (`git rev-parse --show-toplevel`) and the position of the technical root inside it;
-- **all `.md` files of the repository** — the repository being the one *Input* resolved with `rev-parse --show-toplevel`, not the technical root where the two differ — excluding those under dependency and build directories (`node_modules/`, `venv/`, `target/`, `dist/` and similar). README, technical document, architectural decisions, changelog, notes: it is there the project already wrote of itself, and there is nothing you can deduce in half an hour worth as much as a sentence written by whoever was there. **The width is over the corpus, not over every byte of it**: on dozens of documents you read by titles first — file names and first headings — and open only those carrying a value of *Step 3* or a fact the instructions file of *Step 6* needs. Say in the report that you read by titles, how many you skimmed and which you opened;
+- **all `.md` files of the repository** — the repository being the one *Input* resolved with `rev-parse --show-toplevel`, not the technical root where the two differ — excluding those under dependency and build directories (`node_modules/`, `venv/`, `target/`, `dist/` and similar). README, technical document, architectural decisions, changelog, notes: it is there the project already wrote of itself, and there is nothing you can deduce in half an hour worth as much as a sentence written by whoever was there. **The width is over the corpus, not over every byte of it**: on dozens of documents you read by titles first — file names and first headings — and open only those carrying a value of *Step 3* or a fact the instructions file of *Step 6* needs;
 - **the repository structure in full** — the directory tree, not only the first level. You need it to recognise the areas, to propose the `paths`, and because the form of a project declares its architecture before any document;
 - **the technological inventory**: the build manifests present (`package.json`, `pyproject.toml`, `Cargo.toml`, `go.mod`, `pom.xml` and similar) with the dependencies and scripts they declare, the lock files for the truly installed versions, and the configuration files of runners, linters, type-checkers, formatters, CI, containers and orchestration. From them you derive languages and versions, package manager, frameworks, databases and storage, build and test chain, and how the thing starts locally — ports included;
 - the project instructions file, if any, and every other file the host loads itself;
@@ -97,16 +113,16 @@ Start from the skeleton, **empty it of every value not concerning this project**
 
 - **A command is the exact line to run plus the cwd to run it from.** If in the repository that line is declared nowhere, the key **is not written**. A guessed gate is worse than an absent gate: absent skips a step and declares it, guessed fails a step and looks like a problem of the project.
 - **What is not declared does not exist.** A project without frontend has no empty frontend area: it has no key. Valid for `worktree`, for `coverage`, for `tech_doc`, for everything.
-- **`memory.root` and `memory.index` are the exception, and they are always written.** They are not the finding of something the repository already has: they are the seat you are assigning to a corpus the method will write anyway, because `update-memory` runs at **every** commit. If the repository already has a memory folder, it is that; if it does not, propose `memory/` at the technical root, with `MEMORY.md` inside, and say so in the report. On Claude Code that folder also becomes where the host writes its own memory (*Step 7*), and then proposing it at the technical root is what the step presupposes.
+- **`memory.root` and `memory.index` are the exception, and they are always written.** They are not the finding of something the repository already has: they are the seat you are assigning to a corpus the method will write anyway, because `update-memory` runs at **every** commit. If the repository already has a memory folder, it is that; if it does not, propose `memory/` at the technical root, with `MEMORY.md` inside. On Claude Code that folder also becomes where the host writes its own memory (*Step 7*), and then proposing it at the technical root is what the step presupposes.
 - **`contract` is copied from the skeleton**, you do not invent it and do not increment it.
 
 For areas: the area name is your naming choice, its `paths` are not — they are the real paths belonging to them, usable as Git pathspecs. Declare an area only if it truly has its own gate; two folders passing through the same command are a single area. A command at the workspace root that only calls the areas' gates is no area: it has no gate of its own, and declaring it would run every gate twice, over paths the areas already cover.
 
 The two **language** keys are the exception to the first rule, and only because you asked them: you write them with the answers of *Step 0*, verbatim. If you had no answer, you do not write them.
 
-The three `paths` keys — where the work folders, notes and review ledger live — you **propose** by watching what the repository already has: an existing studies folder is worth more than an invented name. If there is nothing similar, choose yourself a path coherent with the structure in front of you and **say so in the report**, because those folders the skills will create at first use and the user should know where.
+The three `paths` keys — where the work folders, notes and review ledger live — you **propose** by watching what the repository already has: an existing studies folder is worth more than an invented name. If there is nothing similar, choose yourself a path coherent with the structure in front of you: the skills create those folders at first use, and `project.json` is where the user sees them.
 
-**`paths.review_state` is looked for on a different terrain.** It stands inside the tree but outside version control (§4 of `contracts/project-contract.md`), so *Step 2*'s reading — which takes what the repository versions — does not reach it: look too among the folders **present on disk but ignored by Git**, where a ledger a project already keeps would sit. `paths.studies` and `paths.lib_notes` instead carry method documents and are versioned, so an existing folder of either is one the repository already shows you. Where no ignored folder resembles a ledger, propose one inside the tree, excluded from version control and **never under `.daiku/`** — that folder is versioned (§8 of `contracts/project-contract.md`) — and declare it in the report. Its `.gitignore` line, where no line of the repository covers it yet, you write at *Step 8*.
+**`paths.review_state` is looked for on a different terrain.** It stands inside the tree but outside version control (§4 of `contracts/project-contract.md`), so *Step 2*'s reading — which takes what the repository versions — does not reach it: look too among the folders **present on disk but ignored by Git**, where a ledger a project already keeps would sit. `paths.studies` and `paths.lib_notes` instead carry method documents and are versioned, so an existing folder of either is one the repository already shows you. Where no ignored folder resembles a ledger, propose one inside the tree, excluded from version control and **never under `.daiku/`** — that folder is versioned (§8 of `contracts/project-contract.md`). Its `.gitignore` line, where no line of the repository covers it yet, you write at *Step 8*.
 
 #### Where each value is read
 
@@ -127,20 +143,18 @@ declared it, and they are checked before the key is left out.
   `{worktree.*}`. You take the values, never the file's shape: a key the schema does not declare
   stays out, and `contract` always comes from the skeleton. **A key name written in another language
   is mapped to the canonical one only where the correspondence is certain** — the value the same and
-  the meaning the same; where it is not, the name stays out and goes in the report, because a value
+  the meaning the same; where it is not, the name stays out, because a value
   put under the wrong key is read as a value and nobody notices. **Where that file and a manifest
   disagree, the project's file wins**: it is a declaration written by whoever knows the project, and
   a command the project already runs is not a claim to verify against a script. **That precedence
   stops at the package's own contract**: where the project's file declares a key the package forbids
   — `backends.<backend>.base_url` on the host's native backend, which §7 of
-  `contracts/orchestration.md` wants absent — the contract wins, you leave the key out and declare
-  it in the report. A project's file overrules a manifest, never the form the package fixed. The
+  `contracts/orchestration.md` wants absent — the contract wins, and you leave the key out. A project's file overrules a manifest, never the form the package fixed. The
   manifest is what you fall back on for the keys that file does not carry. **Precedence chooses
   between two lines; it does not vouch that the one it picks runs.** A line whose tool is declared
   in no dependency manifest or lock file of its area — the module after `-m`, the binary after
   `exec`, the runner called bare — fails on the first skill that runs it, and a key that fails is
-  what the first rule of this step forbids: it stays out, and the report carries the line with the
-  dependency that is missing. The check is on what the repository **declares**, like every other
+  what the first rule of this step forbids: it stays out. The check is on what the repository **declares**, like every other
   read here: a tool listed in `requirements-dev.txt` or `devDependencies` passes, whether or not it
   is installed on this machine. **A file of an older form, or one that
   is missing keys, is no reason to take nothing**: you read the values it does declare and derive
@@ -159,7 +173,7 @@ declared it, and they are checked before the key is left out.
   | `check_fast` | a declared script checking **without writing and without running tests** — `typecheck`, `lint` without `--fix`, `format:check`, `tsc --noEmit` — with the file argument opened as `<FILES>` **only where opening it leaves the check unchanged**, and **called by name** through the package manager where it does not; where several declared scripts qualify, the one checking the **types** wins, then the one checking the **lint**, then the one checking the **format** — the ladder ranks **declared scripts** and nothing else: a type-checker present only as configuration (`mypy.ini`, `pyrightconfig.json`) that no script runs is not on a rung, and the search falls through to the lint |
   | `lint_fix` | a declared script that **applies the safe lint fixes** — often `lint:fix` — or the **linter's own runner with its unambiguous fix flag**, taken from a declared lint script and written as every opened line (`lint: eslint .` → `pnpm exec eslint --fix <FILES>`, `ruff check` → `ruff check --fix <FILES>`). A formatter (`format`, `prettier --write`) is **not** one: the key is a lint fix, and what a formatter writes is the formatting the gate checks. Where no declared lint runner has a fix flag, the key is not written |
   | `test_targeted` | the test script with the runner's own **file-argument** form: `<runner> <FILES>`, keeping every other flag the declared script carries |
-  | `coverage` | a declared script producing the measure — `test:coverage`, `coverage`, `cov` — in a manifest, the workspace file, the CI job or the project's parameter files. **It is often declared nowhere**: then it stays out and the report says so, because no manifest declares it |
+  | `coverage` | a declared script producing the measure — `test:coverage`, `coverage`, `cov` — in a manifest, the workspace file, the CI job or the project's parameter files. **It is often declared nowhere**: then it stays out |
 
   `check_fast`, `lint_fix` and `test_targeted` are the **same line as a declared script, with its
   file argument opened**: the `<FILES>` placeholder of §3 exists for exactly this, and it is a
@@ -192,11 +206,10 @@ declared it, and they are checked before the key is left out.
 The `{worktree.*}` keys are read where the project declares them — its own parameter files, first
 of all — and are **proposed** only where nothing declares them: no repository invents a pool
 convention, but a project that already ran Daiku has one, and its values are the seat it chose.
-Where you propose, keep the `<prefix><N>` naming with a small `{worktree.max}` and declare in the
-report that the convention is yours — a proposed seat is seen and changeable, an omitted one is a
-delivery without isolation, silently.
+Where you propose, keep the `<prefix><N>` naming with a small `{worktree.max}` — a proposed seat is
+seen in `project.json` and changeable, an omitted one is a delivery without isolation, silently.
 
-When a value is derivable but not certain — a plausible `tech_doc`, a `changelog` that could be the one — **do not write it secretly**: either you confirm it with what you read, or you leave it out and name it in the report under *Not declared*, with what you read.
+When a value is derivable but not certain — a plausible `tech_doc`, a `changelog` that could be the one — either you confirm it with what you read, or you leave it out.
 
 ### 4. Write `.daiku/environment.json` if missing
 
@@ -216,7 +229,7 @@ tier aliases the skeleton carries already filled in, and the host you are runnin
 declare** — the host's settings file, the variable pointing at the active backend, the folder a host
 looks for its skill pointers, the model aliases of the host you are not running on, the backends
 with their caveats — because a value you read is a value, and leaving it as a placeholder hands the
-user a card half filled for nothing. Only what no file declares stays out, and is named under *Not declared*: normally a
+user a card half filled for nothing. Only what no file declares stays out: normally a
 seat of a machine the repository knows nothing about. What you carry
 over is written in **English** (§5.6) — the prose of a backend's caveats is translated, not copied —
 and a path **absolute inside somebody's home** is an alien value like any other: it is dropped, even
@@ -237,16 +250,12 @@ creates it; one written by you would declare this machine's values as the projec
 
 **`temp_dir` you do not write.** An absent `temp_dir` is the normal case and not a key you failed
 to find: the readers fall back on the operating system's temporary directory, which is the right
-answer on every machine. Write it only where that fallback is wrong, and say why in the report.
+answer on every machine. Write it only where that fallback is wrong.
 
 **`write_roots` you do not write either**: it lists one machine's folders, and it belongs in the
 `environment.local.json` the user creates.
 
-Declare in the report the path of what you wrote, relative to the technical root, and in one line
-that **`.daiku/` is versioned**: the folder belongs to the project and enters the commits, and the
-only path under it staying out is the machine's override, `.daiku/environment.local.json`.
-
-If the skeleton still contains values recognisably of another project or another machine, do not propagate them: remove them and report it in the report.
+If the skeleton still contains values recognisably of another project or another machine, do not propagate them: remove them.
 
 ### 5. Write `domain/` and `policies/`
 
@@ -262,7 +271,7 @@ The roles are the rows of the table in `templates/project/domain/README.md`, rea
 
 1. **The project already answers it** — a file or a section of *Step 2* answers that role's question (a context document on the changelog format, on the test strategy, on the performance levels; a commit convention; a memory contract): write `.daiku/domain/<role>.md` as a pointer to it. It wins over the package's default, because the default is a proposal made for a project that has none, and two answers to the same question are two writers diverging in the same corpus.
 2. **The package carries a default for it** — a file of the same name in `templates/project/domain/`: copy it as it is. From that moment it belongs to the user, and your idempotence guarantees no relaunch ever rewrites it (§5.4 of `contracts/project-contract.md`).
-3. **Neither**: nothing is written. The skill asking that question does less and says so (§6), and the report names the role under *Not declared*.
+3. **Neither**: nothing is written. The skill asking that question does less and says so (§6).
 
 **Do not invent a domain answer.** A pointer carries what the project wrote, a default what whoever built Daiku wrote: both are declared and both are seen. An answer you compose now from what you glimpsed is a ten-minute impression disguised as a rule, and nobody would ever know how to tell it from the others.
 
@@ -270,7 +279,16 @@ The roles are the rows of the table in `templates/project/domain/README.md`, rea
 
 For each area of *Step 3*, gather the project's rule files of *Step 2* whose scope falls inside that area's `paths`. Where there is at least one, write `.daiku/policies/<area>.md` as a pointer: its frontmatter carries `paths` — the area's `paths` as patterns covering the area's sources and tests — and its body lists those rule files. No `layers:` and no `hygiene:` block: they would restate a rule in your words, and that is the copy the pointer exists to avoid.
 
-A rule file spanning several areas is listed in the policy of each. A rule file covering the whole project is not an area's: it is an invariant, and *Step 6* makes sure the instructions file cites it. An area with no rule file of its own gets no policy — the finders fall back on the instructions file — and the report names it under *Not declared*.
+A rule file spanning several areas is listed in the policy of each. A rule file covering the whole project is not an area's: it is an invariant, and *Step 6* makes sure the instructions file cites it. An area with no rule file of its own gets no policy — the finders fall back on the instructions file.
+
+### 5-bis. Write the update task
+
+Daiku updates with two commands — `claude plugin marketplace update daiku`, then `claude plugin update daiku@daiku` — and the project gets them as one VS Code task, `daiku: update`, running a script under `.daiku/`.
+
+- **The script**: copy `templates/project/update.mjs` into `.daiku/update.mjs` as it is. If it is already there, leave it.
+- **The task**: if `.vscode/tasks.json` does not exist in the technical root, copy `templates/vscode/tasks.json` there as it is. If it exists and already carries a task labelled `daiku: update`, leave it. If it exists without that task, **add** the skeleton's task object as the last element of its `tasks` array, and touch nothing else: the file is JSON with comments, so edit it as text — its comments, its order and its line ending stay as they were. A file with no `tasks` array gets one, beside its `version`.
+
+Both are written on either host: the task belongs to the editor, not to the host you are running on.
 
 ### 6. Write the instructions file
 
@@ -305,12 +323,12 @@ moved into the competent canonical section of the new file, never summarised: a 
 tighter is a changed rule, and changing it is not your task. Only matters of form are discarded: a
 different section order, repetitions, and the indications the package now carries. Where the parked
 file states something the repository contradicts, that is not a licence to correct it: the line
-stays, and the report names the contradiction.
+stays.
 
 **The line ending is part of the line, not a matter of form.** A kept line keeps the ending it had,
 and the file keeps the one it always wrote: recomposing it — CRLF normalised to LF, or the reverse —
 rewrites every line and `git diff` shows the whole file as changed, hiding what really moved, which
-is the one thing *Step 10* exists to show. A file created from scratch takes the ending the
+is the one thing whoever reads the diff needs to see. A file created from scratch takes the ending the
 repository uses in majority.
 
 **The other host's file is not yours.** Where the project carries the instructions file of the host
@@ -360,14 +378,13 @@ that are your work, and the second is the one that goes wrong.
 When you have finished, the file must not contain two lines saying the same thing, and must not
 contain one paragraph in English and the next in another language.
 
-If you do not know where to place a line, keep it. A section at the end with what you could not place is better than a lost line, and in the report you declare it.
+If you do not know where to place a line, keep it. A section at the end with what you could not place is better than a lost line.
 
 #### And then you do not touch it again
 
 At the bottom of the skeleton there is a comment line declaring that file passed through here. You
 leave it in the file you write, and it is what the next run reads: **if you find it in the
-instructions file, that file was already structured — leave it alone**, parked copy included, and
-list it among the things left as they were. Only a file without it is read, parked and rewritten.
+instructions file, that file was already structured — leave it alone**, parked copy included. Only a file without it is read, parked and rewritten.
 
 It is what makes safe this exception to idempotence. A relaunch serves to pick up a skeleton previously missing, not to restructure a file the user meanwhile rewrote by hand — and it is likely it did, because of everything you write it is the file touched most often. Whoever wants restructuring removes that line, or asks you.
 
@@ -376,16 +393,10 @@ prose fall as a *translated twin* (*You merge, you do not append*), and from the
 to the skeleton will not enter that project: nothing distinguishes a section already stated from one
 not yet stated.
 
-So a relaunch is not idle even here. It does not restructure the file — but it **compares the file
-with the current `templates/project/instructions.md`** and reports, without touching a line, the
-skeleton's sections the file does not cover and the skeleton's rules the file does not state. The
-file stays as it is, and stands in the report under *Left as it was*, with what the comparison found
-beside it.
-
 ### 6-bis. Recheck every file you wrote
 
 What you just wrote is read by skills and hooks that trust its form: recheck it now, with tools
-needing nothing to install — `node -e` and `grep` — before the report:
+needing nothing to install — `node -e` and `grep` — before closing:
 
 - for **each `project.json` / `environment.json` you wrote**: it parses, its keys are among those
   `contracts/project-contract.md` §4 (`project.json`) and `contracts/orchestration.md` §7
@@ -398,29 +409,31 @@ needing nothing to install — `node -e` and `grep` — before the report:
   is read*) — `grep` the module or binary name there;
 - for **the instructions file**: no `<...>` residue remains;
 - for **each pointer of `domain/` and `policies/`** (*Step 5*): every path it lists exists, and a
-  policy's frontmatter carries a non-empty `paths`.
+  policy's frontmatter carries a non-empty `paths`;
+- for **`.vscode/tasks.json`** (*Step 5-bis*): exactly one task is labelled `daiku: update`, and
+  `.daiku/update.mjs` exists.
 
-A file failing the recheck is fixed now, not reported as done: a placeholder surviving in a
+A file failing the recheck is fixed now, not left as done: a placeholder surviving in a
 parameter file degrades every skill silently, which is exactly the failure this step exists to
-catch. Report the recheck file by file, in one line each.
+catch.
 
 ### 7. Carry the host memory into the repository — only on Claude Code
 
-On **Codex this step does not exist**: there the agent memory is not made of files but of a database in the user home (`~/.codex/memories_1.sqlite`), built by consolidating past sessions, and there is no key moving its seat. Do not try, write nothing under `.codex/` for this reason, and do not report it as something missing from that project: it is a difference between the two hosts. The corpus of `{memory.root}` exists there just the same and `update-memory` writes it at every commit; only the host does not put anything of its own in.
+On **Codex this step does not exist**: there the agent memory is not made of files but of a database in the user home (`~/.codex/memories_1.sqlite`), built by consolidating past sessions, and there is no key moving its seat. Do not try, and write nothing under `.codex/` for this reason: it is a difference between the two hosts, not something missing from that project. The corpus of `{memory.root}` exists there just the same and `update-memory` writes it at every commit; only the host does not put anything of its own in.
 
 On **Claude Code**, instead, the memory the agent writes itself ends up by default in `~/.claude/projects/<project>/memory/`: outside the repository, invisible in a `git diff`, shared with nobody and lost at the first machine change. Your task is to carry it inside, where it is seen — and committed together with the rest. Three things, in this order:
 
 1. **Create the folder** `{memory.root}` if missing, and inside `{memory.index}` if missing: a title, a line declaring that it is the corpus index, and nothing else. Empty is fine; absent is not, because it is the first file whoever reads that corpus opens.
 
-2. **Move what is already there.** It is the only step of the run reading outside the repository, and the step a sandbox is most likely to deny: if the fence refuses it, **do not look for another way** — leave it undone, and say in the report which read was denied. Look for this project folder under `~/.claude/projects/` — it is named like the absolute path of the technical root with separators reduced to dashes, but do not rebuild it by mind: list that directory and recognise it. If inside there is a `memory/` with files, **move them** into `{memory.root}`. It is the only thing you do outside the repository in the whole run, and that is why in the report you declare it file by file. If a name already exists at destination do not overwrite it: where the two files are identical, the one already in the repository stands and the source is removed; where they differ, the source moves beside it with `-host` before the extension, and gets its line in `{memory.index}` in the form the index already uses. Two different memories called the same are both kept — merging them is a merit judgement, and `update-memory` meets them at the first commit.
+2. **Move what is already there.** It is the only step of the run reading outside the repository, and the step a sandbox is most likely to deny: if the fence refuses it, **do not look for another way** — leave it undone: it is a step that did not go through (*Step 10*). Look for this project folder under `~/.claude/projects/` — it is named like the absolute path of the technical root with separators reduced to dashes, but do not rebuild it by mind: list that directory and recognise it. If inside there is a `memory/` with files, **move them** into `{memory.root}`. It is the only thing you do outside the repository in the whole run. If a name already exists at destination do not overwrite it: where the two files are identical, the one already in the repository stands and the source is removed; where they differ, the source moves beside it with `-host` before the extension, and gets its line in `{memory.index}` in the form the index already uses. Two different memories called the same are both kept — merging them is a merit judgement, and `update-memory` meets them at the first commit.
 
-3. **Hook the memory**: in `.claude/settings.local.json`, in the technical root, set `autoMemoryEnabled` to `true` and `autoMemoryDirectory` with the **absolute path** of `{memory.root}`, forward slashes. If the file is missing you create it with only those two keys; if it is there, you **add** them without touching anything it already carries. One of the two already there you leave as it is, even if pointing elsewhere: it is a choice of whoever works on this machine, and you do not overturn it — you only name it in the report.
+3. **Hook the memory**: in `.claude/settings.local.json`, in the technical root, set `autoMemoryEnabled` to `true` and `autoMemoryDirectory` with the **absolute path** of `{memory.root}`, forward slashes. If the file is missing you create it with only those two keys; if it is there, you **add** them without touching anything it already carries. One of the two already there you leave as it is, even if pointing elsewhere: it is a choice of whoever works on this machine, and you do not overturn it.
 
 #### Why those keys go in `settings.local.json` and not in the committed file
 
 It is not a style preference: the pointing belongs to **that one machine**, and `.claude/settings.local.json` is the machine's file — the one nobody clones and nothing carries. A versioned file carrying it would declare one machine's seat as the project's, and the error would show only in silence, on whoever clones.
 
-The consequence is told to the user, not hidden: **memories are committed, the pointing is not.** Whoever clones the repository on another machine finds the versioned corpus and the host restarting to write in the default, silently. The Daiku skills do not notice, because `{memory.root}` they open by path and find where it was; it is the host going its own way, and stopping reading what the repository knows. The remedy is relaunching `/init` on that machine, and *Step 10* writes it in black and white.
+**Memories are committed, the pointing is not.** Whoever clones the repository on another machine finds the versioned corpus and the host restarting to write in the default, silently. The Daiku skills do not notice, because `{memory.root}` they open by path and find where it was; it is the host going its own way, and stopping reading what the repository knows. The remedy is relaunching `/init` on that machine.
 
 `.claude/settings.local.json` is **not committed** either, and for the same reason: it belongs to that machine. *Step 8* makes sure the repository says so.
 
@@ -431,34 +444,38 @@ What the method needs versioned must be versioned, and what belongs to one machi
 The file you edit is the `.gitignore` at the repository root — the one *Input* resolved with `git rev-parse --show-toplevel`, not a folder's — with every path written relative to that root. If it does not exist, you create it. You edit by addition, and nothing you did not write is removed but for the one case below.
 
 1. **Must stay out**: `.daiku/environment.local.json` under the technical root, `{paths.review_state}`, and on Claude Code `.claude/settings.local.json` under the technical root. Every one of them the repository's ignore files do not cover gets its line, grouped at the bottom of the file under a `# Daiku` comment line.
-2. **Must stay in**: `.daiku/` minus its local override, and `{memory.root}`. Where a line of the repository covers one of them, append its negation (`!<path>/`) under the same comment and check again: Git cannot re-include a path whose parent directory is excluded. Where the path is still covered and the covering line names exactly that path, remove that line — the project asked Daiku to version it by opening it, and the two cannot both hold. Where it is still covered by a broader line, leave the file as it is and say in the report which line keeps the folder out.
+2. **Must stay in**: `.daiku/` minus its local override, and `{memory.root}`. Where a line of the repository covers one of them, append its negation (`!<path>/`) under the same comment and check again: Git cannot re-include a path whose parent directory is excluded. Where the path is still covered and the covering line names exactly that path, remove that line — the project asked Daiku to version it by opening it, and the two cannot both hold. Where it is still covered by a broader line, leave the file as it is: that folder is a step that did not go through (*Step 10*).
 
-Keep the file's line ending (*If the file already exists* of *Step 6*), and finish with `git check-ignore -v` on every path of the two lists: the report carries the outcome in one line per path.
+Keep the file's line ending (*If the file already exists* of *Step 6*), and finish with `git check-ignore -v` on every path of the two lists: a path still on the wrong side is a step that did not go through.
 
 ### 9. Launch `sync-host` — only on Codex
 
-On **Claude Code this step does not exist**: the package carries its hooks and subagents, and there is nothing to install. Do not mention it in the report.
+On **Claude Code this step does not exist**: the package carries its hooks and subagents, and there is nothing to install.
 
-On **Codex** the project has neither guardrails nor subagent roles until `sync-host` writes them under `.codex/`. Delegate it to a subagent on the **worker** role, with `skills/sync-host/SKILL.md` as the contract to read and the technical root as its argument, after every write of yours is done: it reads `.daiku/`, which must already stand. Its report goes into yours whole. The gestures it hands to the user — approving the hooks, trusting the project, reopening the session — are the only thing your report hands over, because Codex reserves them to a person and no agent can make them.
+On **Codex** the project has neither guardrails nor subagent roles until `sync-host` writes them under `.codex/`. Delegate it to a subagent on the **worker** role, with `skills/sync-host/SKILL.md` as the contract to read and the technical root as its argument, after every write of yours is done: it reads `.daiku/`, which must already stand. Of its report you keep only the gestures it hands to the user — approving the hooks, trusting the project, reopening the session — because Codex reserves them to a person and no agent can make them.
 
 ### 10. Report
 
-Close with the list, in three blocks, without embellishments. **The three names are the package's and stay in English whatever the chat language** — `Written`, `Left as it was`, `Not declared`: they are the machine-readable form of the report, like the field names of an agent's block, and a translated name is a block nobody finds. The prose **inside** them is in `{language.chat}`, like the rest of what you say to the user.
+Run the scan of *Scan first* once more before answering, on every run: an empty `missing` is what
+the closing line means, and each entry it still lists is a step that did not go through.
 
-- **Written** — every created or edited file, with its path; for a pointer, the files it points at.
-- **Left as it was** — every file already existing and which you did not touch.
-- **Not declared** — what does not exist in this project because the repository does not declare it: every key left out, every domain role and area without a file, each with one line saying *why* — the tool no manifest declares, the value no file names, the role no document answers. It is a statement of fact, not a request: nothing in it waits for the user, and the skills already know what to do without it (§6 of `contracts/project-contract.md`).
+**When every step went through, your whole answer is one line: `You're all set.`** In English
+whatever `{language.chat}` says — it is the package's closing line, not prose of yours. Nothing
+before it and nothing after it: no preamble, no line naming who it is written for, no list of what
+you wrote or read, no question, no offer to continue.
 
-**The report is the last thing you write, and it ends the run.** No question, no offer to continue, no *if you want I can…*: whatever you could have done, you did.
+Everything else stays out, because somebody already carries it: what you wrote and parked is in
+`git status` and `git diff`; what the repository does not declare, the skills handle on their own
+(§6 of `contracts/project-contract.md`); how you worked — what you read, a command a fence refused
+and the way you took instead — concerns nobody.
 
-On **memory** dedicate two fixed lines, because *Step 7* does a thing seen nowhere: which files you moved inside the repository and from where, and — if you ran on Claude Code — that the pointing in `.claude/settings.local.json` **holds on this machine only**, and that on a clone memory returns to the default until somebody relaunches `/init` there. On Codex a single line: the host memory does not move, the repository corpus is there anyway.
+Two things only are written, one line per item, in `{language.chat}`:
 
-If you **parked an existing instructions file**, dedicate three separate lines to it: the name it
-was parked under, what you kept, what you removed because it was form, and where what you could not
-place ended up. It is the most invasive thing you do in the whole run, and the only one the user
-must be able to watch immediately — `git diff` tells them that everything changed, it does not tell
-them what was saved. If the other host's file is there too, that is a fourth line: it exists, it was
-not touched, and it is the file an `init` launched on that host compiles.
+- **A step that did not go through** — a write denied or failed, a move refused, a folder still on
+  the wrong side of `.gitignore` after *Step 8*: the file, and what it still lacks. The project is
+  then not all set, and the closing line is **not** written.
+- **On Codex, the gestures `sync-host` hands to the user** (*Step 9*): they go above the closing line,
+  because without them no guardrail is active and only a person can make them.
 
 ## Idempotence
 
@@ -468,17 +485,17 @@ This makes you relaunchable: when the package updates and carries a skeleton pre
 
 **And it is what makes safe letting the domain defaults travel.** A skeleton like `commit-convention.md` arrives already written, but it arrives **only once**: if the user rewrote it, a relaunch sees it and leaves it alone. Without this rule the default would stop being a proposal and become a package rule returning at every update — which is exactly the thing the Domain level exists not to be.
 
-**Adding a key is not overwriting a file.** The `settings.local.json` of *Step 7* and the `.gitignore` of *Step 8* are the only files you touch without having written them yourself, and you touch them by addition: the keys and lines you find there stay as they were, including the ones concerning you if already there — the one line *Step 8* may remove is the one excluding, by name, a folder the method versions. A relaunch on a new machine writes the pointing missing there, and on a machine where it is there changes nothing — which is exactly the trade for which you are relaunched.
+**Adding a key is not overwriting a file.** The `.vscode/tasks.json` of *Step 5-bis*, the `settings.local.json` of *Step 7* and the `.gitignore` of *Step 8* are the only files you touch without having written them yourself, and you touch them by addition: the keys and lines you find there stay as they were, including the ones concerning you if already there — the one line *Step 8* may remove is the one excluding, by name, a folder the method versions. A relaunch on a new machine writes the pointing missing there, and on a machine where it is there changes nothing — which is exactly the trade for which you are relaunched.
 
 The exceptions are two, and neither loosens the rule.
 
 The first is the **instructions file**, which you write also where one exists — parking the one you found under `.old` — but only once, and what guarantees it is at *Step 6*: the comment line you leave inside the new one. Without that line it would not be an exception but a hole, because every relaunch would return to restructuring the file the user curates more than any other. It is the only already-written thing you are allowed to rewrite, and it is so because it is the only one on many repositories already existing: leaving it as it was would mean, there, never writing it.
 
-The second is the **explicit request** of the user on a precise file: then you rewrite it, and in the report you declare what was there before.
+The second is the **explicit request** of the user on a precise file: then you rewrite it.
 
 ## What you do not do
 
-- **You ask nothing beyond the two languages.** No other question, no confirmation, no proposal waiting for a yes: what the repository declares you write, what it does not you name under *Not declared*.
+- **You ask nothing beyond the two languages.** No other question, no confirmation, no proposal waiting for a yes: what the repository declares you write, what it does not stays out.
 - **You do not touch the code**, ever, for any reason — dependency manifests included: a command whose tool no manifest declares stays out, it is not made to run by adding the tool.
 - **You do not create a Git repository**, you do not commit and do not stage what you wrote: whoever launched `init` watches what appeared before versioning it.
 - **You do not compose rules.** A domain answer or an area policy you write points at what the project already wrote (*Step 5*); where the project wrote nothing, nothing is written in its place.
