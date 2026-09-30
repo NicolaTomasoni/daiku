@@ -1,12 +1,13 @@
 /**
  * Daiku's context on this project, read from `.daiku/project.json`.
  *
- * It exists because four of the five guards need the same two facts — **did this
+ * It exists because five of the six guards need the same two facts — **did this
  * project open Daiku?** and **what did it declare?** — and because the answer cannot
  * sit hard-wired inside a hook: a package installed on a host runs on *every*
  * repository that host opens, including ones Daiku has never seen.
  *
- * Hence the rule governing all five hooks:
+ * Hence the rule governing four of the six hooks — `session-advice` excepted, which reports a
+ * `.daiku/` left halfway:
  *
  * > **Without `.daiku/project.json` the guards stay silent.** Not a degradation: the
  * > boundary. A project that has not opened Daiku asked Daiku for nothing, and a
@@ -38,6 +39,7 @@ const ABSENT = Object.freeze({
   changelog: null,
   versionFiles: Object.freeze([]),
   libNotes: null,
+  features: null,
   reviewState: null,
   policiesDir: null,
   domainDir: null,
@@ -118,6 +120,7 @@ export function loadContext(root, reads = REAL_READS) {
       changelog: resolvePath(json.changelog, root),
       versionFiles,
       libNotes: resolvePath(json.paths && json.paths.lib_notes, root),
+      features: resolvePath(json.paths && json.paths.features, root),
       reviewState: resolvePath(json.paths && json.paths.review_state, root),
       policiesDir: resolve(join(root, '.daiku', 'policies')),
       domainDir: resolve(join(root, '.daiku', 'domain')),
@@ -163,7 +166,10 @@ function resolveTempDir(root, reads) {
 }
 
 /**
- * The `writeRoots` seats: folders outside the repository where writing is admitted.
+ * The `writeRoots` seats: the folders where writing and creating are admitted. They are a
+ * seat **on both sides of the repository boundary** — the key names a folder, and a path
+ * alone cannot say whether it falls inside the repository or outside it — which is what makes
+ * this key the way out for whoever owns the machine and decides what gets written where.
  * The environment file of §8 — the machine's local one first, **taken whole**: where it
  * exists and parses, the project one is not read. Absent is the normal case, and reads
  * as no root at all.
@@ -275,6 +281,7 @@ export function fakeContext(fields = {}) {
       ? fields.versionFiles.map(seat).filter(Boolean)
       : [],
     libNotes: seat(fields.libNotes),
+    features: seat(fields.features),
     reviewState: seat(fields.reviewState),
     policiesDir: seat(fields.policiesDir),
     domainDir: seat(fields.domainDir),

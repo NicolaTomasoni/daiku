@@ -69,8 +69,9 @@ of a file, the presence or absence of an area. Three prohibitions, in order of s
 | `version.file` | file carrying the application's canonical version |
 | `version.field` | exact spot in the file where that version lives |
 | `version.replicated_in` | other files carrying the same version and updated together; empty or absent list if there are none |
-| `paths.studies` | folder hosting the work folders, one per problem, with the method's numbered files inside |
-| `paths.lib_notes` | folder of notes on a studied technology |
+| `paths.studies` | folder hosting the work folders, one per problem, with the method's numbered files inside; it stands **under `.daiku/`**, like the two keys below it |
+| `paths.lib_notes` | folder of notes on a studied technology; under `.daiku/` |
+| `paths.features` | folder of the feature catalogue: one folder per feature, one file per study contributing to it; under `.daiku/` |
 | `paths.review_state` | folder where a review's ledger lives; it stands **inside the repository tree**, under the technical root, but **outside version control** — a `.gitignore` line excludes it — and it is **never under `.daiku/`**, which is versioned (§8); stable, not session-scoped |
 | `memory.root` | root of the persistent memory corpus, inside the repository (§8); on Claude Code it is also the folder where the host writes its own memory (§4.2) |
 | `memory.index` | index file of the corpus, the one read first |
@@ -88,6 +89,14 @@ of a file, the presence or absence of an area. Three prohibitions, in order of s
 | `areas.<area>.coverage` | commands producing the area's coverage measure |
 
 No key is mandatory besides `contract`: everything else is subject to §6.
+
+**The three keys of the method's own documents — `paths.studies`, `paths.lib_notes`,
+`paths.features` — stand under `.daiku/`.** What they host is Daiku's corpus and not the project's
+documentation: `0. problem.md`, `1. decision-doc.md`, the notes and the catalogue are written by the
+method, read by the method, and seated among the project's own files they would be a second
+documentation tree that nobody chose and that the project is expected to keep. `.daiku/` is versioned
+(§8), so they enter the history like any other source file, and `init` **assigns** those three seats
+rather than adopting a folder the project already keeps.
 
 **Which file covers a path that stays out of version control.** `paths.review_state`
 stands outside what Git versions, and "is this path ignored?" is answered by the repository's own
@@ -390,9 +399,12 @@ not, and the local one is the only path under `.daiku/` staying out of the histo
 the normal case: the readers fall back on the operating system's temporary directory, which is the
 correct answer on every machine anyway. Write it only where that fallback is wrong.
 
-**Nor does it carry `write_roots`**: the folders outside the repository a machine lets its agents
-write in are that machine's, and they go in `environment.local.json`. Absent, the write guard keeps
-every write outside the repository to the declared outside seats.
+**Nor does it carry `write_roots`**: the folders a machine lets its agents write in are that
+machine's, and they go in `environment.local.json`. The folder is named, not the side it stands on,
+so the seat holds **inside the repository and outside it** alike — and that is what makes the key
+the answer for a folder of yours that is not a seat of the method. Absent, the write guard keeps
+every write outside the repository to the declared outside seats, and every creation inside it to
+`{code_root}` and the declared seats.
 
 **When a value seems to belong in both**, whoever would update it at the next
 change decides: if putting it in `project.json` forced repeating the same identical change in

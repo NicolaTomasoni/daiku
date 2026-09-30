@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <img alt="version 1.0.4" src="https://img.shields.io/badge/version-1.0.4-3b82f6?style=flat" /> <br>
+  <img alt="version 1.0.5" src="https://img.shields.io/badge/version-1.0.5-3b82f6?style=flat" /> <br>
   <a href="https://code.claude.com"><img alt="Claude Code" src="https://img.shields.io/badge/Claude_Code-D97757?style=flat&logo=claude&logoColor=white" /></a>
   <a href="https://developers.openai.com/codex"><img alt="OpenAI Codex" src="https://img.shields.io/badge/OpenAI_Codex-000000?style=flat&logo=openai&logoColor=white" /></a>
 </p>
@@ -156,13 +156,13 @@ The command every job starts with. You tell it the idea in natural language — 
 
 Then `decision-doc` studies the options and comes to ask its questions, with a recommended answer: you answer and it records, until every decision is closed.
 
-At that point, `develop-feature` takes over delivery: `blueprint` writes the work plan, `execute` runs it, `/review` checks it, `update-memory` aligns memory and documentation, and `commit` closes the feature. It always works in a separate worktree, merged and cleaned at the end.
+At that point, `ship-feature` takes over delivery: `blueprint` writes the work plan, `execute` runs it, `/review` checks it, `update-memory` aligns memory and documentation, and `commit` closes the feature. It always works in a separate worktree, merged and cleaned at the end.
 
 ```mermaid
 flowchart TD
     RS["research"] --> DD["decision-doc"]
-    DD --> DF["develop-feature"]
-    DF --> BP["blueprint"]
+    DD --> SF["ship-feature"]
+    SF --> BP["blueprint"]
     BP --> EX["execute"]
     EX --> RV["review"]
     RV --> UM["update-memory"]

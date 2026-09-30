@@ -1,5 +1,5 @@
 interface:
   display_name: "Execute"
-  short_description: "Internal contract, opened by develop-feature"
+  short_description: "Internal contract, opened by ship-feature"
 policy:
   allow_implicit_invocation: false

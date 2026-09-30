@@ -34,7 +34,7 @@ node "<package root>/skills/init/scan.mjs" "<technical root>" <host>
 — `<package root>` the folder two levels above this file, `<host>` `claude` or `codex` (*Step 1*). It prints one JSON object, `{fresh, missing}`, and its answer decides the run; you do not second-guess it:
 
 - **`fresh: true`** — the project has no `.daiku/project.json`: run the whole *Procedure*.
-- **`fresh: false` and `missing` empty** — Daiku is already open here and nothing is missing. Your whole answer is one line, `Daiku is already set up here.`, and the run ends: no question, no reading, no write.
+- **`fresh: false` and `missing` empty** — Daiku is already open here and nothing is missing. Your whole answer is one line saying so, in the `language.chat` of `project.json` — `Daiku is already set up here.` in English, `Daiku è già pronto qui.` in Italian — and the run ends: no question, no reading, no write.
 - **`fresh: false` and `missing` not empty** — **completion** mode. Each entry names the step that writes it (`step`): run those steps and only those, for those pieces and only those. *Step 0* is skipped — the languages live in `project.json`, which already stands and is never rewritten — and so is *Step 2*, unless `instructions` is listed. Then run the scan again: what it still lists is a step that did not go through (*Step 10*).
 
 The scan reads only what `init` writes. A domain role the project answered in a file written after the first run is not something it can see: whoever writes that file writes the pointer.
@@ -80,7 +80,7 @@ If the user does not answer — because you are running inside a chain, or becau
 
 ### 1. Recognise the host
 
-On **Claude Code** hooks and subagents are carried by the package and update themselves: do **not** hook those five hooks a second time from `.claude/settings.json`, because the package already hooks them and every guard would run twice. The only thing you write under `.claude/` is two keys in `settings.local.json`, and they are at *Step 7*: together they turn the host's own memory on and point it inside the repository, and there is no other way to tell the host.
+On **Claude Code** hooks and subagents are carried by the package and update themselves: do **not** hook those six hooks a second time from `.claude/settings.json`, because the package already hooks them and every guard would run twice. The only thing you write under `.claude/` is two keys in `settings.local.json`, and they are at *Step 7*: together they turn the host's own memory on and point it inside the repository, and there is no other way to tell the host.
 
 On **Codex** the manifest rejects `agents` and `hooks`, and `plugin_hooks` is a removed feature: that layer must be written inside the project, under `.codex/`. **You do not write it yourself**: it is the trade of `sync-host`, which copies the `.mjs` files, tries them with their bench and hooks only the healthy ones, and which generates `.codex/agents/*.toml` from the package roles. You launch it as your last step (*Step 9*), so the project closes the run with its guardrails and roles in place.
 
@@ -94,7 +94,7 @@ Collect, read-only:
 
 - the repository root (`git rev-parse --show-toplevel`) and the position of the technical root inside it;
 - **all `.md` files of the repository** — the repository being the one *Input* resolved with `rev-parse --show-toplevel`, not the technical root where the two differ — excluding those under dependency and build directories (`node_modules/`, `venv/`, `target/`, `dist/` and similar). README, technical document, architectural decisions, changelog, notes: it is there the project already wrote of itself, and there is nothing you can deduce in half an hour worth as much as a sentence written by whoever was there. **The width is over the corpus, not over every byte of it**: on dozens of documents you read by titles first — file names and first headings — and open only those carrying a value of *Step 3* or a fact the instructions file of *Step 6* needs;
-- **the repository structure in full** — the directory tree, not only the first level. You need it to recognise the areas, to propose the `paths`, and because the form of a project declares its architecture before any document;
+- **the repository structure in full** — the directory tree, not only the first level. You need it to recognise the areas, to propose `paths.review_state`, and because the form of a project declares its architecture before any document;
 - **the technological inventory**: the build manifests present (`package.json`, `pyproject.toml`, `Cargo.toml`, `go.mod`, `pom.xml` and similar) with the dependencies and scripts they declare, the lock files for the truly installed versions, and the configuration files of runners, linters, type-checkers, formatters, CI, containers and orchestration. From them you derive languages and versions, package manager, frameworks, databases and storage, build and test chain, and how the thing starts locally — ports included;
 - the project instructions file, if any, and every other file the host loads itself;
 - **the project's parameter files, whatever they are called**, if the project already ran Daiku or kept a corpus of its own: they are where the five commands and `{worktree.*}` are declared, and *Step 3* reads them;
@@ -120,9 +120,9 @@ For areas: the area name is your naming choice, its `paths` are not — they are
 
 The two **language** keys are the exception to the first rule, and only because you asked them: you write them with the answers of *Step 0*, verbatim. If you had no answer, you do not write them.
 
-The three `paths` keys — where the work folders, notes and review ledger live — you **propose** by watching what the repository already has: an existing studies folder is worth more than an invented name. If there is nothing similar, choose yourself a path coherent with the structure in front of you: the skills create those folders at first use, and `project.json` is where the user sees them.
+The three `paths` keys of the method's own documents — work folders, notes and feature catalogue — are **not a finding of yours**: §4 of `contracts/project-contract.md` assigns their seat under `.daiku/`, and you write them as they are — `paths.studies` is `.daiku/studies`, `paths.lib_notes` is `.daiku/lib-notes`, `paths.features` is `.daiku/features`. A folder of the project's carrying a similar name is **not** adopted for them: those documents are Daiku's corpus, and seated among the project's files they would be documentation the project never asked for. The skills create the folders at first use, and `project.json` is where the user sees them.
 
-**`paths.review_state` is looked for on a different terrain.** It stands inside the tree but outside version control (§4 of `contracts/project-contract.md`), so *Step 2*'s reading — which takes what the repository versions — does not reach it: look too among the folders **present on disk but ignored by Git**, where a ledger a project already keeps would sit. `paths.studies` and `paths.lib_notes` instead carry method documents and are versioned, so an existing folder of either is one the repository already shows you. Where no ignored folder resembles a ledger, propose one inside the tree, excluded from version control and **never under `.daiku/`** — that folder is versioned (§8 of `contracts/project-contract.md`). Its `.gitignore` line, where no line of the repository covers it yet, you write at *Step 8*.
+**`paths.review_state` is looked for on a different terrain.** It stands inside the tree but outside version control (§4 of `contracts/project-contract.md`), so *Step 2*'s reading — which takes what the repository versions — does not reach it: look too among the folders **present on disk but ignored by Git**, where a ledger a project already keeps would sit. Where no ignored folder resembles a ledger, propose one inside the tree, excluded from version control and **never under `.daiku/`** — that folder is versioned (§8 of `contracts/project-contract.md`). Its `.gitignore` line, where no line of the repository covers it yet, you write at *Step 8*.
 
 #### Where each value is read
 
@@ -299,7 +299,7 @@ It is the file the host loads on every session — `CLAUDE.md` on Claude Code, `
 
 #### What goes in the placeholders
 
-The *Documentation map* lists the artefacts existing **in this project**, with the trade of each: one line per real artefact, and the line of one missing is removed instead of staying with an invented path inside. Hunt them through the README's links, the root documents and `docs/` — studies folders, library notes, queues, technical documents, changelogs — and give each its trade in one line.
+The *Documentation map* lists the artefacts existing **in this project**, with the trade of each: one line per real artefact, and the line of one missing is removed instead of staying with an invented path inside. **The work-folder line is the exception, and it is not hunted**: it names `{paths.studies}`, the seat *Step 3* assigned — the folder appears at the first work folder, and the line is where whoever reads the file has to look. The other artefacts you hunt through the README's links, the root documents and `docs/` — notes folders, queues, technical documents, changelogs — and give each its trade in one line.
 
 The *Stack and local environment* is the technological inventory of *Step 2*, written in full: **one line per package of the workspace** — the folder, its runtime and versions, its framework, its data stores, its build and test chain, how it starts — plus the shared toolchain and the environment variables that must stay consistent. A package the file does not name is a part of the project the file does not declare, and it is the section making the file useful from the first minute. **It is added, not substituted**: where the project already wrote lines in that section, they stay whole and the inventory goes beside them, even where a line of theirs says less than the manifest does. Filling a placeholder never licenses rewriting a line that was there, and the section's title stays the project's. **Beside is not again**: a fact a kept line already states — a port, a start command, a URL — is not repeated in the inventory line of the same package, which carries only what the kept lines do not say (*One rule, one line* holds here too). It is also the only placeholder you can fill in without risking anything, because every line has a manifest behind.
 
@@ -459,9 +459,10 @@ On **Codex** the project has neither guardrails nor subagent roles until `sync-h
 Run the scan of *Scan first* once more before answering, on every run: an empty `missing` is what
 the closing line means, and each entry it still lists is a step that did not go through.
 
-**When every step went through, your whole answer is one line: `You're all set.`** In English
-whatever `{language.chat}` says — it is the package's closing line, not prose of yours. Nothing
-before it and nothing after it: no preamble, no line naming who it is written for, no list of what
+**When every step went through, your whole answer is one line saying the project is all set**, in
+`{language.chat}` — `You're all set.` in English, `Tutto pronto.` in Italian. On a `fresh` run the
+language is the answer of *Step 0*; with no answer, the one the user wrote to you in (§5.5 of
+`contracts/project-contract.md`). Nothing before it and nothing after it: no preamble, no line naming who it is written for, no list of what
 you wrote or read, no question, no offer to continue.
 
 Everything else stays out, because somebody already carries it: what you wrote and parked is in

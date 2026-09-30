@@ -1,6 +1,6 @@
 ---
 name: 'execute'
-description: 'Internal develop-feature contract — autonomously executes the brief produced by blueprint, following the task plan and updating Memory and Journal inside the file; at the end it deposits the handoff file "4. review-notes.md".'
+description: 'Internal ship-feature contract — autonomously executes the brief produced by blueprint, following the task plan and updating Memory and Journal inside the file; at the end it deposits the handoff file "4. review-notes.md".'
 user-invocable: false
 ---
 

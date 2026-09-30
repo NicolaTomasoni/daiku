@@ -22,19 +22,30 @@
  *    the single-file seats (`{hosts.<host>.instructions_file}` — both hosts and their
  *    parked `<name>.old` copies — `{tech_doc}`, `{changelog}`,
  *    `{version.file}` and `{version.replicated_in}`), the folder seats
- *    (`{memory.root}`, `{paths.studies}`, `{paths.lib_notes}`, `{paths.review_state}`,
+ *    (`{memory.root}`, `{paths.studies}`, `{paths.lib_notes}`, `{paths.features}`, `{paths.review_state}`,
  *    `.daiku/policies/`, `.daiku/domain/`, `{temp_dir}` plus the OS temp directory),
- *    and the `.daiku/` JSON files themselves — `project.json`, `environment.json` and
- *    the machine's `environment.local.json`, which `init` writes and the user creates —
- *    the machine's `.claude/settings.local.json`, the one file `init` creates under
- *    `.claude/`, and the update task — `.daiku/update.mjs` and the `.vscode/tasks.json`
- *    that runs it — and the repository's `.gitignore`, all after `project.json` has already
- *    opened this gate. Where `{repo_root}` sits above the technical root, the repository
- *    is that whole tree: editing there passes, creating follows the same seats. Everywhere else —
- *    including outside the repository — a create is denied, except inside
- *    `{paths.review_state}`, `{temp_dir}` or the OS temp dir when those sit outside
- *    the repo, and inside the `{write_roots}` the machine declares: there, outside the
- *    repository, editing and creating both pass.
+ *    the **`{write_roots}` the machine declares**, and the `.daiku/` JSON files themselves —
+ *    `project.json`, `environment.json` and the machine's `environment.local.json`, which
+ *    `init` writes and the user creates — the machine's `.claude/settings.local.json`, the one
+ *    file `init` creates under `.claude/`, and the update task — `.daiku/update.mjs` and the
+ *    `.vscode/tasks.json` that runs it — and the repository's `.gitignore`, all after
+ *    `project.json` has already opened this gate. Where `{repo_root}` sits above the technical
+ *    root, the repository is that whole tree: editing there passes, creating follows the same
+ *    seats. Everywhere else — including outside the repository — a create is denied, except
+ *    inside `{paths.review_state}`, `{temp_dir}` or the OS temp dir when those sit outside the
+ *    repo, and inside `{write_roots}`: a declared write root is a **seat on both sides of the
+ *    repository boundary**, so editing and creating pass there wherever it stands.
+ *
+ * **`{write_roots}` is the declared way out, and it is the only one.** This guard cannot tell
+ * an order the owner gave from an initiative of the agent — it sees the tool call, never who
+ * wanted it — so it denies the same create either way. Denying with no remedy teaches the way
+ * around instead, and the way around exists, is invisible, and is declared at the bottom of
+ * this file: a file built by the shell never passes through `PreToolUse` on `Edit`. So the
+ * authority is written down once, by whoever has it, in the machine's own file
+ * (`.daiku/environment.local.json`, taken whole — §8 of `contracts/project-contract.md`), where
+ * the agent can cite it instead of hiding a workaround. Nothing about the denial moves: a path
+ * that is no seat is still denied, on both sides of the boundary, and the only thing that
+ * changed is that the denial now names the key that admits it.
  *
  * Layer placement *inside* `{code_root}` is deliberately not enforced here: a path
  * cannot say whether the layer is right, only the `arch` finder can, by reading the
@@ -180,11 +191,16 @@ function dirSeats(ctx, root, sysTmp) {
   push(ctx.codeRoot);
   push(ctx.memoryRoot);
   push(ctx.libNotes);
+  push(ctx.features);
   push(ctx.reviewState);
   push(ctx.policiesDir);
   push(ctx.domainDir);
   push(ctx.tempDir);
   push(sysTmp);
+  // The `write_roots` of §7: the folders the machine declares. They are a seat like the
+  // others — the key says *where writing is admitted*, and a path alone cannot say on which
+  // side of the repository boundary it falls.
+  for (const site of ctx.writeRoots || []) push(site);
   for (const site of ctx.studies || []) {
     if (typeof site !== 'string' || !site.trim()) continue;
     const cleaned = site.trim().replace(/\\/g, '/');
@@ -274,7 +290,9 @@ function evaluate(filePath, cwd, env, ctx, root) {
         `\`${filePath}\` stands outside the repository, and it is not inside ` +
         `one of the outside seats (\`{paths.review_state}\`, \`{temp_dir}\`, OS temp, \`{write_roots}\`): ` +
         `a skill writes either under the repository root or in its declared outside seats. ` +
-        `If this target is legitimate, declare it — do not work around this denial.`,
+        `To admit the folder that holds it, declare that folder in \`write_roots\` of ` +
+        `\`.daiku/environment.local.json\` — the machine's own file, which this guard reads and ` +
+        `honours on both sides of the repository boundary.`,
     };
   }
 
@@ -287,9 +305,10 @@ function evaluate(filePath, cwd, env, ctx, root) {
   return {
     reason:
       `creating \`${rel}\` is denied: new files belong either under \`{code_root}\` or in a ` +
-      `declared seat (memory, studies, notes, policies, changelog, version, review state, temp). ` +
-      `This path is in none of them. If the file belongs here, declare the seat first — ` +
-      `do not work around this denial.`,
+      `declared seat (memory, studies, notes, features, policies, changelog, version, review state, temp). ` +
+      `This path is in none of them. To admit the folder that holds it, declare that folder ` +
+      `in \`write_roots\` of \`.daiku/environment.local.json\` — the machine's own file, which ` +
+      `this guard reads and honours on both sides of the repository boundary.`,
   };
 }
 
@@ -348,6 +367,7 @@ const CTX_FULL = fakeContext({
   versionFiles: [`${R}/package.json`],
   studies: ['docs/studies'],
   libNotes: `${R}/docs/lib-notes`,
+  features: `${R}/docs/features`,
   reviewState: 'C:/dev/review-state',
   policiesDir: `${R}/.daiku/policies`,
   domainDir: `${R}/.daiku/domain`,
@@ -395,6 +415,7 @@ const CASES = [
   ['create memory file', 'docs/memory/auth.md', R, 'allow', '', CTX_FULL, []],
   ['create study file', 'docs/studies/x.md', R, 'allow', '', CTX_FULL, []],
   ['create lib note', 'docs/lib-notes/pg.md', R, 'allow', '', CTX_FULL, []],
+  ['create a feature catalogue entry', 'docs/features/ui/x.md', R, 'allow', '', CTX_FULL, []],
   ['create policy', '.daiku/policies/backend.md', R, 'allow', '', CTX_FULL, []],
   ['create project.json', '.daiku/project.json', R, 'allow', '', CTX_FULL, []],
   ['create environment.json', '.daiku/environment.json', R, 'allow', '', CTX_FULL, []],
@@ -423,6 +444,18 @@ const CASES = [
   ['edit inside a write root outside repo', 'C:/dev/work/x.md', R, 'allow', '', fakeContext({ writeRoots: ['C:/dev/work'] }), ['C:/dev/work/x.md']],
   ['create beside a write root, not inside', 'C:/dev/workshop/x.md', R, 'deny', 'outside the repository', fakeContext({ writeRoots: ['C:/dev/work'] }), []],
   ['no write roots: outside stays denied', 'C:/dev/work/x.md', R, 'deny', 'outside the repository', CTX_FULL, []],
+
+  // --- the declared way out is the same key, on both sides of the boundary -----
+  // A seat is declared once and holds wherever it stands: the guard reads a path, and the
+  // path does not say whether it falls inside the repository.
+  ['create inside a write root in the repo', 'notes-seat/x.md', R, 'allow', '', fakeContext({ writeRoots: [`${R}/notes-seat`] }), []],
+  ['create beside that write root stays denied', 'notes-seat2/x.md', R, 'deny', 'is denied', fakeContext({ writeRoots: [`${R}/notes-seat`] }), []],
+  ['a write root may be the technical root itself', 'notes.md', R, 'allow', '', fakeContext({ writeRoots: [R] }), []],
+  ['a write root above the technical root admits the monorepo', 'C:/dev/notes.md', R, 'allow', '', fakeContext({ repoRoot: 'C:/dev', writeRoots: ['C:/dev'] }), []],
+  // The denial has to say what to do: a ban with no remedy is what sends the agent to the shell.
+  ['the in-repo denial names the key that admits the path', 'notes-random.md', R, 'deny', 'environment.local.json', CTX_FULL, []],
+  ['the in-repo denial names `write_roots`', 'notes-random.md', R, 'deny', 'write_roots', CTX_FULL, []],
+  ['the outside denial names the key that admits the path', 'C:/other/x.md', R, 'deny', 'environment.local.json', CTX_FULL, []],
   ['missing tech_doc key: create there denied', 'docs/tech.md', R, 'deny', 'is denied', CTX_BARE, []],
   ['missing keys: edit still passes', 'README.md', R, 'allow', '', CTX_BARE, ['C:/dev/project/README.md']],
   ['../ escape denied', '../evil.md', R, 'deny', 'outside the repository', CTX_FULL, []],

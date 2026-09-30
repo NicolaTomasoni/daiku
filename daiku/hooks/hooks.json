@@ -20,6 +20,12 @@
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/lib/edit-guard.mjs\"",
             "timeout": 15,
             "statusMessage": "Coarse edit perimeter"
+          },
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/lib/run-advice.mjs\"",
+            "timeout": 15,
+            "statusMessage": "Daiku run boundary in this conversation"
           }
         ]
       }
@@ -45,6 +51,18 @@
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/lib/session-advice.mjs\"",
             "timeout": 10,
             "statusMessage": "Daiku status for this project"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/lib/run-advice.mjs\"",
+            "timeout": 15,
+            "statusMessage": "Daiku run boundary in this conversation"
           }
         ]
       }

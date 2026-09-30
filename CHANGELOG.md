@@ -1,15 +1,27 @@
 # Changelog
 
-### 1.0.4
-<sub>2026-09-30</sub>
+### 1.0.5 — 2026-09-30
+
+- A conversation that opened a run no longer does the work itself: a turn of yours asking for something to be made is delegated to a subagent, and a notice repeats the rule at the one write that would break it — nothing is blocked.
+- A study no longer settles a direction nobody chose: before it goes technical, `decision-doc` says whose direction it is and what it rests on, and the study stage follows.
+- The end-of-session notice about open review ledgers arrives once per session, instead of restarting the turn at every stop.
+- When the write guard denies a new file, it now names the key that admits it — and a folder you declare in `write_roots` is a seat inside the repository and outside it alike.
+- `develop-feature` is now `ship-feature`.
+- The three folders of the method's own documents — work folders, technology notes, feature catalogue — stand under `.daiku/`, and `init` assigns them instead of adopting a folder of yours that looks like them.
+- `init` closes in the language you chose instead of answering in English whatever you answered.
+
+---
+
+### 1.0.4 — 2026-09-30
 
 - `init` checks what is already in place before doing anything: on a project already set up it answers `Daiku is already set up here.` without asking anything, and otherwise adds only the missing pieces.
 - `init` ends with a single line, `You're all set.`, and lists only the steps that did not go through.
 - `init` adds a `daiku: update` VS Code task that refreshes the marketplace and updates Daiku in one click.
 - In a monorepo, the write guard no longer blocks the root `.gitignore` or a changelog above the folder where Daiku runs.
 
-### 1.0.3
-<sub>2026-09-30</sub>
+---
+
+### 1.0.3 — 2026-09-30
 
 - `init` runs in one shot after the two language questions: no further question, and a report with nothing left for you to do.
 - `init` points the domain roles and area policies at the rule files your project already keeps, instead of listing them for you to write.
@@ -17,21 +29,24 @@
 - On Codex, `init` installs guardrails and subagent roles itself by running `sync-host`.
 - A machine can declare in `environment.local.json` the folders outside the repository where agents may create files (`write_roots`).
 
-### 1.0.2
-<sub>2026-09-30</sub>
+---
+
+### 1.0.2 — 2026-09-30
 
 - `init` now points Claude Code's memory into the repository instead of being stopped by its own write guard.
 - `init` leaves out commands whose tool no dependency manifest declares.
 - `init` no longer repeats in the stack section what the project's own lines already say.
 
-### 1.0.1
-<sub>2026-09-30</sub>
+---
+
+### 1.0.1 — 2026-09-30
 
 - Project parameters, domain and policies now travel with the repository: `.daiku/` is versioned, only the machine's override stays out, and the guard that blocked those commits is gone.
 - The end-of-session notice no longer mistakes unrelated files in the review state folder for open cycles.
 
-## $\color{#3b82f6}{\textsf{1.0.0}}$
-<sub>2026-09-28</sub>
+---
+
+### 1.0.0 — 2026-09-28
 
 Daiku 1.0: autonomous development contracts for Claude Code and Codex. AI agents work fast and autonomously, inside the architectural constraints you decide — enforced by checks that really fire, not by advice.
 

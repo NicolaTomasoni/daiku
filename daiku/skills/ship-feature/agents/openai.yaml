@@ -1,5 +1,5 @@
 interface:
-  display_name: "Develop Feature"
+  display_name: "Ship Feature"
   short_description: "Internal contract, opened by new-feature"
 policy:
   allow_implicit_invocation: false

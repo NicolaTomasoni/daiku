@@ -17,6 +17,7 @@
   "paths": {
     "studies": "<folder holding the working folders, one per problem>",
     "lib_notes": "<folder of the notes on a technology>",
+    "features": "<folder of the feature catalogue, one folder per feature>",
     "review_state": "<folder of the review ledger, inside the tree but outside version control>"
   },
   "memory": {

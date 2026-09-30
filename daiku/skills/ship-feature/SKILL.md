@@ -1,5 +1,5 @@
 ---
-name: 'develop-feature'
+name: 'ship-feature'
 description: 'Delivers a feature from the already resolved decision-doc to the commit in a single invocation: worktree, brief, execution, review rounds, decision, memory and documentation alignment, the three commits, merge and report. It orchestrates its own phases delegating each to a subagent. Launched by hand on an existing folder, or by new-feature as its delivery.'
 argument-hint: '<folder with 1. decision-doc.md> [+ chosen solution, one option id and text per decision, if 2. blueprint.md is absent]'
 ---

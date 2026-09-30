@@ -74,7 +74,7 @@ forever. The nine fall into two groups, which are not used at the same moments.
 | `code-review` | a bugs-only pass over the scope you tell it, with no rounds and no fixes: eyes on the code without opening a cycle |
 | `commit` | it closes a review launched with `--no-commit`, or a diff written outside a review |
 | `blueprint` | you already have a resolved decision-doc and stop at the brief: from the chosen solution it produces `2. blueprint.md` and stops there — the hand-off that travels to where the execution runs |
-| `develop-feature` | you already have the folder, with or without the brief, and want the whole delivery to the commit in a single run, without reopening the study |
+| `ship-feature` | you already have the folder, with or without the brief, and want the whole delivery to the commit in a single run, without reopening the study |
 
 **Installation — two commands that are launched once per project**, and that no chain
 can reach because they run *before* there is a chain:
@@ -126,16 +126,16 @@ rebuilding the graph from the caller's prose.
 
 | Node | Invoked by | Receives already resolved | Returns | Re-delegates |
 |---|---|---|---|---|
-| `init` | owner | technical root, or nothing and the current directory applies | § *Report* of its file: `You're all set.`, or the steps that did not go through; `Daiku is already set up here.` when § *Scan first* finds nothing missing | yes — `sync-host` on Codex, as its last step |
+| `init` | owner | technical root, or nothing and the current directory applies | § *Report* of its file: one line saying the project is all set, or the steps that did not go through; one line saying it already was when § *Scan first* finds nothing missing — in the chat language | yes — `sync-host` on Codex, as its last step |
 | `sync-host` | owner, `init` on Codex | technical root, or nothing and the current directory applies | the report of § *Report* in its file: copied, hooked, not hooked, roles written, and the gestures left to the user | no |
-| `new-feature` | owner | description of the feature or problem, in natural language | § *Outcome* of its file: the opened folder, the documents the chain produced and the delivery outcome | yes — per-area investigation, `research`, `decision-doc` twice, and `develop-feature` as orchestrating child |
-| `decision-doc` | `new-feature` § *The study of decisions* and § *Incorporation* | problem folder, optional subset to analyse, the already written document, the paths of the `research` notes and of the relevant memories, and on receiving the owner's answers by number | `0.5. strategic-study.md` or `1. decision-doc.md` on disk, with `0. problem.md` refined, and the block of § *The block you return* of its file | no |
+| `new-feature` | owner | description of the feature or problem, in natural language | § *Outcome* of its file: the opened folder, the documents the chain produced and the delivery outcome | yes — per-area investigation, `research`, `decision-doc` twice, and `ship-feature` as orchestrating child |
+| `decision-doc` | `new-feature` § *The study of decisions* and § *Incorporation* | problem folder, optional subset to analyse, the already written document, the material the request came with, the paths of the `research` notes and of the relevant memories, and on receiving the owner's answers by number | `0.5. strategic-study.md` or `1. decision-doc.md` on disk, with `0. problem.md` refined, and the block of § *The block you return* of its file | no |
 | `research` | owner, `new-feature` § *The missing knowledge* | name of the technology; from `new-feature` also the version in use in the project and the questions the notes must answer | path of the file in `{paths.lib_notes}/`, in both modes, nothing else | yes — fan-out per thematic block (leaves) + `study` as leaf child |
 | `study` | `research` § *Step 2* only | path of the dirty file, studied technology, studied and latest versions with dates | reordered file in `{paths.lib_notes}/` + the block of § *The block you return* of its file | no — leaf |
-| `blueprint` | `owner`, `develop-feature` phase 1 | folder with `1. decision-doc.md`, chosen solution verbatim, relevant memories | § *What you return* of its file | no |
-| `execute` | `develop-feature` phase 2 | folder with `2. blueprint.md`, relevant memories; on a relaunch, the `handoff` blockers or the round-0 findings | § *What you return* of its file | no |
-| `develop-feature` | `owner`, `new-feature` § *Delivery* | folder and chosen solution | § *Outcome* of its file | yes — its phases, and `review` as orchestrating child |
-| `review` | owner, `develop-feature` phase 3 | base-ref or path of `4. review-notes.md`, ledger to reopen (chosen on `base` **and** `item`), `--no-commit` from whoever commits on their own, effort, `--backend` when the session runs there, work roots and artefacts when running on a worktree | § *Outcome* of its file | yes — finder, applier, coverage, gate, `commit` |
+| `blueprint` | `owner`, `ship-feature` phase 1 | folder with `1. decision-doc.md`, chosen solution verbatim, relevant memories | § *What you return* of its file | no |
+| `execute` | `ship-feature` phase 2 | folder with `2. blueprint.md`, relevant memories; on a relaunch, the `handoff` blockers or the round-0 findings | § *What you return* of its file | no |
+| `ship-feature` | `owner`, `new-feature` § *Delivery* | folder and chosen solution | § *Outcome* of its file | yes — its phases, and `review` as orchestrating child |
+| `review` | owner, `ship-feature` phase 3 | base-ref or path of `4. review-notes.md`, ledger to reopen (chosen on `base` **and** `item`), `--no-commit` from whoever commits on their own, effort, `--backend` when the session runs there, work roots and artefacts when running on a worktree | § *Outcome* of its file | yes — finder, applier, coverage, gate, `commit` |
 | a round's finder (`finder-prompt`) | `review` § *Finder* | discipline and contract, the round range (`from`, `to`, files), effort, the ledger path, the resolved parameters | § *The block you return* of its file | no |
 | `code-review` | owner, `review` as `bug` finder | hand-told scope **or** round scope | report in chat **or** § *The block you return* of `finder-prompt`, with the `confidence` scale its file declares | **no** |
 | `arch-check` | `review` as `arch` finder | round scope | the block of `finder-prompt` § *The block you return*; its file declares scope and permissions | no |
@@ -144,7 +144,7 @@ rebuilding the graph from the caller's prose.
 | `test-coverage` | `review` § *Coverage* with `--auto` | macro-category **or** final cycle diff and relevant memories | § *Automatic mode* of its file | no |
 | `applier` | `review` § *Applier* | the path of the round's numbered findings file, the ledger path, the round range, relevant memories, the resolved parameters, and the **mode** when it is the closing round on tests | § *The block you return* of its file | no |
 | `commit` | owner, `review` § *Closing* (always, except `--no-commit`) | code-group perimeter; it partitions memory/docs and version/changelog itself (§ *Procedure* 3 of its file) | § *Procedure* 8 of its file, in chat | yes — `update-memory`, **always and without exceptions** |
-| `update-memory` | `develop-feature` phase 5b, `commit` § *Alignment* (**always**, on every `commit` invocation) | diff in index, feature folder where to deposit its own artefact (from `develop-feature`), **commit permission for its own group** | § *Procedure* 7 of its file | no |
+| `update-memory` | `ship-feature` phase 5b, `commit` § *Alignment* (**always**, on every `commit` invocation) | diff in index, feature folder where to deposit its own artefact (from `ship-feature`), **commit permission for its own group** | § *Procedure* 7 of its file | no |
 
 **A new arc is declared in the program, and its row here follows it.** Connecting a node to a
 caller that did not have it means declaring the arc in `GRAPH` of
@@ -281,16 +281,22 @@ Rules valid on every host:
    order, perimeter and return format, and declare it in the outcome. But first read the
    subsection below: for steps that stand on the children's independence, *inline* is the
    second rung, not the first.
+5. **An orchestrator waits for what it launched.** A step that fans out closes when **every**
+   subagent it launched has returned its block: the sequence does not move on a fan-out still in
+   flight, and a question to the owner never shares its tool-call block with a launch. For the
+   question of § *Ask the owner* this is not tidiness: asked while a step is still writing, it
+   reaches the owner on a state that is still moving, and the answer describes a list the work in
+   flight can still change.
 
 ### Depth and degradation
 
 **Who may re-delegate.** A delegated step **executes**: it does not delegate in turn. The only exceptions
-are the orchestrating nodes that §3 declares also reachable as children — `develop-feature`
+are the orchestrating nodes that §3 declares also reachable as children — `ship-feature`
 (which orchestrates its own phases), `review` (finder, applier, gate, commit) and `commit` (which
 delegates alignment to `update-memory`) — **plus `research`, which as a child of `new-feature`
 orchestrates its own collection fan-out and delegates reordering to `study`, a leaf**. Every other
 delegated step is a **leaf**, and the longest path in the graph stays four levels,
-`new-feature → develop-feature → review → finder`, with the collection chain at three levels
+`new-feature → ship-feature → review → finder`, with the collection chain at three levels
 `new-feature → research → study`. A node that realises it wants to delegate, and is not one of the four, is doing
 someone else's work: return to contract and let whoever called it decide.
 
@@ -323,16 +329,40 @@ to ask and stops there, as it declares a role without naming a model:
 
 - **`claude`** — `AskUserQuestion` tool, one question per decision, **at most four per
   call**: if there are more decisions, make more calls in sequence, in order of severity.
-  Option `A` goes first, with `(recommended)` appended to the label. The owner may always
+  Option `A` goes first, **every label opens with its id** — `A — <text>` — and `(recommended)`
+  closes the label of `A`; the description line carries what the option entails. The letter is
+  what makes an option referable in the message above and in the discussion that may follow, and
+  on a host where the answer is typed it is what the owner types. The owner may always
   answer outside the options, and that free answer **prevails**.
 - **`codex`**, and every host without a structured-question tool — the same list, numbered, in
   chat, with the options as letters (`A` first, declared recommended) and the invitation to answer compactly (`1A, 2B, …`). The
   content is identical: only the delivery changes.
 
+**The question is bare; the message above it is not.** The ask renders a title and one line per
+option, and context does not go in there: what the owner reads before choosing is the **chat
+message immediately preceding it**, where the decision arrives whole — decision by decision, the
+problem, each option with its letter and what it entails and costs, and the recommended one with
+why it is recommended. That message is written from the block, without summarising it and without
+reordering it, and it is written every time, even when the document hosting the decisions is on
+disk and can be linked: the owner decides from what they read, not from a file they have to open
+first.
+
+**The ask is the last act, and it is emitted alone.** Every subagent the run launched has returned
+its block and nothing is still in flight (§4 point 5): asked while a step is writing, the question
+reaches the owner on a state that is still moving, and the answer describes a list the work in
+flight can still change.
+
 **Whoever asks does not stop at asking.** A skill that poses decisions and then leaves the owner
 the job of relaunching it by hand with the answers is asking him to be the orchestrator in its
 place. The answers return inside the same run, and the chain continues from there to wherever its
 contract declares it goes.
+
+**An answer that asks is not an answer.** When the owner's reply carries a question — a doubt, a
+clarification, "why this option" — the run **stops**: you answer it and nothing else, the turn ends
+there, and the decisions stay open. While the discussion is going the channel is the conversation
+and not the form, and a form emitted into it asks the owner to choose before they have finished
+asking. Resuming is their act: they request it, on the same folder, and the node's outcome says
+where the run stopped and what resumes it.
 
 ## 5. Concurrency
 
@@ -383,7 +413,7 @@ looked up, are §8 of `contracts/project-contract.md`.
 | `backends.<backend>.sequential_fanout` | declared only on backends whose fan-out must be sequentialised (§5) |
 | `backends.<backend>.caveats` | that backend's warnings to report in summary, one per line; absent if there are none |
 | `temp_dir` | machine's temporary directory, for artefacts that must not end up in the repository; **absent is the normal case** — the readers fall back on the operating system's, which is the right answer on every machine |
-| `write_roots` | folders **outside the repository** where the write guard admits writing and creating — a machine's own paths, so they belong in `environment.local.json`; **absent is the normal case**: outside the repository only `{paths.review_state}`, `{temp_dir}` and the operating system's temporary directory are writable |
+| `write_roots` | folders where the write guard admits writing and creating, **wherever they stand**: a path alone cannot say whether it falls inside the repository or outside it, so the seat holds on both sides of that boundary — a machine's own paths, so they belong in `environment.local.json`; **absent is the normal case**: outside the repository only `{paths.review_state}`, `{temp_dir}` and the operating system's temporary directory are writable, and inside it only `{code_root}` and the declared seats |
 
 No key is mandatory besides `contract`: for everything else the degradation of
 §6 of `contracts/project-contract.md` applies.

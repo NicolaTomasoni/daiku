@@ -35,7 +35,7 @@
  * contracts it compares itself against.
  *
  * The prose of what it answers and the block it returns live in the skill hosting it —
- * `skills/develop-feature/SKILL.md § The evaluator` — because the evaluator has no
+ * `skills/ship-feature/SKILL.md § The evaluator` — because the evaluator has no
  * `SKILL.md` of its own to declare them in. The fields it deliberately ignores, instead,
  * are declared just below: that declaration belongs to whoever consumes the block, and
  * there is no other consumer.
@@ -93,10 +93,10 @@ const GRAPH = {
   'decision-doc': ['new-feature'],
   research: ['owner', 'new-feature'],
   study: ['research'],
-  blueprint: ['owner', 'develop-feature'],
-  execute: ['develop-feature'],
-  'develop-feature': ['owner', 'new-feature'],
-  review: ['owner', 'develop-feature'],
+  blueprint: ['owner', 'ship-feature'],
+  execute: ['ship-feature'],
+  'ship-feature': ['owner', 'new-feature'],
+  review: ['owner', 'ship-feature'],
   'finder-prompt': ['review'],
   'code-review': ['owner', 'review'],
   'arch-check': ['review'],
@@ -105,14 +105,14 @@ const GRAPH = {
   'test-coverage': ['review'],
   applier: ['review'],
   commit: ['owner', 'review'],
-  'update-memory': ['develop-feature', 'commit'],
+  'update-memory': ['ship-feature', 'commit'],
 };
 
 /**
  * The chain, in order, each phase with the contract that declares it and the artefact
  * on disk that proves it was done. The names are taken from the contracts, never
  * invented: `problem` and `decisions` from `skills/new-feature/SKILL.md` § *The
- * sequence*, everything else from `skills/develop-feature/SKILL.md` § *The sequence*.
+ * sequence*, everything else from `skills/ship-feature/SKILL.md` § *The sequence*.
  *
  * A phase with no artefact is one nothing on disk proves: it is not pruned by
  * `present`, and the chain is cut at the furthest **proven** phase rather than at the
@@ -121,16 +121,16 @@ const GRAPH = {
 const PHASES = [
   { name: 'problem', cites: { file: 'skills/new-feature/SKILL.md', section: '3. First draft of `0. problem.md`' }, artifact: '0. problem.md' },
   { name: 'decisions', cites: { file: 'skills/new-feature/SKILL.md', section: '6. The study of decisions' }, artifact: '1. decision-doc.md' },
-  { name: 'acquisition', cites: { file: 'skills/develop-feature/SKILL.md', section: '0. Acquisition' }, artifact: null },
-  { name: 'brief', cites: { file: 'skills/develop-feature/SKILL.md', section: '1. Brief' }, artifact: '2. blueprint.md' },
-  { name: 'execute', cites: { file: 'skills/develop-feature/SKILL.md', section: '2. Execute' }, artifact: '4. review-notes.md' },
-  { name: 'review', cites: { file: 'skills/develop-feature/SKILL.md', section: '3. Review' }, artifact: '5. review-report.md' },
-  { name: 'decision', cites: { file: 'skills/develop-feature/SKILL.md', section: '4. Decision' }, artifact: null },
-  { name: 'memory', cites: { file: 'skills/develop-feature/SKILL.md', section: '5. Memory' }, artifact: '3. memory-report.md' },
-  { name: 'commit', cites: { file: 'skills/develop-feature/SKILL.md', section: '6. Commit' }, artifact: null },
-  { name: 'merge', cites: { file: 'skills/develop-feature/SKILL.md', section: '6b. Merge' }, artifact: null },
-  { name: 'cleanup', cites: { file: 'skills/develop-feature/SKILL.md', section: '6c. Cleanup' }, artifact: null },
-  { name: 'report', cites: { file: 'skills/develop-feature/SKILL.md', section: '7. Report' }, artifact: null },
+  { name: 'acquisition', cites: { file: 'skills/ship-feature/SKILL.md', section: '0. Acquisition' }, artifact: null },
+  { name: 'brief', cites: { file: 'skills/ship-feature/SKILL.md', section: '1. Brief' }, artifact: '2. blueprint.md' },
+  { name: 'execute', cites: { file: 'skills/ship-feature/SKILL.md', section: '2. Execute' }, artifact: '4. review-notes.md' },
+  { name: 'review', cites: { file: 'skills/ship-feature/SKILL.md', section: '3. Review' }, artifact: '5. review-report.md' },
+  { name: 'decision', cites: { file: 'skills/ship-feature/SKILL.md', section: '4. Decision' }, artifact: null },
+  { name: 'memory', cites: { file: 'skills/ship-feature/SKILL.md', section: '5. Memory' }, artifact: '3. memory-report.md' },
+  { name: 'commit', cites: { file: 'skills/ship-feature/SKILL.md', section: '6. Commit' }, artifact: null },
+  { name: 'merge', cites: { file: 'skills/ship-feature/SKILL.md', section: '6b. Merge' }, artifact: null },
+  { name: 'cleanup', cites: { file: 'skills/ship-feature/SKILL.md', section: '6c. Cleanup' }, artifact: null },
+  { name: 'report', cites: { file: 'skills/ship-feature/SKILL.md', section: '7. Report' }, artifact: null },
 ];
 
 /**
@@ -157,7 +157,7 @@ const REVIEW_PHASES = [
 const ENTRIES = {
   'new-feature': { startsAt: 'problem', requires: [] },
   'decision-doc': { startsAt: 'decisions', requires: ['0. problem.md'] },
-  'develop-feature': { startsAt: 'acquisition', requires: ['1. decision-doc.md'] },
+  'ship-feature': { startsAt: 'acquisition', requires: ['1. decision-doc.md'] },
   review: { startsAt: null, review: true, requires: [] },
 };
 
@@ -371,7 +371,7 @@ function furthestProven(input) {
   return last;
 }
 
-/** 6. The order — `skills/develop-feature/SKILL.md` § *The sequence*. */
+/** 6. The order — `skills/ship-feature/SKILL.md` § *The sequence*. */
 function askOrder(input) {
   const entry = entryOf(input);
   if (entry.atomic) return block({ verdict: 'stop', detail: entry.atomic });
@@ -399,7 +399,7 @@ function askOrder(input) {
   });
 }
 
-/** 1. The final decision — `skills/develop-feature/SKILL.md` § *4. Decision*, its six rows. */
+/** 1. The final decision — `skills/ship-feature/SKILL.md` § *4. Decision*, its six rows. */
 function askDecision(input) {
   const out = reviewOutcomeOf(input, ['gate', 'outcome', 'missing_disciplines', 'to_confirm']);
   const blockers = [];
@@ -465,7 +465,7 @@ function askClosing(input) {
   });
 }
 
-/** 3. The mechanical unblock — `skills/develop-feature/SKILL.md` § *Mechanical unblock*. */
+/** 3. The mechanical unblock — `skills/ship-feature/SKILL.md` § *Mechanical unblock*. */
 function askUnblock(input) {
   const out = reviewOutcomeOf(input, ['gate', 'outcome', 'missing_disciplines', 'to_confirm']);
   const holds = [];
@@ -950,13 +950,72 @@ const SHAPES = {
     }
     return wrong;
   },
-  // skills/decision-doc/SKILL.md § The block you return, and skills/new-feature/SKILL.md § 7.
+  // skills/decision-doc/SKILL.md § The block you return, skills/new-feature/SKILL.md § 7, and
+  // § *The two stages* of the first: the stage is not a label, it is a claim about three things —
+  // whose direction this is, on what premises it rests, what the project already decided about it.
   'decision-doc': (value) => {
     const wrong = [];
     if (value.stage === null) wrong.push('stage is null: it is strategic or technical');
     // A missing key is already reported by the required list: only a present one is judged here.
-    for (const key of ['applied_fixes', 'incorporated', 'open_items']) {
+    for (const key of ['applied_fixes', 'incorporated', 'open_items', 'premises', 'precedents']) {
       if (key in value && !Array.isArray(value[key])) wrong.push(`${key} is not an array — with zero items it is []`);
+    }
+    const technical = value.stage === 'technical';
+    /* Whose direction it is. `material` is a legitimate declaration and an illegitimate technical
+       stage: a direction the material proposes is what the strategic stage puts to the owner. */
+    if ('direction' in value && technical) {
+      const direction = value.direction;
+      const settled =
+        !!direction && typeof direction === 'object' && !Array.isArray(direction) &&
+        (direction.kind === 'owner-request' || direction.kind === 'owner-answer');
+      if (!rule('decision-doc.direction-settled-by-the-owner', settled)) {
+        wrong.push(
+          'direction is not the owner\'s: at the technical stage it is owner-request or owner-answer. A direction ' +
+            'the material proposes is what the strategic stage puts to the owner, never what this stage executes'
+        );
+      } else if (!rule('decision-doc.direction-where', nonEmpty(direction.where))) {
+        wrong.push(
+          'direction.where is empty: the owner\'s words, or the memory recording their decision, are what makes the direction theirs'
+        );
+      }
+    }
+    /* The premises the direction rests on, and their source. An act of faith under a solution is
+       exactly what the strategic stage exists to catch, so it cannot be what a technical one leans on. */
+    if ('premises' in value && Array.isArray(value.premises)) {
+      if (technical && !rule('decision-doc.premises-at-the-technical-stage', value.premises.length > 0)) {
+        wrong.push(
+          'premises is empty at the technical stage: a study resting on no verified claim about the system rests on nothing'
+        );
+      }
+      if (value.stage === 'strategic' && !rule('decision-doc.premises-at-the-strategic-stage', value.premises.length === 0)) {
+        wrong.push(
+          'premises is not empty at the strategic stage: the unproven assumptions are findings here, not premises of a direction nobody chose'
+        );
+      }
+      value.premises.forEach((premise, at) => {
+        if (!rule('decision-doc.premise-evidence', !!premise && nonEmpty(premise.claim) && nonEmpty(premise.evidence))) {
+          wrong.push(`premises[${at}] needs claim and evidence, both non-empty: a load-bearing claim with no source is an act of faith`);
+        }
+      });
+    }
+    /* A decision the project already closed and this work contradicts. It is a question for the
+       owner: the block must name the decision of this list that asks it. */
+    if ('precedents' in value && Array.isArray(value.precedents)) {
+      value.precedents.forEach((precedent, at) => {
+        if (!rule('decision-doc.precedent-names', !!precedent && nonEmpty(precedent.decision) && nonEmpty(precedent.where))) {
+          wrong.push(`precedents[${at}] needs decision and where, both non-empty: a precedent is cited, never remembered`);
+        }
+      });
+      const asked = Array.isArray(value.decisions) ? value.decisions.map((decision) => decision && decision.title) : [];
+      value.precedents.forEach((precedent, at) => {
+        if (!precedent || typeof precedent !== 'object' || precedent.stands !== 'no') return;
+        if (!rule('decision-doc.a-dismissed-precedent-is-asked', asked.includes(precedent.answered_by))) {
+          wrong.push(
+            `precedents[${at}] does not stand and no decision of this list answers it: a precedent that says the ` +
+              'opposite is put to the owner, never dismissed here — `answered_by` names the title of the decision that asks it'
+          );
+        }
+      });
     }
     if (!('decisions' in value) || value.decisions === null) return wrong;
     if (!Array.isArray(value.decisions)) return [...wrong, 'decisions is neither an array nor null'];
@@ -1242,7 +1301,11 @@ const LAYER = (extra = {}) => ({
   policy: '.daiku/policies/server.md', name: 'api', folders: ['src/server/api/**'], deny_imports: ['src/server/db/**'], ...extra,
 });
 const DOC = (extra = {}, decision = {}) => ({
-  stage: 'technical', stage_why: 'x', file: 'x/1. decision-doc.md', verdict: null, applied_fixes: [],
+  stage: 'technical', stage_why: 'x',
+  direction: { kind: 'owner-request', where: 'the request that opened the work' },
+  file: 'x/1. decision-doc.md', verdict: null, applied_fixes: [],
+  premises: [{ claim: 'the reader returns nothing on a real build file', evidence: 'a.mjs:12' }],
+  precedents: [],
   decisions: [{
     n: 1, title: 't', problem: 'p', classification: null,
     options: [{ id: 'A', text: 'a' }, { id: 'B', text: 'b' }], recommended_id: 'A', recommended_why: 'w', ...decision,
@@ -1273,29 +1336,29 @@ const EX_BLOCK = (extra = {}) => ({
  * proof cannot cite a section that does not exist.
  */
 const CASES = [
-  /* --- question: decision — skills/develop-feature/SKILL.md § 4. Decision --- */
-  { id: 'decision:row-1-gate-red', cites: { file: 'skills/develop-feature/SKILL.md', section: '4. Decision' },
+  /* --- question: decision — skills/ship-feature/SKILL.md § 4. Decision --- */
+  { id: 'decision:row-1-gate-red', cites: { file: 'skills/ship-feature/SKILL.md', section: '4. Decision' },
     input: { question: 'decision', review_outcome: GREEN({ gate: 'red', gate_detail: 'tsc: 2 errors' }) },
     expect: { verdict: 'BLOCKED_NO_COMMIT', blockers_include: 'gate red: tsc: 2 errors' } },
-  { id: 'decision:row-2-oscillation', cites: { file: 'skills/develop-feature/SKILL.md', section: '4. Decision' },
+  { id: 'decision:row-2-oscillation', cites: { file: 'skills/ship-feature/SKILL.md', section: '4. Decision' },
     input: { question: 'decision', review_outcome: GREEN({ outcome: 'oscillation' }) },
     expect: { verdict: 'BLOCKED_NO_COMMIT', blockers_include: 'oscillation' } },
-  { id: 'decision:row-2-rounds-exhausted', cites: { file: 'skills/develop-feature/SKILL.md', section: '4. Decision' },
+  { id: 'decision:row-2-rounds-exhausted', cites: { file: 'skills/ship-feature/SKILL.md', section: '4. Decision' },
     input: { question: 'decision', review_outcome: GREEN({ outcome: 'rounds-exhausted' }) },
     expect: { verdict: 'BLOCKED_NO_COMMIT', blockers_include: 'rounds-exhausted' } },
-  { id: 'decision:row-3-missing-disciplines', cites: { file: 'skills/develop-feature/SKILL.md', section: '4. Decision' },
+  { id: 'decision:row-3-missing-disciplines', cites: { file: 'skills/ship-feature/SKILL.md', section: '4. Decision' },
     input: { question: 'decision', review_outcome: GREEN({ missing_disciplines: ['arch'] }) },
     expect: { verdict: 'BLOCKED_NO_COMMIT', blockers_include: 'arch' } },
-  { id: 'decision:row-4-blocking-item', cites: { file: 'skills/develop-feature/SKILL.md', section: '4. Decision' },
+  { id: 'decision:row-4-blocking-item', cites: { file: 'skills/ship-feature/SKILL.md', section: '4. Decision' },
     input: { question: 'decision', review_outcome: GREEN({ to_confirm: [{ file: 'a.mjs', line: 12, class: 'bug', blocking: true, scenario: 'x' }] }) },
     expect: { verdict: 'BLOCKED_NO_COMMIT', blockers_include: 'a.mjs:12' } },
-  { id: 'decision:row-5-post-decisions', cites: { file: 'skills/develop-feature/SKILL.md', section: '4. Decision' },
+  { id: 'decision:row-5-post-decisions', cites: { file: 'skills/ship-feature/SKILL.md', section: '4. Decision' },
     input: { question: 'decision', review_outcome: GREEN({ to_confirm: [{ file: 'a.mjs', class: 'arch', blocking: false, scenario: 'x' }] }) },
     expect: { verdict: 'GREEN_WITH_POST_DECISIONS' } },
-  { id: 'decision:row-6-green', cites: { file: 'skills/develop-feature/SKILL.md', section: '4. Decision' },
+  { id: 'decision:row-6-green', cites: { file: 'skills/ship-feature/SKILL.md', section: '4. Decision' },
     input: { question: 'decision', review_outcome: GREEN() },
     expect: { verdict: 'GREEN_COMMITTED', blockers: [] } },
-  { id: 'decision:every-blocking-condition', cites: { file: 'skills/develop-feature/SKILL.md', section: '4. Decision' },
+  { id: 'decision:every-blocking-condition', cites: { file: 'skills/ship-feature/SKILL.md', section: '4. Decision' },
     input: { question: 'decision', review_outcome: GREEN({ gate: 'red', outcome: 'oscillation', missing_disciplines: ['perf'], to_confirm: [{ file: 'a.mjs', class: 'bug', blocking: true, scenario: 'x' }] }) },
     expect: { verdict: 'BLOCKED_NO_COMMIT', blockers_length_at_least: 4 } },
 
@@ -1334,23 +1397,23 @@ const CASES = [
     input: { question: 'closing', review_outcome: GREEN({ oscillation: 0, outcome: 'rounds-truncated' }), ledger: { base: 'abc1234', item: 'x/y', rounds: [], outcome: 'rounds-truncated', coverage: 'no-tests-needed', gate: 'green', gate_detail: 'ok' } },
     expect: { verdict: 'commit' } },
 
-  /* --- question: unblock — skills/develop-feature/SKILL.md § Mechanical unblock --- */
-  { id: 'unblock:only-the-gate', cites: { file: 'skills/develop-feature/SKILL.md', section: 'Mechanical unblock' },
+  /* --- question: unblock — skills/ship-feature/SKILL.md § Mechanical unblock --- */
+  { id: 'unblock:only-the-gate', cites: { file: 'skills/ship-feature/SKILL.md', section: 'Mechanical unblock' },
     input: { question: 'unblock', review_outcome: GREEN({ gate: 'red', gate_detail: 'lint' }) },
     expect: { verdict: 'unblock', blockers: [] } },
-  { id: 'unblock:blocking-item-holds', cites: { file: 'skills/develop-feature/SKILL.md', section: 'Mechanical unblock' },
+  { id: 'unblock:blocking-item-holds', cites: { file: 'skills/ship-feature/SKILL.md', section: 'Mechanical unblock' },
     input: { question: 'unblock', review_outcome: GREEN({ gate: 'red', to_confirm: [{ file: 'a.mjs', blocking: true, scenario: 'x' }] }) },
     expect: { verdict: 'blocked' } },
-  { id: 'unblock:non-blocking-item-holds', cites: { file: 'skills/develop-feature/SKILL.md', section: 'Mechanical unblock' },
+  { id: 'unblock:non-blocking-item-holds', cites: { file: 'skills/ship-feature/SKILL.md', section: 'Mechanical unblock' },
     input: { question: 'unblock', review_outcome: GREEN({ gate: 'red', to_confirm: [{ file: 'a.mjs', blocking: false, scenario: 'x' }] }) },
     expect: { verdict: 'blocked' } },
-  { id: 'unblock:not-a-fixed-point', cites: { file: 'skills/develop-feature/SKILL.md', section: 'Mechanical unblock' },
+  { id: 'unblock:not-a-fixed-point', cites: { file: 'skills/ship-feature/SKILL.md', section: 'Mechanical unblock' },
     input: { question: 'unblock', review_outcome: GREEN({ gate: 'red', outcome: 'diminishing-returns' }) },
     expect: { verdict: 'blocked' } },
-  { id: 'unblock:missing-discipline-holds', cites: { file: 'skills/develop-feature/SKILL.md', section: 'Mechanical unblock' },
+  { id: 'unblock:missing-discipline-holds', cites: { file: 'skills/ship-feature/SKILL.md', section: 'Mechanical unblock' },
     input: { question: 'unblock', review_outcome: GREEN({ gate: 'red', missing_disciplines: ['perf'] }) },
     expect: { verdict: 'blocked' } },
-  { id: 'unblock:green-gate-is-not-a-block', cites: { file: 'skills/develop-feature/SKILL.md', section: 'Mechanical unblock' },
+  { id: 'unblock:green-gate-is-not-a-block', cites: { file: 'skills/ship-feature/SKILL.md', section: 'Mechanical unblock' },
     input: { question: 'unblock', review_outcome: GREEN() },
     expect: { verdict: 'blocked' } },
 
@@ -1370,39 +1433,39 @@ const CASES = [
 
   /* --- question: resumption — skills/review/SKILL.md § Baseline and ledger --- */
   { id: 'resumption:resume-mid-cycle', cites: { file: 'skills/review/SKILL.md', section: 'Baseline and ledger' },
-    input: { question: 'resumption', entry: 'develop-feature', present: ['1. decision-doc.md'], ledger: { base: 'abc1234', item: 'x/y', rounds: [{ n: 1, verdict: 'continue' }], outcome: null, gate: null, gate_detail: null } },
+    input: { question: 'resumption', entry: 'ship-feature', present: ['1. decision-doc.md'], ledger: { base: 'abc1234', item: 'x/y', rounds: [{ n: 1, verdict: 'continue' }], outcome: null, gate: null, gate_detail: null } },
     expect: { verdict: 'resume', resume_from: 'finder' } },
   { id: 'resumption:resume-at-the-scope', cites: { file: 'skills/review/SKILL.md', section: 'Baseline and ledger' },
-    input: { question: 'resumption', entry: 'develop-feature', present: ['1. decision-doc.md'], ledger: { base: 'abc1234', item: 'x/y', rounds: [], outcome: null, gate: null, gate_detail: null } },
+    input: { question: 'resumption', entry: 'ship-feature', present: ['1. decision-doc.md'], ledger: { base: 'abc1234', item: 'x/y', rounds: [], outcome: null, gate: null, gate_detail: null } },
     expect: { verdict: 'resume', resume_from: 'scope' } },
   { id: 'resumption:resume-at-the-coverage', cites: { file: 'skills/review/SKILL.md', section: 'Baseline and ledger' },
-    input: { question: 'resumption', entry: 'develop-feature', present: ['1. decision-doc.md'], ledger: { base: 'abc1234', item: 'x/y', rounds: [{ n: 2, verdict: 'stop' }], outcome: 'fixed-point', coverage: null, gate: null, gate_detail: null } },
+    input: { question: 'resumption', entry: 'ship-feature', present: ['1. decision-doc.md'], ledger: { base: 'abc1234', item: 'x/y', rounds: [{ n: 2, verdict: 'stop' }], outcome: 'fixed-point', coverage: null, gate: null, gate_detail: null } },
     expect: { verdict: 'resume', resume_from: 'coverage' } },
   { id: 'resumption:resume-at-the-gate', cites: { file: 'skills/review/SKILL.md', section: 'Baseline and ledger' },
-    input: { question: 'resumption', entry: 'develop-feature', present: ['1. decision-doc.md'], ledger: { base: 'abc1234', item: 'x/y', rounds: [{ n: 2, verdict: 'stop' }], outcome: 'fixed-point', coverage: 'no-tests-needed', gate: null, gate_detail: null } },
+    input: { question: 'resumption', entry: 'ship-feature', present: ['1. decision-doc.md'], ledger: { base: 'abc1234', item: 'x/y', rounds: [{ n: 2, verdict: 'stop' }], outcome: 'fixed-point', coverage: 'no-tests-needed', gate: null, gate_detail: null } },
     expect: { verdict: 'resume', resume_from: 'gate' } },
   { id: 'resumption:resume-past-a-closed-cycle', cites: { file: 'skills/review/SKILL.md', section: 'Baseline and ledger' },
-    input: { question: 'resumption', entry: 'develop-feature', present: ['1. decision-doc.md'], ledger: { base: 'abc1234', item: 'x/y', rounds: [{ n: 2, verdict: 'stop' }], outcome: 'fixed-point', coverage: 'no-tests-needed', gate: 'green', gate_detail: 'ok' }, review_outcome: { commit: 'done', commit_sha: 'deadbee' } },
+    input: { question: 'resumption', entry: 'ship-feature', present: ['1. decision-doc.md'], ledger: { base: 'abc1234', item: 'x/y', rounds: [{ n: 2, verdict: 'stop' }], outcome: 'fixed-point', coverage: 'no-tests-needed', gate: 'green', gate_detail: 'ok' }, review_outcome: { commit: 'done', commit_sha: 'deadbee' } },
     expect: { verdict: 'resume', resume_from: 'decision' } },
   { id: 'resumption:restart-without-ledger', cites: { file: 'skills/review/SKILL.md', section: 'Baseline and ledger' },
-    input: { question: 'resumption', entry: 'develop-feature', present: ['1. decision-doc.md'], ledger: null },
+    input: { question: 'resumption', entry: 'ship-feature', present: ['1. decision-doc.md'], ledger: null },
     expect: { verdict: 'restart', resume_from: null } },
   { id: 'resumption:restart-on-the-review-entry', cites: { file: 'skills/review/SKILL.md', section: 'Baseline and ledger' },
     input: { question: 'resumption', entry: 'review', present: ['4. review-notes.md'], ledger: null },
     expect: { verdict: 'restart', resume_from: null } },
   { id: 'resumption:restart-without-item', cites: { file: 'skills/review/SKILL.md', section: 'Baseline and ledger' },
-    input: { question: 'resumption', entry: 'develop-feature', present: ['1. decision-doc.md'], ledger: { base: 'abc1234', item: null, rounds: [] } },
+    input: { question: 'resumption', entry: 'ship-feature', present: ['1. decision-doc.md'], ledger: { base: 'abc1234', item: null, rounds: [] } },
     expect: { verdict: 'restart' } },
 
-  /* --- question: order — skills/develop-feature/SKILL.md § The sequence --- */
-  { id: 'order:proceed-from-the-start', cites: { file: 'skills/develop-feature/SKILL.md', section: 'The sequence' },
+  /* --- question: order — skills/ship-feature/SKILL.md § The sequence --- */
+  { id: 'order:proceed-from-the-start', cites: { file: 'skills/ship-feature/SKILL.md', section: 'The sequence' },
     input: { question: 'order', entry: 'new-feature', present: [], ledger: null },
     expect: { verdict: 'proceed', remaining_starts_with: 'problem' } },
-  { id: 'order:proceed-from-the-delivery', cites: { file: 'skills/develop-feature/SKILL.md', section: 'The sequence' },
-    input: { question: 'order', entry: 'develop-feature', present: ['1. decision-doc.md'], ledger: null },
+  { id: 'order:proceed-from-the-delivery', cites: { file: 'skills/ship-feature/SKILL.md', section: 'The sequence' },
+    input: { question: 'order', entry: 'ship-feature', present: ['1. decision-doc.md'], ledger: null },
     expect: { verdict: 'proceed', remaining_starts_with: 'acquisition' } },
-  { id: 'order:proven-phases-are-cut', cites: { file: 'skills/develop-feature/SKILL.md', section: 'The sequence' },
-    input: { question: 'order', entry: 'develop-feature', present: ['1. decision-doc.md', '2. blueprint.md'], ledger: null },
+  { id: 'order:proven-phases-are-cut', cites: { file: 'skills/ship-feature/SKILL.md', section: 'The sequence' },
+    input: { question: 'order', entry: 'ship-feature', present: ['1. decision-doc.md', '2. blueprint.md'], ledger: null },
     expect: { verdict: 'proceed', remaining_starts_with: 'execute' } },
   { id: 'order:review-entry', cites: { file: 'skills/review/SKILL.md', section: 'The cycle' },
     input: { question: 'order', entry: 'review', present: [], ledger: null },
@@ -1418,8 +1481,8 @@ const CASES = [
   { id: 'entry:decision-doc', cites: { file: 'skills/decision-doc/SKILL.md', section: 'Input: the problem folder' },
     input: { question: 'order', entry: 'decision-doc', present: ['0. problem.md'], ledger: null },
     expect: { verdict: 'proceed', remaining_starts_with: 'decisions' } },
-  { id: 'entry:develop-feature', cites: { file: 'skills/develop-feature/SKILL.md', section: 'Input' },
-    input: { question: 'order', entry: 'develop-feature', present: ['1. decision-doc.md'], ledger: null },
+  { id: 'entry:ship-feature', cites: { file: 'skills/ship-feature/SKILL.md', section: 'Input' },
+    input: { question: 'order', entry: 'ship-feature', present: ['1. decision-doc.md'], ledger: null },
     expect: { verdict: 'proceed', remaining_starts_with: 'acquisition' } },
   { id: 'entry:review', cites: { file: 'skills/review/SKILL.md', section: 'Input' },
     input: { question: 'order', entry: 'review', present: [], ledger: null },
@@ -1429,11 +1492,11 @@ const CASES = [
     expect: { verdict: 'stop' } },
 
   /* --- ambiguity: two incoherences and one legitimate fork --- */
-  { id: 'ambiguity:incoherence-artifacts-exclude-each-other', cites: { file: 'skills/develop-feature/SKILL.md', section: 'Input' },
+  { id: 'ambiguity:incoherence-artifacts-exclude-each-other', cites: { file: 'skills/ship-feature/SKILL.md', section: 'Input' },
     input: { question: 'order', entry: 'new-feature', present: ['1. decision-doc.md', '5. review-report.md'], ledger: null },
     expect: { verdict: 'stop', readings_length: 0 } },
-  { id: 'ambiguity:incoherence-entry-declares-a-missing-artifact', cites: { file: 'skills/develop-feature/SKILL.md', section: 'Input' },
-    input: { question: 'order', entry: 'develop-feature', present: [], ledger: null },
+  { id: 'ambiguity:incoherence-entry-declares-a-missing-artifact', cites: { file: 'skills/ship-feature/SKILL.md', section: 'Input' },
+    input: { question: 'order', entry: 'ship-feature', present: [], ledger: null },
     expect: { verdict: 'stop', readings_length: 0 } },
   { id: 'ambiguity:fork-both-readings-are-defensible', cites: { file: 'skills/review/SKILL.md', section: 'Baseline and ledger' },
     input: { question: 'order', entry: 'new-feature', present: ['4. review-notes.md'], ledger: null },
@@ -1638,8 +1701,35 @@ const CASES = [
     input: { question: 'block', name: 'decision-doc', block: DOC() },
     expect: { verdict: 'valid', blockers: [] } },
   { id: 'block:decision-doc-strategic', cites: { file: 'skills/decision-doc/SKILL.md', section: 'The block you return' },
-    input: { question: 'block', name: 'decision-doc', block: DOC({ stage: 'strategic' }, { classification: 'weakness' }) },
+    input: { question: 'block', name: 'decision-doc', block: DOC({ stage: 'strategic', premises: [] }, { classification: 'weakness' }) },
     expect: { verdict: 'valid' } },
+  { id: 'block:decision-doc-a-direction-the-material-proposes', cites: { file: 'skills/decision-doc/SKILL.md', section: 'The two stages' },
+    input: { question: 'block', name: 'decision-doc', block: DOC({ direction: { kind: 'material', where: 'the brief that came with the request' } }) },
+    expect: { verdict: 'invalid', blockers_include: 'owner-request or owner-answer' } },
+  { id: 'block:decision-doc-a-direction-outside-its-domain', cites: { file: 'skills/decision-doc/SKILL.md', section: 'The block you return' },
+    input: { question: 'block', name: 'decision-doc', block: DOC({ direction: { kind: 'owner-decree', where: 'x' } }) },
+    expect: { verdict: 'invalid', blockers_include: 'outside' } },
+  { id: 'block:decision-doc-a-direction-without-the-owners-words', cites: { file: 'skills/decision-doc/SKILL.md', section: 'The block you return' },
+    input: { question: 'block', name: 'decision-doc', block: DOC({ direction: { kind: 'owner-request', where: '' } }) },
+    expect: { verdict: 'invalid', blockers_include: 'direction.where is empty' } },
+  { id: 'block:decision-doc-no-premise-at-the-technical-stage', cites: { file: 'skills/decision-doc/SKILL.md', section: 'The two stages' },
+    input: { question: 'block', name: 'decision-doc', block: DOC({ premises: [] }) },
+    expect: { verdict: 'invalid', blockers_include: 'premises is empty at the technical stage' } },
+  { id: 'block:decision-doc-a-premise-at-the-strategic-stage', cites: { file: 'skills/decision-doc/SKILL.md', section: 'The two stages' },
+    input: { question: 'block', name: 'decision-doc', block: DOC({ stage: 'strategic', premises: [{ claim: 'x', evidence: 'y' }] }) },
+    expect: { verdict: 'invalid', blockers_include: 'not empty at the strategic stage' } },
+  { id: 'block:decision-doc-a-premise-without-its-source', cites: { file: 'skills/decision-doc/SKILL.md', section: 'The block you return' },
+    input: { question: 'block', name: 'decision-doc', block: DOC({ premises: [{ claim: 'everything downstream speaks Maven', evidence: '' }] }) },
+    expect: { verdict: 'invalid', blockers_include: 'act of faith' } },
+  { id: 'block:decision-doc-a-precedent-without-its-seat', cites: { file: 'skills/decision-doc/SKILL.md', section: 'The block you return' },
+    input: { question: 'block', name: 'decision-doc', block: DOC({ precedents: [{ decision: 'the owner gave Ant up', where: '' }] }) },
+    expect: { verdict: 'invalid', blockers_include: 'cited, never remembered' } },
+  { id: 'block:decision-doc-a-precedent-answered-by-a-question', cites: { file: 'skills/decision-doc/SKILL.md', section: 'The two stages' },
+    input: { question: 'block', name: 'decision-doc', block: DOC({ precedents: [{ decision: 'the owner gave Ant up', where: 'a memory', stands: 'no', answered_by: 't' }] }) },
+    expect: { verdict: 'valid' } },
+  { id: 'block:decision-doc-a-precedent-that-answers-nothing', cites: { file: 'skills/decision-doc/SKILL.md', section: 'The two stages' },
+    input: { question: 'block', name: 'decision-doc', block: DOC({ precedents: [{ decision: 'the owner gave Ant up', where: 'a memory', stands: 'no' }] }) },
+    expect: { verdict: 'invalid', blockers_include: 'no decision of this list answers it' } },
   { id: 'block:decision-doc-no-decision-left', cites: { file: 'skills/decision-doc/SKILL.md', section: 'The block you return' },
     input: { question: 'block', name: 'decision-doc', block: DOC({ decisions: null }) },
     expect: { verdict: 'valid' } },
@@ -1673,8 +1763,8 @@ const CASES = [
   { id: 'block:nothing-came-back', cites: { file: 'contracts/orchestration.md', section: '4. Delegation' },
     input: { question: 'block', name: 'decision-doc', block: null },
     expect: { verdict: 'invalid', blockers_length_at_least: 1 } },
-  { id: 'block:another-block-by-its-schema-alone', cites: { file: 'skills/develop-feature/SKILL.md', section: '7. Report' },
-    input: { question: 'block', name: 'develop-feature-report', block: { ok: true, report_path: 'x/5. review-report.md', detail: '' } },
+  { id: 'block:another-block-by-its-schema-alone', cites: { file: 'skills/ship-feature/SKILL.md', section: '7. Report' },
+    input: { question: 'block', name: 'ship-feature-report', block: { ok: true, report_path: 'x/5. review-report.md', detail: '' } },
     expect: { verdict: 'valid' } },
   { id: 'block:an-enum-inside-a-list', cites: { file: 'skills/finder-prompt/SKILL.md', section: 'The block you return' },
     input: { question: 'block', name: 'finder', block: { findings: [{ file: 'a', line: 1, symbol: 'f', confidence: 'certain', change: '', description: '' }] } },

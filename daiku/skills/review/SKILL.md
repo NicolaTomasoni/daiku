@@ -1,12 +1,12 @@
 ---
 name: 'review'
-description: 'Review cycle on a diff — frozen baseline, rounds stopping when the code stops changing, ledger of already judged findings. Round 1 fans out the finders (bug always, arch/perf/dead from scope), later rounds re-review only the just-written fixes. Gate once on exit, then the commit, which always closes the cycle except with --no-commit. Orchestrated by you, delegating each phase to a subagent. Same discipline that /develop-feature runs in its Review phase.'
+description: 'Review cycle on a diff — frozen baseline, rounds stopping when the code stops changing, ledger of already judged findings. Round 1 fans out the finders (bug always, arch/perf/dead from scope), later rounds re-review only the just-written fixes. Gate once on exit, then the commit, which always closes the cycle except with --no-commit. Orchestrated by you, delegating each phase to a subagent. Same discipline that /ship-feature runs in its Review phase.'
 argument-hint: '[file... | base-ref | path to "4. review-notes.md"] [--rounds N] [--effort low|medium|high] [--with arch-check,perf,test-coverage] [--no-commit] [--backend <name> if the session runs there]'
 ---
 
 You are the **engine of a review cycle** on a diff. One round is finders → fix application → fast check; the cycle itself decides how many rounds to run, by watching what the round just produced. Then coverage and the gate, only once. Finally the commit, which always closes the cycle except with `--no-commit`. You orchestrate, delegating each phase to a subagent per `contracts/orchestration.md`; every measurement on the disk is `architect/ledger.mjs`'s, and every verdict the evaluator's.
 
-This file is the **single source** of the project review discipline: `develop-feature` runs it in its Review phase. If review changes, it is touched here and nowhere else.
+This file is the **single source** of the project review discipline: `ship-feature` runs it in its Review phase. If review changes, it is touched here and nowhere else.
 
 **Why it is a cycle and not a pass.** The fixes the applier writes are new code no finder ever saw: by construction, a round applying fixes leaves behind an unreviewed perimeter, and the gate verifies it compiles, not that it is correct. It is the class of defect no single pass can find — a correction breaking another — and the only way to see it is re-reviewing the fixes.
 
@@ -14,7 +14,7 @@ This file is the **single source** of the project review discipline: `develop-fe
 
 ## When to use it
 
-- **The diff of a feature**, delivered by `execute` or hand-written, when you want only review without the whole `develop-feature` chain.
+- **The diff of a feature**, delivered by `execute` or hand-written, when you want only review without the whole `ship-feature` chain.
 - **The one-off modifications layered in chat**, a series of requests accumulated by end of day on many files and to confirm before delivering them.
 
 Only the width of round 1 changes, which the cycle itself decides by reading the diff. There is no mode to declare.
@@ -30,7 +30,7 @@ Arguments: `$ARGUMENTS`. **The default is the normal case, and it requires no ar
 - **`--rounds N`** (optional): explicit cap, to truncate the cycle by hand. Without, the round count is decided by the trend (§ *When to run another round*) and the only cap is the guardrail at `6`.
 - **`--effort low|medium|high`** (optional): finder depth. Default `medium`. On a truly one-off perimeter — a handful of files — `high` mostly produces uncertain findings to discard by hand; on a wide perimeter, dozens of files and several layers, it pays off: it is the depth at which rounds keep finding real defects instead of noise.
 - **`--with arch-check,perf,dead-code,test-coverage`** (optional): the **values** decide what to force. `arch-check` and `perf` force the active discipline at round 1, regardless of what scope would decide; `dead-code` forces the `dead` finder the same way; `test-coverage` forces the Coverage phase after the cycle (§ *Coverage*), removing both the skip the program measures and the one the worker decides. Explicit manual override, never a deactivation.
-- **`--no-commit`** (optional): suppresses the closing commit, and the cycle stops at the report. It is passed by **whoever commits itself** — `develop-feature`, which has its own commit phase — not by whoever has a doubt on the diff: a cycle arriving at the end with green gate and no blocking item has already decided, and the conditions of § *Closing* are there precisely to stop everything else.
+- **`--no-commit`** (optional): suppresses the closing commit, and the cycle stops at the report. It is passed by **whoever commits itself** — `ship-feature`, which has its own commit phase — not by whoever has a doubt on the diff: a cycle arriving at the end with green gate and no blocking item has already decided, and the conditions of § *Closing* are there precisely to stop everything else.
 - **`--backend <name>`** (optional): the name of the backend the session runs on, to declare only if not the native one of the host; it affects only fan-out concurrency, and it is `contracts/orchestration.md` §5 saying whether that backend sequentialises it.
 - If the first argument resolves to neither a base-ref nor a valid path, ask — do not guess.
 
@@ -48,7 +48,7 @@ When whoever invokes you passes a work root (the worktree) besides the main tree
 
 ## The ledger tool
 
-`architect/ledger.mjs` is the disk side of this cycle. It reads Git, writes the ledger and asks the evaluator — the program `skills/develop-feature/SKILL.md` § *The evaluator* declares — by importing its questions. **You never write the ledger by hand and never hand it to the evaluator on stdin**: it is read and written only here, validated against `schemas/blocks.json` § *ledger* at every write. One command, run from the technical root of the main tree, with the package root written as that section says; one JSON object in, one out; it fails loudly, like the evaluator:
+`architect/ledger.mjs` is the disk side of this cycle. It reads Git, writes the ledger and asks the evaluator — the program `skills/ship-feature/SKILL.md` § *The evaluator* declares — by importing its questions. **You never write the ledger by hand and never hand it to the evaluator on stdin**: it is read and written only here, validated against `schemas/blocks.json` § *ledger* at every write. One command, run from the technical root of the main tree, with the package root written as that section says; one JSON object in, one out; it fails loudly, like the evaluator:
 
 ```bash
 node <package root>/architect/ledger.mjs <package root>
@@ -267,7 +267,7 @@ When it runs, delegate it to a **judge** subagent fully reading `skills/commit/S
 
 1. **Report in chat**, short: run rounds and why you stopped — with the verdict closing the cycle — which disciplines ran at round 1 and how many findings they produced, what was applied, what discarded and with which reason, the items to confirm, the fast checks that went red, the deviations the tool measured, the gate outcome and the commit one. If some fix had `on_previous_fix: true`, say so: it is the part of the work a single round would not have found. And if round 1 was less than it had to be — a missed discipline, the fan-out degraded to inline — say so first: it is the only thing the reader cannot derive from the rest of the summary.
 
-2. **Always close with the contract block**, so whoever invoked you — the user or `develop-feature` — reads it without interpreting the prose. No field is omitted: with zero items write `"to_confirm": []`. In `rounds` and in the `applied`/`severe`/`discarded` counters count **only** the cycle rounds, not the closing round on tests. In `disciplines_round_1` list the disciplines that **returned** the block, not those you launched: a discipline launched and never returned goes in `missing_disciplines`, its counterpart.
+2. **Always close with the contract block**, so whoever invoked you — the user or `ship-feature` — reads it without interpreting the prose. No field is omitted: with zero items write `"to_confirm": []`. In `rounds` and in the `applied`/`severe`/`discarded` counters count **only** the cycle rounds, not the closing round on tests. In `disciplines_round_1` list the disciplines that **returned** the block, not those you launched: a discipline launched and never returned goes in `missing_disciplines`, its counterpart.
 
    ```json
    {
@@ -298,7 +298,7 @@ When it runs, delegate it to a **judge** subagent fully reading `skills/commit/S
 
    If in the cycle you saw a **behaviour change visible to the user** (new flow, action, default or semantics a human reader should now read differently), name it in the report as a **fact on the diff**: it serves whoever reads to understand what is being delivered. It is not a code finding and it **does not** enter `to_confirm`.
 
-4. **If the commit did not run, close by saying in one line why**, and distinguish the two cases, because they read the same and they are not. With `--no-commit` the commit belongs to whoever invoked you: if the gate is green and no blocking items remain, close with **"Ready for commit."** and nothing else — inside `develop-feature` not even that, there the commit is a later phase of the delivery. If instead one of the § *Closing* conditions stopped it, name it: the red gate with its detail, the remaining blocking items, the `rounds-exhausted` exit, oscillation, or the missed disciplines.
+4. **If the commit did not run, close by saying in one line why**, and distinguish the two cases, because they read the same and they are not. With `--no-commit` the commit belongs to whoever invoked you: if the gate is green and no blocking items remain, close with **"Ready for commit."** and nothing else — inside `ship-feature` not even that, there the commit is a later phase of the delivery. If instead one of the § *Closing* conditions stopped it, name it: the red gate with its detail, the remaining blocking items, the `rounds-exhausted` exit, oscillation, or the missed disciplines.
 
 5. **Deposit the report**, if review runs on a work folder (the input was `4. review-notes.md`): write `5. review-report.md` next to it, with the contract block above and, in prose, what you reported at point 1. It is the only artefact surviving the session: without, the outcome of the longest phase of the delivery lives only in chat. On a review launched by hand on a naked base-ref there is no folder to write it in: then `report` is `null` and the chat block suffices.
 
