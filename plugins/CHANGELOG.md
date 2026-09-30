@@ -1,5 +1,14 @@
 # Changelog
 
+### 1.0.3
+<sub>2026-09-30</sub>
+
+- `init` runs in one shot after the two language questions: no further question, and a report with nothing left for you to do.
+- `init` points the domain roles and area policies at the rule files your project already keeps, instead of listing them for you to write.
+- `init` adds to your `.gitignore` the lines Daiku needs, and keeps `.daiku/` and the memory folder versioned.
+- On Codex, `init` installs guardrails and subagent roles itself by running `sync-host`.
+- A machine can declare in `environment.local.json` the folders outside the repository where agents may create files (`write_roots`).
+
 ### 1.0.2
 <sub>2026-09-30</sub>
 
