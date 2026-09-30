@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.1 — 2026-09-30
+
+Project parameters, domain and policies now travel with the repository: `.daiku/` is versioned, only the machine's override stays out, and the guard that blocked those commits is gone. The end-of-session notice no longer mistakes unrelated files in the review state folder for open cycles.
+
 ## 1.0.0 — 2026-09-28
 
 Daiku 1.0: autonomous development contracts for Claude Code and Codex. AI agents work fast and autonomously, inside the architectural constraints you decide — enforced by checks that really fire, not by advice.
