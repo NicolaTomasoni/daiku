@@ -104,8 +104,10 @@ accanto a quella orizzontale farebbe due righe di fila.
 Fra una voce e quella sotto va **sempre** una linea orizzontale, preceduta e seguita da una riga
 vuota.
 
-Il corpo di una `patch` è **sempre un elenco puntato**, una voce per modifica, anche quando la
-modifica è una sola.
+Il corpo è **sempre un elenco puntato**, quale che sia il bump. Una voce per **modifica visibile**,
+non per commit: un rename interno, un messaggio riscritto, una lingua corretta sono variazioni che
+chi ha installato non vede, e stanno in **una sola riga in fondo** — `Various fixes.` o simile.
+Anche una modifica visibile sola resta un elenco, di una voce sola.
 
 ## 5. Commit in dev
 

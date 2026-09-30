@@ -141,11 +141,9 @@ Per provare il pacchetto in locale su Codex non serve bumpare: esiste il **cache
 suffisso dopo `+` nella versione del manifest, che si **rimpiazza** e non si accumula —
 `0.1.0+codex.local-20260918-143000`. Poi si reinstalla e si apre un thread nuovo.
 
-**Il changelog di questo pacchetto non esiste ancora.** Crearne uno significa aggiungere un file
-sotto `plugins/`, cioè **pubblicarlo**, e questa è una decisione che questo contratto non prende da
-solo. Finché non esiste, non c'è un gruppo changelog e non se ne scrive uno altrove: se una consegna
-ti sembra chiedere un registro delle versioni, è una cosa da portare all'owner, non da istituire in
-un commit.
+**Il changelog è `plugins/CHANGELOG.md`, e non è tuo.** La voce nasce col rilascio e la scrive
+`/rilascia-daiku`, §4: i tre gruppi del passo 3 restano quelli, senza un quarto gruppo changelog. Se
+una consegna ti sembra chiedere una voce, è il rilascio che la porta — dillo nell'esito e fermati lì.
 
 ## Procedura
 
