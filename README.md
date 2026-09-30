@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <img alt="version 1.0.0" src="https://img.shields.io/badge/version-1.0.0-3b82f6?style=flat" /> <br>
+  <img alt="version 1.0.1" src="https://img.shields.io/badge/version-1.0.1-3b82f6?style=flat" /> <br>
   <a href="https://code.claude.com"><img alt="Claude Code" src="https://img.shields.io/badge/Claude_Code-D97757?style=flat&logo=claude&logoColor=white" /></a>
   <a href="https://developers.openai.com/codex"><img alt="OpenAI Codex" src="https://img.shields.io/badge/OpenAI_Codex-000000?style=flat&logo=openai&logoColor=white" /></a>
 </p>
@@ -96,9 +96,9 @@ never *with which values*. Anything project-specific lives one level down:
 - `.daiku/project.json` — paths and literal commands (gates, fixers, coverage, changelog,
   version file). A gate is the exact line plus its cwd, never a description.
 - `.daiku/environment.json` — host, model per role, backends, machine paths. A machine may
-  replace it whole with its own `.daiku/environment.local.json`. Nothing under `.daiku/` is
-  versioned: the folder is the machine's working state, `.gitignore` keeps it out of the history,
-  and a clone runs `/init` again.
+  replace it whole with its own `.daiku/environment.local.json`. The folder is versioned: it is the
+  configuration the project wrote for itself, and a clone finds it there. The only path staying
+  out of the history is the machine's override, `.daiku/environment.local.json`.
 - `.daiku/domain/` — local judgement: conventions and criteria that need a *why*.
 - `.daiku/policies/` — architectural rules valid only for certain paths.
 - memory and `tech_doc` — facts not deducible from the code: decisions and whys.

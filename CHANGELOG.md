@@ -1,13 +1,8 @@
 # Changelog
 
-## 1.0.0 — 2026-09-29
+## 1.0.1 — 2026-09-30
 
-Project parameters now live inside the project: `.daiku/` is the only seat, and nothing under it is ever committed.
-
-- `environment.json` lives in the project's `.daiku/` instead of your home directory, and a machine may replace it whole with `.daiku/environment.local.json`.
-- The instructions file is declared per host, so a project carrying both `CLAUDE.md` and `AGENTS.md` names both.
-- `/init` merges into an existing instructions file — parking the earlier one as `.old` — and closes with the four gestures Codex asks of you.
-- The package ships under the MIT license.
+Project parameters, domain and policies now travel with the repository: `.daiku/` is versioned, only the machine's override stays out, and the guard that blocked those commits is gone. The end-of-session notice no longer mistakes unrelated files in the review state folder for open cycles.
 
 ## 1.0.0 — 2026-09-28
 

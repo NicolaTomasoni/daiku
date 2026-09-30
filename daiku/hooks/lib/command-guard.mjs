@@ -19,7 +19,7 @@
  *    branch switched off — §6 of `contracts/project-contract.md`, *what the JSON does not declare
  *    does not exist*.
  *
- * There are six branches, in three families.
+ * There are five branches, in three families.
  *
  * **An operating-system fact**, on in every Daiku project because it depends on
  * no choice of whoever works:
@@ -32,36 +32,28 @@
  * **Always on**, on every Daiku project, because an agent is never left
  * any of these freedoms — never trust an LLM, see `CLAUDE.md`:
  *
- *  2. **Commits containing anything under `.daiku/`.** The folder is the machine's
- *     working state — the parameters, the environment, the domain defaults, the policies,
- *     the corpus — regenerated per machine by `init` and never versioned: `.gitignore`
- *     keeps it out, and this branch is the backstop for the case where that line is
- *     missing or was bypassed with `-f`. `git add` and `git commit` with a pathspec naming
- *     a path under it, and the bare `git commit` or with `-a` when the stage — or, with
- *     `-a`, the tree — carries one. The stage is read with a read-only `git status`, which
- *     degrades to allowed when it fails.
- *  3. **`git commit --no-verify`.** A prefix rule matches the start of the
+ *  2. **`git commit --no-verify`.** A prefix rule matches the start of the
  *     line, so `git commit -m "…" -n` walks past it: here the subcommand is
  *     really looked at, wherever the flag stands. Commit hooks must
  *     always run.
- *  4. **`git push`.** Same reason: a prefix rule does not enter `sh -c`,
+ *  3. **`git push`.** Same reason: a prefix rule does not enter `sh -c`,
  *     while here the push is recognised even inside a wrapper, behind a `sudo` or
  *     queued after another command. Push stays a manual gesture of the owner. `--dry-run`
  *     is not: it pushes nothing.
- *  5. **A commit crediting the agent.** A `Co-Authored-By` trailer naming Claude or
+ *  4. **A commit crediting the agent.** A `Co-Authored-By` trailer naming Claude or
  *     Codex, or a `Generated with` line, in the message — `-m`, `--trailer`, a heredoc
  *     feeding `-F -`, or the file `-F` names. The history carries only whoever owns the work.
  *
  * **A project policy**, off until the JSON switches it on:
  *
- *  6. **The worktree pool** (`{worktree.pool}`). Inside a pool worktree a
+ *  5. **The worktree pool** (`{worktree.pool}`). Inside a pool worktree a
  *     removal carries away uncommitted files without recovery, and `pnpm install` rewrites
  *     the shared `node_modules` `virtualStoreDir`, leaving the
  *     root installation inconsistent. No declared pool, neither check.
  *
- * Where the host has a system `deny`, that stays the real door for 3 and 4: absolute, and
+ * Where the host has a system `deny`, that stays the real door for 2 and 3: absolute, and
  * no source below can remove it. The two branches here close the shapes prefix
- * matching does not see, and that is why they live here and not there. Branch 5 has no
+ * matching does not see, and that is why they live here and not there. Branch 4 has no
  * host rule at all: a permission rule matches the command, never the message inside it.
  *
  * **One shape is not enough.** The shell accepts the same gesture written many ways,
@@ -81,7 +73,6 @@
  * fail-open hook is indistinguishable from one with nothing to say.
  */
 
-import { spawnSync } from 'node:child_process';
 import { lstatSync, readFileSync } from 'node:fs';
 import { isAbsolute, join, resolve } from 'node:path';
 import { invokedDirectly, projectRoot } from './project-root.mjs';
@@ -496,10 +487,10 @@ function pathGuard(line, cwd, env, ctx, depth = 0) {
 
 // --- git guard -----------------------------------------------------------
 //
-// Five branches behind the project gate, and a single switch in the whole file.
+// Three branches behind the project gate, and a single switch in the whole file.
 // The gate stays: without `.daiku/project.json` this project has not opened Daiku, and the
-// guard does not even read the line. Behind the gate, push, `--no-verify`, a commit carrying
-// the machine's environment file and commits crediting the agent are denied **always** — an agent is never left any of these
+// guard does not even read the line. Behind the gate, push, `--no-verify` and commits
+// crediting the agent are denied **always** — an agent is never left any of these
 // freedoms, and never trusting an LLM is the rule saying so (see `CLAUDE.md`). The only
 // thing the project declares is the worktree pool.
 //
@@ -638,188 +629,6 @@ function attributionGuard(line, cwd, env) {
   };
 }
 
-/** A pathspec naming the folder or something inside it, in whatever shape the shell
- * writes it.
- *
- * Comparison is on the token text, not the disk: whoever explicitly names a path under
- * `.daiku/` in an `add` or a `commit` is making the forbidden gesture, in whatever
- * directory they do it. Quotes do not change a pathspec's meaning — `"..."` around a path
- * stays that path — so quoted tokens are watched too. The folder itself counts, with or
- * without its trailing slash: `.daiku` names everything inside it. Only the whole
- * segment counts: `a.daiku/` and `.daiku2/` are other folders, and stay allowed.
- */
-function isDaikuPath(text) {
-  const normalised = String(text).replace(/\\/g, '/').replace(/^\.\//, '');
-  return /(^|\/)\.daiku(\/.*)?$/.test(normalised);
-}
-
-/** The `git commit` options eating the token after them: that token is a
- * value (a message, an author, a date), not a pathspec. The compact shape
- * (`-am`, `-sm`) counts like the loose one: the `m` inside a short-flag group still
- * wants its message after it. */
-const VALUE_OPTIONS = new Set([
-  '-m',
-  '--message',
-  '--author',
-  '--date',
-  '--cleanup',
-  '--untracked-files',
-  '--template',
-  '--fixup',
-  '--squash',
-]);
-
-function takesValue(piece) {
-  if (piece.q) return false;
-  if (VALUE_OPTIONS.has(piece.t)) return true;
-  return /^-[a-z]*m[a-z]*$/i.test(piece.t);
-}
-
-/** A `git status --porcelain` line with something staged (first column):
- * what a bare `git commit` would freeze. `??` and `!!` are not staged. */
-function isStaged(line) {
-  const x = line[0];
-  return !!x && x !== ' ' && x !== '?' && x !== '!';
-}
-
-/** A line with a tracked change, staged or in the tree: what
- * `git commit -a` would carry inside. */
-function isTracked(line) {
-  return isStaged(line) || (line.length > 1 && line[1] !== ' ' && line[1] !== '?' && line[1] !== '!');
-}
-
-/** `git add` and `git commit` touching anything under `.daiku/`, with no switch.
- *
- * Two layers, so the ban holds in any case while reading no more than
- * necessary:
- *
- *  1. **the explicit pathspec** — `add` or `commit` naming the folder or a path inside it
- *     — is denied on the line text, without touching the disk;
- *  2. **the stage** — a bare `commit` freezes the whole index, and `commit -a` widens
- *     the stage to the tracked tree — is read with a read-only `git status`
- *     confined to the folder. When git does not answer, it degrades to allowed: the
- *     fail-open contract, proved by the bench.
- *
- * `.gitignore` already keeps the folder out of a directory-wide `add`, and this branch is
- * the backstop for the case where that line is missing or was bypassed with `-f`.
- */
-function daikuGuard(line, cwd, env, depth = 0) {
-  let base = cwd;
-  for (const segment of splitSegments(line)) {
-    const tokens = tokenize(segment);
-    if (!tokens.length) continue;
-    const first = head(tokens);
-    if (!first) continue;
-
-    if (WRAPPER.test(first.name) && depth < 3) {
-      const payload = wrapperPayload(tokens, first.index);
-      if (payload) {
-        const outcome = daikuGuard(payload, base, env, depth + 1);
-        if (outcome) return outcome;
-      }
-      continue;
-    }
-    const executed = execPayload(tokens, first.index);
-    if (executed && depth < 3) {
-      const outcome = daikuGuard(executed, base, env, depth + 1);
-      if (outcome) return outcome;
-    }
-
-    const change = dirChange(tokens);
-    if (change) {
-      base = change.unknown ? null : resolveTarget(change.dir, base);
-      continue;
-    }
-
-    const outcome = judgeDaikuSegment(tokens, base, env);
-    if (outcome) return outcome;
-  }
-  return null;
-}
-
-function judgeDaikuSegment(tokens, base, env) {
-  const first = head(tokens);
-  if (!first || !GIT.test(first.name)) return null;
-
-  // Global options are skipped the way `gitInvocations` does, but `-C` is remembered:
-  // the directory where the stage is read.
-  let j = first.index + 1;
-  let cDir = null;
-  while (j < tokens.length && !tokens[j].q && tokens[j].t.startsWith('-')) {
-    if ((tokens[j].t === '-C' || tokens[j].t === '-c') && j + 1 < tokens.length) {
-      if (tokens[j].t === '-C') cDir = tokens[j + 1].t;
-      j += 2;
-      continue;
-    }
-    j += 1;
-  }
-  if (j >= tokens.length) return null;
-  const subcommand = tokens[j].t;
-  if (subcommand !== 'add' && subcommand !== 'commit') return null;
-
-  let all = false; // `commit` `-a`/`--all`
-  const targetList = [];
-  let skipNext = false;
-  let afterSep = false;
-  for (const x of tokens.slice(j + 1)) {
-    if (skipNext) {
-      skipNext = false;
-      continue;
-    }
-    if (!afterSep && !x.q && x.t === '--') {
-      afterSep = true;
-      continue;
-    }
-    if (!afterSep && !x.q && x.t.startsWith('-')) {
-      if (subcommand === 'commit' && takesValue(x)) skipNext = true;
-      if (subcommand === 'commit' && (x.t === '-a' || x.t === '--all')) all = true;
-      continue;
-    }
-    targetList.push(x.t);
-  }
-
-  if (targetList.some(isDaikuPath)) {
-    return {
-      reason:
-        'this command names a path under `.daiku/`: the whole folder is the machine\'s ' +
-        'working state — the parameters, the environment, the domain defaults, the policies, ' +
-        'the corpus — regenerated per machine by `init`, and it never enters the shared ' +
-        'history. Drop that path from the command. See `skills/commit/SKILL.md`, ' +
-        '"`.daiku/` is never committed".',
-    };
-  }
-
-  // An `add` without an explicit pathspec is decided at commit time, not here.
-  if (subcommand === 'add') return null;
-  // A `commit` limited to other paths does not freeze the remaining stage.
-  if (targetList.length) return null;
-
-  const gitDir = cDir ? (base ? resolveTarget(cDir, base) : null) : base;
-  if (!gitDir) return null; // unknown base: see § Uncovered shapes
-  // The exception stays inside this branch: when git does not answer, this branch allows
-  // and the others decide — the `evaluate` contract, proved by the bench.
-  let lines;
-  try {
-    lines = env.daikuStatus(gitDir);
-  } catch {
-    return null; // git unreachable: fail-open
-  }
-  if (!lines) return null; // git unreachable: fail-open
-  const touches = all ? lines.some(isTracked) : lines.some(isStaged);
-  if (!touches) return null;
-  return {
-    reason: all
-      ? '`git commit -a` widens the stage to the whole tracked tree, and a path under ' +
-        '`.daiku/` is in it: the folder is the machine\'s working state and never enters ' +
-        'the shared history. Take it off the tree (`git restore --staged -- .daiku`) or ' +
-        'commit only the other files by pathspec.'
-      : 'the stage holds a path under `.daiku/`, and a bare `git commit` would freeze it: ' +
-        'the folder is the machine\'s working state and never enters the shared history. ' +
-        'Take it off the stage (`git restore --staged -- .daiku`) or commit only the other ' +
-        'files by pathspec.',
-  };
-}
-
 // --- environment ---------------------------------------------------------------
 //
 // Everything the guard knows about the world passes through here, so the test bench can
@@ -835,25 +644,6 @@ const REAL_ENV = {
       return null; // does not exist
     }
   },
-  /** The `git status --porcelain` lines confined to `.daiku/`, from the given directory.
-   * Read-only: `[]` is clean, `null` is unreachable git — and `null` degrades to allowed,
-   * by the fail-open contract. */
-  daikuStatus: (dir) => {
-    try {
-      const outcome = spawnSync('git', ['status', '--porcelain', '--', '.daiku'], {
-        cwd: dir,
-        encoding: 'utf-8',
-        timeout: 10000,
-      });
-      if (outcome.error || outcome.status !== 0 || typeof outcome.stdout !== 'string') return null;
-      return outcome.stdout
-        .split('\n')
-        .map((l) => l.trimEnd())
-        .filter((l) => l);
-    } catch {
-      return null;
-    }
-  },
   /** The text of a commit-message file; `null` when it does not answer. */
   readMessage: (path) => {
     try {
@@ -866,8 +656,8 @@ const REAL_ENV = {
 
 /** The decision, without leaving the process: what the test bench calls.
  *
- * The disk is questioned by two branches — the link one and the local-file
- * stage one — and their exception stays inside them: the others decide on paths
+ * The disk is questioned by two branches — the link one and the commit-message
+ * file one — and their exception stays inside them: the others decide on paths
  * and parameters, so they hold even with an unreachable filesystem. Proved by the
  * bench, not declared here.
  */
@@ -877,7 +667,6 @@ function evaluate(line, cwd, env, ctx) {
   if (!ctx || !ctx.present) return null;
   return (
     pathGuard(line, cwd, env, ctx) ||
-    daikuGuard(line, cwd, env) ||
     commitGuard(line) ||
     attributionGuard(line, cwd, env) ||
     pushGuard(line)
@@ -935,9 +724,6 @@ function fakeEnv() {
   const entry = (p) => tree.get(key(p)) || (ancestors.has(key(p)) ? { type: 'dir' } : undefined);
   return {
     isLink: (p) => (entry(p) ? entry(p).type === 'link' : null),
-    // By default the `.daiku/` stage is clean: cases proving a dirty stage
-    // pass their own seventh element and the loop grafts it below.
-    daikuStatus: () => [],
     // Two commit-message files next to the root, one clean and one signed by the agent.
     readMessage: (p) =>
       ({
@@ -973,17 +759,15 @@ const CASES = [
   ['project without Daiku: push passes', 'git push', ROOT_CWD, 'allow', '', CTX_ABSENT],
   ['project without Daiku: the junction is not its business', 'rm -rf c:/dev/wt/wt-1/node_modules', ROOT_CWD, 'allow', '', CTX_ABSENT],
   ['project without Daiku: not even --no-verify', 'git commit -n -m wip', ROOT_CWD, 'allow', '', CTX_ABSENT],
-  ['project without Daiku: not even a .daiku/ path', 'git add .daiku/environment.local.json', ROOT_CWD, 'allow', '', CTX_ABSENT],
 
-  // --- the only switch left is the pool: push, --no-verify and a .daiku/ path always
-  // deny, with no key, and the cases below prove it with switches off -----
+  // --- the only switch left is the pool: push and --no-verify always deny, with no key,
+  // and the cases below prove it with switches off -----
   ['undeclared push is still denied', 'git push', ROOT_CWD, 'deny', 'manual gesture', CTX_BARE],
   ['undeclared --no-verify is still denied', 'git commit --no-verify -m wip', ROOT_CWD, 'deny', 'is not allowed', CTX_BARE],
   ['explicitly switched-off keys switch nothing off', 'git push', ROOT_CWD, 'deny', 'manual gesture', fakeContext({ guardrails: { deny_push: false, deny_no_verify: false } })],
   ['no pool declared: someone else\'s worktree is left alone', 'rm -rf c:/dev/wt/wt-1/docs', ROOT_CWD, 'allow', '', CTX_BARE],
   ['no pool declared: not even pnpm install', 'pnpm install', WT_CWD, 'allow', '', CTX_BARE],
   ['the link stays protected all the same: a system fact, not a policy', 'rm -rf c:/dev/wt/wt-1/node_modules', ROOT_CWD, 'deny', 'crosses a Windows link', CTX_BARE],
-  ['a .daiku/ path denies with no switches all the same: it has none', 'git add .daiku/environment.local.json', ROOT_CWD, 'deny', 'shared history', CTX_BARE],
   ['a worktree outside the declared pool is not watched', 'rm -rf c:/dev/elsewhere/docs', ROOT_CWD, 'allow', '', CTX_FULL],
 
   // --- the cd that moves the base on the same line ------------------------------------
@@ -1021,27 +805,11 @@ const CASES = [
   ['git commit with -n inside the message is not the flag', 'git commit -m "fix -n of the parser"', ROOT_CWD, 'allow', ''],
   ['normal git commit', 'git commit -m "feat: something"', ROOT_CWD, 'allow', ''],
 
-  // --- the `.daiku/` branch: the folder never enters a commit, in any case ------------
-  ['git add inside the folder', 'git add .daiku/environment.local.json', ROOT_CWD, 'deny', 'shared history'],
-  ['git add of the folder itself', 'git add .daiku', ROOT_CWD, 'deny', 'shared history'],
-  ['git add of the folder with its slash', 'git add .daiku/', ROOT_CWD, 'deny', 'shared history'],
-  ['mixed git add, code + a path inside the folder', 'git add apps/x.py .daiku/project.json', ROOT_CWD, 'deny', 'shared history'],
-  ['git add inside the folder, from a wrapper', 'bash -c "git add .daiku/project.json"', ROOT_CWD, 'deny', 'shared history'],
-  ['Windows separators name a .daiku/ path too', 'git add .daiku\\project.json', ROOT_CWD, 'deny', 'shared history'],
-  ['git commit with a .daiku/ path as pathspec after --', 'git commit -m "x" -- .daiku/environment.local.json', ROOT_CWD, 'deny', 'shared history'],
-  ['cd + commit with a .daiku/ path as pathspec', 'cd /c/dev/project && git commit -- .daiku/environment.local.json', ROOT_CWD, 'deny', 'shared history'],
-  ['bare git commit with a .daiku/ path staged', 'git commit -m "feat: x"', ROOT_CWD, 'deny', 'shared history', CTX_FULL, ['A  .daiku/environment.local.json']],
-  ['git commit -a with a .daiku/ path tracked and modified', 'git commit -a -m "x"', ROOT_CWD, 'deny', 'shared history', CTX_FULL, [' M .daiku/environment.local.json']],
-  ['a message naming a .daiku/ path is not a pathspec', 'git commit -m "fix .daiku/environment.local.json loader"', ROOT_CWD, 'allow', ''],
-  ['git add of the environment', 'git add .daiku/environment.json', ROOT_CWD, 'deny', 'shared history'],
-  ['git add of a policy and the parameters together', 'git add .daiku/policies/area.md .daiku/project.json', ROOT_CWD, 'deny', 'shared history'],
-  ['bare git commit with the folder staged', 'git commit -m "feat: x"', ROOT_CWD, 'deny', 'shared history', CTX_FULL, ['A  .daiku/project.json']],
-  ['a folder whose name merely ends in .daiku is another folder', 'git add a.daiku/x.md', ROOT_CWD, 'allow', ''],
-  ['a folder whose name merely starts with .daiku is another folder', 'git add .daiku2/x.md', ROOT_CWD, 'allow', ''],
-  ['commit limited to other paths with the folder staged', 'git commit -- docs/x.md', ROOT_CWD, 'allow', '', CTX_FULL, ['A  .daiku/project.json']],
-  ['clean git commit -a', 'git commit -a -m "x"', ROOT_CWD, 'allow', '', CTX_FULL, []],
+  // --- normal commits that must stay allowed ------------------------------------------
+  ['clean git commit -a', 'git commit -a -m "x"', ROOT_CWD, 'allow', ''],
   ['git add -A passes here: the commit decides', 'git add -A', ROOT_CWD, 'allow', ''],
   ['clean bare git commit', 'git commit -m "docs: x"', ROOT_CWD, 'allow', ''],
+  ['git add of a policy and the parameters together', 'git add .daiku/policies/area.md .daiku/project.json', ROOT_CWD, 'allow', ''],
 
   // --- attribution: no commit credits Claude or Codex, in any shape of the message ----
   ['undeclared attribution is still denied', 'git commit -m "feat: x" -m "Co-Authored-By: Claude <noreply@anthropic.com>"', ROOT_CWD, 'deny', 'credits the agent', CTX_BARE],
@@ -1071,7 +839,7 @@ const CASES = [
   ['git push --dry-run pushes nothing', 'git push --dry-run', ROOT_CWD, 'allow', ''],
   ['git fetch is not a push', 'git fetch origin main', ROOT_CWD, 'allow', ''],
   ['echo of a sentence talking about git push', 'echo "git push is forbidden"', ROOT_CWD, 'allow', ''],
-  ['grep for git push in the corpus', 'grep -rn "git push" .daiku/', ROOT_CWD, 'allow', ''],
+  ['grep for git push in the corpus', 'grep -rn "git push" .claude/', ROOT_CWD, 'allow', ''],
 
   // --- what is not this guard's business --------------------------------
   // They stay here as explicit proof: readers must see that the read perimeter,
@@ -1098,17 +866,11 @@ function selfCheck() {
   const failed = [];
   let ran = 0;
 
-  for (const [name, line, cwd, expected, contains, ctx, state] of CASES) {
+  for (const [name, line, cwd, expected, contains, ctx] of CASES) {
     ran += 1;
     let outcome;
     try {
-      // `git status -- <path>` returns the lines concerning that path and no others: the
-      // stub filters like git does, so a case can hand a whole stage and mean one file.
-      const caseEnv =
-        state === undefined
-          ? env
-          : { ...env, daikuStatus: () => state.filter((l) => l.includes('.daiku')) };
-      outcome = evaluate(line, cwd, caseEnv, ctx || CTX_FULL);
+      outcome = evaluate(line, cwd, env, ctx || CTX_FULL);
     } catch (error) {
       failed.push(`${name}: exception ${error && error.message}`);
       continue;
@@ -1129,24 +891,20 @@ function selfCheck() {
     isLink: () => {
       throw new Error('filesystem unreachable');
     },
-    daikuStatus: () => {
-      throw new Error('git unreachable');
-    },
     readMessage: () => {
       throw new Error('filesystem unreachable');
     },
   };
-  // The link and `.daiku/`-stage branches are the ones interrogating disk and git:
-  // without those, they allow. The others decide on paths and parameters, which need no
-  // disk to read, and stay denied — including the `.daiku/` pathspec, which asks
-  // nothing of anyone.
+  // The link branch is the one interrogating the disk, and it allows when the disk does not
+  // answer. The commit-message file is the other disk read, and a message it cannot open is
+  // skipped, leaving the line alone to decide. The others decide on paths and parameters,
+  // which need no disk to read, and stay denied.
   const brokenEnv = [
     ['rm -rf c:/dev/wt/wt-1/node_modules', ROOT_CWD, 'deny'],
     ['rm -rf c:/dev/project/node_modules', ROOT_CWD, 'allow'],
     ['pnpm install', WT_CWD, 'deny'],
     ['git push', ROOT_CWD, 'deny'],
     ['git commit -n -m x', ROOT_CWD, 'deny'],
-    ['git add .daiku/environment.local.json', ROOT_CWD, 'deny'],
     ['git commit -m x', ROOT_CWD, 'allow'],
     ['git commit -F msg-signed.txt', ROOT_CWD, 'allow'],
     ['git commit -m x -m "Co-Authored-By: Claude"', ROOT_CWD, 'deny'],
@@ -1212,8 +970,7 @@ function selfCheck() {
 //  - **A target built from a shell variable** (`rm -rf "$DIR"`,
 //    `cd $OTHER && rm -rf node_modules`). The guard sees the text, not the value: after
 //    an unresolvable `cd` the base becomes *unknown* and **relative** targets are not
-//    judged at all — allowed, and not coverage. Same for the `.daiku/`
-//    stage: without a base no `git status` runs.
+//    judged at all — allowed, and not coverage.
 //  - **A target arriving from a pipeline** (`Get-ChildItem x | Remove-Item -Recurse`,
 //    `find … -print0 | xargs -0 rm -rf`): the line carries no path to read.
 //  - **`powershell -EncodedCommand <base64>`** and every other obfuscated shape.
@@ -1230,9 +987,7 @@ function selfCheck() {
 //  - **Every project that has not opened Daiku**, and every branch its `project.json` does
 //    not switch on. Not a technical limit but the wanted boundary: a package installed once
 //    is active everywhere, and denying a command to whoever declared nothing would be
-//    a fault wearing a protection's looks. Whoever wants coverage declares it. The
-//    `.daiku/` branch is the exception proving the boundary: it has no switch, but it has
-//    the gate — without `.daiku/project.json` it stays off too.
+//    a fault wearing a protection's looks. Whoever wants coverage declares it.
 //  - **A signature the line does not carry**: `git commit --amend --no-edit` or `-C <commit>`
 //    reusing a message that already holds it, `-t <template>`, the editor opened by a
 //    commit without a message, an `-F` file after a `cd` on the same line (it is read
@@ -1241,10 +996,6 @@ function selfCheck() {
 //  - **A false positive of the attribution branch**: it searches the whole line, so a
 //    `git commit` chained with an `echo "Co-Authored-By: Claude"` is denied. The remedy
 //    is splitting the line.
-//  - **The owner's terminal**, where this hook does not run at all: there the ban on
-//    `.daiku/` lives in the commit skill text, and no denial enforces it. When a manual
-//    command stages a path under `.daiku/`, an agent's bare `commit` after it stays denied
-//    by the stage read here — a manual commit is not.
 
 async function main() {
   const raw = await readStdin();
