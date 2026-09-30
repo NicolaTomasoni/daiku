@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 7f30fa0d-9a97-482d-ba1b-c32231e0c9e1
-  modified: 2026-09-30T13:27:13.689Z
+  modified: 2026-09-30T19:04:53.984Z
 ---
 
 **Deciso il 19 settembre 2026, preparando gli hook per la distribuzione.** Un pacchetto si

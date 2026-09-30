@@ -19,7 +19,7 @@ Fa due mestieri: **valuta** nove classificazioni meccaniche — la decisione fin
 ciclo, lo sblocco meccanico, la propagazione del fallimento, la ripresa, l'ordine, il verdetto di
 giro di `review` (`round`), il controllo `layers:` di `arch-check` (`layers`) e la forma di un
 blocco di ritorno contro `schemas/blocks.json` (`block`, usata da `new-feature` sul blocco di
-`decision-doc`, da `develop-feature` su quelli di `blueprint` ed `execute`, e sui blocchi di finder
+`decision-doc`, da `ship-feature` su quelli di `blueprint` ed `execute`, e sui blocchi di finder
 e applicatore dallo strumento del ledger) — e **possiede l'ordine della catena**: la tabella di §3 di
 `contracts/orchestration.md` non lo dichiara più, ne è il riflesso, e il banco del valutatore
 rifiuta la divergenza nei due versi.
@@ -62,7 +62,7 @@ programmi e non in `hooks/lib/`, che viene copiata nel progetto dell'utente; que
 lavora con Git vero su repository usa e getta nella cartella temporanea di sistema. Si lanciano con
 gli altri con `node plugins/daiku/hooks/self-check.mjs`.
 
-**E c'è un campo che misura.** `architect_agreement`, nell'esito di `develop-feature`, dice se la
+**E c'è un campo che misura.** `architect_agreement`, nell'esito di `ship-feature`, dice se la
 lettura dell'agente coincideva col verdetto: è il primo uso del valutatore per misurare Daiku
 stessa, e se le due letture coincidono sempre allora il valutatore ha reso poco.
 
@@ -71,7 +71,7 @@ lo strumento con `node <radice del pacchetto>/architect/ledger.mjs <radice>` —
 stdin e uno su stdout. Le chiavi che ogni domanda richiede sono dichiarate una volta sola, in
 `REQUIRES` di `architect.mjs`, e il suo banco rifiuta una chiamata al valutatore, nei contratti di
 `skills/`, il cui paragrafo non le nomina tutte. Cosa risponde e il blocco di ritorno stanno in
-`skills/develop-feature/SKILL.md` § *The evaluator* e in `schemas/blocks.json` § *architect*; le
+`skills/ship-feature/SKILL.md` § *The evaluator* e in `schemas/blocks.json` § *architect*; le
 azioni dello strumento — `scope`, `findings`, `areas`, `round`, `tail`, `layers`, `ask` — in
 `skills/review/SKILL.md` § *The ledger tool*: si citano, non si ricopiano. La forma del banco — `.mjs` Node senza dipendenze, radice per argomento,
 `--self-check` a totale contato — è ormai la convenzione di questo repository: chi ne scrive un

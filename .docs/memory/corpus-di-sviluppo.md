@@ -20,7 +20,7 @@ riga `name:`, il nome lo dà il file) e i rimandi fra contratti.
 
 **Dal 20 settembre 2026 i nomi non si corrispondono più**, e la derivazione non si trova più per
 omonimia: nel prodotto quei contratti si chiamano `research` (raccolta, con il riordino delegato
-a `study`), `new-feature` e `develop-feature`, dove
+a `study`), `new-feature` e `ship-feature`, dove
 il cantiere ha ancora `studia-libreria`, `studia-problema` e `deliver-feature`. I rename sono stati
 scritti solo nel prodotto, che è l'albero che si pubblica; riportarli qui è una decisione a parte,
 che non è stata presa.
@@ -76,7 +76,7 @@ identificatori del prodotto. Vedi [[confine-degli-identificatori]].
 
 **E dal 23 settembre 2026 diverge anche il metodo, insieme alla lingua.** Il prodotto ha un
 **valutatore deterministico** — `plugins/daiku/architect/architect.mjs`, il suo blocco in
-`schemas/blocks.json` e il campo `architect_agreement` nell'esito di `develop-feature` — e da lì le
+`schemas/blocks.json` e il campo `architect_agreement` nell'esito di `ship-feature` — e da lì le
 skill del pacchetto **non dichiarano più la sequenza**: la chiedono a lui, e il verdetto vincola.
 Qui non c'è niente di simile, e non ci sarà finché non lo autorizzi: `commands/deliver-feature.md`
 recita ancora la sequenza a parole. Vedi [[valutatore-deterministico]].
