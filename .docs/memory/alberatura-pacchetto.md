@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 48eaa498-ed6e-4a36-847d-3f8fa95f7f21
-  modified: 2026-09-28T18:04:02.221Z
+  modified: 2026-09-30T12:10:33.792Z
 ---
 
 Il repo ospita il prodotto Daiku. Questo repository sta in `C:\dev\daiku-workspace\daiku-dev`,
@@ -116,7 +116,7 @@ Verificate sui validatori di entrambi gli host.
 `agents/` e `hooks/` restano nel pacchetto ma valgono **solo su Claude Code**: il manifest Codex
 rifiuta `agents`, `commands` e `hooks`, e `plugin_hooks` è una feature rimossa. Su Codex quei due
 livelli li scrive `sync-host` dentro il progetto, in `.codex/hooks/` e `.codex/agents/` — non
-`init`, che si ferma a `.daiku/`.
+`init`, che scrive `.daiku/` e poi lo lancia come ultimo passo.
 
 Cosa esce e cosa resta **non** lo decide più il `.gitignore`, che qui esclude solo
 `.claude/settings.local.json`: lo decide la lista di copia dello script di pubblicazione. Vedi

@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: bb0219dd-76c8-4a09-bf9b-4cb040132a6e
-  modified: 2026-09-28T18:00:52.639Z
+  modified: 2026-09-30T12:10:29.559Z
 ---
 
 Dal 19 settembre 2026 `init` **scrive il file di istruzioni** del progetto ospite (`CLAUDE.md` o
@@ -28,8 +28,7 @@ esattamente il problema che la vecchia regola temeva.
   Nessuno la sta deducendo da questo repository perché non parla di questo repository.
 - **Un invariante si scrive solo dove lo si è visto affermato**: in un file di istruzioni che
   c'era già, in un documento del repository, o in una regola che la struttura rispetta senza
-  eccezioni visibili. Mai dedotto da un'architettura intravista. Nel dubbio finisce fra le cose da
-  compilare, non fra le hard rule.
+  eccezioni visibili. Mai dedotto da un'architettura intravista. Nel dubbio non si scrive.
 - **Il file si riscrive una volta sola.** In fondo allo scheletro c'è una riga di commento
   `daiku:instructions`: se `init` la trova, lascia stare il file. È l'unica eccezione
   all'idempotenza di `init`, ed è sicura solo finché quella riga esiste — senza, ogni rilancio
@@ -98,10 +97,9 @@ regola scritta due volte. Sei regole, in *Step 6*:
 - **una sede o un path nominato dentro una riga tenuta è parte della riga**, e non si rinomina.
   Dove il progetto scrive che le sue regole di area vivono in una cartella sua — `.claude/rules/` su
   Claude Code — e lo scheletro scrive `.daiku/policies/`, la riga del progetto resta com'è:
-  `.daiku/policies/` è una sede che `init` posa **vuota** e che riempie l'utente, mentre le regole
-  che il progetto ha già scritto restano dove sono, e nel report compaiono fra le cose da compilare
-  come materiale da cui scrivere la policy. Riscrivere la sede non è mettere in forma: afferma il
-  falso e perde una regola vera.
+  le regole che il progetto ha già scritto restano dove sono, e `.daiku/policies/` le **punta** —
+  una policy per area, col `paths` dell'area e l'elenco di quei file (*Step 5*). Riscrivere la sede
+  non è mettere in forma: afferma il falso e perde una regola vera.
 
 Nella stessa giornata è caduta anche la variante di lingua degli scheletri: **tutto ciò che `init`
 deposita è in inglese**, e le due chiavi `language.chat` e `language.commit` riguardano solo come

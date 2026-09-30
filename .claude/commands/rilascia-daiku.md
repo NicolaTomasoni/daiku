@@ -92,10 +92,23 @@ Preponi la voce a `plugins/CHANGELOG.md`, subito sotto l'intestazione (se il fil
 manca, crealo con `# Changelog` in testa):
 
 ```markdown
-## <nuova> — <oggi YYYY-MM-DD>
+<titolo del livello, vedi sotto>
+<sub><oggi YYYY-MM-DD></sub>
 
 <note, o la riga di rimando al commit>
 ```
+
+La data è il sottotitolo, sulla riga subito sotto il titolo e mai inline con la versione. Il
+titolo porta solo la versione, e dipende dal livello del bump:
+
+| Bump | Titolo |
+|---|---|
+| `major` | `## $\color{#3b82f6}{\textsf{<nuova>}}$` — colorato, lo stesso blu del badge |
+| `minor` | `## <nuova>` |
+| `patch` | `### <nuova>` — più piccolo |
+
+Il corpo di una `patch` è **sempre un elenco puntato**, una voce per modifica, anche quando la
+modifica è una sola.
 
 ## 5. Commit in dev
 
@@ -130,6 +143,11 @@ e lancia:
 Fa gate stretto, riversa `plugins/` nel dist e committa là con UN commit solo. **Non pusha**: il
 push è un gesto manuale dell'owner, e nessuno lo fa al posto suo — né questo comando, né lo
 script. Il commit nel dist resta locale finché l'owner non lo pusha.
+
+**Su produzione va sempre e solo un commit per bump**, che sia `major`, `minor` o `patch`: uno solo
+e comprensivo di tutto — versione, changelog e ogni modifica del rilascio insieme. I commit separati
+della §5 restano in dev; nella dist non si spezza mai un rilascio in più commit, e lo script si
+lancia una volta sola.
 
 ## 7. Report
 

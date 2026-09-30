@@ -2,15 +2,18 @@
 name: daiku-versionato
 description: "`.daiku/` è sorgente del progetto e entra nei commit — cosa resta fuori, e perché il disegno è cambiato il 30 settembre 2026"
 metadata:
+  node_type: memory
   type: project
+  originSessionId: 74fa8bc9-dbb1-4c77-bf91-e6ec34544097
+  modified: 2026-09-30T12:10:38.947Z
 ---
 
 `.daiku/` **entra nella storia condivisa** del progetto che l'ha aperta: `project.json`,
 `environment.json`, `domain/`, `policies/`. È la configurazione che il progetto ha scritto di sé,
 e parte di essa è scritta a mano — le policy e il domain, che nessun `init` rigenera — quindi un
 clone deve trovarla senza rifare `/init`. **L'unica cosa che resta fuori è
-`.daiku/environment.local.json`**, l'override della singola macchina: `init` dichiara la riga di
-`.gitignore` che lo esclude e non la scrive (non tocca `.gitignore`).
+`.daiku/environment.local.json`**, l'override della singola macchina: `init` scrive nel
+`.gitignore` del repository la riga che lo esclude, dove nessuna riga del repository lo copre ancora.
 
 **Why:** il disegno precedente trattava la cartella come `node_modules/` — attrezzo della macchina,
 rigenerabile — e ne pagava il prezzo dichiarato: un clone senza parametri, e policy e domain
@@ -31,7 +34,7 @@ privato nel repository di prodotto di Daiku.
   questo non sta sotto `.daiku/`, che ora è versionata: la ragione si ribalta, la regola resta.
 
 **How to apply:** la regola vive in cinque sedi e vanno tenute insieme — la §8 di
-`contracts/project-contract.md`, la § *Where each of the two lives*, gli *Step 3*, *4* e *7* di
+`contracts/project-contract.md`, la § *Where each of the two lives*, gli *Step 3*, *4* e *8* di
 `skills/init/SKILL.md`, la § *Commit convention* e la § *Separate commit of memory and
 documentation* di `skills/commit/SKILL.md`, e la tabella dei rami di `hooks/README.md`. Il banco dei
 guard si lancia con gli altri da `node plugins/daiku/hooks/self-check.mjs`.
