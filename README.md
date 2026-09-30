@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <img alt="version 1.0.1" src="https://img.shields.io/badge/version-1.0.1-3b82f6?style=flat" /> <br>
+  <img alt="version 1.0.2" src="https://img.shields.io/badge/version-1.0.2-3b82f6?style=flat" /> <br>
   <a href="https://code.claude.com"><img alt="Claude Code" src="https://img.shields.io/badge/Claude_Code-D97757?style=flat&logo=claude&logoColor=white" /></a>
   <a href="https://developers.openai.com/codex"><img alt="OpenAI Codex" src="https://img.shields.io/badge/OpenAI_Codex-000000?style=flat&logo=openai&logoColor=white" /></a>
 </p>
@@ -51,11 +51,11 @@
 
 ```text
 # on Claude Code, from the chat:
-/plugin marketplace add <marketplace-address>
-/plugin install daiku@daiku
+claude plugin marketplace add NicolaTomasoni/daiku
+claude plugin install daiku@daiku
 
 # on Codex, from the terminal:
-codex plugin marketplace add <marketplace-address>
+codex plugin marketplace add NicolaTomasoni/daiku
 codex plugin add daiku@daiku
 ```
 

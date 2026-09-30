@@ -42,6 +42,7 @@ const ABSENT = Object.freeze({
   projectJson: null,
   environmentFile: null,
   environmentLocalFile: null,
+  hostLocalSettings: null,
   tempDir: null,
 });
 
@@ -60,8 +61,9 @@ function resolvePath(value, root) {
  * skill may legitimately create, resolved absolute. All come from existing keys —
  * `.daiku/project.json` (§4 of the contract) for the project seats,
  * `environment.json` for `tempDir` (contract §8 order: the local file first, then the
- * project one, taken whole, never merged) — plus two constants: `.daiku/policies/`
- * and `.daiku/domain/`, which are a convention, not a key. A missing or
+ * project one, taken whole, never merged) — plus three constants: `.daiku/policies/`
+ * and `.daiku/domain/`, which are a convention, not a key, and the machine's
+ * `.claude/settings.local.json`, where `init` points the host memory (its *Step 7*). A missing or
  * unresolvable key contributes `null`, never a guessed path: §6 of the contract,
  * applied to a hook. Nothing is read outside the project: no seat of Daiku lives in
  * the user home.
@@ -111,6 +113,7 @@ export function loadContext(root, reads = REAL_READS) {
       projectJson: resolve(join(root, '.daiku', 'project.json')),
       environmentFile: resolve(join(root, '.daiku', 'environment.json')),
       environmentLocalFile: resolve(join(root, '.daiku', 'environment.local.json')),
+      hostLocalSettings: resolve(join(root, '.claude', 'settings.local.json')),
       tempDir: resolveTempDir(root, reads),
     };
   } catch {
@@ -237,6 +240,7 @@ export function fakeContext(fields = {}) {
     projectJson: seat(fields.projectJson),
     environmentFile: seat(fields.environmentFile),
     environmentLocalFile: seat(fields.environmentLocalFile),
+    hostLocalSettings: seat(fields.hostLocalSettings),
     tempDir: seat(fields.tempDir),
   };
 }

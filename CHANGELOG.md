@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.2 — 2026-09-30
+
+`init` now points Claude Code's memory into the repository instead of being stopped by its own write guard, leaves out commands whose tool no dependency manifest declares, and no longer repeats in the stack section what the project's own lines already say.
+
 ## 1.0.1 — 2026-09-30
 
 Project parameters, domain and policies now travel with the repository: `.daiku/` is versioned, only the machine's override stays out, and the guard that blocked those commits is gone. The end-of-session notice no longer mistakes unrelated files in the review state folder for open cycles.
