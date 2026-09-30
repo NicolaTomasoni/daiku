@@ -1,14 +1,20 @@
 # Changelog
 
-## 1.0.2 — 2026-09-30
+### 1.0.2
+<sub>2026-09-30</sub>
 
-`init` now points Claude Code's memory into the repository instead of being stopped by its own write guard, leaves out commands whose tool no dependency manifest declares, and no longer repeats in the stack section what the project's own lines already say.
+- `init` now points Claude Code's memory into the repository instead of being stopped by its own write guard.
+- `init` leaves out commands whose tool no dependency manifest declares.
+- `init` no longer repeats in the stack section what the project's own lines already say.
 
-## 1.0.1 — 2026-09-30
+### 1.0.1
+<sub>2026-09-30</sub>
 
-Project parameters, domain and policies now travel with the repository: `.daiku/` is versioned, only the machine's override stays out, and the guard that blocked those commits is gone. The end-of-session notice no longer mistakes unrelated files in the review state folder for open cycles.
+- Project parameters, domain and policies now travel with the repository: `.daiku/` is versioned, only the machine's override stays out, and the guard that blocked those commits is gone.
+- The end-of-session notice no longer mistakes unrelated files in the review state folder for open cycles.
 
-## 1.0.0 — 2026-09-28
+## $\color{#3b82f6}{\textsf{1.0.0}}$
+<sub>2026-09-28</sub>
 
 Daiku 1.0: autonomous development contracts for Claude Code and Codex. AI agents work fast and autonomously, inside the architectural constraints you decide — enforced by checks that really fire, not by advice.
 
