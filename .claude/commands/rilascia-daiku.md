@@ -37,10 +37,13 @@ python "$HOME/.codex/skills/.system/plugin-creator/scripts/validate_plugin.py" p
 node plugins/daiku/hooks/self-check.mjs
 node .docs/tools/check-topology.mjs plugins/daiku
 node .docs/tools/check-marketplace.mjs plugins
+node .docs/tools/check-no-push.mjs --self-check
 ```
 
 Le due vetrine sono lì dentro perché il loro guasto non si vede da qui: si vede solo in chi
-installa, dopo che il rilascio è già uscito.
+installa, dopo che il rilascio è già uscito. L'ultima non guarda il pacchetto ma il cantiere:
+verifica che nessuno script invochi un push, perché una riga dentro un file non passa da nessuna
+guardia — vedi `.docs/memory/push-solo-manuale.md`.
 
 ## 2. I numeri: i tre punti della versione
 

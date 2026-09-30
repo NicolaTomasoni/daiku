@@ -12,11 +12,13 @@ metadata:
 dove scrivono solo gli amministratori: il recinto sulle letture (`recinto-letture.mjs`), il
 presidio del target (`guardia-target.mjs` con la sua configurazione e l'interruttore `enabled` in
 `guardia-target.json`), la lista `deny` di macchina e le radici di lavoro nei `managed-settings.json`.
-Recinto e presidio sono registrati nel blocco `hooks` dei managed settings. Nel repository non c'è
-nessun **hook** che giri, e `.claude/settings.json` non ne registra nessuno. Ci porta una cosa
-sola, e non è una guardia di macchina: la lista `permissions.deny` che vieta `git push` qui dentro.
-La ragione è che il push è un gesto manuale dell'owner, e il command-guard del pacchetto non
-protegge questo repository — senza `.daiku/project.json` il suo gate resta spento.
+Recinto e presidio sono registrati nel blocco `hooks` dei managed settings. In questo repository non
+gira nessuna guardia **di macchina**, ma dal 30 settembre 2026 girano quelle **del pacchetto**: il
+cantiere ha il suo `.daiku/project.json`, che accende il gate di Daiku — quindi il command-guard
+nega qui `git push`, `--no-verify` e le firme dell'agente, e l'edit-guard nega i file nuovi fuori
+dalle sedi dichiarate. Accanto sta `.claude/settings.json`, con la lista `permissions.deny` su
+`git push`: è la porta che l'hook non chiude, perché una permission rule dell'host sta sopra ogni
+altra regola e non la si aggira con un wrapper. Provata col dry-run, che è stato negato.
 
 **Il repository tiene i sorgenti**, in `.docs/tools/macchina/` (README lì): il presidio, la sua
 configurazione, lo strumento `gestisci-guardie.ps1`, la proposta `correzione-macchina.ps1` e i due

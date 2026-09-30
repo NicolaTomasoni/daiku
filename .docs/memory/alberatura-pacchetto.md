@@ -56,6 +56,11 @@ solo `.gitignore` e `.gitattributes` del repository di sviluppo.
   - `settings.local.json` — punta `autoMemoryDirectory` (vedi [[memoria-nel-repo]]).
 - **`.vscode/`** — `tasks.json` con gli switch fra backend LLM: tooling personale dell'owner, con
   path della sua home. Non c'entra niente con Daiku.
+- **`.daiku/`** — i parametri del **cantiere**, non del prodotto, e versionati come il resto: è
+  ciò che accende le guardie di Daiku su questo repository (vedi [[guardie-di-macchina]]). Il suo
+  `project.json` dichiara `plugins/` come codice, `.docs/` come sedi di lavoro e
+  `.docs/runtime/review` come ledger; fuori da lì un file **nuovo** è negato, in radice e in
+  `.claude/` compresi. Vedi [[daiku-versionato]] per la cartella come sede del progetto ospite.
 
 ## 3. Lo sviluppo che si è potuto raccogliere
 
@@ -77,7 +82,9 @@ solo `.gitignore` e `.gitattributes` del repository di sviluppo.
   e copre il punto in cui il repository di `multica-ai/andrej-karpathy-skills` è inciampato
 - `tools/studia-repository/` — gli attrezzi deterministici del comando `studia-repository`
 - `tools/` — accanto, il banco della prova di `init` (`collauda-init.mjs`), la pubblicazione
-  (`pubblica-dist.ps1`) e `macchina/`, i sorgenti delle guardie di macchina (vedi [[guardie-di-macchina]])
+  (`pubblica-dist.ps1`, che committa nel dist e **non** pusha — vedi [[push-solo-manuale]]),
+  il controllo che nessuno script del cantiere invochi un push (`check-no-push.mjs`) e `macchina/`,
+  i sorgenti delle guardie di macchina (vedi [[guardie-di-macchina]])
 
 ## I nomi che si somigliano e non c'entrano niente
 

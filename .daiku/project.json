@@ -1,0 +1,29 @@
+{
+  "contract": 1,
+  "name": "daiku-dev",
+  "code_root": "plugins/",
+  "language": {
+    "chat": "it",
+    "commit": "it"
+  },
+  "changelog": "plugins/CHANGELOG.md",
+  "version": {
+    "file": "plugins/daiku/.claude-plugin/plugin.json",
+    "field": "version",
+    "replicated_in": [
+      "plugins/daiku/.codex-plugin/plugin.json",
+      "plugins/README.md"
+    ]
+  },
+  "paths": {
+    "studies": ".docs",
+    "review_state": ".docs/runtime/review"
+  },
+  "memory": {
+    "root": ".docs/memory",
+    "index": ".docs/memory/MEMORY.md"
+  },
+  "commit": {
+    "memory_prefix": "docs(memoria)"
+  }
+}
