@@ -20,14 +20,14 @@ dell'owner: quella è una sede che nessun clone porta, nessun `diff` mostra, e s
 recinto di Daiku nessun agente può nemmeno aprire, perché le radici di lavoro non la contengono —
 `init` non poteva né leggerla né scriverla. Una macchina lo sostituisce **intero** con
 `.daiku/environment.local.json`: chi legge prende il primo dei due che trova e non li fonde, come
-per `settings.json` e `settings.local.json`. Nessuno dei due si versiona, e con loro nessun altro
-file della cartella: vedi [[daiku-non-versionato]].
+per `settings.json` e `settings.local.json`. **Il primo si versiona, il secondo no**: la cartella è
+sorgente del progetto, e resta fuori il solo override della macchina — vedi [[daiku-versionato]].
 
-Il prezzo è dichiarato e si paga lo stesso: cambiare l'alias di un modello si ripete in N progetti
-— e, la cartella non essendo condivisa, una volta per ogni macchina che ne clona uno. Le due
-alternative sono peggiori — la cartella in home, o un valore che non vive da nessuna parte e viene
-indovinato ogni volta. La valvola per l'owner multiplo o per la macchina con uno switcher diverso
-resta `environment.local.json`.
+Il prezzo resta uno solo, e si paga lo stesso: cambiare l'alias di un modello si ripete in N
+progetti. Si paga perché l'alternativa — la cartella in home — è peggiore: nessun clone la porta,
+nessun `diff` la mostra, e su una macchina col recinto di Daiku nessun agente può nemmeno aprirla,
+perché le radici di lavoro non la contengono. La valvola per l'owner multiplo o per la macchina con
+uno switcher diverso resta `environment.local.json`.
 
 **`temp_dir` non si scrive.** Assente significa la cartella temporanea del sistema operativo, che è
 la risposta giusta su ogni macchina e che i lettori usano già: dichiararla serve solo dove quel
