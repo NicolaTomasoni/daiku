@@ -63,7 +63,7 @@ You are a second subagent, fresh context, and in the prompt there are the **owne
   "precedents": [
     {
       "decision": "<a decision already closed, touching this problem>",
-      "where": "<its seat: the memory, or the folder in {paths.studies}>",
+      "where": "<its seat: the memory, or the folder in {paths.features}>",
       "stands": "yes|no",
       "answered_by": "<the title of the decision of this list that puts it to the owner, when stands is no>"
     }
@@ -125,7 +125,7 @@ Everything arrives from the prompt of whoever invoked you, already resolved: **a
 **Four signals that forbid the technical stage.** Any one of them holds, and the stage is strategic whatever the material looks like, however complete it reads:
 
 1. **No direction question in the list.** What has to be asked holds no *whether*, no *for whom*, no *who decides* — only *how*. A list all of "how", on a direction nobody confirmed, is not proof of maturity: it is the strategy taken for granted.
-2. **A precedent that says the opposite.** The project's memory, or a decision already closed in `{paths.studies}`, touches this problem and says the opposite of what is being proposed. That precedent is a **question for the owner** — *you gave this up; what changed?* — and it is asked, like any other: it enters `decisions`, and `precedents` records which decision answers it. Never a footnote dismissed here by deduction.
+2. **A precedent that says the opposite.** The project's memory, or a decision already closed in `{paths.features}`, touches this problem and says the opposite of what is being proposed. That precedent is a **question for the owner** — *you gave this up; what changed?* — and it is asked, like any other: it enters `decisions`, and `precedents` records which decision answers it. Never a footnote dismissed here by deduction.
 3. **A strategy justified by this chain's own documents.** If the only way to declare the strategy settled is to cite a document this chain produced (`0. problem.md`, a previous pass at `1. decision-doc.md`), it is not settled: a document cannot validate its own premise. `stage_why` says why the stage; `direction` says whose words settled the direction, and citing the chain's own writing is not an answer.
 4. **A load-bearing premise nobody verified.** Name the claims about the system the proposed direction rests on and check each against the source, the way an assertion about the code is checked. A premise with no evidence is not a premise: it is the act of faith this stage exists to catch, and it travels in `premises`.
 
@@ -193,7 +193,7 @@ Everything remaining becomes a numbered list, and each item already comes in the
 
 Two of them are owed and are easy to leave out, because each one looks like a line of the document rather than a question:
 
-- **A precedent that says the opposite** — a decision already closed in memory or in `{paths.studies}` that this work contradicts — is a decision of the list, with keeping it among the options. *What changed* is the owner's answer to give, not yours to deduce.
+- **A precedent that says the opposite** — a decision already closed in memory or in `{paths.features}` that this work contradicts — is a decision of the list, with keeping it among the options. *What changed* is the owner's answer to give, not yours to deduce.
 - **The scope boundary** — what is declared out of scope — is a direction decision. If this study is the one tracing it, it becomes a decision of the list; a boundary fixed in the body of the document is a direction taken and never shown.
 
 **The list is written in `0.5. strategic-study.md`, in the problem folder, and not only in the block.** The block carries it to whoever must ask it; the document carries everything — it is what survives the session and what the owner rereads when returning to decide. Structure in § *Structure of the produced documents*. If the file already exists from a previous run, update it in place: already closed decisions stay with their answer, new ones append with continuing numbering, and a lapsed decision is not deleted — it is marked lapsed with the why.

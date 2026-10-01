@@ -20,7 +20,7 @@
  *    owes the rule nothing. Once per session, never repeated — a notice that arrives every time
  *    stops being read.
  *  - **`PreToolUse` on the write tools** — while a marked session writes **from the conversation
- *    itself**, outside the seats the run owns (`{paths.studies}`, `{paths.lib_notes}` and the
+ *    itself**, outside the seats the run owns (`{paths.features}`, `{paths.studies}` and the
  *    `{write_roots}` the machine declares), the write is **reminded of the rule** and goes through.
  *    It is the moment the model is about to do the work in the wrong window, and the reminder lands
  *    next to the tool result.
@@ -48,7 +48,7 @@
  *
  * The gate is the same as everywhere else: **without `.daiku/project.json` this project has not
  * opened Daiku**, and the notice stays silent without even reading the path. A project without
- * `{paths.studies}` declared has no seat to measure against, and the notice stays silent rather than
+ * `{paths.features}` declared has no seat to measure against, and the notice stays silent rather than
  * inventing one (§6 of `contracts/project-contract.md`, applied to a hook).
  *
  * **What it does not see**, declared because a notice silent about what it does not see makes
@@ -141,10 +141,10 @@ function setMark(env, path) {
 
 // --- what the run's own window may write, and what it is told about the rest ---
 
-/** The seats of the run: the studies, the notes, and whatever folder the machine admits. */
+/** The seats of the run: the working folders, the notes, and whatever folder the machine admits. */
 function runSeats(ctx, root) {
   const seats = [];
-  for (const site of ctx.studies || []) {
+  for (const site of ctx.features || []) {
     if (typeof site !== 'string' || !site.trim()) continue;
     const cleaned = site.trim().replace(/\\/g, '/');
     try {
@@ -153,7 +153,7 @@ function runSeats(ctx, root) {
       /* an unresolvable site contributes nothing */
     }
   }
-  if (ctx.libNotes) seats.push(ctx.libNotes);
+  if (ctx.studies) seats.push(ctx.studies);
   for (const site of ctx.writeRoots || []) seats.push(site);
   return seats;
 }
@@ -252,7 +252,7 @@ export function notice() {
     'study, a decision reconsidered, code once the delivery has run — is **delegated**, one ' +
     'subagent in a fresh context with the contract of the step that owns what it touches, and ' +
     'only its block comes back here. What this conversation writes on its own stays inside ' +
-    '`{paths.studies}`, `{paths.lib_notes}` and `{write_roots}`. It is ' +
+    '`{paths.features}`, `{paths.studies}` and `{write_roots}`. It is ' +
     '`skills/new-feature/SKILL.md` \u00a7 *7. Decisions are asked in chat*.\n\n' +
     '*Daiku notice, written when the run opened — not a message from the user, and nothing ' +
     'being worked on has to change.*'
@@ -267,7 +267,7 @@ export function notice() {
 export function reminder(path) {
   return (
     'Daiku notice: this write is made from the conversation that opened a `new-feature` run, and ' +
-    `\`${path}\` is outside the seats that run owns (\`{paths.studies}\`, \`{paths.lib_notes}\`, ` +
+    `\`${path}\` is outside the seats that run owns (\`{paths.features}\`, \`{paths.studies}\`, ` +
     '`{write_roots}`). A turn of the owner asking for something to be made is carried out by one subagent in a fresh ' +
     'context, with the contract of the step that owns what it touches, and only its block comes ' +
     'back here — `skills/new-feature/SKILL.md` \u00a7 *7. Decisions are asked in chat*. This is a ' +
@@ -318,8 +318,8 @@ function fakeEnv(files = {}, tmp = 'C:/Temp/daiku') {
 
 const CTX = () =>
   fakeContext({
-    studies: ['docs/studies'],
-    libNotes: `${R}/docs/lib-notes`,
+    features: ['docs/features'],
+    studies: `${R}/docs/studies`,
     reviewState: `${R}/.daiku/review-state`,
   });
 const CTX_NO_SEAT = () => fakeContext({});
@@ -358,7 +358,7 @@ function selfCheck() {
   check('the opening prompt says the rule', !!opening && opening.text.includes('delegated'));
   check(
     'the notice says the conversation\u2019s writes are bounded',
-    !!opening && opening.text.includes('{paths.studies}')
+    !!opening && opening.text.includes('{paths.features}') && opening.text.includes('{paths.studies}')
   );
   check(
     'the notice says it is not a message from the user',
@@ -422,12 +422,12 @@ function selfCheck() {
   );
   check('the reminder names the write', !!said && said.text.includes(`${R}/src/a.ts`));
   check('the reminder names the run it is inside', !!said && said.text.includes('`new-feature`'));
-  check('the reminder names the seats', !!said && said.text.includes('{paths.studies}'));
+  check('the reminder names the seats', !!said && said.text.includes('{paths.features}') && said.text.includes('{paths.studies}'));
   check('the reminder says it blocks nothing', !!said && said.text.includes('not a block'));
   check('the reminder is a fact, not an order', !!said && said.text.startsWith('Daiku notice:'));
 
-  check('the studies are the run\u2019s own seat', writeAdvice(write(`${R}/docs/studies/x/0. problem.md`), R, CTX(), R, true) === null);
-  check('the notes are the run\u2019s own seat', writeAdvice(write(`${R}/docs/lib-notes/pg.md`), R, CTX(), R, true) === null);
+  check('the working folders are the run\u2019s own seat', writeAdvice(write(`${R}/docs/features/x/0. problem.md`), R, CTX(), R, true) === null);
+  check('the notes are the run\u2019s own seat', writeAdvice(write(`${R}/docs/studies/pg.md`), R, CTX(), R, true) === null);
   check('an existing file outside them is spoken to too', !!writeAdvice(write('README.md'), R, CTX(), R, true));
 
   // --- what is left alone, and why --------------------------------------------
@@ -444,7 +444,7 @@ function selfCheck() {
   check('a project without a declared seat is not spoken to', writeAdvice(write(`${R}/src/a.ts`), R, CTX_NO_SEAT(), R, true) === null);
   check(
     'a declared write root is a seat here too',
-    writeAdvice(write('C:/dev/work/x.md'), R, fakeContext({ studies: ['docs/studies'], writeRoots: ['C:/dev/work'] }), R, true) === null
+    writeAdvice(write('C:/dev/work/x.md'), R, fakeContext({ features: ['docs/features'], writeRoots: ['C:/dev/work'] }), R, true) === null
   );
   // `write_roots` comes from the machine's environment file, taken whole: this is the only
   // reader of that file left in the package, so its resolution is proved here.
@@ -474,7 +474,7 @@ function selfCheck() {
   check('an absent environment file reads as no write root', (noEnvironment.writeRoots || []).length === 0);
   check(
     'a worktree root is measured like the main tree',
-    !!writeAdvice(write('src/a.ts', { cwd: WT }), WT, fakeContext({ studies: [`${WT}/docs/studies`] }), WT, true)
+    !!writeAdvice(write('src/a.ts', { cwd: WT }), WT, fakeContext({ features: [`${WT}/docs/features`] }), WT, true)
   );
   check('a relative path with no base is left alone', writeAdvice({ tool_input: { file_path: 'src/a.ts' } }, null, CTX(), R, true) === null);
   check('a call with no path is left alone', writeAdvice({ tool_input: {} }, R, CTX(), R, true) === null);

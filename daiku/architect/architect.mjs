@@ -436,10 +436,17 @@ function askDecision(input) {
   });
 }
 
-/** 2. The closing of the cycle — `skills/review/SKILL.md` § *Closing*, its six conditions. */
+/**
+ * 2. The closing of the cycle — `skills/review/SKILL.md` § *Closing*, its six conditions.
+ *
+ * `item` is deliberately not read here: it says **whose** the review is, and a review launched
+ * by hand on a naked base-ref is whose of nobody. It stays in the form — the resumption reads
+ * it to recognise the same interrupted review — but the commit does not need it, and requiring
+ * it would leave such a review green and uncommittable.
+ */
 function readableLedger(ledger) {
   if (!ledger || typeof ledger !== 'object' || Array.isArray(ledger)) return false;
-  if (!nonEmpty(ledger.base) || !nonEmpty(ledger.item)) return false;
+  if (!nonEmpty(ledger.base)) return false;
   if (!Array.isArray(ledger.rounds)) return false;
   if (!ledger.rounds.every((round) => round && Array.isArray(round.missing_disciplines))) return false;
   return ['outcome', 'coverage', 'gate', 'gate_detail'].every((key) => ledger[key] !== undefined && ledger[key] !== null);
@@ -1384,9 +1391,9 @@ const CASES = [
   { id: 'closing:condition-unreadable-ledger', cites: { file: 'skills/review/SKILL.md', section: 'Closing' },
     input: { question: 'closing', review_outcome: GREEN({ oscillation: 0 }), ledger: null },
     expect: { verdict: 'stop', blockers_include: 'ledger' } },
-  { id: 'closing:condition-ledger-without-item', cites: { file: 'skills/review/SKILL.md', section: 'Closing' },
-    input: { question: 'closing', review_outcome: GREEN({ oscillation: 0 }), ledger: { base: 'abc1234', item: null, rounds: [], outcome: 'fixed-point', gate: 'green', gate_detail: 'ok' } },
-    expect: { verdict: 'stop', blockers_include: 'ledger' } },
+  { id: 'closing:condition-ledger-without-item-does-not-block', cites: { file: 'skills/review/SKILL.md', section: 'Closing' },
+    input: { question: 'closing', review_outcome: GREEN({ oscillation: 0 }), ledger: { base: 'abc1234', item: null, rounds: [], outcome: 'fixed-point', coverage: 'no-tests-needed', gate: 'green', gate_detail: 'ok' } },
+    expect: { verdict: 'commit', blockers: [] } },
   { id: 'closing:condition-ledger-without-coverage', cites: { file: 'skills/review/SKILL.md', section: 'Closing' },
     input: { question: 'closing', review_outcome: GREEN({ oscillation: 0 }), ledger: { base: 'abc1234', item: 'x/y', rounds: [], outcome: 'fixed-point', coverage: null, gate: 'green', gate_detail: 'ok' } },
     expect: { verdict: 'stop', blockers_include: 'ledger' } },

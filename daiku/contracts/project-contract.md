@@ -69,9 +69,8 @@ of a file, the presence or absence of an area. Three prohibitions, in order of s
 | `version.file` | file carrying the application's canonical version |
 | `version.field` | exact spot in the file where that version lives |
 | `version.replicated_in` | other files carrying the same version and updated together; empty or absent list if there are none |
-| `paths.studies` | folder hosting the work folders, one per problem, with the method's numbered files inside; it stands **under `.daiku/`**, like the two keys below it |
-| `paths.lib_notes` | folder of notes on a studied technology; under `.daiku/` |
-| `paths.features` | folder of the feature catalogue: one folder per feature, one file per study contributing to it; under `.daiku/` |
+| `paths.studies` | folder of the notes on a studied technology, one file per technology; it stands **under `.daiku/`**, like the key below it |
+| `paths.features` | folder hosting the working folders, one per problem, with the method's numbered files inside — and, beside them, the feature catalogue: one folder per feature, one file per study contributing to it; under `.daiku/` |
 | `paths.review_state` | folder where a review's ledger lives; it stands **inside the repository tree**, under the technical root, but **outside version control** — a `.gitignore` line excludes it — and it is **never under `.daiku/`**, which is versioned (§8); stable, not session-scoped |
 | `memory.root` | root of the persistent memory corpus, inside the repository (§8); on Claude Code it is also the folder where the host writes its own memory (§4.2) |
 | `memory.index` | index file of the corpus, the one read first |
@@ -90,13 +89,13 @@ of a file, the presence or absence of an area. Three prohibitions, in order of s
 
 No key is mandatory besides `contract`: everything else is subject to §6.
 
-**The three keys of the method's own documents — `paths.studies`, `paths.lib_notes`,
-`paths.features` — stand under `.daiku/`.** What they host is Daiku's corpus and not the project's
-documentation: `0. problem.md`, `1. decision-doc.md`, the notes and the catalogue are written by the
-method, read by the method, and seated among the project's own files they would be a second
-documentation tree that nobody chose and that the project is expected to keep. `.daiku/` is versioned
-(§8), so they enter the history like any other source file, and `init` **assigns** those three seats
-rather than adopting a folder the project already keeps.
+**The two keys of the method's own documents — `paths.studies` and `paths.features` — stand under
+`.daiku/`.** What they host is Daiku's corpus and not the project's documentation: `0. problem.md`,
+`1. decision-doc.md`, the notes and the catalogue are written by the method, read by the method, and
+seated among the project's own files they would be a second documentation tree that nobody chose and
+that the project is expected to keep. `.daiku/` is versioned (§8), so they enter the history like any
+other source file, and `init` **assigns** those two seats rather than adopting a folder the project
+already keeps.
 
 **Which file covers a path that stays out of version control.** `paths.review_state`
 stands outside what Git versions, and "is this path ignored?" is answered by the repository's own
@@ -366,11 +365,20 @@ Both live **in the project**, under `.daiku/`, and the folder **is versioned**: 
 part of it by hand, and a clone must find it without running `/init` again. The folder stands inside
 the repository and enters a diff like any other source file.
 
-Beside them stands `update.mjs`, which `init` copies from `templates/project/` together with the
-`daiku: update` task of `.vscode/tasks.json` that runs it: it reads the version in place, refreshes
-the `daiku` marketplace, shows the version in place beside the one the catalogue is carrying, asks
-whether to update, and on a yes updates the package on Claude Code. It is not a parameter — no skill
-and no hook reads it.
+Beside them stand the **scripts `init` deposits**, `update.mjs` first: it is copied from
+`templates/project/` together with the `daiku: update` task of `.vscode/tasks.json` that runs it —
+it reads the version in place, refreshes the `daiku` marketplace, shows the version in place beside
+the one the catalogue is carrying, asks whether to update, and on a yes updates the package on
+Claude Code. It is no parameter — no skill and no hook reads it.
+
+And it is **not the project's file**, which is why it is the one thing under `.daiku/` that `init`
+rewrites. Each script carries the marker `daiku:script <version>` at its top, holding the version of
+the package that deposited it; where the marker names another version, or is absent, the file on
+disk was written by a Daiku older than the one in place, and `init` **recreates it whole** from the
+skeleton. Without the marker an update would stop at the package and leave the project running the
+script of a Daiku it no longer has — and the marker is the only thing distinguishing the two
+readings of the same file: a script this package wrote, which stays, and a script it did not, which
+goes.
 
 And beside it lands `README.md`, copied from the same folder as `.daiku/README.md`: it is Daiku's
 own documentation — what the method is, the commands it offers, where the values live — and it

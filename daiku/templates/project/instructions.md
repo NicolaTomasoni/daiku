@@ -22,7 +22,7 @@ copy.
 - **`<technical document>`** — the human document: complete but shallow, what the system does and
   why, without code names or implementation detail. Not an input to the work; kept aligned when
   the architecture changes.
-- **`<studies folder>`** — upcoming work and the developer's working files. The future lives only
+- **`<working folders>`** — upcoming work and the developer's working files. The future lives only
   here, and is never anticipated in memory.
 
 Working base: the code, this file, the loaded policies and the relevant memory. The technical

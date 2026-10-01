@@ -19,7 +19,11 @@
  * and a `process` task has no terminal to ask it in — and `templates/project/update.mjs`
  * reads the two versions — the one in place from the host, the one arriving out of the
  * refreshed catalogue — draws the delta, asks before it runs the two update commands in
- * order, and stays silent where there is no terminal. What it deliberately does not check: key-level acceptance by
+ * order, and stays silent where there is no terminal. It checks too the marker `init` fills on
+ * every script it deposits — `daiku:script <version>` — which the skeleton must carry as a
+ * placeholder: a literal there would be a second seat of the package version, and it is from
+ * that line that a relaunched `init` recognises a script written by an older Daiku and
+ * recreates it whole. What it deliberately does not check: key-level acceptance by
  * the hosts — neither real validator looks inside these files (verified with
  * `validate_plugin.py`, which is silent on hooks, on 2026-09-26), so `description`
  * stays in the Codex template until a validator rejects it for real. The day a
@@ -227,6 +231,17 @@ function selfCheck() {
     script.includes('Update Daiku now?') && script.includes('Not now')
   );
   check('update script asks only where there is a terminal', script.includes('process.stdin.isTTY'));
+  // The marker of the version that wrote it, and the reason `init` may rewrite the file: it is a
+  // package artefact, and the version in that line is the package's. It travels as a placeholder
+  // because a literal here would be a second seat of the version, drifting from the manifests.
+  check(
+    'update script template carries the version marker as a placeholder',
+    script.includes('daiku:script <version>')
+  );
+  check(
+    'update script template carries one daiku:script marker line, and no more',
+    (script.match(/^\/\/ daiku:script/gm) || []).length === 1
+  );
 
   process.stdout.write(JSON.stringify({ checks: ran, passed: ran - failed.length, failed }, null, 2) + '\n');
   return failed.length ? 1 : 0;

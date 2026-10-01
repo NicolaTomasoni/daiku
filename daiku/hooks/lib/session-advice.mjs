@@ -14,7 +14,7 @@
  *     not the review notes is work in flight: whoever opens a new session and restarts from
  *     scratch loses the brief already written, and almost always does not know it existed.
  *
- * **The project says where the working folders live**, via `{paths.studies}` in
+ * **The project says where the working folders live**, via `{paths.features}` in
  * `.daiku/project.json`: it is a parameter, not a convention to guess, and it is the same
  * key the method skills read to know where to deposit the numbered files. When it is not
  * declared, this notice does not exist — §6 of `contracts/project-contract.md`, *what the
@@ -90,7 +90,7 @@ export function installWarning(root, env) {
 /** Works left halfway: blueprint written, review never landed. */
 export function openWorksWarning(root, env, ctx) {
   const pending = [];
-  const sites = (ctx && ctx.present && ctx.studies) || [];
+  const sites = (ctx && ctx.present && ctx.features) || [];
 
   for (const site of sites) {
     const base = join(root, site);
@@ -180,8 +180,8 @@ function selfCheck() {
   // The location comes from the context, not the code: the three contexts below are the three
   // states a project can be in, and the first case of each group proves that without a
   // declaration nothing is searched anywhere.
-  const CTX = fakeContext({ studies: ['docs/new-developments'] });
-  const CTX_TWO = fakeContext({ studies: ['docs/new-developments', 'dev/new-developments'] });
+  const CTX = fakeContext({ features: ['docs/new-developments'] });
+  const CTX_TWO = fakeContext({ features: ['docs/new-developments', 'dev/new-developments'] });
   const CTX_NO_SITE = fakeContext({});
   const CTX_NO_DAIKU = fakeContext({ present: false });
 
@@ -224,14 +224,14 @@ function selfCheck() {
   // --- the location read from a real project.json ----------------------------------
   const withSite = {
     exists: (p) => String(p).replace(/\\/g, '/').endsWith('.daiku/project.json'),
-    read: () => '{"contract": 1, "paths": {"studies": "documentation/works"}}',
+    read: () => '{"contract": 1, "paths": {"features": "documentation/works"}}',
   };
-  check('paths.studies comes from the JSON', loadContext(R, withSite).studies[0] === 'documentation/works');
+  check('paths.features comes from the JSON', loadContext(R, withSite).features[0] === 'documentation/works');
   const withoutSite = {
     exists: (p) => String(p).replace(/\\/g, '/').endsWith('.daiku/project.json'),
     read: () => '{"contract": 1}',
   };
-  check('paths.studies missing: no location', loadContext(R, withoutSite).studies.length === 0);
+  check('paths.features missing: no location', loadContext(R, withoutSite).features.length === 0);
 
   // --- the combined set --------------------------------------------------------------
   check('clean project: no warnings', warnings(R, fakeEnv(healthy), CTX).length === 0);

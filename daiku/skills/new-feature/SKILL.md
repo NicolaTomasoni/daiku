@@ -34,7 +34,7 @@ Progress and findings go **in chat**, as you go: one line when a phase starts an
 
 ### 1. Open the folder, and the memory
 
-From the description derive a kebab-case **slug** saying the *problem*, not the solution — you have not chosen the solution yet, and a slug naming it orients everything coming after. The folder is `{paths.studies}/<slug>/`: create it. If it already exists, ask confirmation before working inside it — it is the only other question admitted before the decisions. With `--no-ask` that confirmation is not asked either: the run works inside the folder, where the study updates in place what it finds still valid.
+From the description derive a kebab-case **slug** saying the *problem*, not the solution — you have not chosen the solution yet, and a slug naming it orients everything coming after. The folder is `{paths.features}/<slug>/`: create it. If it already exists, ask confirmation before working inside it — it is the only other question admitted before the decisions. With `--no-ask` that confirmation is not asked either: the run works inside the folder, where the study updates in place what it finds still valid.
 
 Open `{memory.index}` and the memories the problem area touches: it is the channel of §4.1 of `contracts/orchestration.md`. A gap a memory already closed is not a gap, and a trade-off the owner already decided is not reopened here. The paths you choose now you will pass to every step deciding or writing.
 
@@ -50,7 +50,7 @@ If a front stays uncovered or doubtful, do a targeted reading yourself before cl
 
 ### 3. First draft of `0. problem.md`
 
-Write `{paths.studies}/<slug>/0. problem.md`: it describes the problem, documents how it works today, identifies the concrete gaps, highlights trade-offs and doubts, delimits the boundary. **It does not propose solutions** — those arrive from the study of the decisions.
+Write `{paths.features}/<slug>/0. problem.md`: it describes the problem, documents how it works today, identifies the concrete gaps, highlights trade-offs and doubts, delimits the boundary. **It does not propose solutions** — those arrive from the study of the decisions.
 
 ```markdown
 # <Problem title> — the problem
@@ -100,7 +100,7 @@ Look at the third-party technologies the investigation named and ask yourself, f
 - it is young or niche;
 - the work will require you to write its signatures, decorators, imports or configuration files, and in the project there is no example to copy them from.
 
-Do not study it if it stands still for years and the feature does not touch its public surface. And if `{paths.lib_notes}/<technology-slug>.md` already exists, **read it before deciding**: if it covers the version in use and is recent, that is the study — reuse it and relaunch nothing. If it covers an older version, launch `research`, which collects and then has `study` reorder them instead of restarting from zero.
+Do not study it if it stands still for years and the feature does not touch its public surface. And if `{paths.studies}/<technology-slug>.md` already exists, **read it before deciding**: if it covers the version in use and is recent, that is the study — reuse it and relaunch nothing. If it covers an older version, launch `research`, which collects and then has `study` reorder them instead of restarting from zero.
 
 **The decision is yours and it is not asked.** The owner asked for a feature, not a study plan. And it is not a choice by feel: the model "feeling confident" on a young library is exactly the case where it invents plausible and wrong signatures. When in doubt study — it costs a fan-out, while an invented API costs a review round, and sometimes passes.
 
@@ -108,7 +108,7 @@ One subagent per technology, all in the same tool-call block. In the prompt:
 
 - the **contract to read**: `skills/research/SKILL.md`, in full, `from-new-feature` invocation — the constraints of that mode stay there and are not recopied here;
 - the **resolved input** of that invocation: the `technology` and the `in_use_version` in the project, as the investigation read it from the manifest, and the `questions` the notes must answer — three to six, concrete, derived from the gaps and doubts you just wrote. They are what distinguishes a targeted study from an encyclopedia nobody rereads;
-- the **return format**: what the invocation declares (only the file path in `{paths.lib_notes}/`). The notes are read by opening that file, not by reading fields.
+- the **return format**: what the invocation declares (only the file path in `{paths.studies}/`). The notes are read by opening that file, not by reading fields.
 
 If no technology deserves it, say so in one line in chat and move to point 6: point 5 has nothing to re-examine.
 
@@ -134,7 +134,7 @@ This step is yours and is not delegated: you wrote the document, and you are the
 A subagent in a fresh context. In the prompt:
 
 - the **contract to read**: `skills/decision-doc/SKILL.md`, in full, before acting, in the *From `new-feature` — study* mode that file declares;
-- the **resolved input**: the `{paths.studies}/<slug>/` folder and, inside, `0. problem.md` — it is already the base document of the problem, there is nothing to concatenate;
+- the **resolved input**: the `{paths.features}/<slug>/` folder and, inside, `0. problem.md` — it is already the base document of the problem, there is nothing to concatenate;
 - the **material the request came with**: a brief, an analysis, a plan, when they exist outside that folder. They travel as material **to interrogate**, never as a direction already settled — and an implementation plan or a list of open decisions among them is the first thing the stage judgement has to face, not the frame it inherits: a direction resting on them is `material` in the block, and the stage that follows is `strategic`;
 - the **note paths** point 4 produced or reused, with the instruction to open them before studying the options. They are the reason you spent that fan-out: a technical option motivated on model memory, when the source is on disk, is the defect this chain exists to avoid;
 - the **pertinent memory**: `{memory.index}` and the paths you opened at point 1;
@@ -202,7 +202,7 @@ A step has failed when the block does not come back, comes back incomplete or co
 
 - Respect the runtime constraints `{hosts.<host>.instructions_file}` declares, and in any case: **no searches on the whole filesystem**.
 - **Do not commit** and do not push: commit belongs to delivery, which runs on its own worktree.
-- Outside the problem folder one writes only in `{paths.lib_notes}/`, and `research` (collection) and `study` only via `research` (reordering) write there. **A notice repeats the rule where a write would break it**: while the run it opened is open, a write made from here outside those seats and the `{write_roots}` the machine declares is where the reminder arrives — it is work, and work is a subagent, whose own write passes. Nothing is blocked, and no file is an exception for existing: the reminder says the rule, and the judgement stays here.
+- Outside the problem folder one writes only in `{paths.studies}/`, and `research` (collection) and `study` only via `research` (reordering) write there. **A notice repeats the rule where a write would break it**: while the run it opened is open, a write made from here outside those seats and the `{write_roots}` the machine declares is where the reminder arrives — it is work, and work is a subagent, whose own write passes. Nothing is blocked, and no file is an exception for existing: the reminder says the rule, and the judgement stays here.
 - **Always use paths relative to the repo root** for file links.
 - Save in the project encoding, without degrading non-ASCII characters.
 
