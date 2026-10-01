@@ -245,7 +245,7 @@ The worst case is confined instead of prevented: the blocked dirty stays on the 
 
 Two subagents in sequence, **both before the commit**.
 
-**5a. Stage — worker role.** Stage is separate from commit because step 5b must read the **full** diff of the feature — new files included, which `git diff` does not show until they are in index. In the prompt: the worktree work root, and run only these Git commands with `git -C <worktree_root>`, in order, without asking confirmation — `git status --porcelain -- {code_root}` to locate the touched files (always ignore any file external to `{code_root}`, even if modified — the edit guard denies creating such files), `git add <the identified files, listed singly>` (never `-A`, never `.`), again `git status --porcelain -- {code_root}` to confirm the index. Never `git commit`, never `git push` in this step.
+**5a. Stage — worker role.** Stage is separate from commit because step 5b must read the **full** diff of the feature — new files included, which `git diff` does not show until they are in index. In the prompt: the worktree work root, and run only these Git commands with `git -C <worktree_root>`, in order, without asking confirmation — `git status --porcelain -- {code_root}` to locate the touched files (always ignore any file external to `{code_root}`, even if modified: the feature's perimeter is `{code_root}`, and nothing else enters the index here), `git add <the identified files, listed singly>` (never `-A`, never `.`), again `git status --porcelain -- {code_root}` to confirm the index. Never `git commit`, never `git push` in this step.
 
 ```json
 {"staged": true, "files": ["<path>"], "detail": "<if staged=false, why>"}

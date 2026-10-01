@@ -63,7 +63,7 @@ The two coincide almost always. When they **do not** coincide, installation stil
 
 You know it from where you are running: do not ask it.
 
-On **Claude Code**: you write nothing. Declare the package already carries its hooks and the subagent roles of its `agents/` folder, updating with it, and that for this project there is no gesture to make. Close here. Do not hook those same six hooks a second time from `.claude/settings.json`: the package already hooks them, and the user would find every guard run twice.
+On **Claude Code**: you write nothing. Declare the package already carries its hooks and the subagent roles of its `agents/` folder, updating with it, and that for this project there is no gesture to make. Close here. Do not hook those same five hooks a second time from `.claude/settings.json`: the package already hooks them, and the user would find every guard run twice.
 
 On **Codex**: continue.
 
@@ -92,7 +92,7 @@ For each `.mjs` file that is a hook, launch `node <file> --self-check` and read 
 - non-empty `failed` → **do not hook it**. Copy it anyway, but leave it out of `hooks.json` and report its red cases in the report.
 - No output, or unparsable output → treat it as red. The imported module `daiku-config.mjs` has no bench and is no hook: it is copied and nothing more, and the benches of the hooks importing it cover it indirectly. `project-root.mjs` is no hook either, but it carries a bench of its own.
 
-This step exists because the six hooks are **fail-open**: on failure they stay silent and exit 0. A broken hook and a hook with nothing to say resemble each other too much to be trusted without the bench.
+This step exists because the five hooks are **fail-open**: on failure they stay silent and exit 0. A broken hook and a hook with nothing to say resemble each other too much to be trusted without the bench.
 
 ### 4-bis. Check the shape of what you will write
 
@@ -113,7 +113,7 @@ for the bench.
 
 ### 5. Write `.codex/hooks/` and `.codex/hooks.json`
 
-Copy the `.mjs` files into `<repository root>/.codex/hooks/`, **overwriting** the ones there. Do not keep old versions and do not rename them aside: a `command-guard.old.mjs` file staying there is a hook somebody will put back in service without knowing what it does.
+Copy the `.mjs` files into `<repository root>/.codex/hooks/`, **overwriting** the ones there. Do not keep old versions and do not rename them aside: a `command-guard.old.mjs` file staying there is a hook somebody will put back in service without knowing what it does. **A `.mjs` there that the package no longer carries is removed**, and the report says so: it is the rule *Step 6* follows for the roles, and for the same reason — a file left behind is a guard somebody believes active, or a hook somebody puts back without knowing what it does.
 
 If a file on disk is **different** from the package one, annotate the name: it serves the report, because it is that file restarting approval at step 7.
 
@@ -160,6 +160,7 @@ Valid also for the `.toml` files you **rewrite**: like for the `.mjs` of step 5,
 Close with the list, without embellishments:
 
 - **Copied** — every written `.mjs`, and for each whether it was absent, identical or different.
+- **Removed** — every `.mjs` taken out of `.codex/hooks/` because the package no longer carries it.
 - **Hooked** — which hooks ended up in `hooks.json`, on which event.
 - **Not hooked** — every hook left out, with why and with the red cases of its bench.
 - **Written roles** — every generated `.toml`, with the role it comes from; and the alien `.toml` files you left alone.
@@ -167,7 +168,7 @@ Close with the list, without embellishments:
 
   1. **Approve the hooks**: `/hooks` inside Codex, showing the sources and letting them be trusted. Codex records trust on the file **hash**: new or changed hooks stay flagged for review and **are skipped until approved**. That is why step 5 annotates which files changed — they are exactly the ones coming back asking.
   2. **Trust the project**, if not already: the hooks of `<repo>/.codex/` load only when that layer is trusted. User hooks have no such constraint, project ones do.
-  3. **Declare the pool**, if not already done. The command guard only denies removals inside the worktrees `.daiku/project.json` declares in `{worktree.pool}`; push, `--no-verify`, commits of `.daiku/` and commits crediting Claude or Codex are always denied, without a key, and the edit guard denies new files outside the declared seats while edits to existing files always pass. Watch what is in the JSON and say so: "pool X" or "no pool", not a generic invite to configure something.
+  3. **Declare the pool**, if not already done. The command guard only denies removals inside the worktrees `.daiku/project.json` declares in `{worktree.pool}`; push, `--no-verify`, commits of `.daiku/` and commits crediting Claude or Codex are always denied, without a key. Watch what is in the JSON and say so: "pool X" or "no pool", not a generic invite to configure something.
 
   4. **Reopen the session.** `SessionStart` cannot trigger in the session where the file just appeared, and the approval of point 1 is still given to already serving hooks.
 

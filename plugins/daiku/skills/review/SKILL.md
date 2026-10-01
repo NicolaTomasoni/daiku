@@ -34,7 +34,7 @@ Arguments: `$ARGUMENTS`. **The default is the normal case, and it requires no ar
 - **`--backend <name>`** (optional): the name of the backend the session runs on, to declare only if not the native one of the host; it affects only fan-out concurrency, and it is `contracts/orchestration.md` §5 saying whether that backend sequentialises it.
 - If the first argument resolves to neither a base-ref nor a valid path, ask — do not guess.
 
-**Hard scope constraint:** review always and only covers files under `{code_root}`. No external file enters finders or fixes, even if modified, untracked or cited in the review notes. Everything not standing under `{code_root}` — documentation, memory, skill contracts — belongs to `update-memory`, which the commit contract delegates itself. The changelog does not: `skills/commit/SKILL.md` claims it in its own § *Version bump and changelog* and writes it directly, without passing through `update-memory`. The PreToolUse edit guard enforces this coarse perimeter on new files; layer placement inside `{code_root}` stays with `arch`.
+**Hard scope constraint:** review always and only covers files under `{code_root}`. No external file enters finders or fixes, even if modified, untracked or cited in the review notes. Everything not standing under `{code_root}` — documentation, memory, skill contracts — belongs to `update-memory`, which the commit contract delegates itself. The changelog does not: `skills/commit/SKILL.md` claims it in its own § *Version bump and changelog* and writes it directly, without passing through `update-memory`. This perimeter is drawn by this contract, and no hook enforces it; layer placement inside `{code_root}` stays with `arch`.
 
 ## Before starting
 

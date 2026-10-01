@@ -1,21 +1,21 @@
 /**
  * Daiku's context on this project, read from `.daiku/project.json`.
  *
- * It exists because five of the six guards need the same two facts — **did this
+ * It exists because four of the five hooks need the same two facts — **did this
  * project open Daiku?** and **what did it declare?** — and because the answer cannot
  * sit hard-wired inside a hook: a package installed on a host runs on *every*
  * repository that host opens, including ones Daiku has never seen.
  *
- * Hence the rule governing four of the six hooks — `session-advice` excepted, which reports a
+ * Hence the rule governing three of the five hooks — `session-advice` excepted, which reports a
  * `.daiku/` left halfway:
  *
  * > **Without `.daiku/project.json` the guards stay silent.** Not a degradation: the
  * > boundary. A project that has not opened Daiku asked Daiku for nothing, and a
  * > guardrail denying a command to someone who has not installed it is a fault, not protection.
  *
- * This is the same §6 of `contracts/project-contract.md` — *what the JSON does not declare does not
- * exist* — applied to a hook instead of a skill: no fallback value, no
- * heuristics, no guessed perimeter.
+ * This is the same §6 of `contracts/project-contract.md` — *what the JSON does not declare does
+ * not exist* — applied to a hook instead of a skill: no fallback value, no heuristics, no
+ * guessed perimeter.
  *
  * Fail-open like the rest: missing file, broken JSON, unreachable disk → missing
  * context, hence silence.
@@ -30,26 +30,8 @@ const ABSENT = Object.freeze({
   pool: null,
   studies: [],
   guardrails: Object.freeze({}),
-  codeRoot: null,
-  repoRoot: null,
-  repoGitignore: null,
-  instructionsFiles: Object.freeze([]),
-  memoryRoot: null,
-  techDoc: null,
-  changelog: null,
-  versionFiles: Object.freeze([]),
   libNotes: null,
-  features: null,
   reviewState: null,
-  policiesDir: null,
-  domainDir: null,
-  projectJson: null,
-  environmentFile: null,
-  environmentLocalFile: null,
-  hostLocalSettings: null,
-  updateScript: null,
-  editorTasks: null,
-  tempDir: null,
   writeRoots: Object.freeze([]),
 });
 
@@ -64,19 +46,14 @@ function resolvePath(value, root) {
  * What this project declared. `reads` carries the reads, so each hook's test bench
  * can build a context without touching the disk.
  *
- * Beyond the guard switches, the context carries the **write seats**: every path a
- * skill may legitimately create, resolved absolute. All come from existing keys —
- * `.daiku/project.json` (§4 of the contract) for the project seats,
- * `environment.json` for `tempDir` (contract §8 order: the local file first, then the
- * project one, taken whole, never merged) — plus five constants: `.daiku/policies/`
- * and `.daiku/domain/`, which are a convention, not a key, the machine's
- * `.claude/settings.local.json`, where `init` points the host memory (its *Step 7*), and
- * `.daiku/update.mjs` with the `.vscode/tasks.json` that runs it (its *Step 5-bis*). `repo_root`
- * widens the repository past the technical root where the two differ, and its `.gitignore` —
- * the technical root's when `repo_root` is absent — is the file `init` aligns (its *Step 8*). A missing or
- * unresolvable key contributes `null`, never a guessed path: §6 of the contract,
- * applied to a hook. Nothing is read outside the project: no seat of Daiku lives in
- * the user home.
+ * The context carries what the hooks read and nothing else: the switch and the pool of the
+ * command guard, `paths.studies` for the two hooks that speak about the run's seats,
+ * `paths.lib_notes` and the machine's `write_roots` for the reminder, and
+ * `paths.review_state` for the ledger notice of `stop-advice`. Every path comes from a key of
+ * `.daiku/project.json` (§4 of the contract), except `write_roots`, which belongs to the
+ * environment file of §8 — the machine's local file first, **taken whole**, never merged. A
+ * missing or unresolvable key contributes `null`, never a guessed path: §6 of the contract,
+ * applied to a hook. Nothing is read outside the project: no seat of Daiku lives in the user home.
  */
 export function loadContext(root, reads = REAL_READS) {
   try {
@@ -99,38 +76,13 @@ export function loadContext(root, reads = REAL_READS) {
       .filter(Boolean);
 
     const declared = json.guardrails;
-    const version = json.version && typeof json.version === 'object' ? json.version : {};
-    const replicated = Array.isArray(version.replicated_in) ? version.replicated_in : [];
-    const versionFiles = [version.file, ...replicated]
-      .filter((x) => typeof x === 'string' && x.trim())
-      .map((x) => resolvePath(x, root))
-      .filter(Boolean);
-    const repoRoot = resolvePath(json.repo_root, root);
     return {
       present: true,
       pool: resolvePath(json.worktree && json.worktree.pool, root),
       studies,
       guardrails: declared && typeof declared === 'object' ? declared : {},
-      codeRoot: resolvePath(json.code_root, root),
-      repoRoot,
-      repoGitignore: resolve(join(repoRoot || root, '.gitignore')),
-      instructionsFiles: resolveInstructionsFiles(root, reads),
-      memoryRoot: resolvePath(json.memory && json.memory.root, root),
-      techDoc: resolvePath(json.tech_doc, root),
-      changelog: resolvePath(json.changelog, root),
-      versionFiles,
       libNotes: resolvePath(json.paths && json.paths.lib_notes, root),
-      features: resolvePath(json.paths && json.paths.features, root),
       reviewState: resolvePath(json.paths && json.paths.review_state, root),
-      policiesDir: resolve(join(root, '.daiku', 'policies')),
-      domainDir: resolve(join(root, '.daiku', 'domain')),
-      projectJson: resolve(join(root, '.daiku', 'project.json')),
-      environmentFile: resolve(join(root, '.daiku', 'environment.json')),
-      environmentLocalFile: resolve(join(root, '.daiku', 'environment.local.json')),
-      hostLocalSettings: resolve(join(root, '.claude', 'settings.local.json')),
-      updateScript: resolve(join(root, '.daiku', 'update.mjs')),
-      editorTasks: resolve(join(root, '.vscode', 'tasks.json')),
-      tempDir: resolveTempDir(root, reads),
       writeRoots: resolveWriteRoots(root, reads),
     };
   } catch {
@@ -139,40 +91,10 @@ export function loadContext(root, reads = REAL_READS) {
 }
 
 /**
- * The `tempDir` seat: the machine's local file first, then the project one,
- * whole-file-wins. `null` is the normal case and not a failure — an absent
- * `temp_dir` means the operating system's temporary directory, which the write
- * guard admits on every project.
- */
-function resolveTempDir(root, reads) {
-  const candidates = [
-    join(root, '.daiku', 'environment.local.json'),
-    join(root, '.daiku', 'environment.json'),
-  ];
-  for (const file of candidates) {
-    let json;
-    try {
-      if (!reads.exists(file)) continue;
-      json = JSON.parse(reads.read(file));
-    } catch {
-      continue;
-    }
-    if (json && typeof json === 'object') {
-      const resolved = resolvePath(json.temp_dir, root);
-      if (resolved) return resolved;
-    }
-  }
-  return null;
-}
-
-/**
- * The `writeRoots` seats: the folders where writing and creating are admitted. They are a
- * seat **on both sides of the repository boundary** — the key names a folder, and a path
- * alone cannot say whether it falls inside the repository or outside it — which is what makes
- * this key the way out for whoever owns the machine and decides what gets written where.
- * The environment file of §8 — the machine's local one first, **taken whole**: where it
- * exists and parses, the project one is not read. Absent is the normal case, and reads
- * as no root at all.
+ * The `writeRoots` of the run's reminder: the folders the machine admits, where a write made
+ * from the conversation is not the run's own violation. The environment file of §8 — the
+ * machine's local one first, **taken whole**: where it exists and parses, the project one is not
+ * read. Absent is the normal case, and reads as no root at all.
  */
 function resolveWriteRoots(root, reads) {
   for (const file of [
@@ -191,46 +113,6 @@ function resolveWriteRoots(root, reads) {
     return Object.freeze(declared.map((x) => resolvePath(x, root)).filter(Boolean));
   }
   return Object.freeze([]);
-}
-
-/**
- * The instructions-file seats: one per declared host, read from the environment file
- * (`environment.local.json` first, which wins host by host; absent keys fall through to
- * the project file, the same order `temp_dir` follows).
- *
- * The key is per host because the file is: `CLAUDE.md` and `AGENTS.md` are two
- * different files, and a project using both declares both. Each brings also its
- * **parked previous copy**, `<name>.old` — the file `init` found before writing the new
- * one, kept as material — so the write guard admits creating it.
- */
-function resolveInstructionsFiles(root, reads) {
-  const byHost = new Map();
-  for (const file of [
-    join(root, '.daiku', 'environment.local.json'),
-    join(root, '.daiku', 'environment.json'),
-  ]) {
-    let json;
-    try {
-      if (!reads.exists(file)) continue;
-      json = JSON.parse(reads.read(file));
-    } catch {
-      continue;
-    }
-    if (!json || typeof json !== 'object' || !json.hosts || typeof json.hosts !== 'object') continue;
-    for (const [host, declared] of Object.entries(json.hosts)) {
-      if (byHost.has(host)) continue;
-      if (!declared || typeof declared !== 'object') continue;
-      const resolved = resolvePath(declared.instructions_file, root);
-      if (resolved) byHost.set(host, resolved);
-    }
-  }
-  const seats = [];
-  for (const file of byHost.values()) {
-    // The parked copy **replaces** the extension: `CLAUDE.md` becomes `CLAUDE.old`, so
-    // that the host stops loading it and it stays as material.
-    seats.push(file, `${file.replace(/\.[^./\\]+$/, '')}.old`);
-  }
-  return Object.freeze([...new Set(seats)]);
 }
 
 /** Is `absolute` inside `base`? Prefix comparison, insensitive to Windows case. */
@@ -253,7 +135,7 @@ export const REAL_READS = {
   read: (filePath) => readFileSync(filePath, 'utf-8'),
 };
 
-/** A hand-built context: what the five hooks' test benches use. Seat fields resolve like the pool; absent stays `null`. */
+/** A hand-built context: what the hooks' test benches use. A path field resolves like the pool; absent stays `null`. */
 export function fakeContext(fields = {}) {
   const seat = (value) => {
     if (typeof value !== 'string' || !value.trim()) return null;
@@ -268,30 +150,8 @@ export function fakeContext(fields = {}) {
     pool: fields.pool ? resolve(fields.pool) : null,
     studies: fields.studies || [],
     guardrails: fields.guardrails || {},
-    codeRoot: seat(fields.codeRoot),
-    repoRoot: seat(fields.repoRoot),
-    repoGitignore: seat(fields.repoGitignore),
-    instructionsFiles: Array.isArray(fields.instructionsFiles)
-      ? fields.instructionsFiles.map(seat).filter(Boolean)
-      : [],
-    memoryRoot: seat(fields.memoryRoot),
-    techDoc: seat(fields.techDoc),
-    changelog: seat(fields.changelog),
-    versionFiles: Array.isArray(fields.versionFiles)
-      ? fields.versionFiles.map(seat).filter(Boolean)
-      : [],
     libNotes: seat(fields.libNotes),
-    features: seat(fields.features),
     reviewState: seat(fields.reviewState),
-    policiesDir: seat(fields.policiesDir),
-    domainDir: seat(fields.domainDir),
-    projectJson: seat(fields.projectJson),
-    environmentFile: seat(fields.environmentFile),
-    environmentLocalFile: seat(fields.environmentLocalFile),
-    hostLocalSettings: seat(fields.hostLocalSettings),
-    updateScript: seat(fields.updateScript),
-    editorTasks: seat(fields.editorTasks),
-    tempDir: seat(fields.tempDir),
     writeRoots: Array.isArray(fields.writeRoots) ? fields.writeRoots.map(seat).filter(Boolean) : [],
   };
 }

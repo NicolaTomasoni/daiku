@@ -412,8 +412,8 @@ looked up, are §8 of `contracts/project-contract.md`.
 | `backends.<backend>.base_url` | URL the environment points at when that backend is active; absent on the host's native backend |
 | `backends.<backend>.sequential_fanout` | declared only on backends whose fan-out must be sequentialised (§5) |
 | `backends.<backend>.caveats` | that backend's warnings to report in summary, one per line; absent if there are none |
-| `temp_dir` | machine's temporary directory, for artefacts that must not end up in the repository; **absent is the normal case** — the readers fall back on the operating system's, which is the right answer on every machine |
-| `write_roots` | folders where the write guard admits writing and creating, **wherever they stand**: a path alone cannot say whether it falls inside the repository or outside it, so the seat holds on both sides of that boundary — a machine's own paths, so they belong in `environment.local.json`; **absent is the normal case**: outside the repository only `{paths.review_state}`, `{temp_dir}` and the operating system's temporary directory are writable, and inside it only `{code_root}` and the declared seats |
+| `temp_dir` | machine's temporary directory, for artefacts that must not end up in the repository; **absent is the normal case** — the operating system's temporary directory is the right answer on every machine |
+| `write_roots` | folders the machine admits, where **a write made from the conversation is not the run's own violation**: `run-advice` measures the run's seats (`{paths.studies}`, `{paths.lib_notes}`) and adds these, so the reminder does not speak where the machine already declared the folder writable — a machine's own paths, so they belong in `environment.local.json`, and the folder is named, not the side it stands on; **absent is the normal case**, and the reminder then knows only the run's seats |
 
 No key is mandatory besides `contract`: for everything else the degradation of
 §6 of `contracts/project-contract.md` applies.
