@@ -9,7 +9,8 @@ metadata:
 ---
 
 `.daiku/` **entra nella storia condivisa** del progetto che l'ha aperta: `project.json`,
-`environment.json`, `domain/`, `policies/`. È la configurazione che il progetto ha scritto di sé,
+`environment.json`, `domain/`, `policies/` e la documentazione di Daiku su sé stesso, che `init`
+deposita come `.daiku/README.md`. È la configurazione che il progetto ha scritto di sé,
 e parte di essa è scritta a mano — le policy e il domain, che nessun `init` rigenera — quindi un
 clone deve trovarla senza rifare `/init`. **L'unica cosa che resta fuori è
 `.daiku/environment.local.json`**, l'override della singola macchina: `init` scrive nel
