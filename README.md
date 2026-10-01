@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <img alt="version 1.0.5" src="https://img.shields.io/badge/version-1.0.5-3b82f6?style=flat" /> <br>
+  <img alt="version 1.0.6" src="https://img.shields.io/badge/version-1.0.6-3b82f6?style=flat" /> <br>
   <a href="https://code.claude.com"><img alt="Claude Code" src="https://img.shields.io/badge/Claude_Code-D97757?style=flat&logo=claude&logoColor=white" /></a>
   <a href="https://developers.openai.com/codex"><img alt="OpenAI Codex" src="https://img.shields.io/badge/OpenAI_Codex-000000?style=flat&logo=openai&logoColor=white" /></a>
 </p>
@@ -50,7 +50,7 @@
 **1. Install the plugin** — once, on your host:
 
 ```text
-# on Claude Code, from the chat:
+# on Claude Code, from the terminal:
 claude plugin marketplace add NicolaTomasoni/daiku
 claude plugin install daiku@daiku
 
@@ -59,8 +59,11 @@ codex plugin marketplace add NicolaTomasoni/daiku
 codex plugin add daiku@daiku
 ```
 
-> The final marketplace address arrives with Daiku's first public release.
-> Meanwhile install from the repository's local checkout (both hosts accept it).
+> `marketplace add` clones the repository once, and `install` copies the package out of that local
+> clone: neither one fetches anything, and running the two again changes nothing — a newer Daiku
+> never arrives that way. It arrives through the marketplace update — on Claude Code
+> `claude plugin marketplace update daiku` then `claude plugin update daiku@daiku`, the two lines
+> of the `daiku: update` task `/init` leaves in your editor.
 
 Only requirement: **Node.js**. Without it the five protection hooks stay silent, and the method's
 evaluator does not start at all: its verdict binds, so a delivery stops there instead of degrading.

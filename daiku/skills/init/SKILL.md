@@ -1,6 +1,6 @@
 ---
 name: 'init'
-description: 'Opens Daiku on a project not having it yet, in one shot after asking the two languages: writes `.daiku/` — `project.json`, `environment.json`, `domain/`, `policies/` — the project instructions file and the `.gitignore` lines the method needs, starting from the package skeletons and filling them with what it reads in the repository. Idempotent: it never overwrites an existing file. It launches once per project, and again when the package carries a new skeleton.'
+description: 'Opens Daiku on a project not having it yet, in one shot after asking the two languages: writes `.daiku/` — `project.json`, `environment.json`, `domain/`, `policies/`, `README.md` — the project instructions file and the `.gitignore` lines the method needs, starting from the package skeletons and filling them with what it reads in the repository. Idempotent: it never overwrites an existing file. It launches once per project, and again when the package carries a new skeleton.'
 argument-hint: '[technical root, optional — default: current directory]'
 ---
 
@@ -49,6 +49,7 @@ Under `templates/`, at the package root — the folder containing `skills/`, `co
 | `templates/project/environment.json` | `.daiku/environment.json` | you **empty and refill it**: see *Step 4* |
 | `templates/project/domain/` | `.daiku/domain/` | you copy its README, and each role's default unless the project already answers that role: see *Step 5* |
 | `templates/project/policies/` | `.daiku/policies/` | you copy its README, and write one policy per area the project already keeps rules for: see *Step 5* |
+| `templates/project/README.md` | `.daiku/README.md` | you copy it as it is: Daiku's own documentation: see *Step 5* |
 | `templates/project/instructions.md` | the instructions file, in the technical root | you **fill it**: see *Step 6* |
 | `templates/project/update.mjs` | `.daiku/update.mjs` | you copy it as it is: see *Step 5-bis* |
 | `templates/vscode/tasks.json` | `.vscode/tasks.json`, in the technical root | you copy it, or add its task to the file already there: see *Step 5-bis* |
@@ -261,6 +262,8 @@ If the skeleton still contains values recognisably of another project or another
 
 **The README of each skeleton folder** is copied as it is: it is the convention of the folder — how a domain file is named, what a policy file must have in the frontmatter — not merit content.
 
+**Daiku's own documentation** — `templates/project/README.md` — is copied as it is to `.daiku/README.md`, and it is the one file of this step that is not the project's: it says what Daiku is, the commands it offers and where the values live, and it is what whoever asks about Daiku reads to answer. Copied once, it belongs to the user from then on, like every other skeleton.
+
 **A domain or a policy the project already wrote is pointed at, never copied.** The project's own file stays where it is and stays the only place the rule is changed; what you write under `.daiku/` is the address the skills use to reach it. A copy would be a second text of the same rule — translated into English on top (§5.6 of `contracts/project-contract.md`), and drifting from the original at the first edit, with nobody knowing which one holds.
 
 A pointer file is short and always has the same form: the heading of its role or area, one line saying that this project declares that answer in its own files and that they are to be read in full as if written here, and the list of those files — one per line, path relative to the technical root, and the section when the answer is only one section of a larger file (the memory contract inside the instructions file, the commit convention inside a command file).
@@ -283,7 +286,8 @@ A rule file spanning several areas is listed in the policy of each. A rule file 
 
 ### 5-bis. Write the update task
 
-Daiku updates with two commands — `claude plugin marketplace update daiku`, then `claude plugin update daiku@daiku` — and the project gets them as one VS Code task, `daiku: update`, running a script under `.daiku/`.
+Daiku updates with two commands — `claude plugin marketplace update daiku`, then `claude plugin update daiku@daiku` — and the project gets them as one VS Code task, `daiku: update`, running a script under `.daiku/`
+that shows the version in place and asks before running them.
 
 - **The script**: copy `templates/project/update.mjs` into `.daiku/update.mjs` as it is. If it is already there, leave it.
 - **The task**: if `.vscode/tasks.json` does not exist in the technical root, copy `templates/vscode/tasks.json` there as it is. If it exists and already carries a task labelled `daiku: update`, leave it. If it exists without that task, **add** the skeleton's task object as the last element of its `tasks` array, and touch nothing else: the file is JSON with comments, so edit it as text — its comments, its order and its line ending stay as they were. A file with no `tasks` array gets one, beside its `version`.

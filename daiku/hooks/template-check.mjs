@@ -14,9 +14,11 @@
  * the host reads; no event list is empty; every `command` resolves to a `.mjs`
  * the package really carries; every hook of `lib/` with a bench is hooked in
  * the package file. It also checks the update task `init` lays down: the
- * `templates/vscode/tasks.json` skeleton carries one `daiku: update` task running
- * `.daiku/update.mjs`, and `templates/project/update.mjs` runs the two update commands
- * in order. What it deliberately does not check: key-level acceptance by
+ * `templates/vscode/tasks.json` skeleton carries one `daiku: update` shell task
+ * running `.daiku/update.mjs` — a shell task because the script asks a question,
+ * and a `process` task has no terminal to ask it in — and `templates/project/update.mjs`
+ * asks before it runs the two update commands in order, and stays silent where there
+ * is no terminal. What it deliberately does not check: key-level acceptance by
  * the hosts — neither real validator looks inside these files (verified with
  * `validate_plugin.py`, which is silent on hooks, on 2026-09-26), so `description`
  * stays in the Codex template until a validator rejects it for real. The day a
@@ -180,7 +182,8 @@ function selfCheck() {
   }
 
   // The update task `init` lays down: one task, the label users call it by, running the
-  // script `init` copies beside it — and the script runs the two update commands, in order.
+  // script `init` copies beside it — and the script shows the version, asks, and only on a
+  // yes runs the two update commands, in order.
   let tasks = null;
   try {
     tasks = readJson('templates/vscode/tasks.json');
@@ -191,9 +194,11 @@ function selfCheck() {
   const updateTasks = ((tasks && tasks.tasks) || []).filter((t) => t && t.label === 'daiku: update');
   check('vscode tasks template carries exactly one daiku: update task', updateTasks.length === 1);
   const task = updateTasks[0] || {};
+  // A **shell** task, and not for style: a `process` task runs the command with no terminal,
+  // and a script that asks a question could never ask it there.
   check(
-    'daiku: update runs node on .daiku/update.mjs',
-    task.command === 'node' && Array.isArray(task.args) && task.args.join(' ') === '.daiku/update.mjs'
+    'daiku: update runs node on .daiku/update.mjs, in a shell task',
+    task.type === 'shell' && task.command === 'node .daiku/update.mjs'
   );
   let script = '';
   try {
@@ -205,6 +210,13 @@ function selfCheck() {
   const marketplace = script.indexOf("'claude plugin marketplace update daiku'");
   const plugin = script.indexOf("'claude plugin update daiku@daiku'");
   check('update script refreshes the marketplace, then updates the plugin', marketplace !== -1 && plugin > marketplace);
+  // The question, and the terminal that makes it askable: where there is none, the script says
+  // so and changes nothing rather than updating on an answer nobody gave.
+  check(
+    'update script asks before updating',
+    script.includes('Update Daiku now?') && script.includes('Not now')
+  );
+  check('update script asks only where there is a terminal', script.includes('process.stdin.isTTY'));
 
   process.stdout.write(JSON.stringify({ checks: ran, passed: ran - failed.length, failed }, null, 2) + '\n');
   return failed.length ? 1 : 0;
