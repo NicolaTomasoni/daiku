@@ -1,11 +1,11 @@
 ---
 name: installazione-e-versionamento
-description: "I comandi di installazione e aggiornamento sui due host, cosa governa l'aggiornamento, il cachebuster di Codex in sviluppo locale e il terzo canale di distribuzione"
+description: "I comandi di installazione e aggiornamento sui due host, cosa governa l'aggiornamento, da dove si legge la versione che sta arrivando senza installarla, il cachebuster di Codex in sviluppo locale e il terzo canale di distribuzione"
 metadata:
   node_type: memory
   type: project
   originSessionId: 74fa8bc9-dbb1-4c77-bf91-e6ec34544097
-  modified: 2026-09-30T13:27:32.355Z
+  modified: 2026-10-01T11:25:21.000Z
 ---
 
 **I comandi, verificati il 18 settembre 2026.** Su Claude Code `/plugin marketplace add
@@ -35,6 +35,18 @@ marketplace(s) from their source»), poi `claude plugin update <plugin>` («Upda
 latest version (restart required to apply)»). Il pacchetto li porta al progetto ospite in
 quest'ordine, come task VS Code `daiku: update` che `init` deposita. Che `plugin update` da solo non
 rinfreschi il catalogo del marketplace è un'assunzione, non una prova.
+
+**Le due versioni si leggono senza installare niente**, verificato il 1° ottobre 2026 su `claude`
+2.1.276. Quella **in place** con `claude plugin list --json` (`id`, `version`, `installPath`).
+Quella **che sta arrivando** dal catalogo: `claude plugin marketplace list --json` porta
+`installLocation`, e lì dentro la copia del repo pubblicato tiene il catalogo
+(`.claude-plugin/marketplace.json`, la cui voce dà il `source` del pacchetto) e il manifest
+`<source>/.claude-plugin/plugin.json`, che dichiara la versione l'host installerebbe. È da lì che
+`templates/project/update.mjs` disegna `1.0.6 >>> 1.0.7` prima di chiedere, e il rinfresco del
+catalogo — che riscrive solo quella copia, mai il pacchetto installato — viene prima della domanda.
+`claude plugin update <plugin> --json` stampa una sola riga macchina, invece del messaggio umano, con
+`updateOutcome`, `oldVersion` e `newVersion`: è la versione arrivata davvero, che il solo
+`plugin list` non dà nello stesso istante.
 
 **In sviluppo locale, su Codex, il bump non è la via: c'è il cachebuster.** Si sostituisce il
 suffisso dopo `+` nella versione — `0.1.0` → `0.1.0+codex.local-20260918-143000` — e si reinstalla
