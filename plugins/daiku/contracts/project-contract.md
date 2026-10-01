@@ -367,9 +367,10 @@ part of it by hand, and a clone must find it without running `/init` again. The 
 the repository and enters a diff like any other source file.
 
 Beside them stands `update.mjs`, which `init` copies from `templates/project/` together with the
-`daiku: update` task of `.vscode/tasks.json` that runs it: it shows the version in place, asks
-whether to update, and on a yes refreshes the `daiku` marketplace and updates the package on
-Claude Code. It is not a parameter — no skill and no hook reads it.
+`daiku: update` task of `.vscode/tasks.json` that runs it: it reads the version in place, refreshes
+the `daiku` marketplace, shows the version in place beside the one the catalogue is carrying, asks
+whether to update, and on a yes updates the package on Claude Code. It is not a parameter — no skill
+and no hook reads it.
 
 And beside it lands `README.md`, copied from the same folder as `.daiku/README.md`: it is Daiku's
 own documentation — what the method is, the commands it offers, where the values live — and it
