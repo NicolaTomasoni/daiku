@@ -11,8 +11,7 @@ Il push è un gesto manuale dell'owner, e **tre sedi** lo impongono nel cantiere
   È la porta che l'hook non chiude: una permission rule dell'host sta sopra ogni altra regola e non
   la si aggira con un wrapper. Provata col dry-run, che è stato negato.
 - **`.daiku/project.json`** — accende il gate del pacchetto su questo repository, e da lì il
-  command-guard nega `git push`, `--no-verify` e le firme dell'agente, l'edit-guard i file nuovi
-  fuori dalle sedi. Vedi [[guardie-di-macchina]].
+  command-guard nega `git push`, `--no-verify` e le firme dell'agente. Vedi [[guardie-di-macchina]].
 - **`.docs/tools/check-no-push.mjs`** — scansiona gli script del cantiere e segnala chi invoca un
   push. Col suo banco (`--self-check`), e si lancia prima di un rilascio accanto agli altri.
 

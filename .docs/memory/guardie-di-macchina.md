@@ -15,8 +15,7 @@ presidio del target (`guardia-target.mjs` con la sua configurazione e l'interrut
 Recinto e presidio sono registrati nel blocco `hooks` dei managed settings. In questo repository non
 gira nessuna guardia **di macchina**, ma dal 30 settembre 2026 girano quelle **del pacchetto**: il
 cantiere ha il suo `.daiku/project.json`, che accende il gate di Daiku — quindi il command-guard
-nega qui `git push`, `--no-verify` e le firme dell'agente, e l'edit-guard nega i file nuovi fuori
-dalle sedi dichiarate. Accanto sta `.claude/settings.json`, con la lista `permissions.deny` su
+nega qui `git push`, `--no-verify` e le firme dell'agente. Accanto sta `.claude/settings.json`, con la lista `permissions.deny` su
 `git push`: è la porta che l'hook non chiude, perché una permission rule dell'host sta sopra ogni
 altra regola e non la si aggira con un wrapper. Provata col dry-run, che è stato negato.
 

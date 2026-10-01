@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 48eaa498-ed6e-4a36-847d-3f8fa95f7f21
-  modified: 2026-09-30T13:27:27.045Z
+  modified: 2026-10-01T11:09:16.970Z
 ---
 
 Il repo ospita il prodotto Daiku. Questo repository sta in `C:\dev\daiku-workspace\daiku-dev`,
@@ -59,7 +59,7 @@ solo `.gitignore` e `.gitattributes` del repository di sviluppo.
 - **`.daiku/`** — i parametri del **cantiere**, non del prodotto, e versionati come il resto: è
   ciò che accende le guardie di Daiku su questo repository (vedi [[guardie-di-macchina]]). Il suo
   `project.json` dichiara `plugins/` come codice, `.docs/` come sedi di lavoro e
-  `.docs/runtime/review` come ledger; fuori da lì un file **nuovo** è negato, in radice e in
+  `.docs/runtime/review` come ledger; fuori da lì non entra nessun file **nuovo**, in radice e in
   `.claude/` compresi. Vedi [[daiku-versionato]] per la cartella come sede del progetto ospite.
 
 ## 3. Lo sviluppo che si è potuto raccogliere

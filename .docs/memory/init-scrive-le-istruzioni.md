@@ -56,8 +56,7 @@ accanto. Il parcheggio compra due cose: l'host smette di caricare il vecchio, pe
 file che legge, e il testo originale resta **com'era** come materiale e come prova. Il parcheggiato è
 la fonte migliore del nuovo file: quello che dice e il repository contraddice non si corregge in
 silenzio, si dichiara nel report. Un `CLAUDE.old` già presente si sovrascrive: è la versione
-precedente dello stesso file. La guardia sulle scritture ammette `<nome>.old` come sede, accanto a
-`{hosts.<host>.instructions_file}` — e la coppia è provata dal banco di `edit-guard.mjs`.
+precedente dello stesso file, accanto a `{hosts.<host>.instructions_file}`.
 
 **La chiave è una per host, ed è scesa in `environment.json`.** Il file di istruzioni è di un host —
 `CLAUDE.md` e `AGENTS.md` sono due file diversi — quindi la chiave vive in

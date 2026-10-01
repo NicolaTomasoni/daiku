@@ -1,6 +1,6 @@
 ---
 name: guardrail-nascono-spenti
-description: "la guardia nega sempre push, --no-verify, le firme di Claude o Codex e i nuovi file fuori sede, e solo il pool si dichiara; nessun hook esegue un file perché è appena comparso"
+description: "la guardia nega sempre push, --no-verify e le firme di Claude o Codex, e solo il pool si dichiara; nessun hook esegue un file perché è appena comparso"
 metadata: 
   node_type: memory
   type: project
@@ -12,12 +12,10 @@ metadata:
 installa una volta ed è attivo su **ogni** repository che l'host apre. Da lì discendono due regole
 che valgono per qualunque hook Daiku porti, oggi e in futuro.
 
-**Primo: quasi niente si accende da solo.** Senza `.daiku/project.json` le guardie sui comandi
-e sulle scritture non negano niente e non leggono nemmeno la riga — questo resta. Con quel file, dal 21 settembre 2026
+**Primo: quasi niente si accende da solo.** Senza `.daiku/project.json` le guardie non negano
+niente e non leggono nemmeno la riga — questo resta. Con quel file, dal 21 settembre 2026
 negano sempre, senza interruttore: `git push` e `git commit
--n`/`--no-verify`. Dal 23 settembre 2026 nega sempre, senza interruttore, anche la creazione di un
-nuovo file fuori dalle sedi dichiarate (`edit-guard.mjs`: modificare un file esistente resta sempre
-lecito, così i ritocchi a mano del proprietario non si bloccano mai). Dal 25 settembre 2026 nega sempre,
+-n`/`--no-verify`. Dal 25 settembre 2026 nega sempre,
 senza interruttore, anche il `git commit` il cui messaggio accredita l'agente — un `Co-Authored-By`
 che nomina Claude o Codex, o una riga `Generated with` — in `-m`, `--trailer`, heredoc o file `-F`. L'unico ramo che resta spento finché il progetto non lo accende è il pool dei
 worktree, con `{worktree.pool}`. La rimozione ricorsiva che attraversa una junction di Windows non
@@ -44,8 +42,6 @@ diagnostico e un rischio molto diverso.
 Il 21 settembre 2026 l'owner ha ristretto questa decisione ai soli rami che dipendono davvero dal
 progetto (il pool): push e `--no-verify` negano sempre, perché un diniego che
 dipende da una chiave che qualcuno deve ricordarsi di accendere protegge solo i progetti diligenti.
-Il ramo di `edit-guard.mjs` del 23 settembre 2026 segue la stessa regola: nasce acceso, senza chiave,
-perché le sedi di scrittura si leggono dalle chiavi che già esistono.
 
 **How to apply:** un ramo nuovo nasce **acceso**, senza chiave — è la regola dal 21 settembre 2026:
 dove un divieto può avere una sede deterministica, ce l'ha sempre. Fa eccezione il ramo che dipende

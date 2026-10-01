@@ -39,10 +39,9 @@ cartella, che è **per intero** la radice del repository pubblico del prodotto: 
 pacchetto è installato su ogni repository che l'host apre, ma non nega niente dove il progetto non
 ha dichiarato di aver aperto Daiku — e senza di esso, qui, `git push` non lo fermerebbe nessuno.
 Le sue chiavi dichiarano le sedi che il cantiere usa davvero: il codice è `plugins/`, il lavoro di
-sviluppo è `.docs/`, i ledger dei giri di review sono `.docs/runtime/review`. Ne segue che creare un
-file **nuovo** fuori da quelle sedi è negato — in radice, e in `.claude/`: è voluto, perché in
-radice non entra niente e i comandi del cantiere si scrivono su ordine dell'owner. Modificare un
-file che esiste resta sempre permesso.
+sviluppo è `.docs/`, i ledger dei giri di review sono `.docs/runtime/review`. Fuori da quelle sedi
+non entra un file **nuovo** — in radice, e in `.claude/`: è voluto, perché in radice non entra
+niente e i comandi del cantiere si scrivono su ordine dell'owner.
 
 Prima di aggiungere un file, decidi se serve a chi *usa* Daiku o a chi lo *costruisce*. Se
 serve a chi lo usa va sotto `plugins/`; se serve a chi lo costruisce, in `plugins/` non entra.
