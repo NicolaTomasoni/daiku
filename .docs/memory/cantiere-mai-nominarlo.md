@@ -8,7 +8,7 @@ metadata:
 **Le skill del workspace — il corpus di `.claude/` con cui Daiku si costruisce, e il fatto che sia
 indietro rispetto al prodotto — non sono un problema, e non si nominano mai se non è l'owner a
 farlo.** Deciso dall'owner il 29 settembre 2026, dopo che un lavoro sul prodotto le aveva elencate
-fra i «punti aperti» di `.docs/PUNTI-APERTI.md`.
+fra i «punti aperti» di `PUNTI-APERTI.md`.
 
 **Why:** il disallineamento è lo stato normale, non una dimenticanza da correggere: il cantiere sta a
 Daiku come il tavolo al mobile, e un tavolo non deve assomigliare al mobile. `CLAUDE.md` lo dice già

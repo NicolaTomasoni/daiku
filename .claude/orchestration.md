@@ -38,7 +38,7 @@ Ogni path è **relativo alla radice del repository** (`C:/dev/daiku-workspace/da
 | `.claude/orchestration.md` | questo file |
 | `.claude/commands/<nome>.md` | i contratti di sviluppo; un subagent ne riceve il **path**, non il nome |
 | `.claude/agents/finder.md` | il subagent a toolset ristretto dei finder di `/review` |
-| `.docs/PUNTI-APERTI.md` | le decisioni ancora da prendere |
+| `PUNTI-APERTI.md` | le decisioni ancora da prendere |
 | `.docs/memory/` + `.docs/memory/MEMORY.md` | la memoria persistente e il suo indice |
 | `.docs/features/<slug>/` | la cartella di un lavoro, con i file numerati `0.`–`5.` ◦ |
 | `.docs/studies/<slug>.md` | gli appunti che `studia-libreria` deposita ◦ |
@@ -132,7 +132,7 @@ rende un passo ripetibile.
    collocazione di un file, al prompt si aggiungono i path delle memorie che raccolgono i fatti sui
    due host — `.docs/memory/cosa-i-due-host-accettano.md`, `.docs/memory/cosa-codex-fa-allinstallazione.md`,
    `.docs/memory/installazione-e-versionamento.md`, `.docs/memory/come-si-provano-i-fatti-sugli-host.md` — e
-   `.docs/PUNTI-APERTI.md` quando il lavoro rischia di decidere per conto proprio qualcosa che
+   `PUNTI-APERTI.md` quando il lavoro rischia di decidere per conto proprio qualcosa che
    è già in quella lista. Un subagent che non li ha riscopre a sue spese prove già eseguite sui
    validatori reali, e nel caso peggiore chiude da solo una decisione che è dell'owner.
 

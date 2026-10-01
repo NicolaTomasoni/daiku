@@ -28,7 +28,7 @@ Se `$ARGUMENTS` è vuoto, **chiedi** quale problema studiare.
 Questo repository ha già scritto molto di sé, e un'indagine che lo ignora riscopre a proprie spese
 prove già eseguite — o, peggio, chiude da sola una decisione che è dell'owner.
 
-1. **`.docs/PUNTI-APERTI.md`** — le decisioni ancora da prendere. Se il tuo problema è uno di
+1. **`PUNTI-APERTI.md`** — le decisioni ancora da prendere. Se il tuo problema è uno di
    quei punti, **dillo in apertura del documento e non deciderlo**: il tuo mestiere è istruirlo,
    non chiuderlo.
 2. **Le memorie sui due host** — cosa offrono, cosa accettano e rifiutano, come si installa e si
@@ -182,7 +182,7 @@ zero:
 - l'**input risolto**: la cartella `.docs/features/<slug>/` e, dentro, il `0. problem.md`
   che hai appena scritto — è già il documento base, non c'è nulla da concatenare;
 - i **documenti di riferimento**: `CLAUDE.md`, le memorie sui due host e, se il problema tocca
-  una decisione già in lista, `.docs/PUNTI-APERTI.md`;
+  una decisione già in lista, `PUNTI-APERTI.md`;
 - la **memoria pertinente**: `.docs/memory/MEMORY.md` e i **path** delle memorie che hai aperto,
   con l'istruzione di aprirle prima di lavorare. Sono le stesse che hanno delimitato la tua
   indagine: senza, o le riapre da capo o riapre un fatto che l'owner ha già chiuso;
@@ -217,7 +217,7 @@ Riferisci in sintesi:
 - il path del file prodotto e l'area in cui hai collocato il problema;
 - i tagli d'indagine coperti e le prove che hai eseguito, con il loro esito;
 - i gap identificati;
-- se il problema tocca un punto di `.docs/PUNTI-APERTI.md`, **quale** — e che non l'hai deciso;
+- se il problema tocca un punto di `PUNTI-APERTI.md`, **quale** — e che non l'hai deciso;
 - l'esito della delega: lo stadio che `decision-doc` ha scelto e perché, il file che ha prodotto o
   aggiornato e, se ne è uscita una lista di decisioni, la lista **verbatim**, con l'invito a
   rispondere rilanciando `decision-doc` sulla cartella in forma compatta (`1A, 2B, ...`). Se la

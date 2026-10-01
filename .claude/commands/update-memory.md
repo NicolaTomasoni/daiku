@@ -61,7 +61,7 @@ Tre sedi, tre mestieri. Un fatto che sta nella sede sbagliata non è un fatto sc
 | Sede | Cosa ci va | Cosa NON ci va |
 |---|---|---|
 | **`CLAUDE.md`** | gli invarianti di chi sviluppa Daiku: la divisione fra prodotto e sviluppo, la regola di pubblicazione, come si verifica il pacchetto, come ci si comporta | dettaglio su un singolo contratto, fatti che cambiano con una consegna |
-| **`.docs/PUNTI-APERTI.md`** | le decisioni che l'owner non ha ancora preso | tutto ciò che è già deciso: quando una voce si chiude, esce da qui |
+| **`PUNTI-APERTI.md`** | le decisioni che l'owner non ha ancora preso | tutto ciò che è già deciso: quando una voce si chiude, esce da qui |
 | **`.docs/memory/`** | i fatti **non deducibili** dal repository — perché una cosa è come è, cosa l'owner ha deciso, cosa si è già provato e non funziona — **e i fatti verificati sugli host**, con il comando eseguito e la data | ciò che si legge dal codice, dai contratti o da `git log` |
 
 **Il `README.md` del pacchetto non è tuo.** `plugins/README.md` sta sotto il perimetro del
@@ -150,7 +150,7 @@ che vale la pena scrivere, non un errore.
    - **`CLAUDE.md`** — solo se è cambiato un invariante valido in ogni sessione: la divisione fra
      prodotto e sviluppo, la regola di pubblicazione, come si verifica il pacchetto, dove sta una
      cosa. Mai dettaglio su un singolo contratto.
-   - **`.docs/PUNTI-APERTI.md`** — se la consegna ha chiuso una di quelle decisioni, la voce esce
+   - **`PUNTI-APERTI.md`** — se la consegna ha chiuso una di quelle decisioni, la voce esce
      con la risposta e la data. Se ne ha aperta una nuova che è dell'owner, entra.
    - **`.docs/memory/`** — segui § *La forma della memoria di questo progetto* alla lettera:
      leggi `MEMORY.md` per intero, individua il file più vicino, classifica, aggiorna o fondi, e

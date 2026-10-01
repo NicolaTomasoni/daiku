@@ -61,7 +61,7 @@ scelto è `null`.
   "verdetto": "<la sintesi di apertura della revisione scettica, o null allo stadio tecnico>",
   "fix_applicati": ["<file e cosa hai corretto, uno per fix della Fase 2>"],
   "decisioni": "<la lista della Fase 3 verbatim in markdown, oppure, allo stadio tecnico, titolo e opzione consigliata di ogni decision card>",
-  "punti_aperti_toccati": ["<il numero e il titolo di ogni voce di .docs/PUNTI-APERTI.md che questa cartella tocca>"],
+  "punti_aperti_toccati": ["<il numero e il titolo di ogni voce di PUNTI-APERTI.md che questa cartella tocca>"],
   "aperto": ["<cosa resta da decidere, o quale dato mancava per decidere davvero>"]
 }
 ```
@@ -91,7 +91,7 @@ solo <sottoinsieme>».
 
 Prima di analizzare, apri:
 
-1. **`.docs/PUNTI-APERTI.md`** — le decisioni che l'owner non ha ancora preso. Se una decisione
+1. **`PUNTI-APERTI.md`** — le decisioni che l'owner non ha ancora preso. Se una decisione
    che stai per porre **è** uno di quei punti, non chiuderla: portala come decisione, con il
    riferimento al numero, e mettila in `punti_aperti_toccati`. Una decisione di quella lista chiusa
    dentro una cartella di lavoro è una decisione presa da te al posto suo.
@@ -222,7 +222,7 @@ Regole: 2–4 opzioni per decisione, **mutuamente esclusive**, ciascuna autosuff
 gravità; chiudi invitando a rispondere nel formato `1A, 2B, ...` — ammesse risposte libere che
 prevalgono sulle opzioni proposte.
 
-Se una decisione coincide con un punto di `.docs/PUNTI-APERTI.md`, **dillo nella riga del
+Se una decisione coincide con un punto di `PUNTI-APERTI.md`, **dillo nella riga del
 problema** con il suo numero: l'owner deve poter vedere che sta rispondendo lì a una domanda che
 aveva già messo in lista, e che la risposta va riportata anche in quel file.
 
@@ -235,7 +235,7 @@ Quando l'owner risponde:
 - **chiudi ogni decisione in `0.5. studio-strategico.md`**, dove è scritta: l'opzione scelta, la
   data, e dove è stata recepita. Le opzioni scartate restano — servono a chi un domani chiede perché
   non si è fatto altrimenti;
-- se una decisione chiudeva un punto di `.docs/PUNTI-APERTI.md`, **aggiorna anche quel file**:
+- se una decisione chiudeva un punto di `PUNTI-APERTI.md`, **aggiorna anche quel file**:
   la voce esce dalla lista con la risposta e la data. Una lista di decisioni aperte che contiene
   decisioni già prese smette di essere letta;
 - se una risposta è una direttiva libera, prevale sulle opzioni: applicala;

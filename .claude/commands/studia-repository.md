@@ -76,7 +76,7 @@ I path di questa skill sono sempre quelli reali di questo repo:
 | scheletri che `init` deposita nel progetto ospite | `plugins/daiku/templates/**` |
 | manifest del pacchetto, uno per host | `plugins/daiku/.claude-plugin/plugin.json`, `plugins/daiku/.codex-plugin/plugin.json` |
 | corpus di sviluppo (**non** è il prodotto) | `.claude/orchestration.md`, `.claude/commands/<nome>.md`, `.claude/agents/*.md` |
-| fatti sugli host e decisioni aperte | `.docs/memory/` (le memorie sui due host), `.docs/PUNTI-APERTI.md` |
+| fatti sugli host e decisioni aperte | `.docs/memory/` (le memorie sui due host), `PUNTI-APERTI.md` |
 
 **I tre principi** contro cui si misura ogni miglioria — sono in `plugins/README.md`, § *Il
 modello mentale*, e li rileggi prima di giudicare: skill atomiche orchestrate da skill
@@ -117,7 +117,7 @@ Si sceglie con tre domande, in quest'ordine.
 | `plugins/README.md` | guida d'uso: quando si lancia cosa, il modello mentale, cosa cambia fra i due host | il contratto, che vive nella skill | l'utente |
 | `plugins/daiku/.claude-plugin/plugin.json`, `.codex-plugin/plugin.json` | metadati del pacchetto | qualunque comportamento | gli host, all'installazione |
 | `.claude/commands/`, `.claude/orchestration.md`, `.claude/agents/` | la stessa miglioria riportata **a mano** nel corpus di sviluppo, senza graffe e coi valori per esteso | niente che non sia già nel prodotto: questo corpus ne è una derivazione | chi sviluppa Daiku |
-| `.docs/memory/`, `.docs/PUNTI-APERTI.md` | ciò che si è scoperto sugli host leggendo quel target, e le decisioni che la miglioria apre | il meccanismo, che va nella sua sede vera | l'owner |
+| `.docs/memory/`, `PUNTI-APERTI.md` | ciò che si è scoperto sugli host leggendo quel target, e le decisioni che la miglioria apre | il meccanismo, che va nella sua sede vera | l'owner |
 
 Le regole che la tabella non dice, e che sono state verificate sui validatori dei due host:
 
