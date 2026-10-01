@@ -1,5 +1,14 @@
 # Changelog
 
+### 1.0.9 — 2026-10-01
+
+- The project's seats move to new `paths` keys: `studies` holds the notes on a technology, `features` the working folders — `lib_notes` is gone.
+- `/init` refreshes the update script it deposited when it comes from an older Daiku, and reports it as missing until then.
+- A review launched by hand on a bare base-ref can be closed with its commit: the item the ledger carries no longer blocks it.
+- A review accepts a commit already made as its input: `review <sha>` reviews that commit alone, against its first parent.
+
+---
+
 ### 1.0.8 — 2026-10-01
 
 - The `daiku: update` task shows the version arriving beside the one in place — `1.0.7 >>> 1.0.8` — and asks before installing it: the catalogue is refreshed first, so the delta is real, and both commands answer as JSON, so the host's own output stays off the screen.

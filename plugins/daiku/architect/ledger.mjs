@@ -96,6 +96,14 @@ function git(cwd, args, env) {
   return run.stdout;
 }
 
+/** The empty tree: the base of a review on a repository's first commit, which has no parent. */
+function emptyTree(cwd) {
+  const run = spawnSync('git', ['mktree'], { cwd, encoding: 'utf-8', input: '' });
+  if (run.error) fail(`git cannot start (${run.error.message}): this tool reads the disk through git, which must be on the PATH`);
+  if (run.status !== 0) fail(`git mktree failed in ${slashed(cwd)}: ${(run.stderr || '').trim()}`);
+  return run.stdout.trim();
+}
+
 /** Git prints paths from the repository root; the contracts speak from the technical root. */
 function localizer(cwd) {
   const prefix = git(cwd, ['rev-parse', '--show-prefix']).trim();
@@ -453,21 +461,54 @@ function stamp(date) {
   return [date.getHours(), date.getMinutes(), date.getSeconds()].map((n) => String(n).padStart(2, '0')).join('');
 }
 
+/**
+ * The base of a review on a commit already made: the first parent of the commit under review.
+ *
+ * The diff of this cycle always runs to the working tree, so the commit under review has to be
+ * the one that tree holds: a commit standing below the tip is not in it, and reviewing it here
+ * would silently review everything landed above it as well. A repository's first commit has no
+ * parent, and there the base is the empty tree — the diff is the whole first commit.
+ *
+ * A `commit` naming a **ref** is a caller mistake and never a coincidence: a ref is the base of
+ * the diff, and the two keys are the two readings of the same argument, never a choice — so the
+ * refusal names the right one instead of resolving it into a review of the wrong range.
+ */
+function baseOfCommit(cwd, revision) {
+  const commit = git(cwd, ['rev-parse', '--verify', `${revision}^{commit}`]).trim();
+  if (git(cwd, ['rev-parse', '--symbolic-full-name', revision]).trim() !== '') {
+    fail(`commit must be the revision of the commit under review, naming no ref: ${revision} names a ref, which is the base the diff runs from — pass it as base_ref`);
+  }
+  const head = git(cwd, ['rev-parse', 'HEAD']).trim();
+  if (commit !== head) {
+    fail(`the commit under review is not the one the working tree holds: ${revision} is ${commit.slice(0, 7)} and HEAD is ${head.slice(0, 7)}. The diff of this cycle runs to the working tree — check that commit out, or pass it as base_ref to review everything from it on`);
+  }
+  const parents = git(cwd, ['rev-list', '--parents', '-n', '1', commit]).trim().split(/\s+/).filter(Boolean);
+  return { base: parents.length > 1 ? parents[1] : emptyTree(cwd), commit };
+}
+
 /** scope — § *Scope* and § *Baseline and ledger*: the frozen base, the photographed tree, the files, `arch`. */
 function actScope(input, root) {
   const schemas = schemasOf(root);
   const cwd = workRootOf(input);
   const codeRoot = codeRootOf(input);
-  const baseRef = text(input, 'base_ref');
+  const underReview = has(input, 'commit') && input.commit !== null;
+  if (underReview === nonEmpty(input.base_ref)) {
+    fail('pass exactly one of base_ref (the base the diff runs from) and commit (the commit under review, a revision naming no ref)');
+  }
+  if (underReview && !nonEmpty(input.commit)) fail('commit must be a non-empty string: the revision of the commit under review');
   if (!Array.isArray(input.paths) || !input.paths.every(nonEmpty)) fail('paths is required: the path list restricting the scope, or []');
   const policies = text(input, 'policies');
   if (!has(input, 'item') || (input.item !== null && !nonEmpty(input.item))) fail('item is required: the work folder, or null for a naked base-ref');
+  if (underReview && input.item !== null) {
+    fail(`commit and item are the two readings of two different inputs: a commit under review is launched by hand and carries no work folder, while a base-ref declared by a 4. review-notes.md carries the folder holding it — got item ${JSON.stringify(input.item)}`);
+  }
   const handed = has(input, 'ledger') && input.ledger !== null;
   if (handed === (has(input, 'state_dir') && input.state_dir !== null)) {
     fail('pass exactly one of ledger (the handed ledger, reopened at the scope) and state_dir (the folder a new ledger opens in)');
   }
 
-  const base = git(cwd, ['rev-parse', '--verify', `${baseRef}^{commit}`]).trim();
+  const reviewed = underReview ? baseOfCommit(cwd, input.commit) : null;
+  const base = reviewed ? reviewed.base : git(cwd, ['rev-parse', '--verify', `${input.base_ref}^{commit}`]).trim();
   const tree = snapshot(cwd, codeRoot);
   let files = changedFiles(cwd, base, tree, codeRoot);
   if (input.paths.length) files = files.filter((file) => input.paths.some((path) => under(file, path)));
@@ -497,7 +538,9 @@ function actScope(input, root) {
   writeJson(path, validateLedger(ledger, schemas));
   return answer({
     action: 'scope', ledger: slashed(path), verdict: 'scoped', ...found,
-    detail: `${files.length} files differ from ${base.slice(0, 7)} under code_root, untracked ones included; arch is ${matched.length ? 'active' : 'inactive'}.`,
+    detail: reviewed
+      ? `review of the commit ${reviewed.commit.slice(0, 7)}: ${files.length} files differ from its first parent under code_root, untracked ones included; arch is ${matched.length ? 'active' : 'inactive'}.`
+      : `${files.length} files differ from ${base.slice(0, 7)} under code_root, untracked ones included; arch is ${matched.length ? 'active' : 'inactive'}.`,
   });
 }
 
@@ -984,6 +1027,42 @@ function runBench(root) {
       put(join(fx.policies, 'inline.md'), '---\npaths: ["src/*.js"]\n---\n# Inline\n');
       const again = scopeOf(fx, { state_dir: join(fx.dir, 'state2') });
       check('scope:an-inline-paths-list-is-read', again.arch_active === true, JSON.stringify(again.arch_policies));
+    });
+
+    attempt('scope-commit', () => {
+      const fx = fixture('scope-commit');
+      put(join(fx.cwd, 'src', 'a.js'), 'function f() {\n\treturn  2;\n}\n');
+      put(join(fx.cwd, 'src', 'new.js'), 'export const n = 1;\n');
+      sh(fx.repo, ['add', '-A']);
+      sh(fx.repo, ['commit', '-q', '-m', 'second']);
+      const tip = sh(fx.cwd, ['rev-parse', 'HEAD']).trim();
+      const parent = sh(fx.cwd, ['rev-parse', 'HEAD^']).trim();
+      const onCommit = (extra = {}) => ({
+        action: 'scope', ...fx.base(), base_ref: null, commit: tip, item: null, paths: [], policies: fx.policies, ...extra,
+      });
+      const got = call(onCommit({ state_dir: join(fx.dir, 'state1') }));
+      check('scope:a-commit-under-review-freezes-its-first-parent-as-the-base', got.base === parent, `${got.base} against ${parent}`);
+      check('scope:a-commit-under-review-scopes-its-own-files', JSON.stringify(got.files) === '["src/a.js","src/new.js"]', JSON.stringify(got.files));
+      check('scope:a-commit-under-review-names-it-in-the-detail', got.detail.includes(tip.slice(0, 7)), got.detail);
+      const ledger = readJson(got.ledger, 'ledger');
+      check('scope:the-ledger-of-a-review-on-a-commit-carries-the-parent-as-its-base', ledger.base === parent && ledger.item === null, JSON.stringify(ledger));
+      put(join(fx.cwd, 'src', 'loose.js'), 'export const l = 1;\n');
+      const dirty = call(onCommit({ state_dir: join(fx.dir, 'state2') }));
+      check('scope:the-uncommitted-changes-on-top-are-in-the-scope-like-any-other', dirty.files.includes('src/loose.js'), JSON.stringify(dirty.files));
+      refused('scope:a-ref-is-not-a-commit-under-review', onCommit({ commit: 'HEAD', state_dir: join(fx.dir, 'state3') }), 'names a ref');
+      refused('scope:a-commit-below-the-tip-is-refused', onCommit({ commit: parent, state_dir: join(fx.dir, 'state4') }), 'not the one the working tree holds');
+      refused('scope:a-commit-under-review-with-a-work-folder-is-refused', onCommit({ item: 'studies/x', state_dir: join(fx.dir, 'state5') }), 'carries no work folder');
+      refused('scope:base-ref-and-commit-together-are-refused', onCommit({ base_ref: 'HEAD', state_dir: join(fx.dir, 'state6') }), 'pass exactly one of base_ref');
+    });
+
+    attempt('scope-first-commit', () => {
+      const fx = fixture('scope-first');
+      const first = sh(fx.cwd, ['rev-parse', 'HEAD']).trim();
+      const got = scopeOf(fx, { base_ref: null, commit: first, item: null, state_dir: join(fx.dir, 'state1') });
+      check('scope:the-first-commit-is-reviewed-against-the-empty-tree', sh(fx.cwd, ['cat-file', '-t', got.base]).trim() === 'tree', got.base);
+      check('scope:the-first-commit-scopes-every-file-under-code-root', JSON.stringify(got.files) === '["src/a.js","src/b.js"]', JSON.stringify(got.files));
+      const areas = call({ action: 'areas', ledger: got.ledger, ...fx.base(), project: fx.project, from: 'base' });
+      check('scope:the-first-commit-runs-the-round-against-that-base', areas.verdict === 'touched' && areas.files.includes('src/a.js'), JSON.stringify(areas.files));
     });
 
     /* --- the cycle: findings, round, on_previous_fix, fast check, cost --- */
