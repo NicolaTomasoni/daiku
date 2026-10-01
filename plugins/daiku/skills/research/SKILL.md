@@ -4,7 +4,7 @@ description: 'Collects operational development notes on a library or technology 
 argument-hint: '[library/technology name]'
 ---
 
-Collect a library or technology autonomously from **real sources** (official docs, repo, package registry, tutorials) and produce a **single markdown file of operational development notes** in `{paths.lib_notes}/`. Work in **two stages**: first collect in append mode with fan-out, then delegate reordering to `study` on the same file.
+Collect a library or technology autonomously from **real sources** (official docs, repo, package registry, tutorials) and produce a **single markdown file of operational development notes** in `{paths.studies}/`. Work in **two stages**: first collect in append mode with fan-out, then delegate reordering to `study` on the same file.
 
 > Every path below is **relative to the technical root** you execute from (`contracts/project-contract.md` §3). It fills the model's knowledge gaps (cutoff, young/niche libraries, evolving APIs) with verifiable facts, not memory.
 
@@ -39,7 +39,7 @@ You reach the same contract in two ways. Your caller **chooses** the mode by cit
 
 In `owner` start from `$ARGUMENTS` alone: resolve the technology, ask when it is missing, cover the technology's full surface. Once collection is complete call `study` for reordering and then deliver the file per § *Final output*.
 
-**Your outcome is only the reordered file's path, nothing else**: do not open a working folder, do not propose a feature. The notes stand alone, and whoever asked for them decides if and when they will become something — if needed, `new-feature` will find them again, rereading them from `{paths.lib_notes}/` without repeating the collection.
+**Your outcome is only the reordered file's path, nothing else**: do not open a working folder, do not propose a feature. The notes stand alone, and whoever asked for them decides if and when they will become something — if needed, `new-feature` will find them again, rereading them from `{paths.studies}/` without repeating the collection.
 
 ### From `new-feature`
 
@@ -50,7 +50,7 @@ You are a subagent in a fresh context, launched while a feature is being defined
 - **Input arrives resolved** — technology, version in use in the project, and open questions are in the prompt. Ask nothing and do not stop waiting, because there is nobody to answer.
 - **Collection is targeted.** The questions you receive come from the gaps and doubts of a real problem: the fan-out's thematic blocks are chosen **first** to answer those, and only afterwards to cover the rest. A question with no answer is declared as such — it is more useful than a generic section that sidesteps it.
 - **The version in use wins over the latest.** If the project lags behind the latest release, the notes cover **the one in use** and declare at the top what changes when moving to the latest, with breaking changes in between. Your caller must write code that runs on what is installed, not on what is published.
-- **Write only `{paths.lib_notes}/<slug>.md`.**
+- **Write only `{paths.studies}/<slug>.md`.**
 
 **Close by returning only the file's path**, nothing else. Do not forward the `study` block: you need it only to know whether reordering succeeded.
 
@@ -61,9 +61,9 @@ Arguments: `$ARGUMENTS`
 The argument is the **library/technology name** (e.g. `DBOS`, `LangGraph`, `Tauri v2`, `TanStack Query`). It may include a language or a version (e.g. `dbos python`, `pydantic v2`).
 
 - If `$ARGUMENTS` is empty, **ask** which technology to study and stop until you receive it. Applies only in `owner`: in `from-new-feature` this case does not exist, because the input arrives resolved in the prompt.
-- Derive a kebab-case **slug** from the technology name — by hand it is the resolved `$ARGUMENTS`, from `new-feature` it is `technology` — (e.g. `TanStack Query` → `tanstack-query`, `dbos python` → `dbos-python`). The target file is `{paths.lib_notes}/<slug>.md`. **One md per technology.**
-- If `{paths.lib_notes}/<slug>.md` **already exists**, do not start from scratch: read it, treat the work as an **update/extension** (fill the gaps, update the version, add what is missing) and then move to `study`. Do not duplicate what is already there.
-- Create the `{paths.lib_notes}/` folder if it does not exist.
+- Derive a kebab-case **slug** from the technology name — by hand it is the resolved `$ARGUMENTS`, from `new-feature` it is `technology` — (e.g. `TanStack Query` → `tanstack-query`, `dbos python` → `dbos-python`). The target file is `{paths.studies}/<slug>.md`. **One md per technology.**
+- If `{paths.studies}/<slug>.md` **already exists**, do not start from scratch: read it, treat the work as an **update/extension** (fill the gaps, update the version, add what is missing) and then move to `study`. Do not duplicate what is already there.
+- Create the `{paths.studies}/` folder if it does not exist.
 - The file's resolved path is the **handoff to `study`**: no intermediate file, `study` reorders in place.
 
 ## Content objective
@@ -105,7 +105,7 @@ Freshness is a **requirement, not a detail**: the docs must reflect the **latest
 
 Note: if the `gh` CLI is unavailable or the repo is not on GitHub, fall back to `WebFetch` of the repo's and registry's releases/tags page — but the preferred path stays `gh`.
 
-2. **Create (or open) the file** `{paths.lib_notes}/<slug>.md`. If new, write a minimal header: title, line with primary source + version + date, note on the model's cutoff, and a "Meta and sources" section with the URLs found and the conventions (`[to verify]`, "verbatim").
+2. **Create (or open) the file** `{paths.studies}/<slug>.md`. If new, write a minimal header: title, line with primary source + version + date, note on the model's cutoff, and a "Meta and sources" section with the URLs found and the conventions (`[to verify]`, "verbatim").
 
 3. **Fan out the research.** Split the technology's surface into **thematic blocks** (as a guide: concepts/mental model · setup & quickstart · core APIs/primitives · configuration & runtime · integration/extension · management/operations/CLI · changelog & recent news — adapt the blocks to the specific library). **If you were invoked with questions**, the first blocks are the questions themselves — one per question, or one per group of related questions — and the general surface comes afterwards, with what remains. Launch **worker subagents in parallel** (role and model from `contracts/orchestration.md`; they are **leaves**: they do not delegate further), **one per block**, each with:
    - the official pages to `WebFetch` for that block (and freedom to follow useful links);
@@ -144,7 +144,7 @@ Your caller opens the file you give: if it is still raw they see it by themselve
 
 ## Operational constraints
 
-- Respect the runtime constraints that `{hosts.<host>.instructions_file}` declares, and in any case: **no whole-filesystem searches**; every file access stays inside the project and the `{paths.lib_notes}/` folder.
+- Respect the runtime constraints that `{hosts.<host>.instructions_file}` declares, and in any case: **no whole-filesystem searches**; every file access stays inside the project and the `{paths.studies}/` folder.
 - **Do not commit** and do not push: the command produces only the file (collected by you, reordered by `study`).
 - Work autonomously end to end without asking for confirmation, except when `$ARGUMENTS` is empty.
 
@@ -152,7 +152,7 @@ Your caller opens the file you give: if it is still raw they see it by themselve
 
 > Applies only in `owner`.
 
-**From owner**, end with the reordered file's path in `{paths.lib_notes}/<slug>.md`: that path is the outcome, and the content lives in the file.
+**From owner**, end with the reordered file's path in `{paths.studies}/<slug>.md`: that path is the outcome, and the content lives in the file.
 
 > Applies only in `from-new-feature`.
 

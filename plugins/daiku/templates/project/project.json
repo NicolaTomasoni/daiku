@@ -15,9 +15,8 @@
     "replicated_in": []
   },
   "paths": {
-    "studies": "<folder holding the working folders, one per problem>",
-    "lib_notes": "<folder of the notes on a technology>",
-    "features": "<folder of the feature catalogue, one folder per feature>",
+    "studies": "<folder of the notes on a technology, one file per technology>",
+    "features": "<folder holding the working folders, one per problem>",
     "review_state": "<folder of the review ledger, inside the tree but outside version control>"
   },
   "memory": {

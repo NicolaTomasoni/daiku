@@ -4,7 +4,7 @@ description: 'Reorders the dirty notes file collected by research without losing
 user-invocable: false
 ---
 
-Reorder the dirty file that `research` collected in `{paths.lib_notes}/`, in the same path, without losing a single verbatim fact. Do not collect, do not fan out, do not open new files: your job is ordering and deduplication.
+Reorder the dirty file that `research` collected in `{paths.studies}/`, in the same path, without losing a single verbatim fact. Do not collect, do not fan out, do not open new files: your job is ordering and deduplication.
 
 > Every path below is **relative to the technical root** you execute from (`contracts/project-contract.md` §3).
 
@@ -23,7 +23,7 @@ This contract has a single mode: you are always a subagent in a fresh context, o
 
 `research` passes you in the prompt, already resolved:
 
-- the **dirty file path** (`{paths.lib_notes}/<slug>.md`) — the only file you touch;
+- the **dirty file path** (`{paths.studies}/<slug>.md`) — the only file you touch;
 - the **slug** and the **technology** as it received them;
 - the **studied version** and the **latest version**, with release date and today's collection date.
 
@@ -47,7 +47,7 @@ Goal: make the file clear, ordered, without duplicates — without losing a sing
 
 ## Operational constraints
 
-- Respect the runtime constraints that `{hosts.<host>.instructions_file}` declares, and in any case: **no whole-filesystem searches**; every file access stays inside the project and the `{paths.lib_notes}/` folder.
+- Respect the runtime constraints that `{hosts.<host>.instructions_file}` declares, and in any case: **no whole-filesystem searches**; every file access stays inside the project and the `{paths.studies}/` folder.
 - **Do not commit** and do not push: the command produces only the received file, reordered.
 - Work autonomously end to end on the received file, without asking for confirmation.
 

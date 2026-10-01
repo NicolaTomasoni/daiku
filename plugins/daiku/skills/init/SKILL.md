@@ -1,6 +1,6 @@
 ---
 name: 'init'
-description: 'Opens Daiku on a project not having it yet, in one shot after asking the two languages: writes `.daiku/` — `project.json`, `environment.json`, `domain/`, `policies/`, `README.md` — the project instructions file and the `.gitignore` lines the method needs, starting from the package skeletons and filling them with what it reads in the repository. Idempotent: it never overwrites an existing file. It launches once per project, and again when the package carries a new skeleton.'
+description: 'Opens Daiku on a project not having it yet, in one shot after asking the two languages: writes `.daiku/` — `project.json`, `environment.json`, `domain/`, `policies/`, `README.md` — the project instructions file and the `.gitignore` lines the method needs, starting from the package skeletons and filling them with what it reads in the repository. Idempotent: it never overwrites a file belonging to the project, and recreates whole the scripts it deposits, which carry the version of the package that wrote them. It launches once per project, and again when the package carries a new skeleton, and again after every update, to bring its own scripts up to the version in place.'
 argument-hint: '[technical root, optional — default: current directory]'
 ---
 
@@ -51,7 +51,7 @@ Under `templates/`, at the package root — the folder containing `skills/`, `co
 | `templates/project/policies/` | `.daiku/policies/` | you copy its README, and write one policy per area the project already keeps rules for: see *Step 5* |
 | `templates/project/README.md` | `.daiku/README.md` | you copy it as it is: Daiku's own documentation: see *Step 5* |
 | `templates/project/instructions.md` | the instructions file, in the technical root | you **fill it**: see *Step 6* |
-| `templates/project/update.mjs` | `.daiku/update.mjs` | you copy it as it is: see *Step 5-bis* |
+| `templates/project/update.mjs` | `.daiku/update.mjs` | you copy it filling its version marker: see *Step 5-bis* |
 | `templates/vscode/tasks.json` | `.vscode/tasks.json`, in the technical root | you copy it, or add its task to the file already there: see *Step 5-bis* |
 
 **Everything you write is in English**, whatever language the user chose at *Step 0*. Those two keys say in which language the skills will talk to the user and write commits; they do not say in which language Daiku is made. The skeletons arrive in English and you fill them in English: a half-translated instructions file is the worst of the two forms, and a corpus in a single language is the only thing staying readable when the project changes hands.
@@ -121,7 +121,7 @@ For areas: the area name is your naming choice, its `paths` are not — they are
 
 The two **language** keys are the exception to the first rule, and only because you asked them: you write them with the answers of *Step 0*, verbatim. If you had no answer, you do not write them.
 
-The three `paths` keys of the method's own documents — work folders, notes and feature catalogue — are **not a finding of yours**: §4 of `contracts/project-contract.md` assigns their seat under `.daiku/`, and you write them as they are — `paths.studies` is `.daiku/studies`, `paths.lib_notes` is `.daiku/lib-notes`, `paths.features` is `.daiku/features`. A folder of the project's carrying a similar name is **not** adopted for them: those documents are Daiku's corpus, and seated among the project's files they would be documentation the project never asked for. The skills create the folders at first use, and `project.json` is where the user sees them.
+The two `paths` keys of the method's own documents — the notes on a technology and the working folders — are **not a finding of yours**: §4 of `contracts/project-contract.md` assigns their seat under `.daiku/`, and you write them as they are — `paths.studies` is `.daiku/studies`, `paths.features` is `.daiku/features`. A folder of the project's carrying a similar name is **not** adopted for them: those documents are Daiku's corpus, and seated among the project's files they would be documentation the project never asked for. The skills create the folders at first use, and `project.json` is where the user sees them.
 
 **`paths.review_state` is looked for on a different terrain.** It stands inside the tree but outside version control (§4 of `contracts/project-contract.md`), so *Step 2*'s reading — which takes what the repository versions — does not reach it: look too among the folders **present on disk but ignored by Git**, where a ledger a project already keeps would sit. Where no ignored folder resembles a ledger, propose one inside the tree, excluded from version control and **never under `.daiku/`** — that folder is versioned (§8 of `contracts/project-contract.md`). Its `.gitignore` line, where no line of the repository covers it yet, you write at *Step 8*.
 
@@ -289,7 +289,16 @@ A rule file spanning several areas is listed in the policy of each. A rule file 
 Daiku updates with two commands — `claude plugin marketplace update daiku`, then `claude plugin update daiku@daiku` — and the project gets them as one VS Code task, `daiku: update`, running a script under `.daiku/`
 that shows the version in place and asks before running them.
 
-- **The script**: copy `templates/project/update.mjs` into `.daiku/update.mjs` as it is. If it is already there, leave it.
+- **The script**: copy `templates/project/update.mjs` into `.daiku/update.mjs`, **filling the
+  marker line it carries at the top** — `daiku:script <version>` — with the `version` of
+  `<package root>/.claude-plugin/plugin.json`. Where the file already stands, read that line
+  instead of copying: **if it carries the version this package carries, leave the file as it is;
+  otherwise rewrite it whole from the skeleton**, marker filled — and that holds where the line is
+  not there at all, which is how a script deposited by an earlier Daiku reads. The script is not
+  the project's file: it is a package artefact deposited under `.daiku/` so that the package can
+  update itself, and the marker is what lets a later package recognise the one on disk as old.
+  **Every script `init` deposits carries that marker**, for the same reason; no other file does,
+  and no other file is ever rewritten for it.
 - **The task**: if `.vscode/tasks.json` does not exist in the technical root, copy `templates/vscode/tasks.json` there as it is. If it exists and already carries a task labelled `daiku: update`, leave it. If it exists without that task, **add** the skeleton's task object as the last element of its `tasks` array, and touch nothing else: the file is JSON with comments, so edit it as text — its comments, its order and its line ending stay as they were. A file with no `tasks` array gets one, beside its `version`.
 
 Both are written on either host: the task belongs to the editor, not to the host you are running on.
@@ -303,7 +312,7 @@ It is the file the host loads on every session — `CLAUDE.md` on Claude Code, `
 
 #### What goes in the placeholders
 
-The *Documentation map* lists the artefacts existing **in this project**, with the trade of each: one line per real artefact, and the line of one missing is removed instead of staying with an invented path inside. **The work-folder line is the exception, and it is not hunted**: it names `{paths.studies}`, the seat *Step 3* assigned — the folder appears at the first work folder, and the line is where whoever reads the file has to look. The other artefacts you hunt through the README's links, the root documents and `docs/` — notes folders, queues, technical documents, changelogs — and give each its trade in one line.
+The *Documentation map* lists the artefacts existing **in this project**, with the trade of each: one line per real artefact, and the line of one missing is removed instead of staying with an invented path inside. **The work-folder line is the exception, and it is not hunted**: it names `{paths.features}`, the seat *Step 3* assigned — the folder appears at the first work folder, and the line is where whoever reads the file has to look. The other artefacts you hunt through the README's links, the root documents and `docs/` — notes folders, queues, technical documents, changelogs — and give each its trade in one line.
 
 The *Stack and local environment* is the technological inventory of *Step 2*, written in full: **one line per package of the workspace** — the folder, its runtime and versions, its framework, its data stores, its build and test chain, how it starts — plus the shared toolchain and the environment variables that must stay consistent. A package the file does not name is a part of the project the file does not declare, and it is the section making the file useful from the first minute. **It is added, not substituted**: where the project already wrote lines in that section, they stay whole and the inventory goes beside them, even where a line of theirs says less than the manifest does. Filling a placeholder never licenses rewriting a line that was there, and the section's title stays the project's. **Beside is not again**: a fact a kept line already states — a port, a start command, a URL — is not repeated in the inventory line of the same package, which carries only what the kept lines do not say (*One rule, one line* holds here too). It is also the only placeholder you can fill in without risking anything, because every line has a manifest behind.
 
@@ -414,8 +423,10 @@ needing nothing to install — `node -e` and `grep` — before closing:
 - for **the instructions file**: no `<...>` residue remains;
 - for **each pointer of `domain/` and `policies/`** (*Step 5*): every path it lists exists, and a
   policy's frontmatter carries a non-empty `paths`;
-- for **`.vscode/tasks.json`** (*Step 5-bis*): exactly one task is labelled `daiku: update`, and
-  `.daiku/update.mjs` exists.
+- for **`.daiku/update.mjs` and `.vscode/tasks.json`** (*Step 5-bis*): the script's marker line
+  carries the `version` of `<package root>/.claude-plugin/plugin.json`, with no `<version>`
+  residue left in it, and `.vscode/tasks.json` carries exactly one task labelled `daiku: update`
+  running that script.
 
 A file failing the recheck is fixed now, not left as done: a placeholder surviving in a
 parameter file degrades every skill silently, which is exactly the failure this step exists to
@@ -484,7 +495,7 @@ Two things only are written, one line per item, in `{language.chat}`:
 
 ## Idempotence
 
-**You do not overwrite an existing file**, except the two exceptions at the bottom. Neither `project.json`, nor the READMEs, nor anything you find under `.daiku/` — `environment.json` included, whose values a person chose and which you leave exactly where they are.
+**You do not overwrite an existing file**, except the three exceptions at the bottom. Neither `project.json`, nor the READMEs, nor anything you find under `.daiku/` — `environment.json` included, whose values a person chose and which you leave exactly where they are.
 
 This makes you relaunchable: when the package updates and carries a skeleton previously missing, you are relaunched and write only the missing piece. An already initialised project loses nothing.
 
@@ -492,11 +503,13 @@ This makes you relaunchable: when the package updates and carries a skeleton pre
 
 **Adding a key is not overwriting a file.** The `.vscode/tasks.json` of *Step 5-bis*, the `settings.local.json` of *Step 7* and the `.gitignore` of *Step 8* are the only files you touch without having written them yourself, and you touch them by addition: the keys and lines you find there stay as they were, including the ones concerning you if already there — the one line *Step 8* may remove is the one excluding, by name, a folder the method versions. A relaunch on a new machine writes the pointing missing there, and on a machine where it is there changes nothing — which is exactly the trade for which you are relaunched.
 
-The exceptions are two, and neither loosens the rule.
+The exceptions are three, and none loosens the rule.
 
-The first is the **instructions file**, which you write also where one exists — parking the one you found under `.old` — but only once, and what guarantees it is at *Step 6*: the comment line you leave inside the new one. Without that line it would not be an exception but a hole, because every relaunch would return to restructuring the file the user curates more than any other. It is the only already-written thing you are allowed to rewrite, and it is so because it is the only one on many repositories already existing: leaving it as it was would mean, there, never writing it.
+The first is the **versioned script** of *Step 5-bis*: where its marker does not carry the version of this package, you rewrite the file whole. It is the only thing you deposit that stays the package's — an artefact the package updates itself through — and the marker is what keeps the rule readable: a script carrying the version of this package is a script you leave alone like any other.
 
-The second is the **explicit request** of the user on a precise file: then you rewrite it.
+The second is the **instructions file**, which you write also where one exists — parking the one you found under `.old` — but only once, and what guarantees it is at *Step 6*: the comment line you leave inside the new one. Without that line it would not be an exception but a hole, because every relaunch would return to restructuring the file the user curates more than any other. It is the only file of the project's you are allowed to rewrite, and it is so because it is the one on many repositories already existing: leaving it as it was would mean, there, never writing it.
+
+The third is the **explicit request** of the user on a precise file: then you rewrite it.
 
 ## What you do not do
 

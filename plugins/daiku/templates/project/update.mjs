@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// daiku:script <version> — the Daiku version that wrote this file. `init` fills the version in
+// when it copies the skeleton, and recreates the file whole whenever the package moves past it.
 /**
  * Updates Daiku on Claude Code: it reads the version in place, refreshes the marketplace catalogue,
  * draws the version that is arriving beside it, and asks before installing it. Run it from VS Code
@@ -21,7 +23,9 @@
  *
  * It stops at the first command that fails, with the exit code it gave.
  *
- * Written by Daiku's init. It is yours now: init never rewrites it.
+ * Written by Daiku's init, which recreates it whole when the package moves past the version in
+ * the `daiku:script` line at the top. It is a package artefact standing under `.daiku/`, not a
+ * file of the project's own, and that line is what lets an update reach it.
  */
 
 import { spawnSync } from 'node:child_process';

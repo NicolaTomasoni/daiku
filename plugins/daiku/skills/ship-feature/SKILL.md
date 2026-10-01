@@ -21,7 +21,7 @@ When you have **one** feature with `1. decision-doc.md` already resolved and you
 
 ## Input
 
-- **`<folder>`** — path of the folder (relative to the repo root, or absolute), wherever it lives: `{paths.studies}/<name>` is the common case but not the only one. Verify it on the filesystem: it must exist and contain `1. decision-doc.md`. If missing, stop and return the block with the reason.
+- **`<folder>`** — path of the folder (relative to the repo root, or absolute), wherever it lives: `{paths.features}/<name>` is the common case but not the only one. Verify it on the filesystem: it must exist and contain `1. decision-doc.md`. If missing, stop and return the block with the reason.
 - **`<chosen solution>`** — with id and text per decision: you pass it to the brief, and only to the brief — if `<folder>/2. blueprint.md` already exists the solution is not needed and is ignored. If it is ambiguous against the decision-doc — it names a decision or an option that do not exist there — **do not guess and do not ask**: stop, and in the block report the options the document truly declares, so that whoever called you can bring them to the owner. If instead the solution was not passed to you at all and no brief exists, use for each decision the **`A`** option — which by contract is the recommended — and declare it in the outcome: it is a defensible choice written by whoever studied the problem, not your invention.
 
 ## Worktree pool

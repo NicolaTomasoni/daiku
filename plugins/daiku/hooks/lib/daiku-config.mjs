@@ -47,8 +47,9 @@ function resolvePath(value, root) {
  * can build a context without touching the disk.
  *
  * The context carries what the hooks read and nothing else: the switch and the pool of the
- * command guard, `paths.studies` for the two hooks that speak about the run's seats,
- * `paths.lib_notes` and the machine's `write_roots` for the reminder, and
+ * command guard, `paths.features` — the working folders, the seat the run works in — and
+ * `paths.studies` — the notes on a technology — for the two hooks that speak about the run's
+ * seats, with the machine's `write_roots` for the reminder, and
  * `paths.review_state` for the ledger notice of `stop-advice`. Every path comes from a key of
  * `.daiku/project.json` (§4 of the contract), except `write_roots`, which belongs to the
  * environment file of §8 — the machine's local file first, **taken whole**, never merged. A
@@ -70,8 +71,8 @@ export function loadContext(root, reads = REAL_READS) {
     }
     if (!json || typeof json !== 'object') return ABSENT;
 
-    const raw = json.paths && json.paths.studies;
-    const studies = (Array.isArray(raw) ? raw : [raw])
+    const raw = json.paths && json.paths.features;
+    const features = (Array.isArray(raw) ? raw : [raw])
       .map((x) => (typeof x === 'string' ? x.trim().replace(/\\/g, '/').replace(/\/+$/, '') : null))
       .filter(Boolean);
 
@@ -79,9 +80,9 @@ export function loadContext(root, reads = REAL_READS) {
     return {
       present: true,
       pool: resolvePath(json.worktree && json.worktree.pool, root),
-      studies,
+      features,
+      studies: resolvePath(json.paths && json.paths.studies, root),
       guardrails: declared && typeof declared === 'object' ? declared : {},
-      libNotes: resolvePath(json.paths && json.paths.lib_notes, root),
       reviewState: resolvePath(json.paths && json.paths.review_state, root),
       writeRoots: resolveWriteRoots(root, reads),
     };
@@ -148,9 +149,9 @@ export function fakeContext(fields = {}) {
   return {
     present: fields.present !== false,
     pool: fields.pool ? resolve(fields.pool) : null,
-    studies: fields.studies || [],
+    features: fields.features || [],
+    studies: seat(fields.studies),
     guardrails: fields.guardrails || {},
-    libNotes: seat(fields.libNotes),
     reviewState: seat(fields.reviewState),
     writeRoots: Array.isArray(fields.writeRoots) ? fields.writeRoots.map(seat).filter(Boolean) : [],
   };

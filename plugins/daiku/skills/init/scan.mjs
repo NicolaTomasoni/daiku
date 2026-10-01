@@ -15,7 +15,10 @@
  *  - the environment file (`.daiku/environment.local.json` or `.daiku/environment.json`);
  *  - the README of `.daiku/domain/` and `.daiku/policies/`, and every domain default the package
  *    carries in `templates/project/domain/` — present as the default or as a pointer, same name;
- *  - `.daiku/update.mjs`, and a `daiku: update` task in `.vscode/tasks.json`;
+ *  - `.daiku/update.mjs` — present, and carrying the `daiku:script <version>` marker with the
+ *    version of the package doing the scan: a script written by an older Daiku, or by one that
+ *    left no marker, is old and `init` recreates it whole — and a `daiku: update` task in
+ *    `.vscode/tasks.json`;
  *  - `.daiku/README.md`, Daiku's own documentation, deposited beside the parameters;
  *  - the host's instructions file, carrying the marker line `init` leaves in it;
  *  - `{memory.root}` and its index;
@@ -53,6 +56,9 @@ const PACKAGE = join(HERE, '..', '..');
 
 /** The marker `templates/project/instructions.md` leaves at the bottom of the file. */
 const MARKER = '<!-- daiku:instructions';
+/** The marker `init` leaves at the top of every script it deposits, holding the package version
+ * that wrote it. The skeletons carry it with `<version>`, which `init` fills on the copy. */
+const SCRIPT_MARKER = /^\/\/ daiku:script\s+(\S+)/m;
 const TASK_LABEL = 'daiku: update';
 const DEFAULT_INSTRUCTIONS = { claude: 'CLAUDE.md', codex: 'AGENTS.md' };
 
@@ -100,6 +106,24 @@ function readText(disk, p) {
   } catch {
     return null;
   }
+}
+
+/** The version the marker of a script declares, or `null` where the line is not there at all. */
+export function markedVersion(text) {
+  const found = typeof text === 'string' ? text.match(SCRIPT_MARKER) : null;
+  return found ? found[1] : null;
+}
+
+/** The version this package carries, out of its own manifest: the one a script it deposits must
+ * declare. Either host's manifest answers, and `null` where neither does — a package unable to
+ * say which version it is cannot call a script old, and stays silent. */
+export function packageVersion(disk, packageRoot) {
+  for (const folder of ['.claude-plugin', '.codex-plugin']) {
+    const manifest = readJson(disk, join(packageRoot, folder, 'plugin.json'));
+    const version = manifest && manifest.version;
+    if (typeof version === 'string' && version.trim()) return version.trim();
+  }
+  return null;
 }
 
 /** A path of `project.json`, resolved against the technical root. */
@@ -209,8 +233,23 @@ export function scan(rootIn, host, disk = REAL, packageRoot = PACKAGE) {
   // Daiku's own documentation, beside the parameters it documents.
   if (!disk.exists(join(daiku, 'README.md'))) miss('daiku-readme', '5', '.daiku/README.md');
 
-  // The update task.
-  if (!disk.exists(join(daiku, 'update.mjs'))) miss('update-script', '5-bis', '.daiku/update.mjs');
+  // The update script, and the task running it. A script of another version is as missing as an
+  // absent one: `init` recreates it whole from the skeleton, and this is what tells it to.
+  const updateScript = join(daiku, 'update.mjs');
+  if (!disk.exists(updateScript)) {
+    miss('update-script', '5-bis', '.daiku/update.mjs');
+  } else {
+    const written = readText(disk, updateScript);
+    const current = packageVersion(disk, packageRoot);
+    const stamped = markedVersion(written);
+    if (written !== null && current && stamped !== current) {
+      miss(
+        'update-script',
+        '5-bis',
+        `.daiku/update.mjs — written by ${stamped ? `Daiku ${stamped}` : 'an init that left no marker'}, this package is ${current}`
+      );
+    }
+  }
   const tasks = readText(disk, join(root, '.vscode', 'tasks.json'));
   const labelled = new RegExp(`"label"\\s*:\\s*"${TASK_LABEL}"`);
   if (tasks === null || !labelled.test(tasks)) miss('update-task', '5-bis', `.vscode/tasks.json — task "${TASK_LABEL}"`);
@@ -275,6 +314,8 @@ export function scan(rootIn, host, disk = REAL, packageRoot = PACKAGE) {
 const T = 'C:/work/repo/src';
 const TOP = 'C:/work/repo';
 const PKG = 'C:/pkg';
+/** The version the fake package carries, and the one a script it deposited must declare. */
+const VERSION = '1.0.8';
 
 function fakeDisk(files, extra = {}) {
   const spell = (p) => resolve(String(p)).replace(/\\/g, '/');
@@ -307,6 +348,7 @@ function fakeDisk(files, extra = {}) {
 /** A project `init` fully opened, on Claude Code. */
 function complete() {
   return {
+    [`${PKG}/.claude-plugin/plugin.json`]: JSON.stringify({ name: 'daiku', version: VERSION }),
     [`${PKG}/templates/project/domain/README.md`]: '#',
     [`${PKG}/templates/project/domain/commit-convention.md`]: '#',
     [`${PKG}/templates/project/domain/memory-contract.md`]: '#',
@@ -321,7 +363,7 @@ function complete() {
     [`${T}/.daiku/domain/memory-contract.md`]: '#',
     [`${T}/.daiku/policies/README.md`]: '#',
     [`${T}/.daiku/README.md`]: '# Daiku',
-    [`${T}/.daiku/update.mjs`]: '//',
+    [`${T}/.daiku/update.mjs`]: `// daiku:script ${VERSION}\n`,
     [`${T}/.vscode/tasks.json`]: '{ // tasks\n "tasks": [ { "label": "daiku: update" } ] }',
     [`${T}/CLAUDE.md`]: `# Project\n\n${MARKER} — structured -->\n`,
     [`${T}/memory/MEMORY.md`]: '# Memory',
@@ -354,6 +396,8 @@ function selfCheck() {
 
   const cases = [
     ['missing update script', without(complete(), `${T}/.daiku/update.mjs`), 'claude', 'update-script'],
+    ['an update script written by an older package', { ...complete(), [`${T}/.daiku/update.mjs`]: '// daiku:script 1.0.7\n' }, 'claude', 'update-script'],
+    ['an update script an older init left without a marker', { ...complete(), [`${T}/.daiku/update.mjs`]: '//\n' }, 'claude', 'update-script'],
     ['missing tasks.json', without(complete(), `${T}/.vscode/tasks.json`), 'claude', 'update-task'],
     ['tasks.json without the daiku task', { ...complete(), [`${T}/.vscode/tasks.json`]: '{"tasks":[{"label":"build"}]}' }, 'claude', 'update-task'],
     ['instructions without the marker', { ...complete(), [`${T}/CLAUDE.md`]: '# Project\n' }, 'claude', 'instructions'],
@@ -394,6 +438,15 @@ function selfCheck() {
 
   const gitDown = fakeDisk(complete(), { checkIgnore: () => null });
   check('git that does not answer: fail-open, nothing listed', scan(T, 'claude', gitDown, PKG).missing.length === 0);
+
+  const noManifest = scan(T, 'claude', fakeDisk(without(complete(), `${PKG}/.claude-plugin/plugin.json`)), PKG);
+  check('a package that does not say which version it is: no script called old', noManifest.missing.length === 0);
+
+  // The marker alone.
+  check('marker: the version is read', markedVersion('// daiku:script 1.0.8 — note\n') === '1.0.8');
+  check('marker: a file without it declares nothing', markedVersion('// hello\n') === null);
+  // `init` filling the copy in badly — the placeholder left in — is caught as an old script.
+  check('marker: the unfilled placeholder is not the package version', markedVersion('// daiku:script <version>\n') !== VERSION);
 
   // The parser alone.
   const parsed = parseCheckIgnore(

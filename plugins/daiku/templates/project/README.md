@@ -77,6 +77,8 @@ what this project does not have — an area, a test command, a technical documen
 - **The review ledger** — where a cycle records the findings it already judged. It stays inside the
   repository tree but outside version control.
 - **`.daiku/update.mjs`** and the `daiku: update` task in your editor, which updates the package.
+  The script is a package artefact and not yours: it carries the Daiku version that wrote it, and
+  `/init` recreates it whole when a newer one arrives.
 
 The folder `.daiku/` is versioned: it is the configuration the project wrote for itself, and a clone
 finds it there without running `/init` again.
@@ -100,4 +102,6 @@ The package, the full documentation and the released versions are in
 
 ---
 
-Copied here by Daiku's `/init`. It is yours now: `init` never rewrites a file it finds.
+Copied here by Daiku's `/init`. It is yours now: `init` never rewrites a file of the project's.
+The one exception is the update script beside it, which carries the Daiku version that wrote it and
+is recreated whole when a newer Daiku arrives.
