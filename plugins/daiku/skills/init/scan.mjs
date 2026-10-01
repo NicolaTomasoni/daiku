@@ -16,6 +16,7 @@
  *  - the README of `.daiku/domain/` and `.daiku/policies/`, and every domain default the package
  *    carries in `templates/project/domain/` — present as the default or as a pointer, same name;
  *  - `.daiku/update.mjs`, and a `daiku: update` task in `.vscode/tasks.json`;
+ *  - `.daiku/README.md`, Daiku's own documentation, deposited beside the parameters;
  *  - the host's instructions file, carrying the marker line `init` leaves in it;
  *  - `{memory.root}` and its index;
  *  - on Claude Code, the two memory keys in `.claude/settings.local.json`, and no memory file
@@ -205,6 +206,9 @@ export function scan(rootIn, host, disk = REAL, packageRoot = PACKAGE) {
     if (!disk.exists(join(daiku, 'domain', name))) miss(`domain:${name}`, '5', `.daiku/domain/${name}`);
   }
 
+  // Daiku's own documentation, beside the parameters it documents.
+  if (!disk.exists(join(daiku, 'README.md'))) miss('daiku-readme', '5', '.daiku/README.md');
+
   // The update task.
   if (!disk.exists(join(daiku, 'update.mjs'))) miss('update-script', '5-bis', '.daiku/update.mjs');
   const tasks = readText(disk, join(root, '.vscode', 'tasks.json'));
@@ -316,6 +320,7 @@ function complete() {
     [`${T}/.daiku/domain/commit-convention.md`]: '#',
     [`${T}/.daiku/domain/memory-contract.md`]: '#',
     [`${T}/.daiku/policies/README.md`]: '#',
+    [`${T}/.daiku/README.md`]: '# Daiku',
     [`${T}/.daiku/update.mjs`]: '//',
     [`${T}/.vscode/tasks.json`]: '{ // tasks\n "tasks": [ { "label": "daiku: update" } ] }',
     [`${T}/CLAUDE.md`]: `# Project\n\n${MARKER} — structured -->\n`,
@@ -354,6 +359,7 @@ function selfCheck() {
     ['instructions without the marker', { ...complete(), [`${T}/CLAUDE.md`]: '# Project\n' }, 'claude', 'instructions'],
     ['a domain default missing', without(complete(), `${T}/.daiku/domain/memory-contract.md`), 'claude', 'domain:memory-contract.md'],
     ['policies README missing', without(complete(), `${T}/.daiku/policies/README.md`), 'claude', 'policies-readme'],
+    ['Daiku\'s own README missing', without(complete(), `${T}/.daiku/README.md`), 'claude', 'daiku-readme'],
     ['environment missing', without(complete(), `${T}/.daiku/environment.json`), 'claude', 'environment'],
     ['memory index missing', { ...without(complete(), `${T}/memory/MEMORY.md`), [`${T}/memory/auth.md`]: '#' }, 'claude', 'memory-index'],
     ['host memory not pointed', without(complete(), `${T}/.claude/settings.local.json`), 'claude', 'host-memory'],

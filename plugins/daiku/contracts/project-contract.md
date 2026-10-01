@@ -367,8 +367,15 @@ part of it by hand, and a clone must find it without running `/init` again. The 
 the repository and enters a diff like any other source file.
 
 Beside them stands `update.mjs`, which `init` copies from `templates/project/` together with the
-`daiku: update` task of `.vscode/tasks.json` that runs it: it refreshes the `daiku` marketplace and
-updates the package on Claude Code. It is not a parameter — no skill and no hook reads it.
+`daiku: update` task of `.vscode/tasks.json` that runs it: it shows the version in place, asks
+whether to update, and on a yes refreshes the `daiku` marketplace and updates the package on
+Claude Code. It is not a parameter — no skill and no hook reads it.
+
+And beside it lands `README.md`, copied from the same folder as `.daiku/README.md`: it is Daiku's
+own documentation — what the method is, the commands it offers, where the values live — and it
+stands inside the project so that whoever asks about Daiku, user or agent, finds the answer where
+the rest of Daiku already is. It is not a parameter either: no skill and no hook reads it, and
+nothing cites it. It is read when the question is asked.
 
 **Nothing of Daiku stands outside the repository.** A folder in the user home is a seat no clone
 carries, no `git diff` shows and no reviewer corrects — and it is the first thing a guardrail
