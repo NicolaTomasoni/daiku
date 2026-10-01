@@ -2,8 +2,10 @@
 name: fase-strategica-non-si-salta
 description: "Il giudizio di stadio di decision-doc ora chiede di chi è la direzione e se è stata messa alla prova: quattro segnali che vietano il tecnico, tre campi del blocco e sette regole nel valutatore"
 metadata:
+  node_type: memory
   type: feedback
-  modified: 2026-09-30
+  modified: 2026-10-01T16:55:53.236Z
+  originSessionId: 9d0e0f3c-20c8-430f-9f2e-80b298a2abee
 ---
 
 Dal 30 settembre 2026 il nodo `decision-doc` **non** chiede più «esiste già una direzione scritta?»
@@ -16,7 +18,7 @@ Quattro segnali vietano lo stadio `technical`, e ognuno basta da solo:
 
 1. **Nessuna domanda di direzione nella lista.** Solo *come*, nessun *se*, *per chi*, *chi decide*:
    è la strategia data per scontata, non una prova di maturità.
-2. **Un precedente che dice l'opposto.** Una decisione già chiusa, in memoria o in `{paths.studies}`,
+2. **Un precedente che dice l'opposto.** Una decisione già chiusa, in memoria o in `{paths.features}`,
    che questo lavoro contraddice è una **domanda per l'owner** — *avevi rinunciato a questo; cosa è
    cambiato?* — mai una nota liquidata per deduzione.
 3. **Una strategia giustificata dai documenti della catena stessa.** Se l'unico modo di dichiarare

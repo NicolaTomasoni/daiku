@@ -30,9 +30,10 @@ esattamente il problema che la vecchia regola temeva.
   c'era già, in un documento del repository, o in una regola che la struttura rispetta senza
   eccezioni visibili. Mai dedotto da un'architettura intravista. Nel dubbio non si scrive.
 - **Il file si riscrive una volta sola.** In fondo allo scheletro c'è una riga di commento
-  `daiku:instructions`: se `init` la trova, lascia stare il file. È l'unica eccezione
-  all'idempotenza di `init`, ed è sicura solo finché quella riga esiste — senza, ogni rilancio
-  ristrutturerebbe il file che l'utente tocca più di ogni altro.
+  `daiku:instructions`: se `init` la trova, lascia stare il file. È l'eccezione
+  all'idempotenza di `init` **sui file del progetto**, ed è sicura solo finché quella riga esiste —
+  senza, ogni rilancio ristrutturerebbe il file che l'utente tocca più di ogni altro. L'altra
+  eccezione, di specie diversa, è lo script versionato: vedi [[script-versionati]].
 
 **Il 29 settembre 2026 l'owner ha chiuso quattro scelte che il ciclo di collaudo lasciava aperte**, e
 ognuna ha ora anche la sua sede deterministica:

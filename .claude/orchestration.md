@@ -40,8 +40,8 @@ Ogni path è **relativo alla radice del repository** (`C:/dev/daiku-workspace/da
 | `.claude/agents/finder.md` | il subagent a toolset ristretto dei finder di `/review` |
 | `.docs/PUNTI-APERTI.md` | le decisioni ancora da prendere |
 | `.docs/memory/` + `.docs/memory/MEMORY.md` | la memoria persistente e il suo indice |
-| `.docs/nuovi-sviluppi/<slug>/` | la cartella di un lavoro, con i file numerati `0.`–`5.` ◦ |
-| `.docs/appunti-lib/<slug>.md` | gli appunti che `studia-libreria` deposita ◦ |
+| `.docs/features/<slug>/` | la cartella di un lavoro, con i file numerati `0.`–`5.` ◦ |
+| `.docs/studies/<slug>.md` | gli appunti che `studia-libreria` deposita ◦ |
 | `.docs/studia-repository/<slug>/` | i documenti di una corsa di `studia-repository`: `run.json` e i tre documenti ◦ |
 | `.docs/features/<feature>/` | il catalogo delle feature: un contributo per corsa, `<slug-corsa>.md` — cresce da repo diversi e non appartiene a nessuna corsa ◦ |
 | `.docs/consegne.md` | il registro append-only delle consegne di `deliver-feature` ◦ |
@@ -209,8 +209,8 @@ contenuto vive nel file del nodo, che resta l'unico posto in cui si modifica.
 
 | Nodo | Chi lo invoca | Riceve già risolto | Restituisce | Ri-delega |
 |---|---|---|---|---|
-| `studia-libreria` | owner | nome della tecnologia | appunti in `.docs/appunti-lib/` | sì — ricerca per blocco tematico, foglie |
-| `studia-problema` | owner | descrizione del problema | `0. problem.md` in `.docs/nuovi-sviluppi/<slug>/` | sì — ricerca per area, foglie, e `decision-doc` alla chiusura |
+| `studia-libreria` | owner | nome della tecnologia | appunti in `.docs/studies/` | sì — ricerca per blocco tematico, foglie |
+| `studia-problema` | owner | descrizione del problema | `0. problem.md` in `.docs/features/<slug>/` | sì — ricerca per area, foglie, e `decision-doc` alla chiusura |
 | `decision-doc` | owner, `studia-problema` § *Passa il testimone* | cartella del problema, eventuale sottoinsieme da analizzare; da `studia-problema` anche il documento già scritto e le memorie pertinenti | `0.5. studio-strategico.md` oppure `1. decision-doc.md` sul disco, e come figlio il blocco di § *Modalità di invocazione* del suo file | no |
 | `blueprint` | `deliver-feature` fase 1 | cartella con `1. decision-doc.md`, soluzione scelta verbatim, memorie pertinenti | § *Cosa restituisci* del suo file | no |
 | `execute` | `deliver-feature` fase 2 | cartella con `2. blueprint.md`, memorie pertinenti | § *Cosa restituisci* del suo file | no |

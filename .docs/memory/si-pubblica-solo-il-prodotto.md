@@ -21,8 +21,9 @@ La **pubblicazione** è il repository `NicolaTomasoni/daiku` su GitHub, che non 
 questo né un fork: è un albero **generato**. **In radice non entra nessun file di prodotto**: il
 prodotto ha una cartella che è per intero la radice del suo repository di pubblicazione, vetrine,
 README e `.gitattributes` compresi. A ogni rilascio `.docs/tools/pubblica-dist.ps1`, chiamato dal
-comando `/rilascia-daiku`, copia il contenuto di quella cartella e committa. Là dentro non si
-lavora mai. Il repository è privato finché Daiku non è pronto per il pubblico.
+comando `/rilascia-daiku`, copia il contenuto di quella cartella e committa sul ramo **beta**:
+la produzione è `main`, e ci arriva per promozione (vedi [[pubblicazione-su-github]]). Là dentro
+non si lavora mai. Il repository è privato finché Daiku non è pronto per il pubblico.
 
 Si copia il contenuto di `plugins/` — le due vetrine, `daiku/`, `.gitattributes`, `README.md`.
 

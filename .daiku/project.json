@@ -16,7 +16,8 @@
     ]
   },
   "paths": {
-    "studies": ".docs",
+    "studies": ".docs/studies",
+    "features": ".docs/features",
     "review_state": ".docs/runtime/review"
   },
   "memory": {

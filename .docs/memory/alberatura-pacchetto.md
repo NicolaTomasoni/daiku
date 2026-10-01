@@ -82,8 +82,10 @@ solo `.gitignore` e `.gitattributes` del repository di sviluppo.
   e copre il punto in cui il repository di `multica-ai/andrej-karpathy-skills` è inciampato
 - `tools/studia-repository/` — gli attrezzi deterministici del comando `studia-repository`
 - `tools/` — accanto, il banco della prova di `init` (`collauda-init.mjs`), la pubblicazione
-  (`pubblica-dist.ps1`, che committa nel dist e **non** pusha — vedi [[push-solo-manuale]]),
-  il controllo che nessuno script del cantiere invochi un push (`check-no-push.mjs`) e `macchina/`,
+  (`pubblica-dist.ps1` che committa sul canale beta e `promuovi-dist.ps1` che prepara la
+  produzione: **non** pushano — vedi [[push-solo-manuale]] e [[pubblicazione-su-github]]) col loro
+  banco (`check-channel.mjs`), il controllo che nessuno script del cantiere invochi un push
+  (`check-no-push.mjs`) e `macchina/`,
   i sorgenti delle guardie di macchina (vedi [[guardie-di-macchina]])
 
 ## I nomi che si somigliano e non c'entrano niente

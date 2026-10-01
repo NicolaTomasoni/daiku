@@ -1,6 +1,6 @@
 ---
 name: pubblicazione-su-github
-description: "daiku-workspace tiene affiancati lo sviluppo (daiku-dev su GitLab, «dev») e il checkout della pubblicazione (NicolaTomasoni/daiku su GitHub, «prod», privato finché il prodotto non è pronto) — script e cosa ricontrollare prima di aprire"
+description: "daiku-workspace tiene affiancati lo sviluppo (daiku-dev su GitLab, «dev») e il checkout della pubblicazione (NicolaTomasoni/daiku su GitHub, «prod», privato finché il prodotto non è pronto) — i due canali beta e main con la regola di promozione, gli script e cosa ricontrollare prima di aprire"
 metadata:
   node_type: memory
   type: project
@@ -20,9 +20,23 @@ La storia di **prod** comincia da un **commit radice vuoto** — nessun file, ne
 Non c'è niente prima, e `main` è l'unico ref: niente tag, niente release, niente PR.
 
 - La **pubblicazione** è `NicolaTomasoni/daiku` su GitHub, privato
-  finché Daiku non è pronto per il pubblico. Lo alimenta
-  `.docs/tools/pubblica-dist.ps1`, chiamato dal comando `/rilascia-daiku`.
+  finché Daiku non è pronto per il pubblico. La alimenta
+  `.docs/tools/pubblica-dist.ps1`, chiamato dal comando `/rilascia-daiku`, sul ramo **beta**.
   Un collega si invita lì come collaborator, mai sullo sviluppo.
+
+**Due canali, un repository.** Il checkout di dist lavora stabilmente sul ramo **beta**: ogni
+rilascio atterra lì. La produzione è **main**, e ci arriva solo per promozione, con
+`.docs/tools/promuovi-dist.ps1`, che sposta `main` su un commit di beta dopo aver verificato che
+sia un fast-forward — portandosi dietro tutte le patch arretrate, perché la storia è lineare.
+
+| Bump | Dove va il rilascio |
+|---|---|
+| `patch` | solo beta, salvo l'ordine esplicito `--with-main` |
+| `minor`, `major` | beta e main |
+
+Il default branch resta `main`, verificato il 1° ottobre 2026: chi installa da `owner/repo` senza
+ref prende la produzione, e il comando di installazione non cambia. L'installazione del canale
+beta è in [[installazione-e-versionamento]].
 
 **Why:** per Daiku conta la forma breve `owner/repo`, che entrambi gli host accettano solo per
 GitHub — `/plugin marketplace add owner/repo` su Claude Code, `codex plugin marketplace add
@@ -35,12 +49,14 @@ verdi — le due vetrine comprese, perché il loro guasto si vede solo in chi in
 scritta nei due manifest e nel badge del README con la verifica di rilettura, prosa AI (voce di
 changelog e messaggio `release X.Y.Z`), **commit in dev** — la versione, il changelog e ogni
 residuo del working tree, con l'albero pulito prima di copiare — e solo dopo la pubblicazione con
-`pubblica-dist.ps1` in UN commit. **Dev è la fonte, la dist è la copia:** pubblicare prima di
-committare lascia in dev una versione che non esiste in nessun commit, e il rilascio successivo
-calcolerebbe il perimetro da un albero sbagliato.
-**Il push non è della macchina:** `pubblica-dist.ps1` committa nel dist e si ferma — pushava da
-sé fino al 30 settembre 2026, quando un rilascio uscì prima che l'owner lo decidesse. Il push
-resta un gesto manuale, e in questo repository `.claude/settings.json` lo nega.
+`pubblica-dist.ps1`, che scrive su beta in UN commit e si ferma se il checkout non sta su beta.
+**Dev è la fonte, la dist è la copia:** pubblicare prima di committare lascia in dev una versione
+che non esiste in nessun commit, e il rilascio successivo calcolerebbe il perimetro da un albero
+sbagliato.
+**Il push non è della macchina:** `pubblica-dist.ps1` committa e `promuovi-dist.ps1` prepara
+`main`, e si fermano — pushava da sé fino al 30 settembre 2026, quando un rilascio uscì prima che
+l'owner lo decidesse. Restano due gesti manuali: `beta` a ogni rilascio, `main` quando c'è una
+promozione. In questo repository `.claude/settings.json` nega il push.
 È l'unico percorso di rilascio: la versione la scrive la sessione nei tre punti.
 `pubblica-dist.ps1` esegue a ogni pubblicazione il gate stretto (path di questa macchina,
 nome utente, segnaposto non sostituiti, nome del repo di sviluppo). Il gate largo resta

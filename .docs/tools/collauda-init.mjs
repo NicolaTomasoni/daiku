@@ -508,7 +508,7 @@ const ASSI = [
         const lista = percorso.split('.').reduce((o, k) => (o ? o[k] : undefined), progetto);
         for (const voce of Array.isArray(lista) ? lista : []) controlla(`${percorso}[]`, voce);
       }
-      for (const chiave of ['studies', 'lib_notes', 'review_state']) {
+      for (const chiave of ['studies', 'features', 'review_state']) {
         controlla(`paths.${chiave}`, progetto.paths && progetto.paths[chiave]);
       }
       controlla('worktree.pool', progetto.worktree && progetto.worktree.pool);

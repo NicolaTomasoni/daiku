@@ -203,5 +203,5 @@ che vale la pena scrivere, non un errore.
 Questa skill fa quattro cose: ispeziona il diff della consegna, decide quali artefatti di sviluppo
 quel diff giustifica, li aggiorna con il delta minimo, e riporta l'esito. Non fa audit del corpus
 intero, non tocca `plugins/daiku/` né l'indice di git, non committa nulla, non anticipa piani futuri
-— quelli restano in `.docs/nuovi-sviluppi/` — e non revoca da sola un fatto dell'owner in
+— quelli restano in `.docs/features/` — e non revoca da sola un fatto dell'owner in
 conflitto: quello si segnala, non si cancella.

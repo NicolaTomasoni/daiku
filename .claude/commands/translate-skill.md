@@ -24,7 +24,7 @@ Traduci in inglese il testo discorsivo e i commenti: paragrafi, titoli, elenchi,
 insieme.** Non toccarlo mai, byte per byte:
 
 - il frontmatter `name` (resta uguale alla cartella) e ogni valore che sia un identificatore;
-- ogni placeholder fra graffe `{...}` (`{paths.lib_notes}`, `{language.chat}`, ...) — non rinominare, non tradurre, non riordinare;
+- ogni placeholder fra graffe `{...}` (`{paths.studies}`, `{language.chat}`, ...) — non rinominare, non tradurre, non riordinare;
 - `$ARGUMENTS` e ogni altro `$...`;
 - le **chiavi di `project.json` e di `environment.json`**: stanno compilate nei file di un utente, e rinominarle le rende illeggibili senza che nessuno se ne accorga;
 - i **nomi di campo dei blocchi di ritorno** che le skill si scambiano, e i loro valori enum;

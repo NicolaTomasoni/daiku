@@ -70,7 +70,8 @@ La **pubblicazione** è il repository `NicolaTomasoni/daiku` su GitHub, che non 
 di questo né un fork: è un albero generato, inglese sempre e tutto — riceve il contenuto di
 `plugins/`, che è inglese per intero, e non gli si aggiunge niente in pubblicazione. A ogni rilascio lo script
 `.docs/tools/pubblica-dist.ps1`, chiamato dal comando `/rilascia-daiku`, copia lì il contenuto di
-`plugins/` e committa. Là dentro non si lavora mai; il suo checkout
+`plugins/` e committa sul ramo **beta**; la produzione è `main`, e ci arriva per promozione con
+`promuovi-dist.ps1`. Là dentro non si lavora mai; il suo checkout
 di servizio sta in `C:\dev\daiku-workspace\daiku`.
 
 | Prodotto | Repository di pubblicazione | Cosa si copia |

@@ -35,7 +35,7 @@ sostituisce, li incatena.
 Argomenti: `$ARGUMENTS` — `<cartella> <soluzione scelta>`.
 
 - **`<cartella>`** — path della cartella, relativo alla radice del repository o assoluto.
-  `.docs/nuovi-sviluppi/<slug>` è il caso comune. Verificala sul filesystem: deve esistere e
+  `.docs/features/<slug>` è il caso comune. Verificala sul filesystem: deve esistere e
   contenere `1. decision-doc.md`. Se manca, fermati e dillo.
 - **`<soluzione scelta>`** — la passi al brief verbatim. Se è ambigua rispetto al decision-doc
   (decisione o opzione inesistente), apri il documento, mostra le opzioni e chiedi — non indovinare.

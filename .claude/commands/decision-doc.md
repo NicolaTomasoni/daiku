@@ -74,7 +74,7 @@ una lista riassunta è una lista a cui l'owner risponde con meno di quanto hai s
 Argomenti: `$ARGUMENTS`
 
 Il primo argomento è **una sola cartella**, come path relativo dalla radice del repository o
-assoluto — normalmente `.docs/nuovi-sviluppi/<slug>/`. Può seguire una clausola tipo «analizza
+assoluto — normalmente `.docs/features/<slug>/`. Può seguire una clausola tipo «analizza
 solo <sottoinsieme>».
 
 - Se `$ARGUMENTS` è vuoto, **chiedi** quale cartella usare. Non procedere a vuoto.

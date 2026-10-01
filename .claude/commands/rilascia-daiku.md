@@ -1,10 +1,26 @@
 ---
-description: 'Rilascia Daiku con bump di versione: verifiche, versione nei due manifest e nel badge, prosa AI, commit in dev, poi pubblicazione dist con un commit solo e senza push'
-argument-hint: '[major | minor | patch]'
+description: 'Rilascia Daiku con bump di versione: verifiche, versione nei due manifest e nel badge, prosa AI, commit in dev, pubblicazione sul canale beta e promozione in produzione secondo il bump'
+argument-hint: '[major | minor | patch] [--with-main]'
 ---
 
-Rilasci Daiku in produzione. Il livello di bump lo decide l'owner: sta in `$ARGUMENTS`.
+Rilasci Daiku. Il livello di bump lo decide l'owner: sta in `$ARGUMENTS`.
 Se manca o non è uno fra `major`, `minor` e `patch`, chiedilo e fermati finché non arriva.
+`--with-main` è l'ordine esplicito di portare in produzione anche una patch, e ha senso solo
+con `patch`.
+
+## I due canali
+
+Il checkout di dist (`C:\dev\daiku-workspace\daiku`) lavora stabilmente sul ramo **beta**, e ogni
+rilascio atterra lì. La produzione è il ramo **main**, e ci arriva solo per promozione, mai da
+qui. La regola:
+
+| Bump | Dove va il rilascio |
+|---|---|
+| `patch` | solo beta |
+| `minor`, `major` | beta e main: la promozione fa parte del rilascio |
+
+Una patch va in main solo quando l'owner lo chiede, cioè con `--with-main`. Quando main avanza
+si porta dietro **tutte** le patch che non aveva ancora: è il fast-forward, non una scelta.
 
 La divisione è fissa: **la versione la scrivi nei tre punti esatti e la verifichi, la prosa la
 scrivi tu**. I numeri hanno una forma sola e un controllo che li rilegge; la sintesi delle note
@@ -38,12 +54,15 @@ node plugins/daiku/hooks/self-check.mjs
 node .docs/tools/check-topology.mjs plugins/daiku
 node .docs/tools/check-marketplace.mjs plugins
 node .docs/tools/check-no-push.mjs --self-check
+node .docs/tools/check-channel.mjs
 ```
 
 Le due vetrine sono lì dentro perché il loro guasto non si vede da qui: si vede solo in chi
-installa, dopo che il rilascio è già uscito. L'ultima non guarda il pacchetto ma il cantiere:
-verifica che nessuno script invochi un push, perché una riga dentro un file non passa da nessuna
-guardia — vedi `.docs/memory/push-solo-manuale.md`.
+installa, dopo che il rilascio è già uscito. `check-no-push` non guarda il pacchetto ma il
+cantiere: verifica che nessuno script invochi un push, perché una riga dentro un file non passa da
+nessuna guardia — vedi `.docs/memory/push-solo-manuale.md`. `check-channel` prova i due script di
+canale su repository usa e getta: che il rilascio si fermi se il checkout non sta su beta, e che la
+promozione rifiuti un non fast-forward.
 
 ## 2. I numeri: i tre punti della versione
 
@@ -139,20 +158,35 @@ e lancia:
 .docs/tools/pubblica-dist.ps1 -Messaggio '<messaggio>'
 ```
 
-Fa gate stretto, riversa `plugins/` nel dist e committa là con UN commit solo. **Non pusha**: il
-push è un gesto manuale dell'owner, e nessuno lo fa al posto suo — né questo comando, né lo
-script. Il commit nel dist resta locale finché l'owner non lo pusha.
+Fa gate stretto, riversa `plugins/` nel dist e committa su **beta** con UN commit solo. Se il
+checkout di dist non stesse su beta lo script si ferma: la produzione non si tocca da qui.
+**Non pusha**: il push è un gesto manuale dell'owner, e nessuno lo fa al posto suo — né questo
+comando, né lo script. Il commit su beta resta locale finché l'owner non lo pusha.
 
-**Su produzione va sempre e solo un commit per bump**, che sia `major`, `minor` o `patch`: uno solo
+**Un rilascio è sempre e solo un commit per bump**, che sia `major`, `minor` o `patch`: uno solo
 e comprensivo di tutto — versione, changelog e ogni modifica del rilascio insieme. I commit separati
-della §5 restano in dev; nella dist non si spezza mai un rilascio in più commit, e lo script si
+della §5 restano in dev; nel dist non si spezza mai un rilascio in più commit, e lo script si
 lancia una volta sola.
 
-## 7. Report
+## 7. Promozione in produzione
 
-Versione vecchia e nuova, i commit del rilascio su dev con i loro SHA, il commit della dist col
-suo SHA — **e che il push resta all'owner**. Poi cosa contiene il rilascio in una riga, e la prova
-che la copia è fedele:
+Solo se il bump è `minor` o `major`, oppure se l'owner ha chiesto `--with-main`. Negli altri
+casi questo passo non si esegue e main resta dov'è.
+
+```powershell
+.docs/tools/promuovi-dist.ps1 -Versione <nuova>
+```
+
+Verifica che la promozione sia un fast-forward e sposta `main` locale sul rilascio appena
+pubblicato, portandosi dietro tutte le patch arretrate. **Non pusha**, come lo script di
+pubblicazione. Se main avesse un commit che beta non ha, lo script si ferma: allinealo prima.
+
+## 8. Report
+
+Versione vecchia e nuova, i commit del rilascio su dev con i loro SHA, il commit di beta col suo
+SHA, se main è stato promosso e fino a dove — **e che i push restano all'owner**: quello di beta
+sempre, quello di main quando la promozione c'è stata. Poi cosa contiene il rilascio in una riga,
+e la prova che la copia è fedele:
 
 ```bash
 diff -rq plugins/ ../daiku -x .git

@@ -1,10 +1,10 @@
 ---
-description: 'Studia un problema di Daiku leggendo il pacchetto e i documenti di riferimento, produce 0. problem.md in .docs/nuovi-sviluppi/<slug>/ e chiude delegando decision-doc su quella cartella'
+description: 'Studia un problema di Daiku leggendo il pacchetto e i documenti di riferimento, produce 0. problem.md in .docs/features/<slug>/ e chiude delegando decision-doc su quella cartella'
 argument-hint: '<descrizione problema>'
 ---
 
 Studia un problema di Daiku leggendo il pacchetto e i documenti di riferimento, e producendo un
-documento di analisi strutturato in `.docs/nuovi-sviluppi/<slug>/0. problem.md`.
+documento di analisi strutturato in `.docs/features/<slug>/0. problem.md`.
 
 **La skill precede decision-doc, e lo chiama:** serve a capire e documentare un problema prima di
 passare alle decisioni, e quando il documento è scritto passa il testimone a `decision-doc` su
@@ -57,7 +57,7 @@ Un problema che non cade in nessuna di queste è un segnale: o è di sviluppo e 
 
 ## Obiettivo del documento
 
-Produrre un **unico file markdown** `.docs/nuovi-sviluppi/<slug>/0. problem.md` che:
+Produrre un **unico file markdown** `.docs/features/<slug>/0. problem.md` che:
 
 1. **Descrive il problema** in modo chiaro e circostanziato
 2. **Documenta com'è fatto oggi** il pacchetto nell'area coinvolta
@@ -78,7 +78,7 @@ Il documento **non propone soluzioni** — quelle arrivano in `1. decision-doc.m
    - uno **slug** kebab-case per la cartella (es. `rimandi-fra-contratti`,
      `check-contratti-radice-sbagliata`).
 
-2. **Crea la cartella** `.docs/nuovi-sviluppi/<slug>/` se non esiste.
+2. **Crea la cartella** `.docs/features/<slug>/` se non esiste.
    - Verifica che non esista già una cartella con lo stesso slug.
    - Se esiste, chiedi conferma all'owner prima di sovrascrivere.
 
@@ -110,7 +110,7 @@ costruito così. Un gap dimostrato da un esito verbatim vale dieci righe di ragi
 
 ### 3. Scrivi il documento
 
-Crea `.docs/nuovi-sviluppi/<slug>/0. problem.md` con questa struttura:
+Crea `.docs/features/<slug>/0. problem.md` con questa struttura:
 
 ```markdown
 # <Titolo del problema> — il problema
@@ -179,7 +179,7 @@ zero:
 
 - il **contratto da leggere**: `.claude/commands/decision-doc.md`, per intero, prima di agire,
   nella modalità *Da `studia-problema`* che quel file dichiara;
-- l'**input risolto**: la cartella `.docs/nuovi-sviluppi/<slug>/` e, dentro, il `0. problem.md`
+- l'**input risolto**: la cartella `.docs/features/<slug>/` e, dentro, il `0. problem.md`
   che hai appena scritto — è già il documento base, non c'è nulla da concatenare;
 - i **documenti di riferimento**: `CLAUDE.md`, le memorie sui due host e, se il problema tocca
   una decisione già in lista, `.docs/PUNTI-APERTI.md`;
