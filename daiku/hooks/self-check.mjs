@@ -1,22 +1,22 @@
 #!/usr/bin/env node
 /**
- * The test benches of the six hooks, of the two programs in `architect/` and of `init`'s scan
+ * The test benches of the five hooks, of the two programs in `architect/` and of `init`'s scan
  * (`skills/init/scan.mjs`), in a single shot.
  *
  * `node hooks/self-check.mjs` from the package root. Exits `0` if every case is
- * green, `1` on the first red, and prints the **counted** total — the sum of what the eleven
+ * green, `1` on the first red, and prints the **counted** total — the sum of what the ten
  * benches really ran, not a number written here.
  *
- * It exists because six fail-open hooks are six ways of staying silent, and a fault in
- * one of the six is indistinguishable from silence until somebody runs its bench. A single
+ * It exists because five fail-open hooks are five ways of staying silent, and a fault in
+ * one of the five is indistinguishable from silence until somebody runs its bench. A single
  * command makes that move repeatable before a release, in a CI, or after touching a file
- * that all six import.
+ * that all five import.
  *
- * The fifth bench is `architect/architect.mjs`, and it is the opposite kind of program: it
+ * One of them is `architect/architect.mjs`, and it is the opposite kind of program: it
  * does not fail open, it fails loudly, and its verdict binds — so a case it does not cover
  * is a delivery that stops, not a wrong verdict. That is why it is launched here too and
  * not only by hand: the promise «the benches run together» is worth more, not less, for the
- * one program whose silence stops work. The sixth is `architect/ledger.mjs`, the review's disk
+ * one program whose silence stops work. The other is `architect/ledger.mjs`, the review's disk
  * side, which fails loudly for the same reason and whose bench runs real Git on throwaway
  * repositories under the system temp directory.
  *

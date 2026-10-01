@@ -16,8 +16,8 @@ direction this project chose**. Three promises, each with a mechanism behind it.
 
 - **The shape is yours, and it is declared once.** Architecture, conventions and criteria live in
   `.daiku/project.json`, `.daiku/domain/`, `.daiku/policies/` and the instructions file. Agents read
-  them before changing anything, and the guardrails refuse the gestures that would break them — a
-  push fired by mistake, a new file outside the declared seats.
+  them before changing anything, and the guardrail refuses the gestures that would break them — a
+  push fired by mistake, a commit signed as somebody else.
 - **Nothing enters without being pruned.** Every job goes through a review cycle: independent
   reviewers read the same diff without seeing each other — bugs always, architecture and performance
   where the diff touches them — then what they found is applied and **re-checked**, round after

@@ -1,5 +1,12 @@
 # Changelog
 
+### 1.0.7 — 2026-10-01
+
+- The write guard is gone: a file creation is never denied, and the package ships five hooks instead of six.
+- On Codex, `/sync-host` removes the hooks the package no longer carries, instead of leaving them behind in the project.
+
+---
+
 ### 1.0.6 — 2026-10-01
 
 - The `daiku: update` task shows the version in place and asks before updating: nothing is refreshed on an answer nobody gave.

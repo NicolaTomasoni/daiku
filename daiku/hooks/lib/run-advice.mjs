@@ -55,7 +55,7 @@
  * readers believe it covers it:
  *
  *  - **A target built by the shell** — `cat > file`, a heredoc, `git apply` — which `PreToolUse` on
- *    the write tools never sees, exactly as for `edit-guard.mjs`.
+ *    the write tools never sees: the hook sees the write tool, and this is the shape that is not one.
  *  - **The degradation of §4 point 4** of `contracts/orchestration.md`: where delegation is
  *    unavailable a chain runs its steps inline, and a step running inline *is* the conversation
  *    writing. There the reminder is the only thing speaking, which is what a reminder is for.
@@ -318,12 +318,11 @@ function fakeEnv(files = {}, tmp = 'C:/Temp/daiku') {
 
 const CTX = () =>
   fakeContext({
-    codeRoot: `${R}/src`,
     studies: ['docs/studies'],
     libNotes: `${R}/docs/lib-notes`,
     reviewState: `${R}/.daiku/review-state`,
   });
-const CTX_NO_SEAT = () => fakeContext({ codeRoot: `${R}/src` });
+const CTX_NO_SEAT = () => fakeContext({});
 const CTX_ABSENT = () => fakeContext({ present: false });
 
 const session = (extra = {}) => ({ hook_event_name: 'UserPromptSubmit', session_id: 'sess-1', ...extra });
@@ -447,6 +446,32 @@ function selfCheck() {
     'a declared write root is a seat here too',
     writeAdvice(write('C:/dev/work/x.md'), R, fakeContext({ studies: ['docs/studies'], writeRoots: ['C:/dev/work'] }), R, true) === null
   );
+  // `write_roots` comes from the machine's environment file, taken whole: this is the only
+  // reader of that file left in the package, so its resolution is proved here.
+  const readers = (files) => ({
+    exists: (p) => Object.prototype.hasOwnProperty.call(files, String(p).replace(/\\/g, '/')),
+    read: (p) => {
+      const key = String(p).replace(/\\/g, '/');
+      if (!Object.prototype.hasOwnProperty.call(files, key)) throw new Error('ENOENT');
+      return files[key];
+    },
+  });
+  const machineFile = loadContext(R, readers({
+    [`${R}/.daiku/project.json`]: '{"contract": 1}',
+    [`${R}/.daiku/environment.local.json`]: '{"contract": 1, "write_roots": ["C:/dev/work"]}',
+  }));
+  check(
+    'write_roots resolves from the machine local file',
+    (machineFile.writeRoots || []).some((r) => isInside('C:/dev/work/x.md', r))
+  );
+  const wholeFile = loadContext(R, readers({
+    [`${R}/.daiku/project.json`]: '{"contract": 1}',
+    [`${R}/.daiku/environment.local.json`]: '{"contract": 1}',
+    [`${R}/.daiku/environment.json`]: '{"contract": 1, "write_roots": ["C:/dev/work"]}',
+  }));
+  check('the machine local file is taken whole, not merged', (wholeFile.writeRoots || []).length === 0);
+  const noEnvironment = loadContext(R, readers({ [`${R}/.daiku/project.json`]: '{"contract": 1}' }));
+  check('an absent environment file reads as no write root', (noEnvironment.writeRoots || []).length === 0);
   check(
     'a worktree root is measured like the main tree',
     !!writeAdvice(write('src/a.ts', { cwd: WT }), WT, fakeContext({ studies: [`${WT}/docs/studies`] }), WT, true)

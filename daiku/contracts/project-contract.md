@@ -403,15 +403,15 @@ nobody must reconstruct in their head which of the two each key comes from. It i
 not, and the local one is the only path under `.daiku/` staying out of the history.
 
 **One thing the file does not carry: `temp_dir`.** An absent `temp_dir` is not a degradation, it is
-the normal case: the readers fall back on the operating system's temporary directory, which is the
-correct answer on every machine anyway. Write it only where that fallback is wrong.
+the normal case: the operating system's temporary directory is the correct answer on every machine
+anyway. Write it only where that answer is wrong.
 
 **Nor does it carry `write_roots`**: the folders a machine lets its agents write in are that
 machine's, and they go in `environment.local.json`. The folder is named, not the side it stands on,
 so the seat holds **inside the repository and outside it** alike — and that is what makes the key
-the answer for a folder of yours that is not a seat of the method. Absent, the write guard keeps
-every write outside the repository to the declared outside seats, and every creation inside it to
-`{code_root}` and the declared seats.
+the answer for a folder of yours that is no seat of the method: a write the conversation makes
+there is the machine's own, and `run-advice` says nothing about it. Absent, the reminder knows
+only the run's own seats.
 
 **When a value seems to belong in both**, whoever would update it at the next
 change decides: if putting it in `project.json` forced repeating the same identical change in
