@@ -1,12 +1,12 @@
 ---
 name: 'new-feature'
 description: 'Opens a feature from a natural-language description and carries it to the commit in a single run: code investigation, study of the technologies you do not know well enough, decision document, decisions asked in chat, and from there the whole delivery delegated to ship-feature'
-argument-hint: '<feature or problem description> [--stop-at-brief]'
+argument-hint: '<feature or problem description> [--stop-at-brief] [--no-ask]'
 ---
 
 You are the node **opening** a work and not leaving it halfway. You receive a natural-language description, you investigate the code, you procure the missing knowledge, you have the decisions studied, you bring them to the owner in chat — and with their answers in hand you continue to the commit without them having to relaunch anything.
 
-**The owner intervenes only once**, when answering the decisions. Before that you ask them nothing, because there is still nothing to ask; after that you ask them nothing, because they already decided, and one more confirmation is a step that costs them effort and adds no information.
+**The owner intervenes only once**, when answering the decisions. Before that you ask them nothing, because there is still nothing to ask; after that you ask them nothing, because they already decided, and one more confirmation is a step that costs them effort and adds no information. With `--no-ask` they do not intervene at all: the run deposits the study in the folder and stops before the ask.
 
 > **Parameters.** Every key in braces in this contract resolves on the project parameter files, never from memory and never by assumption: the rules are in §5 of `contracts/project-contract.md`, which also says **in which language to write** and what to do when a key is missing.
 
@@ -22,7 +22,9 @@ Read `contracts/orchestration.md`: roles, host, how to launch a subagent, how a 
 
 Arguments: `$ARGUMENTS` — the work description in natural language. It can be a feature to make, a question on how to do something the system does not do yet, a gap ("the wiring between X and Y is missing"), an architectural tension ("two components do the same thing"). A trailing `--stop-at-brief` stops the run at the execution brief instead of delivering (point 10): the folder with problem, decision-doc and blueprint, and nothing else.
 
-If `$ARGUMENTS` is empty, **ask** what is worked on and wait until it arrives. It is the only question admitted before the decisions.
+A trailing `--no-ask` stops the run at the **documents** instead: the decisions are never asked (point 7), and the folder is left with what the study produced — the cards open, each with its recommended option marked — for someone to implement later. It composes with `--stop-at-brief`: the brief then runs on `A` for every card, which is what point 10 already prescribes for a card the owner did not answer.
+
+If `$ARGUMENTS` is empty, **ask** what is worked on and wait until it arrives. It is the only question admitted before the decisions. With `--no-ask` there is nobody to answer: report that the description is missing and stop, opening nothing.
 
 ## The sequence
 
@@ -32,7 +34,7 @@ Progress and findings go **in chat**, as you go: one line when a phase starts an
 
 ### 1. Open the folder, and the memory
 
-From the description derive a kebab-case **slug** saying the *problem*, not the solution — you have not chosen the solution yet, and a slug naming it orients everything coming after. The folder is `{paths.studies}/<slug>/`: create it. If it already exists, ask confirmation before working inside it — it is the only other question admitted before the decisions.
+From the description derive a kebab-case **slug** saying the *problem*, not the solution — you have not chosen the solution yet, and a slug naming it orients everything coming after. The folder is `{paths.studies}/<slug>/`: create it. If it already exists, ask confirmation before working inside it — it is the only other question admitted before the decisions. With `--no-ask` that confirmation is not asked either: the run works inside the folder, where the study updates in place what it finds still valid.
 
 Open `{memory.index}` and the memories the problem area touches: it is the channel of §4.1 of `contracts/orchestration.md`. A gap a memory already closed is not a gap, and a trade-off the owner already decided is not reopened here. The paths you choose now you will pass to every step deciding or writing.
 
@@ -141,7 +143,9 @@ A subagent in a fresh context. In the prompt:
 
 ### 7. Decisions are asked in chat
 
-The block came back and carries **structured** `decisions`, and the phase that produced it is closed: every subagent of this run has returned, and nothing is still in flight. You ask them of the owner as a structured question, per § *Ask the owner* of `contracts/orchestration.md`, which says what precedes the ask, how that form renders on the current host, and what interrupts it.
+**With `--no-ask` this point does not run at all.** No question is asked: the decisions stay open inside the document hosting them, each card with its recommended option already marked as `A`, and the run stops here — after the study and before incorporation, which without answers has nothing to incorporate. Points 8, 9 and 10 do not run either: nothing was chosen, so there is no solution to deliver. A `strategic` stage stops at `0.5. strategic-study.md`, because without the owner's direction the technical document is not written — by the rule of `skills/decision-doc/SKILL.md` § *The two stages*.
+
+Otherwise, the block came back and carries **structured** `decisions`, and the phase that produced it is closed: every subagent of this run has returned, and nothing is still in flight. You ask them of the owner as a structured question, per § *Ask the owner* of `contracts/orchestration.md`, which says what precedes the ask, how that form renders on the current host, and what interrupts it.
 
 **Before the question, the message.** In chat, decision by decision and in the block's own order, you report what it carries as it came back: the title, the problem, each option with its letter and with what it entails and costs, the recommended one with its why. It is the functional content of the document hosting them — `1. decision-doc.md` at the technical stage, `0.5. strategic-study.md` at the strategic one — the same cards, nothing summarised and nothing reordered — and it is what the owner reads before choosing: the chat goes quiet, they read the problems and the proposed solutions, and only then the options appear.
 
@@ -210,7 +214,7 @@ In chat, a few lines:
 - the analysed areas and the identified gaps;
 - the produced or reused notes, with version and date, and what the recomparison changed in the problem (or that it changed nothing);
 - the crossed stages, the decisions asked and the answer received for each;
-- the delivery outcome: `status`, commit and merge SHA, and the report path — the detail is already inside there, **do not repeat it**. With `--stop-at-brief` there is no delivery outcome: report the brief path instead, and that carrying the folder on is the owner's manual act.
+- the delivery outcome: `status`, commit and merge SHA, and the report path — the detail is already inside there, **do not repeat it**. With `--stop-at-brief` there is no delivery outcome: report the brief path instead, and that carrying the folder on is the owner's manual act. With `--no-ask` there is neither an outcome nor an answer: report the stage, the documents the folder carries and that the decisions stay open inside them, with the command that resumes the run — the same one point 7 declares for a chain stopped at the ask.
 
 If the chain stopped before delivery, say so with the point where it stopped and the command the owner resumes it with.
 
@@ -222,6 +226,7 @@ If the chain stopped before delivery, say so with the point where it stopped and
 | "The notes came back, I pass them downstream and go" | Point 5 is not a handoff: it is you putting back in discussion what you wrote before knowing them. |
 | "I summarise the decisions, so the owner reads less" | Decisions are asked verbatim. What you cut is exactly what you are not letting them choose on. |
 | "I ask confirmation before launching delivery" | They already answered. The extra confirmation is the gesture this skill exists to spare them. |
+| "Nobody is here to choose, so I incorporate the recommended option" | `--no-ask` suppresses the ask, not the choice: the cards stay open in the document and the run stops. A choice written by this chain is not the owner's, and nothing downstream tells the two apart. |
 | "I ask the decisions while a fan-out is still running, so they answer sooner" | The answer lands on a state the work in flight can still change. The ask is the last act and it is emitted alone (§ *Ask the owner* of `contracts/orchestration.md`). |
 | "They asked me something, so I explain and re-ask the options" | A reply carrying a question is a discussion, not an answer: you answer and the run stops. Re-asking makes them choose before they have finished asking. |
 | "I do the brief myself, since I have everything in mind" | Having it in mind is the problem: every phase is a subagent in a fresh context, and delivery belongs to `ship-feature`. |
