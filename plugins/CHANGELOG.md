@@ -1,5 +1,14 @@
 # Changelog
 
+### 1.0.6 — 2026-10-01
+
+- The `daiku: update` task shows the version in place and asks before updating: nothing is refreshed on an answer nobody gave.
+- `init` deposits `.daiku/README.md`, Daiku's own documentation, so what Daiku is and how it is used is answered from inside the project.
+- `/new-feature` accepts `--no-ask`: the run stops at the documents, the decisions left open with their recommended option marked.
+- Various fixes.
+
+---
+
 ### 1.0.5 — 2026-09-30
 
 - A conversation that opened a run no longer does the work itself: a turn of yours asking for something to be made is delegated to a subagent, and a notice repeats the rule at the one write that would break it — nothing is blocked.
