@@ -17,8 +17,9 @@
  * `templates/vscode/tasks.json` skeleton carries one `daiku: update` shell task
  * running `.daiku/update.mjs` — a shell task because the script asks a question,
  * and a `process` task has no terminal to ask it in — and `templates/project/update.mjs`
- * asks before it runs the two update commands in order, and stays silent where there
- * is no terminal. What it deliberately does not check: key-level acceptance by
+ * reads the two versions — the one in place from the host, the one arriving out of the
+ * refreshed catalogue — draws the delta, asks before it runs the two update commands in
+ * order, and stays silent where there is no terminal. What it deliberately does not check: key-level acceptance by
  * the hosts — neither real validator looks inside these files (verified with
  * `validate_plugin.py`, which is silent on hooks, on 2026-09-26), so `description`
  * stays in the Codex template until a validator rejects it for real. The day a
@@ -208,8 +209,17 @@ function selfCheck() {
   }
   check('update script template exists', script !== '');
   const marketplace = script.indexOf("'claude plugin marketplace update daiku'");
-  const plugin = script.indexOf("'claude plugin update daiku@daiku'");
+  const plugin = script.indexOf("'claude plugin update daiku@daiku --json'");
   check('update script refreshes the marketplace, then updates the plugin', marketplace !== -1 && plugin > marketplace);
+  // The two versions, and where they come from: the one in place asks the host, the one arriving
+  // reads the catalogue clone the refresh just left — the only way `>>>` can be drawn, with what is
+  // out there, before anything changes.
+  check('update script reads the version in place from the host', script.includes('claude plugin list --json'));
+  check(
+    'update script reads the arriving version out of the refreshed catalogue',
+    script.includes('claude plugin marketplace list --json') && script.includes('plugin.json')
+  );
+  check('update script draws the version delta', script.includes('>>>'));
   // The question, and the terminal that makes it askable: where there is none, the script says
   // so and changes nothing rather than updating on an answer nobody gave.
   check(

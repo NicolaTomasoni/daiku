@@ -1,35 +1,67 @@
 #!/usr/bin/env node
 /**
- * Updates Daiku on Claude Code: it shows the version in place, asks, and on a yes refreshes the
- * `daiku` marketplace and updates the `daiku@daiku` plugin. Run it from VS Code with the
- * `daiku: update` task, or by hand with `node .daiku/update.mjs`.
+ * Updates Daiku on Claude Code: it reads the version in place, refreshes the marketplace catalogue,
+ * draws the version that is arriving beside it, and asks before installing it. Run it from VS Code
+ * with the `daiku: update` task, or by hand with `node .daiku/update.mjs`.
  *
- * **It asks before writing anything.** The two commands replace the package the project runs on,
- * and the version that arrives is not visible before the fact — so the run says which one is in
- * place and waits. Arrows and Enter; `Not now` is one keystroke away.
+ * **It asks before the package changes, and the question carries both versions.** Refreshing the
+ * catalogue is what tells the script which version the published repo is carrying: it rewrites a
+ * clone of that repository, never the package this project runs on. So it comes first, under one
+ * line that is replaced when it lands, and from there the delta is drawn as `1.0.6 >>> 1.0.7`.
+ * Where the host does not answer, the version is unknown — said, not guessed — and the run asks
+ * anyway, rather than deciding in your place.
  *
  * **A terminal is required, and that is why the task is a `shell` task.** A `process` task runs
  * the command without a terminal, `process.stdin.isTTY` is then false, and the question could
  * never be asked. Where there is no terminal anyway — a pipe, an automated runner — this script
  * does not decide in your place: it prints the version and the two commands, and stops.
  *
- * **The version comes from the host**, `claude plugin list --json`, not from a file of ours: that
- * is the official answer, and it holds on a machine whose cache folder this script never saw.
- * Where the host does not answer, the version is unknown — said, not guessed — and the run goes on.
+ * Both commands are read back through `--json`, so the host's own prose stays off the screen and
+ * a failure is shown in full instead of swallowed.
  *
- * It stops at the first command that fails, with its exit code.
+ * It stops at the first command that fails, with the exit code it gave.
  *
  * Written by Daiku's init. It is yours now: init never rewrites it.
  */
 
 import { spawnSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
-/** The two lines of the update, in order: without the first, the second has nothing new to take. */
-const STEPS = ['claude plugin marketplace update daiku', 'claude plugin update daiku@daiku'];
+/** The two lines of the update, in order: without the first, the second has nothing new to take.
+ * The second is read back as JSON, which is how the version that arrived is known for certain. */
+const STEPS = ['claude plugin marketplace update daiku', 'claude plugin update daiku@daiku --json'];
 
-/** One line through the shell, its output kept: the only way the version is read back. */
+/** The same two as somebody types them by hand: the fallback prints these, where a `--json` would
+ * answer with a machine line instead of a sentence. */
+const BY_HAND = ['claude plugin marketplace update daiku', 'claude plugin update daiku@daiku'];
+
+/** The name of the marketplace, and of the plugin inside it, as the host knows them. */
+const MARKETPLACE = 'daiku';
+
+/** Colour, where a terminal carries it and nothing asked for none: the only ink of this script. */
+const INK = !!process.stdout.isTTY && !process.env.NO_COLOR;
+const tint = (code, text) => (INK ? `\u001b[${code}m${text}\u001b[0m` : text);
+const dim = (text) => tint('2', text);
+const bold = (text) => tint('1', text);
+const red = (text) => tint('31', text);
+const green = (text) => tint('32', text);
+const cyan = (text) => tint('36', text);
+
+/** One line through the shell, its output kept: the only way anything is read back. */
 function capture(line) {
   return spawnSync(line, { shell: true, encoding: 'utf-8' });
+}
+
+/** The object one of those lines answers with, or `null` where it failed, was silent, or lied. */
+function report(line) {
+  const answer = capture(line);
+  if (answer.error || answer.status !== 0 || !answer.stdout) return null;
+  try {
+    return JSON.parse(answer.stdout);
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -38,14 +70,7 @@ function capture(line) {
  * are read here, because the one this script meets is the host's to choose, not ours.
  */
 function installed() {
-  const answer = capture('claude plugin list --json');
-  if (answer.error || answer.status !== 0 || !answer.stdout) return null;
-  let listing;
-  try {
-    listing = JSON.parse(answer.stdout);
-  } catch {
-    return null;
-  }
+  const listing = report('claude plugin list --json');
   const plugins = Array.isArray(listing)
     ? listing
     : listing && Array.isArray(listing.installed)
@@ -53,6 +78,43 @@ function installed() {
       : [];
   const entry = plugins.find((plugin) => plugin && plugin.id === 'daiku@daiku');
   return entry && typeof entry.version === 'string' && entry.version ? entry.version : null;
+}
+
+/**
+ * The version the catalogue is carrying now, or `null` where it cannot be read. The refresh has
+ * just left a clone of the published repo in the host's cache: the catalogue inside it says where
+ * the package sits, and the manifest there declares the version the host would install. It is read
+ * from that clone and not from a file of ours, which would only say what we shipped, not what is out
+ * there — and never before the refresh, which is what makes the answer current.
+ */
+function arriving() {
+  const listing = report('claude plugin marketplace list --json');
+  const market = (Array.isArray(listing) ? listing : []).find(
+    (entry) => entry && entry.name === MARKETPLACE
+  );
+  const root = market && typeof market.installLocation === 'string' ? market.installLocation : null;
+  if (!root) return null;
+  try {
+    const catalogue = JSON.parse(
+      readFileSync(join(root, '.claude-plugin', 'marketplace.json'), 'utf-8')
+    );
+    const entry = (catalogue.plugins || []).find((plugin) => plugin && plugin.name === MARKETPLACE);
+    const source = entry && typeof entry.source === 'string' ? entry.source : null;
+    if (!source) return null;
+    const manifest = JSON.parse(
+      readFileSync(join(root, source, '.claude-plugin', 'plugin.json'), 'utf-8')
+    );
+    return typeof manifest.version === 'string' && manifest.version ? manifest.version : null;
+  } catch {
+    return null;
+  }
+}
+
+/** The two versions as one line, on the places that hold them: in place, the arrow, arriving. */
+function delta(before, after) {
+  const from = before ? dim(before) : dim('version unknown');
+  const to = after ? green(bold(after)) : dim('version unknown');
+  return `${from} ${cyan('>>>')} ${to}`;
 }
 
 /**
@@ -74,7 +136,7 @@ function choose(question, options) {
       if (painted) stdout.write(`\u001b[${drawn}A`);
       stdout.write(`${erase}${question}\n`);
       options.forEach((option, position) => {
-        stdout.write(`${erase}${position === index ? '>' : ' '} ${option}\n`);
+        stdout.write(`${erase}${position === index ? cyan(`> ${bold(option)}`) : `  ${option}`}\n`);
       });
       painted = true;
     };
@@ -84,7 +146,7 @@ function choose(question, options) {
       stdin.pause();
       stdin.removeListener('data', onKey);
       stdout.write(`\u001b[${drawn}A`);
-      stdout.write(`${erase}${question} ${options[index]}\n`);
+      stdout.write(`${erase}${question} ${cyan(options[index])}\n`);
       for (let line = 0; line < options.length; line += 1) stdout.write(`${erase}\n`);
       stdout.write(`\u001b[${options.length}A`);
       resolve(answer);
@@ -122,46 +184,69 @@ async function main() {
   const before = installed();
   process.stdout.write(
     before
-      ? `Daiku ${before} is installed.\n\n`
-      : 'Daiku is installed, but the host did not say which version: `claude plugin list` gave no answer.\n\n'
+      ? `Daiku ${bold(before)} is installed.\n`
+      : 'Daiku is installed, but the host did not say which version: `claude plugin list` gave no answer.\n'
   );
 
   if (!process.stdin.isTTY) {
     process.stdout.write(
-      'No terminal here, so the question cannot be asked — and nothing is changed without it.\n' +
+      '\nNo terminal here, so the question cannot be asked — and nothing is changed without one.\n' +
         'Run these two lines by hand:\n' +
-        STEPS.map((step) => `  ${step}\n`).join('')
+        BY_HAND.map((step) => `  ${step}\n`).join('')
     );
     return;
   }
 
-  const answer = await choose('? Update Daiku now?  (up/down, then Enter)', [
+  const line = 'Refreshing the catalogue...';
+  process.stdout.write(dim(`${line} `));
+  const refresh = capture(STEPS[0]);
+  process.stdout.write('\u001b[2K\r');
+  if (refresh.error || refresh.status !== 0) {
+    process.stdout.write(`${red('x')} the catalogue did not refresh.\n`);
+    process.stdout.write(`${refresh.stdout || ''}${refresh.stderr || ''}`);
+    process.exit(refresh.status || 1);
+  }
+  process.stdout.write(`${dim(line)} ${green('done')}\n`);
+
+  const after = arriving();
+  if (after && before && after === before) {
+    process.stdout.write(`Daiku ${bold(before)} is already the latest.\n`);
+    return;
+  }
+  process.stdout.write(`\n  ${delta(before, after)}\n\n`);
+
+  const answer = await choose(`? Update Daiku now?  ${dim('(up/down, then Enter)')}`, [
     'Update Daiku',
     'Not now',
   ]);
-  process.stdout.write('\n');
   if (answer !== 0) {
     process.stdout.write('Nothing changed.\n');
     return;
   }
 
-  for (const step of STEPS) {
-    process.stdout.write(`> ${step}\n`);
-    const outcome = spawnSync(step, { shell: true, stdio: 'inherit' });
-    if (outcome.error) {
-      process.stderr.write(`${step}: ${outcome.error.message}\n`);
-      process.exit(1);
-    }
-    if (outcome.status !== 0) process.exit(outcome.status ?? 1);
+  const outcome = capture(STEPS[1]);
+  let result = null;
+  try {
+    result = JSON.parse(outcome.stdout);
+  } catch {
+    result = null;
+  }
+  if (outcome.error || outcome.status !== 0) {
+    process.stdout.write(`${red('x')} the update did not go through.\n`);
+    process.stdout.write(`${outcome.stdout || ''}${outcome.stderr || ''}`);
+    process.exit(outcome.status || 1);
   }
 
-  const after = installed();
-  const landed = after && before && after !== before ? `${before} -> ${after}` : after;
-  process.stdout.write(
-    landed
-      ? `Daiku ${landed}. Open a new Claude Code session to load it.\n`
-      : 'Daiku is up to date. Open a new Claude Code session to load it.\n'
-  );
+  const was = result && typeof result.oldVersion === 'string' ? result.oldVersion : null;
+  const now = result && typeof result.newVersion === 'string' ? result.newVersion : null;
+  if (was && now && was !== now) {
+    process.stdout.write(`${green('Daiku')} updated  ${delta(was, now)}\n`);
+  } else if (now) {
+    process.stdout.write(`Daiku ${bold(now)} is already the latest.\n`);
+  } else {
+    process.stdout.write(`${green('Daiku')} updated.\n`);
+  }
+  process.stdout.write('Open a new Claude Code session to load it.\n');
 }
 
 main().catch((error) => {

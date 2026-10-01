@@ -83,8 +83,9 @@ finds it there without running `/init` again.
 
 ## Updating Daiku
 
-From the editor, run the task `daiku: update`: it shows the version in place, asks, and on a yes
-refreshes the marketplace and updates the package. The same thing by hand:
+From the editor, run the task `daiku: update`: it refreshes the marketplace catalogue, shows the
+version in place beside the one that is arriving, asks, and on a yes updates the package. The same
+thing by hand:
 
 ```text
 claude plugin marketplace update daiku

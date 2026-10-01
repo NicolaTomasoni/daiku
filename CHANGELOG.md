@@ -1,5 +1,12 @@
 # Changelog
 
+### 1.0.8 — 2026-10-01
+
+- The `daiku: update` task shows the version arriving beside the one in place — `1.0.7 >>> 1.0.8` — and asks before installing it: the catalogue is refreshed first, so the delta is real, and both commands answer as JSON, so the host's own output stays off the screen.
+- The task is a copy inside the project: a project set up before this release keeps the script it already has.
+
+---
+
 ### 1.0.7 — 2026-10-01
 
 - The write guard is gone: a file creation is never denied, and the package ships five hooks instead of six.
