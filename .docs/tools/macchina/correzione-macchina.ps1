@@ -27,19 +27,4 @@ $cartella = 'C:\Program Files\ClaudeCode'
 
 # --- CORREZIONE ---------------------------------------------------------------
 
-# Toglie il collegamento "Claude - gestisci guardie" dal menu Start di sistema: lo strumento si
-# lancia dal task di VS Code. La copia di sicurezza va sotto Program Files, non nel menu Start,
-# dove comparirebbe come voce.
-$collegamento = Join-Path $env:ProgramData 'Microsoft\Windows\Start Menu\Programs\Claude - gestisci guardie.lnk'
-if (Test-Path $collegamento) {
-  $marca = Get-Date -Format 'yyyyMMdd-HHmmss'
-  Copy-Item -Path $collegamento -Destination (Join-Path $cartella "Claude - gestisci guardie.lnk.bak-$marca") -Force
-  Remove-Item -Path $collegamento -Force
-  Write-Host "Tolto: $collegamento" -ForegroundColor Green
-}
-else {
-  Write-Host "Niente da togliere: $collegamento non c'e'." -ForegroundColor Yellow
-}
-exit 0
-
 # --- FINE CORREZIONE ----------------------------------------------------------
