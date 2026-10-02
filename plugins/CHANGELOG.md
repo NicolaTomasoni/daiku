@@ -1,10 +1,11 @@
 # Changelog
 
-### Unreleased
+### 1.0.10 — 2026-10-02
 
-- The worktree pool recycles: a slot is reusable when its tree is clean and its branch holds nothing the integration branch lacks — so a slot that only stands behind is reset and reused **whatever its HEAD**, instead of consuming a new one until the cap stops every run, while a slot with an unmerged delivery is left alone. The pool is run by a new program, `architect/pool.mjs`, which keeps a registry — `{paths.review_state}/worktree-pool.json` — naming the delivery that holds each slot and how it left it.
+- The worktree pool recycles: a slot whose tree is clean and whose branch holds nothing the integration branch lacks is reset and reused, whatever its HEAD, so a full pool no longer stops every run; a slot holding an unmerged delivery is left alone.
 - `/code-review` becomes a full bug-only cycle on the scope you name — rounds, fixes and the gate, then the report; the commit stays yours.
-- Corrections across the package: the command guard crosses a neutral prefix's options and a `find -exec` payload; the evaluator no longer dies on a malformed block; `--no-ask` produces the document and stops without ever executing.
+- `/new-feature --no-ask` produces the documents and stops, without ever executing.
+- Various fixes.
 
 ---
 

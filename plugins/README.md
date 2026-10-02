@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <img alt="version 1.0.9" src="https://img.shields.io/badge/version-1.0.9-3b82f6?style=flat" /> <br>
+  <img alt="version 1.0.10" src="https://img.shields.io/badge/version-1.0.10-3b82f6?style=flat" /> <br>
   <a href="https://code.claude.com"><img alt="Claude Code" src="https://img.shields.io/badge/Claude_Code-D97757?style=flat&logo=claude&logoColor=white" /></a>
   <a href="https://developers.openai.com/codex"><img alt="OpenAI Codex" src="https://img.shields.io/badge/OpenAI_Codex-000000?style=flat&logo=openai&logoColor=white" /></a>
 </p>
