@@ -1,133 +1,41 @@
 ---
 name: corpus-di-sviluppo
-description: "In .claude/ vive una derivazione dei contratti del prodotto, adattata a questo repo e mai sincronizzata automaticamente"
+description: "In .claude/commands/ restano solo i comandi che il prodotto non ha: con cui Daiku si sviluppa sono le skill daiku:* del pacchetto, e lo strumento resta indietro per scelta"
 metadata: 
   node_type: memory
   type: project
   originSessionId: 48eaa498-ed6e-4a36-847d-3f8fa95f7f21
-  modified: 2026-09-28T18:04:37.112Z
+  modified: 2026-10-02T09:23:40.000Z
 ---
 
-Dal 18 settembre 2026 `.claude/` porta un **corpus di sviluppo**: `orchestration.md`, i comandi in
-`commands/` e `agents/finder.md`. Serve a sviluppare Daiku con il metodo di Daiku. Fino al 21
-settembre 2026 i comandi erano dieci contratti in `skills/` (`studia-libreria`, `studia-problema`,
-`decision-doc`, `blueprint`, `execute`, `review`, `code-review`, `commit`, `update-memory`,
-`deliver-feature`); quel giorno, su ordine esplicito dell'owner, il cantiere è passato a **tredici
-comandi** in `commands/` — i dodici convertiti (`translate-skill` e `migliora-skill` si erano
-aggiunti nel frattempo senza aggiornare questa memoria) più `confronta-repo.md`, il comando
-dell'owner precedente al corpus. Corpi identici, a parte il frontmatter (nei comandi non c'è la
-riga `name:`, il nome lo dà il file) e i rimandi fra contratti.
+Dal 2 ottobre 2026 `.claude/` **contiene solo i comandi che il prodotto non ha.**
 
-**Dal 20 settembre 2026 i nomi non si corrispondono più**, e la derivazione non si trova più per
-omonimia: nel prodotto quei contratti si chiamano `research` (raccolta, con il riordino delegato
-a `study`), `new-feature` e `ship-feature`, dove
-il cantiere ha ancora `studia-libreria`, `studia-problema` e `deliver-feature`. I rename sono stati
-scritti solo nel prodotto, che è l'albero che si pubblica; riportarli qui è una decisione a parte,
-che non è stata presa.
+**Con cui Daiku si sviluppa sono le skill di Daiku stesso.** Il pacchetto è installato dal
+marketplace online — `NicolaTomasoni/daiku`, canale `beta` — e aprire una feature, consegnarla, il
+ciclo di review, il commit e l'allineamento della memoria sono le sue skill, invocate come `daiku:*`
+(`new-feature`, `ship-feature`, `review`, `code-review`, `commit`, `update-memory`, `research`,
+`blueprint`, `execute`, `decision-doc`). Un comando che ha il suo gemello là non vive anche qui.
 
-**Why:** è una derivazione dei contratti di `plugins/daiku/skills/`, non una copia, perché tre
-scelte dell'owner le fanno divergere e non sono reversibili per copia:
+**I cinque comandi che restano** coprono ciò che Daiku non fa per un progetto, perché riguarda il
+costruire e il pubblicare Daiku stesso: `collauda-init`, `rilascia-daiku`, `studia-repository`,
+`studia-repository-lotto`, `translate-skill`. Il contratto che li lega è `.claude/orchestration.md`,
+potato con loro: i due ruoli e i loro modelli, come si lancia un subagent, la delega, la topologia
+dei cinque, il gate del repository, i tre gruppi di commit. Valori scritti per esteso e niente
+worktree, come prima.
 
-- **Niente parametrizzazione.** Il prodotto tiene i valori fuori dalle skill (`project.json`,
-  `environment.json`) perché deve girare su progetti diversi. Qui il progetto è uno: path, comandi e
-  modelli sono scritti per esteso dentro il contratto che li usa. Una graffa `{…}` in questo corpus
-  è un refuso.
-- **Niente worktree.** Si lavora sul branch corrente dell'albero principale. La scelta resta in
-  piedi ma **non ha una giustificazione scritta**: a un worktree di questo repository non
-  mancherebbe niente, perché il repo versiona tutto e se lo porterebbe dietro, `CLAUDE.md`,
-  `.docs/` e i contratti che ogni subagent deve leggere compresi.
-- **Il commit di memoria e documentazione qui c'è**, e `commit` partiziona in **tre** gruppi come il
-  contratto del prodotto: il perimetro di `update-memory` — `CLAUDE.md`, `.docs/`, `.claude/` — è
-  nell'indice, e `deliver-feature` lo committa in una fase propria, dopo il report perché il
-  registro delle consegne è di quel gruppo.
-
-Il prodotto ha **diciannove** contratti, questo corpus ha **sedici** comandi: **dieci** derivano da
-un contratto del prodotto — sette con lo stesso nome (`blueprint`, `code-review`, `commit`,
-`decision-doc`, `execute`, `review`, `update-memory`) e tre rinominati qui (`deliver-feature`,
-`studia-libreria`, `studia-problema`) — e **sei** sono del cantiere, senza gemello nel prodotto:
-`collauda-init`, `migliora-skill`, `rilascia-daiku`, `studia-repository`, `studia-repository-lotto`,
-`translate-skill`.
-
-Nove contratti del prodotto non hanno un comando qui: `applier`, `arch-check`, `finder-prompt`,
-`init`, `perf`, `research`, `sync-host`, `test-coverage`, `dead-code`. Di questi, `finder-prompt` e
-`applier` sono stati **assorbiti** dentro `review`, che quindi qui scrive in casa propria il prompt
-del finder e il mestiere dell'applicatore; gli altri semplicemente non servono a sviluppare Daiku.
-
-**`memory-review` non ha un gemello nel prodotto**, e la ragione vale la pena tenerla: se il corpus
-avesse bisogno di una revisione periodica, vorrebbe dire che il modo in cui cresce non funziona, e
-il rimedio andrebbe messo lì. Al suo posto, `update-memory` gira a **ogni** invocazione di `/commit`,
-senza eccezioni. Nel cantiere la skill resta finché qualcuno non decide di toglierla anche di qui:
-è una decisione a parte, non un allineamento.
-
-**Due nomi non coincidono più**, dopo che il prodotto li ha rinominati: il `research` del pacchetto (con `study` come foglia di riordino) è lo `studia-libreria` di qui, e il suo `new-feature` è lo `studia-problema` di qui. Cercare il
-contratto corrispondente per nome non funziona su questi due.
-
-**Dal 22 settembre 2026 i due corpus non parlano più la stessa lingua.** `plugins/` è tutto
-in inglese — contratti, skill, commenti e messaggi degli hook, `short_description` degli
-`openai.yaml` — mentre il cantiere resta in italiano, e ci resta per scelta: lo legge chi
-costruisce Daiku, non chi lo installa. Il confine fra le due lingue coincide ora con quello fra
-prodotto e cantiere, che è più facile da tenere del confine fra due pubblici che si aveva prima.
-Conseguenza pratica: **cercare un passaggio del prodotto per le sue parole italiane non funziona
-più**, e un rilievo scritto in italiano su una riga del pacchetto va tradotto prima di applicarlo.
-Nello stesso giorno, su ordine esplicito dell'owner, sono state corrette qui due citazioni rimaste
-ai nomi morti delle chiavi dei banchi (`controlli`/`passati`/`falliti` → `checks`/`passed`/`failed`)
-in `orchestration.md` e `commands/review.md`: erano le uniche due sedi del cantiere che nominavano
-identificatori del prodotto. Vedi [[confine-degli-identificatori]].
-
-**E dal 23 settembre 2026 diverge anche il metodo, insieme alla lingua.** Il prodotto ha un
-**valutatore deterministico** — `plugins/daiku/architect/architect.mjs`, il suo blocco in
-`schemas/blocks.json` e il campo `architect_agreement` nell'esito di `ship-feature` — e da lì le
-skill del pacchetto **non dichiarano più la sequenza**: la chiedono a lui, e il verdetto vincola.
-Qui non c'è niente di simile, e non ci sarà finché non lo autorizzi: `commands/deliver-feature.md`
-recita ancora la sequenza a parole. Vedi [[valutatore-deterministico]].
-
-**E dal 26 settembre 2026 diverge anche il ciclo di review, con ciò che lo alimenta.** Nel prodotto
-le misure sul disco della review le fa `plugins/daiku/architect/ledger.mjs`, che scrive il ledger,
-misura `on_previous_fix` sui due alberi attorno all'applicatore — file non tracciati compresi — e
-dal secondo giro passa ai finder il solo delta dei fix; dopo ogni applicatore gira `check_fast`. Le
-mappe del brief (consumatori, fatti ritirati) le costruisce `blueprint`, l'ultimo passo che guarda
-il codice: da `execute` in avanti nessuno rimisura sul disco. Qui niente di questo:
-`commands/review.md` fa scrivere il ledger a mano all'orchestratore, al giro ≥2 dà al finder i file
-toccati dall'applicatore invece del delta dei fix, e misura il suo `su_fix_precedente` con `git grep -F '<ancora>' --
-<file>`, che senza `--untracked` non vede un file non ancora nell'indice; `commands/blueprint.md` e
-`commands/execute.md` non chiedono né producono quelle prove. Resta così finché non lo autorizzi.
-
-**E dal 19 settembre 2026 diverge anche il nome di un ruolo.** Nel prodotto il ruolo che decide si
-chiama `judge`, qui ancora `giudice` — 11 occorrenze in 6 file, `orchestration.md` compreso. Nel
-prodotto è anche una chiave di `environment.json` (`hosts.<host>.models.judge`), e per questo la
-forma di quel file è salita a `2`; qui non c'è niente da migrare, perché i modelli sono scritti per
-esteso. Il nome resta disallineato finché non lo autorizzi, come tutto il resto del cantiere.
-
-**How to apply:** dal 19 settembre 2026 `CLAUDE.md` dice che **le skill si modificano solo in
-`plugins/daiku/skills/`**: quelle di qui si leggono e si eseguono, non si toccano, e vale allo
-stesso modo per `.claude/orchestration.md` e `.claude/agents/`. **Deciso il 20 settembre 2026, precisato lo stesso giorno: «intoccabile» significa che il
-cantiere non si aggiorna insieme a Daiku.** Quando il prodotto cambia, la
-derivazione non si allinea da sé e non si propone di allinearla: il disallineamento non è una
-dimenticanza da correggere, è lo stato normale. Un ordine esplicito dell'owner può toccarlo:
-l'intoccabilità è contro l'allineamento automatico, non contro gli ordini. Il cantiere non è Daiku — è il tavolo su cui Daiku
-si costruisce, e un tavolo non deve assomigliare al mobile. Anche una modifica che varrebbe per
-entrambi i corpus si scrive solo nel prodotto e lì si ferma. Nessuno dei due alberi aggiorna l'altro, e nessuna skill di
-questo corpus scrive dentro `plugins/daiku/skills/` per allinearlo a sé stessa.
-
-**E dal 29 settembre 2026 non si nomina nemmeno.** L'owner ha chiesto che il disallineamento non
-compaia in chat, nei punti aperti, nella ricognizione o in una memoria se non è lui a nominarlo: non
-è un problema, e un elenco di ciò che è rimasto indietro costa attenzione senza cambiare niente. Vedi
+**Lo strumento resta indietro rispetto all'albero, ed è voluto.** L'ultima beta pubblicata è la
+versione di Daiku che sviluppa Daiku: una modifica a una skill del pacchetto non cambia lo
+strumento finché non si rilascia. È la scelta dell'owner, non una dimenticanza da riparare. Vedi
 [[cantiere-mai-nominarlo]].
 
-**Il confine di git non è il `.gitignore`.** Il `.gitignore` del repository esclude soltanto
-`.claude/settings.local.json`: i file di questo corpus — `CLAUDE.md`, `.docs/**`, `.claude/**` —
-sono **nell'indice** come il prodotto, e il confine di ciò che si pubblica sta nella lista di copia
-dello script di rilascio, che prende `plugins/` in blocco. Ne segue che i gruppi di commit sono
-**tre** come nel prodotto — codice, memoria e documentazione, versione — e che il gruppo memoria e
-documentazione **si committa**: `commit` lo fa in un commit proprio, e `deliver-feature` in una fase
-8 dopo il report. Un contratto di questo corpus che dica il contrario è un difetto da correggere,
-non una deroga da applicare.
+**Why:** un comando che il prodotto già offre, riscritto qui, è una seconda copia del metodo da
+tenere allineata a mano: le due divergono al primo cambiamento e quella del cantiere resta indietro
+in silenzio. Il cantiere tiene solo ciò che Daiku non fa — costruirlo e pubblicarlo — perché quello
+non è una capacità che Daiku offra a un progetto, e non ha dove stare nel pacchetto.
 
-**Una scelta senza la sua ragione.** La regola «questo corpus non usa worktree»
-(`orchestration.md` § *Questo corpus non è il prodotto*, `deliver-feature` § *Dove si lavora*) **non
-ha una motivazione scritta**: i due contratti la dichiarano senza dire perché, e a un worktree di
-questo repository non mancherebbe niente — conterrebbe anche `CLAUDE.md`, `.docs/` e il corpus,
-che il repository traccia come il prodotto.
-È il caso più insidioso: la scelta regge, la ragione no, e chi legge crede di sapere perché.
+**How to apply:** quando serve un comando di sviluppo la prima domanda è se il prodotto ne ha già
+uno: se sì si lancia quello, e non si scrive niente qui. Un comando nuovo entra in
+`.claude/commands/` solo se nessuna skill di Daiku lo copre, e allora il suo nodo si dichiara in
+`.claude/orchestration.md` §5.
 
-Vedi [[alberatura-pacchetto]] e [[si-pubblica-solo-il-prodotto]].
+Vedi [[alberatura-pacchetto]], [[installazione-e-versionamento]] e [[si-pubblica-solo-il-prodotto]].

@@ -10,7 +10,7 @@ esiste un documento di ricognizione che li raccolga.** Deciso dall'owner il 29 s
 fatti sui due host da quel giorno stanno nelle memorie — [[cosa-i-due-host-accettano]],
 [[cosa-codex-fa-allinstallazione]], [[installazione-e-versionamento]] e
 [[come-si-provano-i-fatti-sugli-host]] — e le sedi che li nominano sono `CLAUDE.md` e
-`.claude/commands/update-memory.md`.
+`plugins/daiku/skills/update-memory/SKILL.md`.
 
 **Why:** un documento unico che tiene insieme il verbale di ciò che si sapeva e i fatti del presente
 invecchia in metà, e chi lo cita lo cita per i fatti: si porta dietro le righe dell'altra metà — una

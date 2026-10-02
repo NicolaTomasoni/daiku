@@ -3,7 +3,7 @@
 Indice delle memorie del progetto. Una riga per file, nessun contenuto qui dentro.
 
 - [Alberatura del pacchetto](alberatura-pacchetto.md) — nessun file di prodotto in radice: plugins/ è la radice pubblica; cosa contiene ogni cartella, i nomi che si somigliano e non c'entrano, le tre regole di collocazione
-- [Il corpus di sviluppo](corpus-di-sviluppo.md) — i contratti in `.claude/` sono una derivazione di quelli del prodotto: in cosa divergono, perché non si toccano, e su quale premessa sono rimasti indietro
+- [Il corpus di sviluppo](corpus-di-sviluppo.md) — in `.claude/` restano solo i cinque comandi che il prodotto non ha; con cui Daiku si sviluppa sono le skill `daiku:*` dal marketplace beta, e lo strumento resta indietro per scelta
 - [Si pubblica solo il prodotto](si-pubblica-solo-il-prodotto.md) — due repository: qui si sviluppa con tutto dentro, su GitHub si pubblica Daiku come albero generato dallo script
 - [Pubblicazione su GitHub](pubblicazione-su-github.md) — «prod» è NicolaTomasoni/daiku su GitHub e «dev» è questo repo; la storia di prod parte da una radice vuota; i due canali beta e main con la regola di promozione; cosa ricontrollare prima di pubblicare
 - [La memoria vive nel repo](memoria-nel-repo.md) — perché `autoMemoryDirectory` non si versiona e va riscritto su ogni macchina
@@ -18,15 +18,15 @@ Indice delle memorie del progetto. Una riga per file, nessun contenuto qui dentr
 - [Installazione e versionamento](installazione-e-versionamento.md) — i comandi sui due host, cosa governa l'aggiornamento (il `version` del manifest), come si installa il canale beta con una ref, il cachebuster di Codex in locale, e il terzo canale `skill-installer`
 - [Come si provano i fatti sugli host](come-si-provano-i-fatti-sugli-host.md) — la specifica di prima parte su disco batte il web, le mosse in ordine di costo, l'ambiente di questa macchina, e il solo fatto che resta non provato
 - [I fatti verificati stanno in memoria](fatti-verificati-in-memoria.md) — non esiste un documento di ricognizione: un fatto verificato va nella memoria che lo dichiara, con il comando e la data, e perché quel documento non si ricrea
-- [init aggancia la memoria dell'host](init-aggancia-la-memoria.md) — su Claude il corpus del repo diventa anche la sede della memoria dell'host; su Codex non si puo' fare
+- [init aggancia la memoria dell'host](init-aggancia-la-memoria.md) — la sede del corpus la crea in ogni progetto, ma solo su Claude vi porta dentro la memoria dell'host; su Codex non si può
 - [I guardrail nascono spenti](guardrail-nascono-spenti.md) — un hook del pacchetto nega solo ciò che il progetto dichiara, e non esegue mai un file appena scritto
 - [Il confine del giro](confine-del-giro.md) — il turno dell'owner che chiede lavoro si delega, mai si esegue nella conversazione: la regola sta in new-feature §7 e un hook la ricorda con `agent_id`, senza negare niente
 - [I punti di ingresso del prodotto](punti-ingresso-prodotto.md) — i nove entry point in due gruppi, e tutto il resto che è contratto interno
 - [Il confine degli identificatori](confine-degli-identificatori.md) — cosa si può rinominare nel pacchetto e cosa no: non conta il tipo del nome, conta chi lo legge
 - [Il valutatore deterministico](valutatore-deterministico.md) — il prodotto ha un programma che possiede l'ordine della catena e risponde a nove domande meccaniche, e accanto uno strumento che misura il disco per la review: il verdetto vincola, e il banco è l'unica difesa
 - [Guardie di macchina](guardie-di-macchina.md) — tutte le guardie vivono sotto Program Files e le gestisce solo lo strumento installato, dal task di VS Code; i sorgenti in .docs/tools/macchina/; le trappole di PowerShell 5.1
-- [Il cantiere non si nomina](cantiere-mai-nominarlo.md) — le skill del workspace non sono un problema e non si segnalano mai se non è l'owner a farlo: il disallineamento è lo stato normale, non una dimenticanza
-- [La fase strategica non si salta](fase-strategica-non-si-salta.md) — il giudizio di stadio di decision-doc chiede di chi è la direzione e se è stata messa alla prova: i quattro segnali che vietano il tecnico, i tre campi del blocco e le sette regole nel valutatore
+- [Il cantiere non si nomina](cantiere-mai-nominarlo.md) — il cantiere e il ritardo della beta installata rispetto all'albero non sono un problema e non si nominano mai se non è l'owner a farlo: il disallineamento è lo stato normale, non una dimenticanza
+- [La fase strategica non si salta](fase-strategica-non-si-salta.md) — il giudizio di stadio di decision-doc chiede di chi è la direzione e se è stata messa alla prova: i quattro segnali che vietano il tecnico, i quattro campi del blocco e le undici regole nel valutatore
 - [Kaji fuori dal monorepo](kaji-fuori-dal-monorepo.md) — dal 26 settembre 2026 Kaji vive in C:/dev/Kaji come progetto ospite di Daiku; cosa resta qui e cosa è ancora da decidere
 - [Lotto di studi](lotto-di-studi.md) — più repository studiati in parallelo con una sessione headless per target, e le voci `allinea` che la corsa propone e il lotto applica: perché lanciare non si può da un tool Bash, e chi decide sui conflitti
 - [Catalogo di feature](catalogo-di-feature.md) — il valore dello studio è il confronto fra repo che portano la stessa capacità: `.docs/features/<feature>/<slug-corsa>.md`, quando un contributo è dovuto, la forma fissa che lo rende confrontabile, e le due regex da non scambiare

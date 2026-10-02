@@ -48,11 +48,11 @@ solo `.gitignore` e `.gitattributes` del repository di sviluppo.
 
 - **`CLAUDE.md`** — le istruzioni per chi sviluppa Daiku. Non è Daiku.
 - **`.claude/`** — come si lavora *su* Daiku, non come Daiku funziona. Dentro c'è:
-  - `orchestration.md` + `commands/` (13 comandi) + `agents/finder.md` — il **corpus di sviluppo**,
-    una derivazione dei contratti del prodotto adattata a questo repo: valori scritti per esteso
-    invece che parametrizzati, e niente worktree. Non si sincronizza da solo col pacchetto:
-    si scrive solo nel prodotto, e un ordine esplicito dell'owner può toccarlo. Vedi [[corpus-di-sviluppo]].
-    Fra i 13, `studia-repository.md` è il comando dell'owner per lo studio dei repository di terzi.
+  - `orchestration.md` + `commands/` (cinque comandi: `collauda-init`, `rilascia-daiku`,
+    `studia-repository`, `studia-repository-lotto`, `translate-skill`) — i soli
+    contratti di sviluppo che il prodotto non ha, coi valori scritti per esteso e senza worktree.
+    Il resto del metodo sono le skill di Daiku installate dal marketplace. Vedi
+    [[corpus-di-sviluppo]].
   - `settings.local.json` — punta `autoMemoryDirectory` (vedi [[memoria-nel-repo]]).
 - **`.vscode/`** — `tasks.json` con gli switch fra backend LLM: tooling personale dell'owner, con
   path della sua home. Non c'entra niente con Daiku.

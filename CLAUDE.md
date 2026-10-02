@@ -3,6 +3,11 @@ In questo repository sviluppiamo **Daiku**, un'estensione per Claude Code e Code
 ## Comportamento
 Non chiedere mai permessi o conferme: lavora sempre in bypass, in autonomia, senza fermarti ad approvare.
 
+**Chiedere è per le scelte, non per la coerenza.** Un adeguamento che non ha tradeoff — allineare un
+documento, un contratto, un rimando o una memoria a una modifica appena fatta, perché dicano ancora il
+vero — è lavoro obbligato, non una decisione: si fa e basta, nella stessa tornata. Si ferma e si chiede
+solo quando le strade sono due e portano a risultati diversi.
+
 Fai solo quello che l'owner ti chiede, e niente iniziative oltre la richiesta. L'autonomia vale per
 *come* esegui un ordine, non per *cosa* decidi di fare: nessun passo in più che l'owner non ha chiesto.
 Vale soprattutto fuori da questo repository — la cache del plugin installato, i progetti ospiti, la
@@ -49,16 +54,22 @@ Un file che il repository pubblico deve avere in
 radice — il README, il `.gitattributes`, le vetrine — sta nella radice della cartella del
 prodotto, mai in quella di questo repository.
 
-Il marketplace locale di Claude Code punta a `C:\dev\daiku-workspace\daiku-dev\plugins`, non alla radice: su una
-macchina nuova si aggiunge con `claude plugin marketplace add <repo>/plugins`.
+**Qui Daiku è installato dal marketplace online**, `NicolaTomasoni/daiku`, sul canale **beta**: lo
+strumento con cui Daiku si sviluppa è l'ultima beta pubblicata, e resta indietro di un rilascio
+rispetto a `plugins/`. È una scelta, non una trascuratezza.
 
 ## Prodotto e cantiere
 
-**Le skill si modificano solo in `plugins/daiku/skills/`.** Quelle sotto `.claude/skills/` sono il
-cantiere con cui Daiku si sviluppa: si leggono e si eseguono, non si toccano. Anche una modifica
-che varrebbe per entrambi i corpus si scrive **solo** nel contratto del prodotto, che è l'unico
-albero pubblicato; riportarla nel cantiere è una decisione a parte, che chiedi invece di prendere.
-Vale allo stesso modo per `.claude/orchestration.md` e `.claude/agents/`.
+**Con cui Daiku si sviluppa sono le skill di Daiku stesso**: aprire una feature, consegnarla, il
+ciclo di review, il commit e l'allineamento della memoria si lanciano come `daiku:*`, dal pacchetto
+installato dal marketplace. Sotto `.claude/commands/` restano **solo i comandi che il prodotto non
+ha** — `collauda-init`, `rilascia-daiku`, `studia-repository`, `studia-repository-lotto`,
+`translate-skill`.
+
+**Le skill del metodo si modificano solo in `plugins/daiku/skills/`.** Una modifica che valga per
+il prodotto si scrive **solo** lì, che è l'unico albero pubblicato; riportarla in un comando del
+cantiere è una decisione a parte, che chiedi invece di prendere. Vale allo stesso modo per
+`.claude/orchestration.md`.
 
 ## Due repository: qui si sviluppa, altrove si pubblica
 
@@ -116,7 +127,7 @@ aggiorna un pacchetto — vivono in `.docs/memory/`, nelle memorie sugli host, c
 e la data. Sono la base su cui poggiano le decisioni del pacchetto: si leggono prima di toccare
 manifest, vetrine, frontmatter di una skill o collocazione di un file.
 
-Le skill di `.claude/commands/` sono scritte sulla forma di Daiku: leggono `plugins/daiku/`, lanciano i suoi validatori, rispettano le
+I comandi di `.claude/commands/` sono scritti sulla forma di Daiku: leggono `plugins/daiku/`, lanciano i suoi validatori, rispettano le
 sue liste di copia.
 
 `.docs/memory/` è la memoria persistente del progetto, versionata. Non è il path predefinito:
@@ -141,7 +152,8 @@ Tre cose da guardare ogni volta: i **nomi** (path, cartelle, skill, ruoli di sub
 **numeri** (quante skill, quanti file, quante occorrenze di qualcosa), e le **motivazioni** — una
 scelta può restare giusta dopo che la ragione per cui fu presa è evaporata, e allora si riscrive
 il perché invece di lasciare in piedi quello vecchio. Se una correzione cambia il metodo e non
-solo un fatto, fermati e chiedi invece di deciderla da solo.
+solo un fatto, fermati e chiedi invece di deciderla da solo — adeguare ciò che una modifica ha reso
+falso non è cambiare metodo: è coerenza, e si fa.
 
 ## Il `contract` non si incrementa da solo
 
@@ -232,3 +244,6 @@ pacchetto — e ha il suo banco, da lanciare accanto al controllo:
 ```bash
 node .docs/tools/check-marketplace.mjs --self-check
 ```
+
+<!-- daiku:instructions — this file was structured by Daiku's init skill. It is yours now: rewrite
+     it as you like, init will not touch it again. Remove this line and init may restructure it. -->
