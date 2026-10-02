@@ -1,0 +1,18 @@
+{
+  "contract": 1,
+  "default_host": "claude",
+  "hosts": {
+    "claude": {
+      "models": {
+        "judge": "opus",
+        "worker": "sonnet"
+      },
+      "instructions_file": "CLAUDE.md",
+      "enforcement": "harness",
+      "native_backend": "claude"
+    }
+  },
+  "backends": {
+    "claude": {}
+  }
+}

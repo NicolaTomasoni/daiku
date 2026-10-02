@@ -6,20 +6,22 @@ sta *chi* lo fa e *come* lo si lancia.
 
 ## Questo corpus non è il prodotto
 
-I comandi in `.claude/commands/` servono a **sviluppare** Daiku. Sono una derivazione dei contratti
-che stanno in `plugins/daiku/skills/`, adattata a questo repository e a nient'altro. Non si
-esportano, non si pubblicano, non tornano indietro nel pacchetto per copia: se una modifica qui
-vale anche per il prodotto, la si riporta a mano nel contratto corrispondente sotto
-`plugins/daiku/`, che è l'unico albero distribuito (`CLAUDE.md`, § *Questo file non fa parte di
-Daiku*).
+In `.claude/commands/` stanno **solo i comandi che il prodotto non ha**: come si sviluppa Daiku e
+come lo si pubblica non è una capacità che Daiku offra a un progetto, quindi non vive nel pacchetto.
+Tutto il resto del metodo — aprire una feature, consegnarla, il ciclo di review, il commit,
+l'allineamento della memoria — **sono le skill di Daiku stesso**, installate dal marketplace e
+invocate come `daiku:*` (`new-feature`, `ship-feature`, `review`, `commit`, `update-memory`,
+`research`, …). Un comando che ha il suo gemello là non vive anche qui.
+
+Nessuno dei due alberi aggiorna l'altro: il prodotto si modifica solo sotto `plugins/daiku/`, che è
+l'unico albero distribuito, e questo corpus non si allinea a lui per copia (`CLAUDE.md`, § *Prodotto
+e cantiere*).
 
 **Due differenze di forma rispetto al prodotto, decise per questo repo e non negoziabili qui:**
 
-- **Niente parametri.** Il prodotto tiene i valori di progetto fuori dalle skill, in
-  `project.json` ed `environment.json`, perché lo stesso contratto deve girare su progetti
-  diversi. Qui il progetto è uno solo: ogni path, ogni comando e ogni modello sono **scritti per
-  esteso** dentro il contratto che li usa. Non esiste un file di parametri da leggere, e una
-  graffa in un contratto di questo corpus è un refuso.
+- **Niente parametri.** I contratti di questo corpus non leggono un file di parametri: ogni path,
+  ogni comando e ogni modello sono **scritti per esteso** dentro il contratto che li usa. Una graffa
+  in un contratto di questo corpus è un refuso.
 - **Niente worktree.** Il prodotto consegna ogni feature su un worktree di un pool. Qui si lavora
   sul **branch corrente dell'albero principale**: è l'owner ad aprire un branch, se vuole isolare
   una consegna. **La regola non ha una motivazione scritta**, ed è dichiarato qui perché non la si
@@ -36,19 +38,18 @@ Ogni path è **relativo alla radice del repository** (`C:/dev/daiku-workspace/da
 | `plugins/daiku/` | **il prodotto** — l'unico perimetro di codice, e l'unico albero che viene pubblicato |
 | `CLAUDE.md` | gli invarianti di chi sviluppa Daiku |
 | `.claude/orchestration.md` | questo file |
-| `.claude/commands/<nome>.md` | i contratti di sviluppo; un subagent ne riceve il **path**, non il nome |
-| `.claude/agents/finder.md` | il subagent a toolset ristretto dei finder di `/review` |
+| `.claude/commands/<nome>.md` | i contratti di sviluppo che il prodotto non ha; un subagent ne riceve il **path**, non il nome |
+| `.daiku/` | i parametri del cantiere, e il gate delle guardie di Daiku su questo repository |
 | `PUNTI-APERTI.md` | le decisioni ancora da prendere |
 | `.docs/memory/` + `.docs/memory/MEMORY.md` | la memoria persistente e il suo indice |
-| `.docs/features/<slug>/` | la cartella di un lavoro, con i file numerati `0.`–`5.` ◦ |
-| `.docs/studies/<slug>.md` | gli appunti che `studia-libreria` deposita ◦ |
+| `.docs/features/<slug>/` | la cartella di un lavoro, con i file numerati `0.`–`5.` |
+| `.docs/studies/<slug>.md` | gli appunti che `daiku:research` deposita ◦ |
 | `.docs/studia-repository/<slug>/` | i documenti di una corsa di `studia-repository`: `run.json` e i tre documenti ◦ |
 | `.docs/features/<feature>/` | il catalogo delle feature: un contributo per corsa, `<slug-corsa>.md` — cresce da repo diversi e non appartiene a nessuna corsa ◦ |
-| `.docs/consegne.md` | il registro append-only delle consegne di `deliver-feature` ◦ |
-| `.docs/runtime/review/` | i ledger dei giri di `review`, uno per ciclo ◦ |
+| `.docs/runtime/review/` | i ledger dei giri di `daiku:review`, uno per ciclo |
 | `.docs/esempi/reforgia/` | dominio e politiche di ReforgIA, come esempio compilato |
-| `.docs/tools/` | gli strumenti di chi sviluppa: `check-topology.mjs` per il gate, `studia-repository/` |
-| `.docs/audit/` | i report del prompt audit, con il diff che propongono |
+| `.docs/tools/` | gli strumenti di chi sviluppa: `check-topology.mjs`, `collauda-init.mjs`, `studia-repository/` |
+| `.docs/audit/` | i report del prompt audit, con il diff che propongono ◦ |
 
 Le sedi marcate **◦ non esistono ancora**: le crea il contratto che le usa, al primo uso. Non sono
 un'omissione da riparare a mano — una cartella vuota non dice niente a nessuno, e un registro vuoto
@@ -69,8 +70,8 @@ Due soli ruoli, anonimi per costruzione. Una skill dichiara il ruolo di un passo
 
 | Ruolo | Quando si usa | Esempi di passo |
 |---|---|---|
-| **giudice** | il passo *decide* o *sintetizza*: produce lavoro nuovo a partire da input eterogenei, oppure riconcilia rilievi di più fonti dove sbagliare costa caro | brief di esecuzione, aggiornamento di memoria e documentazione, decisione su un problema |
-| **worker** | il passo *esegue* o *ispeziona* un perimetro già delimitato: applica un piano, cerca rilievi in un diff, esegue comandi noti e ne riporta l'esito | esecuzione del brief, finder di review, scope, gate, inventario, comandi Git, report |
+| **giudice** | il passo *decide* o *sintetizza*: produce lavoro nuovo a partire da input eterogenei, oppure riconcilia rilievi di più fonti dove sbagliare costa caro | decisione su un problema, sintesi di una corsa di studio, correzione di una skill |
+| **worker** | il passo *esegue* o *ispeziona* un perimetro già delimitato: applica un piano, cerca rilievi in un diff, esegue comandi noti e ne riporta l'esito | esecuzione di un passo di studio, gate, inventario, comandi Git, report |
 
 Un passo puramente meccanico (una riga di log, un `git add` di file già elencati, l'append a un
 report) resta un **worker**: non merita un ruolo terzo.
@@ -92,11 +93,12 @@ lo si dichiara nell'esito: la sequenza e i contratti non cambiano.
 Host: **Claude Code**. Si delega con il tool `Agent`, con `model` risolto secondo la §2 e
 `subagent_type` scelto così:
 
-- **`finder`** per i passi di sola analisi che riportano rilievi — i finder di `/review`.
-  È definito in `.claude/agents/finder.md` e ha un **toolset ristretto**: non può scrivere file né
-  delegare ad altri agent.
 - **`Explore`** per la sola ricerca.
 - **`general-purpose`** per tutto il resto, cioè per i passi che devono scrivere.
+
+Il ruolo a toolset ristretto — chi legge e riporta senza poter scrivere né delegare — **è del
+prodotto** (`plugins/daiku/agents/finder.md`), e lo usa il ciclo di `daiku:review`: nessun comando
+di questo corpus lo invoca.
 
 Più subagent indipendenti si lanciano nello **stesso** blocco di tool call, altrimenti non girano
 davvero in parallelo.
@@ -104,8 +106,8 @@ davvero in parallelo.
 **Il confine vero è quale tool c'è, non cosa ci scrivi dentro.** L'harness di Claude Code impone
 tre cose e solo quelle: il `deny` delle permission rule, gli hook, e la **lista** dei tool che un
 agent dichiara. Non impone il **contenuto** di un comando Bash: uno specificatore come
-`Bash(git diff:*)` descrive un'intenzione e non la restringe, e un agent che ha `Bash` ha `Bash`
-intero — un finder può eseguire `ls`, `cat`, `sed -i` e qualunque altra riga senza un diniego.
+`Bash(git diff:*)` descrive un'intenzione e non la restringe, e chi ha `Bash` ha `Bash` intero — può
+eseguire `ls`, `cat`, `sed -i` e qualunque altra riga senza un diniego.
 
 Ne segue una regola sola: **un vincolo che non sia l'assenza di un tool si ripete nel prompt del
 subagent**, a partire dalla sola lettura di chi ha `Bash`.
@@ -117,7 +119,8 @@ inline nella conversazione: è ciò che tiene la catena lunga dentro un contesto
 rende un passo ripetibile.
 
 1. **Prompt autosufficiente.** Il subagent parte da zero: nel prompt gli dai il **contratto da
-   leggere** (il path del comando sotto `.claude/commands/`, mai il suo nome), l'input risolto
+   leggere** (il path del contratto — un comando sotto `.claude/commands/`, o una skill del
+   prodotto sotto `plugins/daiku/skills/<nome>/SKILL.md` — mai il suo nome), l'input risolto
    (cartella, scope, base-ref) e il formato di ritorno. Non contare su nulla che sia solo nella
    tua conversazione.
 
@@ -160,42 +163,31 @@ rende un passo ripetibile.
 
 4. **Se la delega non è disponibile**, esegui il passo in linea rispettando comunque ordine,
    perimetro e formato di ritorno, e **dichiaralo nell'esito**. Per i passi che si reggono
-   sull'indipendenza dei figli — i finder di un giro di `/review` — *inline* è il secondo gradino,
-   non il primo: si degrada prima a **subagent sequenziali**, dove la cecità reciproca resta
-   intatta perché ogni contesto è comunque fresco. Solo se nemmeno quello è possibile si esegue in
-   linea, e allora lo si dichiara nel blocco di ritorno (`"indipendenza": "persa"`): ordine,
-   perimetro e formato sopravvivono alla degradazione, la cecità no — due finder valutati nello
-   stesso contesto *sono* la singola passata già convinta di sé che il fan-out esiste per evitare.
+   sull'indipendenza dei figli — i passi di una corsa di `studia-repository` — *inline* è il secondo
+   gradino, non il primo: si degrada prima a **subagent sequenziali**, dove la cecità reciproca
+   resta intatta perché ogni contesto è comunque fresco. Solo se nemmeno quello è possibile si
+   esegue in linea, e allora lo si dichiara nel blocco di ritorno (`"indipendenza": "persa"`):
+   ordine, perimetro e formato sopravvivono alla degradazione, la cecità no — due passi valutati
+   nello stesso contesto *sono* la singola passata già convinta di sé che il fan-out esiste per
+   evitare.
 
-**Chi può ri-delegare.** Un passo delegato **esegue**: non delega a sua volta. Le sole eccezioni
-sono i due nodi che la §5 dichiara orchestranti **anche quando sono figli** — `review`, che delega
-finder, applicatore, gate e commit, e `commit`, che delega l'allineamento a `update-memory`. Ogni
-altro passo delegato è una **foglia**.
+**Chi può ri-delegare.** Un passo delegato **esegue**: non delega a sua volta. L'unico nodo
+orchestrante di questo corpus è `studia-repository`, ed è **entry point**: lo lanci tu, e nessuno
+lo invoca come figlio. Ogni altro passo delegato è una **foglia**. `rilascia-daiku` invoca una
+skill **del prodotto** (`daiku:commit`), e la delega di quella la dichiara il contratto del
+prodotto, non questo file.
 
-Gli altri nodi che ri-delegano — `deliver-feature`, `studia-problema`, `studia-libreria`,
-`studia-repository`, `studia-repository-lotto` — lo fanno solo come **entry point**, cioè quando li
-lanci tu: nessuno li invoca mai come figli, e la §5 lo dichiara nella colonna *Chi lo invoca*.
-
-**`studia-repository-lotto` è l'unica eccezione dichiarata, e sta fuori dal grafo.** Non delega un
-passo a un subagent: lancia **una sessione headless di Claude Code per target**, con
-`.docs/tools/studia-repository/lotto.mjs`. È la cosa che questa §4 chiede — un contesto fresco per
-ogni corsa — presa alla radice invece che un livello sotto, per due ragioni. La prima: una corsa di
-`studia-repository` è già essa stessa un orchestratore che delega dieci passi, e tenerla dentro la
-sessione madre la farebbe crescere di una corsa intera per ogni target. La seconda: il presidio di
-macchina nega le righe di comando che contengono un token che comincia per `/` — lo scambia per un
-path assoluto fuori dal perimetro — quindi `/studia-repository …` non si può scrivere da un tool
-Bash, e chi lo lancia deve essere un processo, non un comando. Le corse che ne escono non sono
-figlie nel senso di questa §4: hanno la propria catena di delega, e il lotto le guarda
-dall'esterno — non riceve i loro blocchi di ritorno, legge i loro file e i loro gate. `code-review` è il caso che tiene insieme le due cose:
-ri-delega quando lo lanci su una pull request, **non** ri-delega quando `review` lo invoca come
-finder — ed è il suo file a dichiararlo, non chi lo chiama.
-
-Il cammino più lungo del grafo è di **tre archi di delega**, e uno solo lo raggiunge:
-`review` lanciata a mano → `commit` → `update-memory` è di due; `deliver-feature` → `review` →
-`finder` è di due; ed è `deliver-feature` → `review` → `commit` → `update-memory` a farne tre — ma
-**dentro la consegna quel cammino non esiste**, perché `deliver-feature` passa sempre `--no-commit`
-alla review e si tiene il commit come fase propria. Tre livelli sono il tetto teorico; due sono la
-profondità reale di ogni esecuzione.
+**`studia-repository-lotto` sta fuori dal grafo.** Non delega un passo a un subagent: lancia
+**una sessione headless di Claude Code per target**, con `.docs/tools/studia-repository/lotto.mjs`.
+È la cosa che questa §4 chiede — un contesto fresco per ogni corsa — presa alla radice invece che un
+livello sotto, per due ragioni. La prima: una corsa di `studia-repository` è già essa stessa un
+orchestratore che delega dieci passi, e tenerla dentro la sessione madre la farebbe crescere di una
+corsa intera per ogni target. La seconda: il presidio di macchina nega le righe di comando che
+contengono un token che comincia per `/` — lo scambia per un path assoluto fuori dal perimetro —
+quindi `/studia-repository …` non si può scrivere da un tool Bash, e chi lo lancia deve essere un
+processo, non un comando. Le corse che ne escono non sono figlie nel senso di questa §4: hanno la
+propria catena di delega, e il lotto le guarda dall'esterno — non riceve i loro blocchi di ritorno,
+legge i loro file e i loro gate.
 
 Un nodo che si accorge di voler delegare, e non è fra questi, sta eseguendo il lavoro di qualcun
 altro: torna a contratto e lascia decidere a chi l'ha chiamato.
@@ -209,48 +201,32 @@ contenuto vive nel file del nodo, che resta l'unico posto in cui si modifica.
 
 | Nodo | Chi lo invoca | Riceve già risolto | Restituisce | Ri-delega |
 |---|---|---|---|---|
-| `studia-libreria` | owner | nome della tecnologia | appunti in `.docs/studies/` | sì — ricerca per blocco tematico, foglie |
-| `studia-problema` | owner | descrizione del problema | `0. problem.md` in `.docs/features/<slug>/` | sì — ricerca per area, foglie, e `decision-doc` alla chiusura |
-| `decision-doc` | owner, `studia-problema` § *Passa il testimone* | cartella del problema, eventuale sottoinsieme da analizzare; da `studia-problema` anche il documento già scritto e le memorie pertinenti | `0.5. studio-strategico.md` oppure `1. decision-doc.md` sul disco, e come figlio il blocco di § *Modalità di invocazione* del suo file | no |
-| `blueprint` | `deliver-feature` fase 1 | cartella con `1. decision-doc.md`, soluzione scelta verbatim, memorie pertinenti | § *Cosa restituisci* del suo file | no |
-| `execute` | `deliver-feature` fase 2 | cartella con `2. blueprint.md`, memorie pertinenti | § *Cosa restituisci* del suo file | no |
-| `review` | owner, `deliver-feature` fase 3 | base-ref o path di `4. review-notes.md`, ledger da riaprire (scelto su `base` **e** `item`), `--no-commit` da chi committa da sé, effort | § *Esito* del suo file | sì — finder, applicatore, gate, `commit` |
-| `code-review` | owner (su PR), `review` come finder `bug` | PR **oppure** scope del giro | § *Modalità finder* del suo file | sì su PR, **no** come finder |
-| `update-memory` | owner, `deliver-feature` fase 5b, `commit` § *Allineamento* | diff in index, cartella dell'item dove depositare il proprio artefatto (da `deliver-feature`) | § *Procedura* 7 del suo file | no |
-| `commit` | owner, `review` § *Chiusura* (sempre, salvo `--no-commit`) | perimetro del gruppo codice | § *Procedura* 8 del suo file, in chat | sì — `update-memory` |
-| `deliver-feature` | owner | cartella, soluzione scelta | § *Esito* del suo file | sì — le sue fasi, e `review` come figlio orchestrante |
+| `collauda-init` | owner | niente: la prova e il suo verdetto sono di un banco, non tuoi | § *Esito* del suo file | no |
+| `rilascia-daiku` | owner | le opzioni del rilascio | § *Esito* del suo file | sì — `daiku:commit`, skill del prodotto |
 | `studia-repository` | owner, `studia-repository-lotto` | target (repo, pacchetto o path locale), `--assi`, `--versione`, `--focus`, `--cwd`, `--deep`, `--shallow-only` facoltativi | i documenti in `.docs/studia-repository/<slug>/` e § *Esito in chat* del suo file | sì — leggera, triage, acquisizione, grafo, lettori, verificatori, confronto, giudice, report; foglie |
 | `studia-repository-lotto` | owner | elenco dei target (file o riga di comando), le opzioni comuni a tutte le corse, `--parallelo`, `--budget`, `--modello` | le corse sotto `.docs/studia-repository/`, ciascuna con l'esito di `studia-repository`, e § *Esito in chat* del suo file | sì — lancia N corse di `studia-repository` come **sessioni headless**, non come subagent (§4) |
+| `translate-skill` | owner | il path del file di Daiku da tradurre | il file riscritto in inglese | no |
 
 **Un arco nuovo si dichiara qui.** Collegare un nodo a un chiamante che non lo aveva significa
 aggiornare la sua riga — i chiamanti, l'input che ora riceve risolto, il permesso che
 l'invocazione gli passa — nella stessa modifica che scrive l'arco. Una riga non aggiornata è un
 arco che esiste nel testo dei prompt e non esiste da nessuna parte che si possa leggere.
 
-### Un contratto raggiungibile in più di un modo dichiara le proprie modalità in casa
-
-Lo stesso file è entry point e contratto interno, e le due invocazioni non hanno lo stesso scope
-né gli stessi permessi: `code-review` commenta una pull request quando lo lanci tu e non scrive
-niente quando è `/review` a invocarlo; `decision-doc` chiede all'owner quando lo lanci tu e non
-chiede niente quando arriva da `/studia-problema`. Quella differenza **si dichiara nel nodo**, una
-sezione per modalità, con scope, permessi di scrittura e blocco di ritorno. Chi invoca **sceglie**
-la modalità e non riscrive i vincoli: una lista di deroghe scritta nel chiamante si erode a ogni
-modifica del nodo, e nessuno se ne accorge finché il nodo non fa, in modalità finder, qualcosa che
-quella lista aveva dimenticato di disattivare.
-
 ## 6. Concorrenza
 
-Il **fan-out parallelo** è il default: i passi indipendenti (i due finder del giro 1 di una
-review) girano insieme, lanciati nello stesso blocco di tool call.
+Il **fan-out parallelo** è il default: i passi indipendenti di una corsa di `studia-repository`
+girano insieme, lanciati nello stesso blocco di tool call.
 
 I passi che toccano la stessa working tree — gate, commit, `git add`, calcolo di un base-ref —
 sono **sempre** sequenziali: non sono serializzabili altrimenti, e qui la working tree è una sola.
 
 ## 7. Il gate di questo progetto
 
-È l'unico posto in cui il gate è scritto. Chi lo esegue è `/review`, una volta sola, all'uscita del
-ciclo (§ *Gate* del suo file): `/execute` non lo lancia e le sessioni di chat nemmeno. Su un dato
-diff, se non gira lì non gira da nessuna parte.
+È l'unico posto in cui il gate di questo repository è scritto, e lo esegue **chi sta per committare
+una modifica alla forma del pacchetto** — sempre `rilascia-daiku`, come primo passo di un rilascio,
+e a mano prima di una consegna che tocca manifest, contratti o hook. Il ciclo di `daiku:review` ha
+il proprio gate, che è il valutatore deterministico del prodotto (`plugins/daiku/architect/`), e
+non questo.
 
 Si esegue dalla radice del repository, in quest'ordine, e si riporta l'esito **reale** di ciascun
 comando:
@@ -311,8 +287,7 @@ numero.
 **Quali comandi girano.** I due validatori e la topologia girano **sempre**, perché
 guardano l'albero intero. Il comando dei banchi gira **solo se il perimetro tocca
 `plugins/daiku/hooks/` o `plugins/daiku/architect/`**. Il `check-ignore` gira **solo se il diff ha introdotto file nuovi**.
-Il prompt audit gira **solo se il diff tocca testo per il modello sotto `plugins/daiku/`**: una
-review su un altro prodotto di questo repository non lo lancia.
+Il prompt audit gira **solo se il diff tocca testo per il modello sotto `plugins/daiku/`**.
 
 ### Cosa questo gate non copre
 
@@ -326,10 +301,8 @@ argomento — controlla che i nodi su disco siano tutti e soli le righe della ta
 della propria riga, e che ogni rimando `§ *X*` trovi davvero la sua intestazione. Vive fuori dal
 pacchetto, in `.docs/tools/`, e gira nel gate come i validatori. Ciò che non copre — un rimando
 che esiste ma è attribuito al file sbagliato, uno schema di ritorno divergente fra nodo e
-chiamante — lo prende **il finder di `review`**, ed è il motivo per cui la prima delle sue cinque
-famiglie è «rimandi che non risolvono». (Un verificatore precedente era stato **rimosso il 18
-settembre 2026** perché risolveva la propria radice per posizione sul disco e dopo la
-riorganizzazione cercava il corpus nel posto sbagliato.)
+chiamante — lo prende il finder del ciclo di `daiku:review`, ed è il motivo per cui la prima delle
+sue cinque famiglie è «rimandi che non risolvono».
 
 **Il validatore Codex, su questa macchina, potrebbe non partire.** Se esce
 `ModuleNotFoundError: No module named 'yaml'`, manca `pyyaml` (`python -m pip install pyyaml`):
@@ -346,10 +319,8 @@ memoria sono versionati come il prodotto, quindi c'è un indice in cui metterli 
 recuperarli.
 
 **I gruppi sono tre, e ognuno ha la sua sede**: codice (`plugins/`), memoria e documentazione
-(`CLAUDE.md`, `.docs/**`), versione (i due `plugin.json`). `commit` li committa in quest'ordine.
-`deliver-feature` fa lo stesso, con **una** differenza dichiarata: il commit del gruppo
-memoria/documentazione è la sua **ultima** fase, dopo il report — perché il report scrive ancora, e
-il registro delle consegne è di quel gruppo.
+(`CLAUDE.md`, `.docs/**`), versione (i due `plugin.json`). Li committa `daiku:commit`, che li
+risolve sulle chiavi di `.daiku/project.json` — qui `commit.memory_prefix` è `docs(memoria)`.
 
 > **Il confine di git è questo, e non un altro.** Un contratto di questo corpus che dica che il suo
 > perimetro è fuori dall'indice, o che il gruppo memoria/documentazione non si committa, è un difetto
@@ -371,6 +342,5 @@ Il giorno in cui il repository diventa pubblico, questa sezione è una delle cos
 - Nessuna skill di questo corpus scrive dentro `plugins/daiku/skills/` o
   `plugins/daiku/contracts/` **per allinearli a sé stessa**. Il prodotto si modifica perché lo
   decide una consegna, non perché una copia si è mossa.
-- E il contrario vale ancora più stretto: i contratti di **questo** corpus — `.claude/commands/`,
-  questo file, `.claude/agents/` — non si modificano affatto. Una modifica che varrebbe per
-  entrambi si scrive solo nel prodotto; riportarla qui è una decisione che si chiede all'owner.
+- I contratti di questo corpus non si allineano da sé al prodotto: una modifica che varrebbe per
+  entrambi si scrive solo nel prodotto, e toccare il cantiere è una decisione dell'owner.

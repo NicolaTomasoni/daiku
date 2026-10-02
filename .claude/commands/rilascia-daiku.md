@@ -38,8 +38,8 @@ Se l'output è vuoto, vai oltre. Se c'è qualcosa, **chiedi all'owner con AskUse
 se vuole prima lanciare `/commit`, e fermati finché non risponde: opzioni «Sì, committa
 prima» / «No, rilascia così».
 
-Se risponde sì, esegui `/commit` (il comando `.claude/commands/commit.md`) e riprendi da
-qui con l'albero pulito. Se risponde no, procedi: il perimetro delle note resta quello
+Se risponde sì, esegui `/daiku:commit` (il contratto è `plugins/daiku/skills/commit/SKILL.md`) e
+riprendi da qui con l'albero pulito. Se risponde no, procedi: il perimetro delle note resta quello
 della §3 — commit dopo l'ultimo rilascio più diff del working tree.
 
 ## 1. Verifiche pre-rilascio
@@ -137,7 +137,7 @@ commit, e la §3 del rilascio successivo calcolerebbe il perimetro da un albero 
 Committa in dev tutto ciò che compone questo rilascio: la versione nei tre punti della §2, la
 voce di changelog della §4, e ogni altra modifica del working tree che appartiene al rilascio.
 Sono gruppi distinti, e vanno in commit separati secondo la convenzione del repository: lancia
-`/commit` (`.claude/commands/commit.md`), che li conosce già.
+`/daiku:commit` (`plugins/daiku/skills/commit/SKILL.md`), che li conosce già.
 
 Poi verifica che l'albero sia **pulito**:
 

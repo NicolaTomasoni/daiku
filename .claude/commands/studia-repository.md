@@ -59,9 +59,9 @@ diverso.
 
 - **Il prodotto è `plugins/daiku/`, e nient'altro**: è l'unico albero che viene pubblicato e
   installato, ed è il lato di Daiku che si mette a confronto con il target.
-- **Lo sviluppo** è tutto il resto: `.claude/` (una derivazione dei contratti del prodotto, con
-  cui Daiku si sviluppa col metodo di Daiku), `CLAUDE.md`, `.docs/`. Si legge per capire il
-  progetto, ma non è ciò che il target dovrebbe battere.
+- **Lo sviluppo** è tutto il resto: `.claude/commands/` — i soli comandi che il prodotto non ha,
+  perché con cui Daiku si sviluppa col metodo di Daiku sono le skill di Daiku stesso — `CLAUDE.md`,
+  `.docs/`. Si legge per capire il progetto, ma non è ciò che il target dovrebbe battere.
 
 I path di questa skill sono sempre quelli reali di questo repo:
 
@@ -75,7 +75,7 @@ I path di questa skill sono sempre quelli reali di questo repo:
 | enforcement deterministico | `plugins/daiku/hooks/hooks.json` + `plugins/daiku/hooks/lib/*.mjs` |
 | scheletri che `init` deposita nel progetto ospite | `plugins/daiku/templates/**` |
 | manifest del pacchetto, uno per host | `plugins/daiku/.claude-plugin/plugin.json`, `plugins/daiku/.codex-plugin/plugin.json` |
-| corpus di sviluppo (**non** è il prodotto) | `.claude/orchestration.md`, `.claude/commands/<nome>.md`, `.claude/agents/*.md` |
+| corpus di sviluppo (**non** è il prodotto) | `.claude/orchestration.md`, `.claude/commands/<nome>.md` |
 | fatti sugli host e decisioni aperte | `.docs/memory/` (le memorie sui due host), `PUNTI-APERTI.md` |
 
 **I tre principi** contro cui si misura ogni miglioria — sono in `plugins/README.md`, § *Il
@@ -92,8 +92,8 @@ progetto ha un'altra alberatura, e spesso un solo livello dove Daiku ne ha quatt
 Si sceglie con tre domande, in quest'ordine.
 
 1. **Prodotto o sviluppo?** Se serve a chi *usa* Daiku va sotto `plugins/daiku/`; se serve a chi
-   lo *costruisce*, no. Nel dubbio è prodotto: il cantiere è piccolo e deriva dal prodotto, mai il
-   contrario.
+   lo *costruisce*, no. Nel dubbio è prodotto: il cantiere è piccolo e accoglie solo ciò che il
+   prodotto non ha, mai il contrario.
 2. **Metodo o valore?** Il file di una skill è identico byte per byte in ogni progetto. Se la cosa
    importata porta con sé un path, un comando, il nome di un file o di un modello, quel valore
    **non** entra nella skill: sale di livello — `templates/project/project.json` se cambia da
@@ -116,7 +116,7 @@ Si sceglie con tre domande, in quest'ordine.
 | `plugins/daiku/templates/claude/`, `plugins/daiku/templates/codex/` | il wiring per host da depositare nel progetto ospite | ciò che il pacchetto riesce già a portare da sé | `init` e `sync-host` |
 | `plugins/README.md` | guida d'uso: quando si lancia cosa, il modello mentale, cosa cambia fra i due host | il contratto, che vive nella skill | l'utente |
 | `plugins/daiku/.claude-plugin/plugin.json`, `.codex-plugin/plugin.json` | metadati del pacchetto | qualunque comportamento | gli host, all'installazione |
-| `.claude/commands/`, `.claude/orchestration.md`, `.claude/agents/` | la stessa miglioria riportata **a mano** nel corpus di sviluppo, senza graffe e coi valori per esteso | niente che non sia già nel prodotto: questo corpus ne è una derivazione | chi sviluppa Daiku |
+| `.claude/commands/`, `.claude/orchestration.md` | un comando di sviluppo che il prodotto non ha, coi suoi valori per esteso | niente che abbia già il suo gemello in Daiku: qui non vive un secondo esemplare di ciò che il prodotto fa | chi sviluppa Daiku |
 | `.docs/memory/`, `PUNTI-APERTI.md` | ciò che si è scoperto sugli host leggendo quel target, e le decisioni che la miglioria apre | il meccanismo, che va nella sua sede vera | l'owner |
 
 Le regole che la tabella non dice, e che sono state verificate sui validatori dei due host:

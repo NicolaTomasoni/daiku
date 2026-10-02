@@ -21,3 +21,7 @@
 # questo entrasse nel repo, la memoria tornerebbe silenziosamente sotto `~/.claude/projects/`.
 # Su una macchina nuova va riscritto a mano.
 .claude/settings.local.json
+
+# Daiku
+.daiku/environment.local.json
+.docs/runtime/review

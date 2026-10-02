@@ -1,6 +1,7 @@
 {
   "contract": 1,
   "name": "daiku-dev",
+  "repo_root": "C:/dev/daiku-workspace/daiku-dev",
   "code_root": "plugins/",
   "language": {
     "chat": "it",
@@ -26,5 +27,11 @@
   },
   "commit": {
     "memory_prefix": "docs(memoria)"
+  },
+  "worktree": {
+    "pool": ".claude/worktrees",
+    "prefix": "agent-tree-",
+    "max": 5,
+    "branch_prefix": "worktree-"
   }
 }

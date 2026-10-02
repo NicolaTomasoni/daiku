@@ -255,6 +255,14 @@
         "reveal": "always",
         "panel": "shared"
       }
+    },
+    {
+      "label": "daiku: update",
+      "detail": "Show the Daiku version in place, then on your answer refresh the daiku marketplace and update the plugin on Claude Code",
+      "type": "shell",
+      "command": "node .daiku/update.mjs",
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
     }
   ]
 }
