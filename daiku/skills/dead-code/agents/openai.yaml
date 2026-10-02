@@ -1,0 +1,5 @@
+interface:
+  display_name: "Dead Code"
+  short_description: "Read-only dead-code finder of review"
+policy:
+  allow_implicit_invocation: false

@@ -3,16 +3,16 @@
   "blocks": {
     "decision-doc": {
       "producer": "skills/decision-doc/SKILL.md § The block you return",
-      "required": ["stage", "stage_why", "direction", "file", "verdict", "applied_fixes", "premises", "precedents", "decisions", "incorporated", "open_items"],
+      "required": ["stage", "stage_why", "crossed_stages", "direction", "file", "verdict", "applied_fixes", "premises", "precedents", "decisions", "incorporated", "open_items"],
       "optional": [],
       "enums": {
         "stage": ["strategic", "technical"],
         "direction.kind": ["owner-request", "owner-answer", "material"],
-        "precedents.stands": ["yes", "no"],
+        "precedents.stands": ["yes", "no", "closed-elsewhere"],
         "decisions.classification": ["blocker", "serious risk", "weakness", "improvement"],
         "decisions.recommended_id": ["A"]
       },
-      "note": "The three fields between `stage_why` and `decisions` are the ones the stage turns on, and `direction` is null when nothing proposes one. Which of them the stage admits — a technical stage executes the owner's direction and rests on verified premises, a strategic one carries no premises of a direction nobody chose — is not expressible as an enum: it is SHAPES['decision-doc'] of architect/architect.mjs."
+      "note": "The fields between `stage_why` and `decisions` are the ones the stage turns on, and `direction` is null when nothing proposes one. Which of them the stage admits — a technical stage executes the owner's direction and rests on verified premises, a strategic one carries no premises of a direction nobody chose — is not expressible as an enum: it is SHAPES['decision-doc'] of architect/architect.mjs. The same shape holds `crossed_stages` to what the block actually carries, so the crossing of the two stages cannot go undeclared, and admits `closed-elsewhere` only with the `closed_by` that answers a precedent the strategic stage already closed."
     },
     "blueprint": {
       "producer": "skills/blueprint/SKILL.md § What you return",
@@ -45,9 +45,9 @@
       "required": ["applied", "discarded", "to_confirm", "oscillation"],
       "optional": [],
       "enums": {
-        "to_confirm.class": ["arch", "bug", "perf", "test-coverage"]
+        "to_confirm.class": ["arch", "bug", "perf", "dead", "test-coverage"]
       },
-      "note": "Every item of the four lists carries `finding_id`, and every finding handed over has exactly one outcome: the `block` question checks it against the `finding_ids` passed beside the block."
+      "note": "Every item of the four lists carries `finding_id`, and every finding handed over has exactly one outcome: the `block` question checks it against the `finding_ids` passed beside the block. `to_confirm.class` enumerates every discipline a round-1 finder can hand over — `bug`, `arch`, `perf`, `dead` — plus `test-coverage`, the class the closing round on tests adds."
     },
     "coverage-auto": {
       "producer": "skills/test-coverage/SKILL.md § Automatic mode",
@@ -75,6 +75,16 @@
         "commit": ["done", "partial", "not-requested", "skipped"],
         "coverage": ["tests-written", "no-tests-needed", "no-test-command"]
       }
+    },
+    "code-review-outcome": {
+      "producer": "skills/code-review/SKILL.md § Outcome",
+      "required": ["rounds", "outcome", "missing_disciplines", "oscillation", "applied", "severe", "on_previous_fix", "discarded", "gate", "gate_detail", "ledger", "to_confirm"],
+      "optional": [],
+      "enums": {
+        "outcome": ["fixed-point", "diminishing-returns", "oscillation", "rounds-truncated", "rounds-exhausted"],
+        "gate": ["green", "red"]
+      },
+      "note": "The block of the bug-only cycle: the shape of § review-outcome minus the fields a bug-only cycle, stopping at the report, does not produce — `disciplines_round_1` and `independence` (one discipline, `bug`, always), `commit` and `commit_sha` (the cycle never commits), `blocking`, `coverage` and `report`. No `question` feeds it: the cycle stops at the report and hands the block to its caller, so this entry is the map of a shape the skill declares in prose, not a check any program runs — the prose of `skills/code-review/SKILL.md` stays the normative schema."
     },
     "commit": {
       "producer": "skills/commit/SKILL.md § Procedure 8",
@@ -112,12 +122,12 @@
     },
     "architect": {
       "producer": "skills/ship-feature/SKILL.md § The evaluator (architect-internal, no producer file)",
-      "required": ["ok", "verdict", "remaining", "resume_from", "blockers", "retry", "fallback", "readings", "violations", "detail"],
+      "required": ["ok", "verdict", "remaining", "resume_from", "slot", "blockers", "retry", "fallback", "readings", "violations", "detail"],
       "optional": [],
       "enums": {
-        "verdict": ["BLOCKED_NO_COMMIT", "GREEN_COMMITTED", "GREEN_WITH_POST_DECISIONS", "blocked", "clean", "commit", "continue", "diminishing-returns", "fallback", "fixed-point", "invalid", "merit", "oscillation", "proceed", "restart", "resume", "retry", "rounds-exhausted", "rounds-truncated", "stop", "unblock", "valid", "violations"]
+        "verdict": ["BLOCKED_NO_COMMIT", "GREEN_COMMITTED", "GREEN_WITH_POST_DECISIONS", "blocked", "clean", "commit", "continue", "create", "diminishing-returns", "fallback", "fixed-point", "invalid", "merit", "oscillation", "proceed", "restart", "resume", "retry", "reuse", "rounds-exhausted", "rounds-truncated", "stop", "unblock", "valid", "violations"]
       },
-      "note": "The effective domain of `verdict` depends on `question`: this enum is the union of the nine domains, one per question — decision, closing, unblock, propagation, resumption, order, round, layers, block — and `verdict` is `null` when the question does not apply, that is `propagation` on a block that came back. `remaining` and `resume_from` are filled by `order` and `resumption` alone; `retry` and `fallback` by `propagation` alone; `readings` by the ambiguity rule alone; `violations` by `layers` alone, one `{file, line, policy, layer, fragment, text}` per violating line. Field names of the blocks this one consumes are not renamed on either side: `gate`, `gate_detail`, `outcome`, `missing_disciplines`, `blocking`, `to_confirm`, `base`, `item`, `rounds`, `commit`, `commit_sha`."
+      "note": "The effective domain of `verdict` depends on `question`: this enum is the union of the ten domains, one per question — decision, closing, unblock, propagation, resumption, order, round, layers, block, pool — and `verdict` is `null` when the question does not apply, that is `propagation` on a block that came back. `remaining` and `resume_from` are filled by `order` and `resumption` alone; `slot` by `pool` alone, the number of the pool worktree to reuse or create; `retry` and `fallback` by `propagation` alone; `readings` by the ambiguity rule alone; `violations` by `layers` alone, one `{file, line, policy, layer, fragment, text}` per violating line. Field names of the blocks this one consumes are not renamed on either side: `gate`, `gate_detail`, `outcome`, `missing_disciplines`, `blocking`, `to_confirm`, `base`, `item`, `rounds`, `commit`, `commit_sha`."
     },
     "ship-feature-outcome": {
       "producer": "skills/ship-feature/SKILL.md § Outcome",
@@ -130,7 +140,7 @@
     },
     "ship-feature-acquisition": {
       "producer": "skills/ship-feature/SKILL.md § Acquisition",
-      "required": ["ok", "worktree", "worktree_root", "detail"],
+      "required": ["ok", "worktree", "branch", "worktree_root", "detail"],
       "optional": [],
       "enums": {}
     },
@@ -163,6 +173,15 @@
       "rounds.check_fast.status": ["green", "red", "skipped"]
     },
     "note": "Written only by architect/ledger.mjs, which validates it against this entry before every write. `outcome`, `coverage` and `gate` take the domains of § review-outcome and § gate once set; until their step ran they are null. `cost` holds only the numbers the host reported for each step, never an estimate."
+  },
+  "pool": {
+    "producer": "skills/ship-feature/SKILL.md § Worktree pool",
+    "required": ["slots"],
+    "slot_required": ["n", "name", "branch", "state", "delivery", "updated"],
+    "enums": {
+      "slots.state": ["free", "in-use", "blocked"]
+    },
+    "note": "The pool registry, written only by architect/pool.mjs, which validates it against this entry before every write. It records who took each slot and how the delivery left it: `in-use` at acquisition, `free` after the merge and cleanup, `blocked` when the delivery stopped without merging — its tree dirty on purpose, or clean on a branch that went into conflict. The measured state is what git says of the slot, a clean tree or a dirty one, and where its commits stand; `state` is the attribution the agent cannot re-derive, and a slot marked `in-use` whose tree is clean is one a run abandoned. Reusability is measured, never read off `state`: a slot is reusable when its tree is clean **and** its branch holds nothing the integration branch lacks."
   },
   "params": {
     "producer": "contracts/project-contract.md §4 and contracts/orchestration.md §7",

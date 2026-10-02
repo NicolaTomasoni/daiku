@@ -1,6 +1,6 @@
 ---
 name: 'blueprint'
-description: 'From the decision document and the chosen solution it produces an autonomous execution brief (2. blueprint.md) and stops there, without executing — launched by hand to stop at the brief, or by ship-feature as its phase 1.'
+description: 'From the decision document and the chosen solution it produces an autonomous execution brief (2. blueprint.md) and stops there, without executing — launched by hand to stop at the brief, by `ship-feature` as its phase 1, or by `new-feature` for the brief stop.'
 argument-hint: '<folder with 1. decision-doc.md> + chosen solution (one option id and text per decision)'
 ---
 
@@ -14,10 +14,11 @@ You, here, **do not execute** the plan: you only **prepare** it. The file remain
 
 ## Invocation modes
 
-**You are launched by hand or by `ship-feature` phase 1.** The brief is the same either way; what changes is where the input comes from and where the block goes.
+**You are launched by hand, by `ship-feature` phase 1, or by `new-feature` for the brief stop.** The brief is the same either way; what changes is where the input comes from and where the block goes.
 
 - **By hand (`owner`).** `$ARGUMENTS` carries the folder and, for each decision of `1. decision-doc.md`, the id and text of the chosen option. If the solution is missing or ambiguous against the document, do not ask and do not guess: stop, and list the decisions and options the document truly declares, so the owner relaunches you with the choice. Close with the block of § *What you return* in chat, and stop there: carrying the folder wherever its execution runs is the owner's manual act, no automated flow performs it.
 - **From `ship-feature` phase 1.** Folder, chosen solution and memories arrive resolved in the prompt, and the block returns to the caller. The constraints below hold unchanged, and they are not rewritten in the caller prompt.
+- **From `new-feature` (brief stop).** Folder and chosen solution arrive resolved in the prompt — with the **`A`** option for a card the owner did not answer — and the block returns to the caller, which reports it and stops: the folder is carried no further. The constraints below hold unchanged, and they are not rewritten in the caller prompt.
 
 ## Input: folder and chosen solution
 

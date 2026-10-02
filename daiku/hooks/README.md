@@ -144,9 +144,12 @@ has no Node, these guardrails are absent: a requirement, not a graceful degradat
 
 ## They do not reach both hosts the same way
 
-On **Claude Code** the package carries them: `plugin.json` declares `hooks`, and `hooks/hooks.json`
-hooks them up with `${CLAUDE_PLUGIN_ROOT}`. They update when the package updates, and nothing
-appears in the project.
+On **Claude Code** the package carries them: they travel inside it as `hooks/hooks.json`, with the
+modules it points at under `hooks/lib/`, and the host hooks them up with `${CLAUDE_PLUGIN_ROOT}`. They
+update when the package updates, and nothing appears in the project. The manifest
+(`.claude-plugin/plugin.json`) carries **no** `hooks` key: the package keeps `hooks/` present but
+undeclared, because that field is one the Codex validator rejects, and re-adding it would break the
+package on Codex.
 
 On **Codex** no: `plugin_hooks` is a **removed** feature and the validator rejects the
 `hooks` key in the manifest. There the hooks live in `<repo>/.codex/hooks.json`, outside the package, and

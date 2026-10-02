@@ -43,7 +43,7 @@ You are a second subagent, fresh context, and in the prompt there are the **owne
 - **strategic document** (`0.5. strategic-study.md`) → **Phase 4**, which closes every decision with the owner choice and refines `0. problem.md` accordingly;
 - **technical document** (`1. decision-doc.md`) → **point 6 of the technical Procedure**, which writes the choice at the tail of the decision card hosting it.
 
-**If after incorporation the direction is closed, continue to the technical stage here and now**: produce `1. decision-doc.md` and return the new decision list in your block, with `stage` `technical`. It is the only case where a single invocation crosses the two stages, and the direction is now the owner's: the block says so — `owner-answer`, with where they said it — and it carries the premises the direction rests on.
+**If after incorporation the direction is closed, continue to the technical stage here and now**: produce `1. decision-doc.md` and return the new decision list in your block, with `stage` `technical` and `crossed_stages` `true`. It is the only case where a single invocation crosses the two stages, and the direction is now the owner's: the block says so — `owner-answer`, with where they said it — and it carries the premises the direction rests on. **The decisions you return here are new**: the answers you just incorporated were given on the strategic list, and they cover that list alone. The technical one did not exist when the owner spoke, and nothing they said before it covers it — the caller asks it, unless the owner has already covered that stage in so many words — and that is what `crossed_stages` declares.
 
 ## The block you return
 
@@ -53,6 +53,7 @@ You are a second subagent, fresh context, and in the prompt there are the **owne
 {
   "stage": "strategic|technical",
   "stage_why": "<a sentence on why this stage and not the other; never a document this chain produced>",
+  "crossed_stages": false,
   "direction": {"kind": "owner-request|owner-answer|material", "where": "<the owner's words, or the memory that records their decision>"} | null,
   "file": "<path of the produced or updated document>",
   "verdict": "<the opening synthesis of the sceptical revision, or null at the technical stage>",
@@ -64,8 +65,9 @@ You are a second subagent, fresh context, and in the prompt there are the **owne
     {
       "decision": "<a decision already closed, touching this problem>",
       "where": "<its seat: the memory, or the folder in {paths.features}>",
-      "stands": "yes|no",
-      "answered_by": "<the title of the decision of this list that puts it to the owner, when stands is no>"
+      "stands": "yes|no|closed-elsewhere",
+      "answered_by": "<the title of the decision of this list that puts it to the owner, when stands is no>",
+      "closed_by": "<the decision that closed it, and where it is written, when stands is closed-elsewhere>"
     }
   ],
   "decisions": [
@@ -87,11 +89,12 @@ You are a second subagent, fresh context, and in the prompt there are the **owne
 }
 ```
 
-`direction`, `premises` and `precedents` are **declarations the stage turns on**, and they are not prose the block can carry loosely:
+`crossed_stages`, `direction`, `premises` and `precedents` are **declarations the stage turns on**, and they are not prose the block can carry loosely:
 
+- `crossed_stages` says whether this block was produced by an invocation that **crossed the two stages**: `true` when the technical stage was reached inside an incorporation that was closing the strategic one, so the `decisions` returned here are a list the owner has never seen. It is not a label set by feel — it holds **exactly** when `stage` is `technical`, `incorporated` is non-empty and `decisions` is a non-empty list, and the evaluator refuses a block where the flag and those three disagree. A `true` with nothing to ask and a technical list returned together with incorporated answers but no flag are the same lie in two directions: the first invents a crossing, the second hides one — and hiding it is how a new list reaches the owner already answered.
 - `direction` says **whose words settled the direction** — `owner-request` (the owner asked for the work, and their words were the goal, not a plan to execute), `owner-answer` (their answer to a question this chain asked, which includes a decision recorded in memory), `material` (the direction is proposed by material that was already in the folder when the chain opened it). At the **technical** stage it is `owner-request` or `owner-answer`, and never `material`: a direction that comes from material is a proposal, and turning it into a question is exactly what the strategic stage is for. Where it is `material`, the stage is strategic and the proposal enters `decisions`. The direction is `null` when nothing proposes one at all.
 - `premises` are the claims about the system the chosen direction rests on, each with the source that corroborates it. At the **technical** stage it is never empty — a study resting on no verified claim rests on nothing — and at the **strategic** one it is `[]`, because there the unproven assumptions are the findings of Phase 1 and not premises of a direction nobody chose. On the two stages alike, a premise with an empty `evidence` is the assumption this whole chain exists to catch.
-- `precedents` are the decisions already closed that touch this problem. A precedent of the project that says the opposite of what is proposed is a **question for the owner**, never a note dismissed here by deduction: `stands` is `no` and `answered_by` names the decision of this list that asks it. With no decision to point at, the precedent stays open — and an open direction question means the stage above is not technical.
+- `precedents` are the decisions already closed that touch this problem. A precedent of the project that says the opposite of what is proposed is a **question for the owner**, never a note dismissed here by deduction: `stands` is `no` and `answered_by` names the decision of this list that asks it. With no decision to point at, the precedent stays open — and an open direction question means the stage above is not technical. One case is not left to that hole: a precedent the work contradicts and which the **strategic stage of this same chain already closed** — a direction the owner answered in `0.5. strategic-study.md` before this list existed. The question was asked and answered there, and re-asking it here would reopen a closed direction: `stands` is `closed-elsewhere` and `closed_by` names that decision and where it is written. It belongs to the **technical** stage alone — at the strategic one a reversed precedent is yours to ask (`no`) or standing (`yes`), because there is no earlier stage of this chain that closed it — and `closed_by` never names a decision of this list: one that did is a precedent this list asks, and its `stands` is `no`.
 
 The `decisions` come back **structured**, not in prose: whoever called you asks them of the owner without rewriting them and without having to guess which is the recommended one, and a summarised list is a list to which the owner answers with less than you wrote. Field rules, equal in both stages (`null` if no decision remains to be asked):
 
@@ -219,7 +222,7 @@ When the answers arrive — from the prompt, in *incorporation* mode —:
 - incorporate **every** decision in `0. problem.md` with surgical modifications, propagating coherence (if a decision overturns a statement repeated elsewhere, correct **all** occurrences);
 - **close every decision in `0.5. strategic-study.md`**, where it is written: the chosen option, the date, and where it was incorporated. The discarded options stay — they serve whoever one day asks why it was not done otherwise.
 - if an answer is a free directive, it prevails over the options: apply it;
-- if the user declares an assumption "true, trust me" → do not touch the document; carry it into memory **only through the flow the memory contract authorises** — `.daiku/domain/memory-contract.md`, or `{hosts.<host>.instructions_file}` if that file does not exist — which is also what gives it the right form and the line in `{memory.index}`; in the summary declare the assumption as a point not to raise again;
+- if the user declares an assumption "true, trust me" → do not reopen it: save it in the files of the problem folder, absorbed into `0. problem.md` or `1. decision-doc.md`, and never written into the memory corpus — the corpus is written by the host and by `/update-memory`, and by no other skill, decision-doc among them. In the summary declare the assumption as a point not to raise again;
 - close with a summary by number: decision → what you wrote and where, plus the list of what possibly remains open.
 
 If after incorporation the problem is now well defined (no strategic decision remains open), move directly to **in-depth study mode** in the same run.
@@ -313,8 +316,9 @@ A lapsed decision is not deleted: it stays with the line **Lapsed: \<why\>**, so
      each with where it was verified (file:line, the note and its section,
      or the command whose output showed it)
    - Precedents: the decisions already closed that touch this problem, and
-     for each whether it stands — one that says the opposite is answered
-     by a decision card above, never by a sentence here
+     for each how it stands — one that says the opposite is answered by a
+     decision card above, one an earlier stage of this chain already closed
+     by the decision that closed it, named with where it is written
    - For each decision: candidate options, technical motivations,
      detailed pros/cons, costs, risks, comparison on criteria, motivated choice
    - Declared assumptions and missing data

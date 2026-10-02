@@ -569,6 +569,7 @@ function actFindings(input, root) {
     const verdict = ask({ question: 'block', name: 'finder', block }, root);
     state.keys[key] = {
       discipline: match[1], attempts, valid: verdict.verdict === 'valid', blockers: verdict.blockers,
+      returned: !!block && typeof block === 'object' && !Array.isArray(block),
       findings: verdict.verdict === 'valid' ? block.findings : [],
     };
   }
@@ -597,7 +598,7 @@ function actFindings(input, root) {
     action: 'findings', ledger: slashed(path), verdict: relaunch.length ? 'relaunch' : 'ready',
     findings_file: slashed(file), count: findings.length, finding_ids: findings.map((finding) => finding.finding_id), relaunch, missing,
     detail: relaunch.length
-      ? `relaunch ${relaunch.join(', ')} once, with the identical prompt: ${keys.filter(([k]) => relaunch.includes(k)).map(([k, e]) => `${k}: ${e.blockers.join('; ')}`).join(' | ')}`
+      ? `relaunch ${relaunch.join(', ')} once: ${keys.filter(([k]) => relaunch.includes(k)).map(([k, e]) => (e.returned ? `${k} with what the validation said: ${e.blockers.join('; ')}` : `${k} with the identical prompt — it did not come back`)).join(' | ')}`
       : `${findings.length} findings numbered in ${slashed(file)}${missing.length ? `; missed disciplines: ${missing.join(', ')}` : ''}.`,
   });
 }
@@ -696,9 +697,12 @@ function actRound(input, root) {
       state.applier_attempts = (state.applier_attempts || 0) + 1;
       writeJson(file, state);
       if (state.applier_attempts < 2) {
+        const returned = !!input.applier && typeof input.applier === 'object' && !Array.isArray(input.applier);
         return answer({
           action: 'round', ledger: slashed(path), verdict: 'retry', blockers: verdict.blockers,
-          detail: `the applier block is not valid — ${verdict.blockers.join('; ')}. Relaunch the applier once, with the identical prompt.`,
+          detail: returned
+            ? `the applier block is not valid — ${verdict.blockers.join('; ')}. It came back, and this is what it came back wrong with: relaunch the applier once with these, not with the identical prompt.`
+            : `the applier did not come back. Relaunch the applier once with the identical prompt.`,
         });
       }
       failed = true;

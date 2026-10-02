@@ -17,7 +17,7 @@
   "paths": {
     "studies": "<folder of the notes on a technology, one file per technology>",
     "features": "<folder holding the working folders, one per problem>",
-    "review_state": "<folder of the review ledger, inside the tree but outside version control>"
+    "review_state": "<folder of the run's state outside version control: the review ledger and the worktree pool's registry>"
   },
   "memory": {
     "root": "<root of the persistent memory corpus>",

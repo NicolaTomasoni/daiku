@@ -1,5 +1,14 @@
 # Changelog
 
+### 1.0.10 — 2026-10-02
+
+- The worktree pool recycles: a slot whose tree is clean and whose branch holds nothing the integration branch lacks is reset and reused, whatever its HEAD, so a full pool no longer stops every run; a slot holding an unmerged delivery is left alone.
+- `/code-review` becomes a full bug-only cycle on the scope you name — rounds, fixes and the gate, then the report; the commit stays yours.
+- `/new-feature --no-ask` produces the documents and stops, without ever executing.
+- Various fixes.
+
+---
+
 ### 1.0.9 — 2026-10-01
 
 - The project's seats move to new `paths` keys: `studies` holds the notes on a technology, `features` the working folders — `lib_notes` is gone.
