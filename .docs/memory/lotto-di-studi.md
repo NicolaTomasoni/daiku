@@ -1,17 +1,30 @@
 ---
 name: lotto-di-studi
-description: "studia-repository-lotto studia più repository in parallelo con una sessione headless per target, e applica lui le voci `allinea` — le uniche che una corsa propone e non scrive"
+description: "studia-repository-lotto studia più repository in parallelo con una sessione headless per target, applica lui le voci `allinea` — le uniche che una corsa propone e non scrive — e chiude con la sintesi: un appunto per feature che sceglie il migliore dei target e ne fa un prompt per `new-feature`"
 metadata:
   node_type: memory
   type: project
-  modified: 2026-09-29
+  modified: 2026-10-02
 ---
 
 Dal 29 settembre 2026 il cantiere ha un comando in più, **`studia-repository-lotto`**, che studia
 più repository di terzi in un colpo solo. La macchina è `.docs/tools/studia-repository/lotto.mjs`,
-con tre verbi: `prepara` (piano, non scrive), `lancia` (le corse, in parallelo), `applica` (il gate
-di ognuna, la raccolta, la scrittura). Il contratto è `.claude/commands/studia-repository-lotto.md`
-e la riga di `.claude/orchestration.md` §5.
+con quattro verbi: `prepara` (piano, non scrive), `lancia` (le corse, in parallelo), `applica` (il
+gate di ognuna, la raccolta, la scrittura), `sintesi` (il confronto fra i contributi, e la verifica
+dell'appunto che ne esce). Il contratto è `.claude/commands/studia-repository-lotto.md` e la riga di
+`.claude/orchestration.md` §5.
+
+**La sintesi è quello che rende il lotto una proposta, non un mucchio di censimenti.** Le corse
+depositano i contributi in `.daiku/features/<feature>/`, uno per corsa e mai riscritti; la sintesi è
+il documento che li legge tutti insieme e ne trae **una sola** proposta — quale approccio vince fra i
+target studiati, e cosa si prende da chi. Vive in `.daiku/studies/<feature>.md`, la sede degli
+appunti — un file per soggetto, la stessa che `daiku:research` usa per una tecnologia — e **non** nel
+catalogo: lì una corsa scrive solo il proprio file, ed è il gate a imporlo. La scrive chi chiude il
+lotto, **non un subagent**: è un giudizio sul metodo, e un subagent riceverebbe i contributi senza il
+resto. Finisce con un blocco recintato che è il **prompt per `/daiku:new-feature`**, e che nomina la
+cartella della feature perché quella corsa lavori dentro i contributi invece di aprirne una nuova.
+`sintesi` stampa il materiale e lo scheletro; `sintesi --verifica` controlla campi, sezioni,
+segnaposto e prompt — è l'unica difesa contro una sintesi copiata e mai riempita.
 
 **Una sessione headless per target, non un subagent.** `lancia` esegue `claude -p
 "/studia-repository <target> …" --permission-mode bypassPermissions` con `spawn`, fino a
@@ -63,6 +76,7 @@ di rilassare il gate della corsa proprio sulla scrittura nel prodotto.
   «l'attrezzo non installa»: un `.mjs` nuovo lì entra nel conteggio da solo.
 
 Vedi anche [[catalogo-di-feature]] per l'altra metà del lavoro — i contributi che una corsa depone
-in `.daiku/features/` — [[guardie-di-macchina]] per il recinto che impone la sessione headless,
-[[corpus-di-sviluppo]] per il comando in più nel cantiere, e [[guardrail-nascono-spenti]] per le
-guardie del pacchetto, che sono un'altra cosa.
+in `.daiku/features/`, la materia prima della sintesi — [[fanout-ricerca]] per il fan-out che invece
+di studiare repository popola la sede degli appunti, [[guardie-di-macchina]] per il recinto che
+impone la sessione headless, [[corpus-di-sviluppo]] per il comando in più nel cantiere, e
+[[guardrail-nascono-spenti]] per le guardie del pacchetto, che sono un'altra cosa.

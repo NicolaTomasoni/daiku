@@ -9,6 +9,7 @@
  *   node .docs/tools/studia-repository/lotto.mjs prepara --lista <file> [<target> …] [flag]
  *   node .docs/tools/studia-repository/lotto.mjs lancia  --lista <file> [<target> …] [flag]
  *   node .docs/tools/studia-repository/lotto.mjs applica  [--lotto <id>] [--dry-run]
+ *   node .docs/tools/studia-repository/lotto.mjs sintesi  [--lotto <id>] [--feature <slug>] [--verifica]
  *   node .docs/tools/studia-repository/lotto.mjs --self-check
  *
  * `prepara` non scrive niente: valida l'elenco, controlla la radice del pacchetto, guarda se `gh`
@@ -18,7 +19,12 @@
  * finiscano tutte. `applica` chiude il lotto: passa il gate di ogni corsa nata dal lotto, raccoglie
  * le voci `allinea` dalle corse, applica quelle che si sostituiscono senza toccarsi, riporta le
  * altre all'owner ed **elenca il catalogo** — quali feature hanno ricevuto un contributo, da quali
- * corse. Non committa mai niente: quello resta dell'owner.
+ * corse. Non committa mai niente: quello resta dell'owner. `sintesi` riapre il lotto chiuso e
+ * prepara il confronto: per ogni feature che ha ricevuto un contributo stampa i contributi delle
+ * corse del lotto, gli altri file già nella cartella e la forma esatta della sintesi da scrivere in
+ * `.daiku/studies/<feature>.md` — la sede degli appunti, una per feature. Con `--verifica` controlla
+ * invece la sintesi già scritta: campi, sezioni, e che il blocco finale sia un prompt per
+ * `/daiku:new-feature` che nomina la cartella della feature.
  *
  * **Perché una sessione headless e non un subagent.** `/studia-repository` è un contratto che
  * ri-delega: lanciarlo *dentro* una sessione la farebbe crescere di una corsa intera per ogni
@@ -55,6 +61,12 @@ const CORSE = join(DEV, '.docs', 'studia-repository'); // la radice di tutte le 
 const LOTTI = join(tmpdir(), 'daiku-lotto'); // lo stato dei lotti, fuori dal repository
 const CHECK_RUN = join(QUI, 'check-run.mjs');
 const RADICE_ARG = 'plugins/daiku';
+/** Le due sedi di una sintesi: il catalogo dove le corse depositano i contributi, e la sede degli
+ *  appunti — `.daiku/studies/`, un file per feature, quella che `daiku:research` usa per una
+ *  tecnologia. La sintesi di un lotto è un appunto della stessa specie: un documento per feature,
+ *  che ogni lotto riscrive. */
+const CATALOGO = join(DEV, '.daiku', 'features');
+const APPUNTI = join(DEV, '.daiku', 'studies');
 
 /** Il validatore di Codex, che vive nella home dell'utente: il path si compone, non si scrive con
  *  una variabile di shell — la riga passa da `cmd.exe`, che `$HOME` non lo espande. */
@@ -82,6 +94,7 @@ function uso() {
   muori(2, 'uso: lotto.mjs <prepara|lancia|applica> [--lista <file>] [<target> …] '
     + '[--parallelo N] [--budget <usd>] [--modello <m>] [--tempo <minuti>] '
     + '[--assi <lista>] [--versione <v>] [--focus <domanda, ultima opzione>] [--cwd <path>] [--deep|--shallow-only]\n'
+    + '     lotto.mjs sintesi [--lotto <id>] [--feature <slug>] [--verifica]\n'
     + '     lotto.mjs --self-check');
 }
 
@@ -164,6 +177,214 @@ function classifica(allineamenti, leggi) {
   return { applicabili, doppioni, conflitti, rifiutati };
 }
 
+// --- la sintesi: il confronto fra i contributi, e la forma che deve avere ------------------
+
+/** Le sezioni di una sintesi, nell'ordine in cui devono comparire. Le cinque di un contributo non
+ *  bastano: un contributo descrive **un** target, una sintesi **sceglie** — e le sue sezioni dicono
+ *  cosa portano i target, quale approccio vince, quale feature se ne propone e cosa resta all'owner. */
+const SEZIONI_SINTESI = [
+  'Cosa portano i target',
+  'Quale approccio vince, e perché',
+  'La feature proposta',
+  'Cosa resta aperto',
+  'Prompt per new-feature',
+];
+
+/** Gli esiti ammessi per una sintesi: le azioni del censimento, meno `allinea` — che ripara il
+ *  nostro corpus e non propone niente da costruire. */
+const ESITI_SINTESI = ['adotta', 'adatta', 'ispira', 'scarta', 'confirm_with_owner'];
+
+/** Il campo del prompt: il comando che l'owner incolla, e la cartella che deve nominare perché una
+ *  corsa di `new-feature` lavori dentro i contributi invece di aprirne una nuova. */
+const COMANDO_NEW_FEATURE = '/daiku:new-feature';
+
+/** Il titolo di un markdown: la prima riga che comincia per `# `. */
+function titolo(testo) {
+  for (const riga of String(testo || '').split(/\r?\n/)) {
+    const m = riga.match(/^#\s+(\S.*)$/);
+    if (m) return m[1].trim();
+  }
+  return '';
+}
+
+/** I titoli di sezione, in ordine: `## ` e non `### `. */
+function sezioniTitoli(testo) {
+  const fuori = [];
+  for (const riga of String(testo || '').split(/\r?\n/)) {
+    const m = riga.match(/^##\s+(\S.*)$/);
+    if (m) fuori.push(m[1].trim());
+  }
+  return fuori;
+}
+
+/** Il corpo di una sezione: quel che sta fra il suo titolo e il titolo successivo. `null` se la
+ *  sezione non c'è. */
+function corpoSezione(testo, titoloSezione) {
+  const righe = String(testo || '').split(/\r?\n/);
+  let dentro = false;
+  const corpo = [];
+  for (const riga of righe) {
+    const m = riga.match(/^##\s+(\S.*)$/);
+    if (m) {
+      if (dentro) break;
+      dentro = m[1].trim() === titoloSezione;
+      continue;
+    }
+    if (dentro) corpo.push(riga);
+  }
+  return dentro || corpo.length ? corpo.join('\n').trim() : null;
+}
+
+/** Il valore di un campo `- **Nome:** valore`, o `null`. */
+function campo(testo, nome) {
+  for (const riga of String(testo || '').split(/\r?\n/)) {
+    const m = riga.match(/^-\s+\*\*(.+?):\*\*\s*(.*)$/);
+    if (m && m[1].trim() === nome) return m[2].trim();
+  }
+  return null;
+}
+
+/** Il primo blocco recintato di un testo, senza i recinti: il prompt dentro la sua sezione. */
+function bloccoRecintato(testo) {
+  const righe = String(testo || '').split(/\r?\n/);
+  let dentro = null;
+  for (const riga of righe) {
+    if (dentro === null) {
+      if (/^\s*```/.test(riga)) dentro = [];
+      continue;
+    }
+    if (/^\s*```\s*$/.test(riga)) return dentro.join('\n').trim();
+    dentro.push(riga);
+  }
+  return null;
+}
+
+/** I segnaposto che la sintesi non deve lasciare in piedi: `<qualcosa>`. È la stessa regola con cui
+ *  `init` caccia i residui dei suoi scheletri — uno scheletro copiato e non riempito si legge come
+ *  una sintesi, e nessuno se ne accorge. */
+function segnaposto(testo) {
+  return (String(testo || '').match(/<[^>\n]*>/g) || []);
+}
+
+/**
+ * I rossi di una sintesi, `[]` se è a posto. Pura: prende il testo e quello che deve dire.
+ *
+ * `atteso` porta `{feature, lotto, corse}` — il nome della cartella, l'id del lotto che l'ha scritta
+ * e le corse che le hanno dato un contributo. Il confronto coi tre campi è ciò che tiene la sintesi
+ * agganciata alla sua feature: una sintesi che non nomina le corse da cui viene è un documento
+ * orfano, e nessuno può risalire ai contributi che ha confrontato.
+ */
+function verificaSintesi(testo, atteso) {
+  const fuori = [];
+  if (testo === null || testo === undefined) return ['la sintesi non esiste'];
+  const dove = (motivo) => `${atteso.feature}: ${motivo}`;
+
+  if (!titolo(testo)) fuori.push(dove('manca il titolo `# …`'));
+  const resti = segnaposto(testo);
+  if (resti.length) fuori.push(dove(`segnaposto non riempiti: ${resti.slice(0, 3).join(' ')}`));
+
+  const feature = campo(testo, 'Feature');
+  const lotto = campo(testo, 'Lotto');
+  const corse = campo(testo, 'Corse');
+  const esito = campo(testo, 'Esito');
+  if (feature !== atteso.feature) fuori.push(dove(`Feature = ${JSON.stringify(feature)}, atteso ${JSON.stringify(atteso.feature)}`));
+  if (lotto !== atteso.lotto) fuori.push(dove(`Lotto = ${JSON.stringify(lotto)}, atteso ${JSON.stringify(atteso.lotto)}`));
+  if (!corse) fuori.push(dove('Corse vuoto'));
+  else {
+    const mancanti = atteso.corse.filter((c) => !corse.includes(c));
+    if (mancanti.length) fuori.push(dove(`Corse non nomina ${mancanti.join(', ')}`));
+  }
+  if (!ESITI_SINTESI.includes(esito)) fuori.push(dove(`Esito = ${JSON.stringify(esito)}, atteso uno di ${ESITI_SINTESI.join(', ')}`));
+
+  const trovate = sezioniTitoli(testo);
+  if (JSON.stringify(trovate) !== JSON.stringify(SEZIONI_SINTESI)) {
+    fuori.push(dove(`sezioni = ${JSON.stringify(trovate)}, attese ${JSON.stringify(SEZIONI_SINTESI)}`));
+  }
+
+  for (const sezione of SEZIONI_SINTESI) {
+    if (!corpoSezione(testo, sezione)) fuori.push(dove(`la sezione "${sezione}" è vuota`));
+  }
+
+  // Il prompt si pretende solo da una sintesi che propone qualcosa: un `scarta` non ha niente da
+  // far costruire, e la sua ultima sezione dice perché.
+  if (esito !== 'scarta') {
+    const prompt = bloccoRecintato(corpoSezione(testo, 'Prompt per new-feature') || '');
+    if (!prompt) fuori.push(dove('il prompt non è in un blocco recintato'));
+    else {
+      if (!prompt.startsWith(COMANDO_NEW_FEATURE)) fuori.push(dove(`il prompt non comincia per ${COMANDO_NEW_FEATURE}`));
+      const cartella = `.daiku/features/${atteso.feature}/`;
+      if (!prompt.includes(cartella)) fuori.push(dove(`il prompt non nomina ${cartella}`));
+    }
+  }
+  return fuori;
+}
+
+/** Lo scheletro della sintesi, con i tre campi già compilati: è quello che `sintesi` stampa e che
+ *  chi chiude il lotto riempie. I segnaposto sono voluti — `verificaSintesi` li rifiuta finché
+ *  restano. */
+function scheletroSintesi(feature, lotto, corse) {
+  return [
+    '# <titolo della feature> — sintesi',
+    '',
+    `- **Feature:** ${feature}`,
+    `- **Lotto:** ${lotto}`,
+    `- **Corse:** ${corse.join(', ')}`,
+    `- **Esito:** ${ESITI_SINTESI.join(' | ')}`,
+    '',
+    '## Cosa portano i target',
+    '',
+    '<una voce per repo: `owner/repo` — il suo approccio in due righe>',
+    '',
+    '## Quale approccio vince, e perché',
+    '',
+    "<il confronto: chi fa meglio cosa, con quale criterio, e cosa si prende da chi — o \"nessuno vince\" col perché>",
+    '',
+    '## La feature proposta',
+    '',
+    '<una sola: cosa fa, dove atterra in Daiku, cosa tocca, a che costo>',
+    '',
+    '## Cosa resta aperto',
+    '',
+    '<le decisioni che toccano all owner — "Nessuna" è una risposta>',
+    '',
+    '## Prompt per new-feature',
+    '',
+    '```text',
+    `${COMANDO_NEW_FEATURE} <descrizione in una riga, col problema per primo>`,
+    '',
+    `Lavora in .daiku/features/${feature}/: la cartella esiste già e contiene i contributi dello studio. Prosegui dentro quella.`,
+    '```',
+    '',
+  ].join('\n');
+}
+
+/**
+ * Il materiale di una sintesi: per ogni feature toccata dalle corse del lotto, i contributi che
+ * quelle corse hanno depositato e gli altri file già nella cartella — contributi di lotti
+ * precedenti, o una sintesi scritta prima. Pura: `leggi(path)` torna il testo o `null`,
+ * `elenca(cartella)` i nomi dei file o `[]`.
+ *
+ * Gli altri file si nominano e non si stampano: sono fuori dal lotto, e leggerli per intero
+ * gonfierebbe l'uscita di roba che il confronto non ha chiesto. Chi chiude il lotto li apre se la
+ * sua feature li tocca.
+ */
+function materialeDelleFeature(contributi, { leggi, elenca }) {
+  const perFeature = new Map();
+  for (const { corsa, feature } of contributi) {
+    if (!perFeature.has(feature)) perFeature.set(feature, { feature, delLotto: [], altre: [] });
+    const path = `.daiku/features/${feature}/${corsa}.md`;
+    perFeature.get(feature).delLotto.push({ corsa, path, testo: leggi(path) });
+  }
+  for (const voce of perFeature.values()) {
+    for (const nome of elenca(`.daiku/features/${voce.feature}`)) {
+      const path = `.daiku/features/${voce.feature}/${nome}`;
+      if (voce.delLotto.some((c) => c.path === path)) continue;
+      voce.altre.push({ path, titolo: titolo(leggi(path) || '') });
+    }
+  }
+  return [...perFeature.values()].sort((a, b) => a.feature.localeCompare(b.feature));
+}
+
 /** La riga di comando di una corsa, come la stampa `prepara` e come la esegue `lancia`. */
 function rigaComando(target, flag, opzioni) {
   const argomenti = [target, ...flagInRiga(flag)];
@@ -216,6 +437,18 @@ function verificaRadice() {
   if (json.name !== 'daiku') muori(1, `${file} non porta "name": "daiku"`);
 }
 
+/** I nomi dei file di una cartella, in ordine; `[]` se non c'è. */
+function elencaFile(cartella) {
+  try {
+    return readdirSync(cartella, { withFileTypes: true })
+      .filter((e) => e.isFile())
+      .map((e) => e.name)
+      .sort();
+  } catch {
+    return [];
+  }
+}
+
 /** Le cartelle di corsa presenti adesso sotto la radice delle corse, in ordine. */
 function cartelleCorse() {
   try {
@@ -236,7 +469,7 @@ function ghRisponde() {
 
 // --- gli argomenti ----------------------------------------------------------------------
 
-const VERBI = ['prepara', 'lancia', 'applica'];
+const VERBI = ['prepara', 'lancia', 'applica', 'sintesi'];
 
 /** `{verbo, lista, target, flag, opzioni}` dagli argomenti; `muori(2)` su qualunque forma ignota. */
 function argomentiDaRiga(argv) {
@@ -259,6 +492,8 @@ function argomentiDaRiga(argv) {
     else if (a === '--modello') opzioni.modello = valore(i), i += 1;
     else if (a === '--tempo') opzioni.tempo = valore(i), i += 1;
     else if (a === '--lotto') opzioni.lotto = valore(i), i += 1;
+    else if (a === '--feature') opzioni.feature = valore(i), i += 1;
+    else if (a === '--verifica') opzioni.verifica = true;
     else if (a === '--assi') flag.assi = valore(i), i += 1;
     else if (a === '--versione') flag.versione = valore(i), i += 1;
     else if (a === '--focus') flag.focus = valore(i), i += 1;
@@ -424,10 +659,10 @@ function cartelleDelLotto(stato) {
   return [...fuori].sort();
 }
 
-/** Le feature che le corse del lotto hanno toccato: `run.json.contributi`, una voce per corsa. I
- *  contributi li scrivono le corse, ognuna col proprio nome — il lotto li elenca, non li fonde. */
-function catalogoDelleCorse(corse) {
-  const catalogo = {};
+/** I contributi delle corse del lotto: `run.json.contributi`, una voce per corsa, nella forma
+ *  `{corsa, feature}`. Li scrivono le corse, ognuna col proprio nome. */
+function contributiDelleCorse(corse) {
+  const fuori = [];
   for (const nome of corse) {
     const testo = leggiFile(join(CORSE, nome, 'run.json'));
     if (testo === null) continue;
@@ -439,8 +674,18 @@ function catalogoDelleCorse(corse) {
     }
     for (const voce of (Array.isArray(json.contributi) ? json.contributi : [])) {
       if (!voce || typeof voce.feature !== 'string') continue;
-      catalogo[voce.feature] = [...(catalogo[voce.feature] || []), nome];
+      fuori.push({ corsa: nome, feature: voce.feature });
     }
+  }
+  return fuori;
+}
+
+/** Le feature che le corse del lotto hanno toccato, con le corse che hanno contribuito a ciascuna.
+ *  Il lotto le elenca, non le fonde. */
+function catalogoDelleCorse(corse) {
+  const catalogo = {};
+  for (const { corsa, feature } of contributiDelleCorse(corse)) {
+    catalogo[feature] = [...(catalogo[feature] || []), corsa];
   }
   return catalogo;
 }
@@ -564,6 +809,75 @@ function applica() {
   process.exit(rosse.length ? 1 : 0);
 }
 
+// --- sintesi ------------------------------------------------------------------------------
+
+/** Il materiale del lotto, letto dal disco: i contributi delle sue corse e gli altri file del
+ *  catalogo. Il verso lo decide `--feature`; senza, tutte le feature che il lotto ha toccato. */
+function materialeDelLotto(stato, voluta) {
+  const corse = cartelleDelLotto(stato);
+  const tutte = materialeDelleFeature(contributiDelleCorse(corse), {
+    leggi: (p) => leggiFile(join(DEV, p)),
+    elenca: (d) => elencaFile(join(DEV, d)),
+  });
+  return { corse, tutte, materiale: voluta ? tutte.filter((m) => m.feature === voluta) : tutte };
+}
+
+/** La verifica di una sintesi già scritta: i rossi di `verificaSintesi`, uno per feature. */
+function verificaMateriale(stato, materiale) {
+  const esiti = materiale.map((voce) => {
+    const path = `.daiku/studies/${voce.feature}.md`;
+    const failed = verificaSintesi(leggiFile(join(DEV, path)), {
+      feature: voce.feature,
+      lotto: stato.id,
+      corse: voce.delLotto.map((c) => c.corsa),
+    });
+    return { feature: voce.feature, path, failed };
+  });
+  for (const e of esiti) {
+    process.stdout.write(`  ${e.failed.length ? 'KO  ' : 'ok  '} ${e.feature} — ${e.path}\n`);
+    for (const f of e.failed) process.stdout.write(`      ${f}\n`);
+  }
+  const rossi = esiti.filter((e) => e.failed.length);
+  process.stdout.write(`${JSON.stringify({ lotto: stato.id, verificate: esiti.length, rosse: rossi.map((e) => e.feature) })}\n`);
+  process.exit(rossi.length ? 1 : 0);
+}
+
+function sintesi() {
+  const parsed = argomentiDaRiga(process.argv.slice(2));
+  verificaRadice();
+  const stato = statoDelLotto(parsed.opzioni.lotto);
+  const { corse, tutte, materiale } = materialeDelLotto(stato, parsed.opzioni.feature);
+  process.stdout.write(`lotto ${stato.id}: ${corse.length} corse, ${tutte.length} feature con un contributo\n`);
+
+  const voluta = parsed.opzioni.feature;
+  if (!materiale.length) {
+    const motivo = voluta
+      ? `${voluta} non ha ricevuto contributi in questo lotto`
+      : 'il lotto non ha depositato contributi: niente da sintetizzare';
+    process.stdout.write(`${motivo}\n`);
+    process.stdout.write(`${JSON.stringify({ lotto: stato.id, feature: [], failed: voluta ? [motivo] : [] })}\n`);
+    process.exit(voluta ? 1 : 0);
+  }
+
+  if (parsed.opzioni.verifica) verificaMateriale(stato, materiale);
+
+  for (const voce of materiale) {
+    process.stdout.write(`\n=== ${voce.feature} — .daiku/features/${voce.feature}/\n`);
+    for (const c of voce.delLotto) {
+      process.stdout.write(`--- contributo del lotto: ${c.path}${c.testo === null ? ' (ILLEGGIBILE)' : ''}\n\n`);
+      if (c.testo !== null) process.stdout.write(`${c.testo.trimEnd()}\n\n`);
+    }
+    if (voce.altre.length) {
+      process.stdout.write('altri file nella cartella (fuori dal lotto):\n');
+      for (const a of voce.altre) process.stdout.write(`  ${a.path} — ${a.titolo || '(senza titolo)'}\n`);
+    }
+    process.stdout.write(`\nsintesi da scrivere: .daiku/studies/${voce.feature}.md\n\n`);
+    process.stdout.write(`${scheletroSintesi(voce.feature, stato.id, voce.delLotto.map((c) => c.corsa))}`);
+  }
+  process.stdout.write(`\n${JSON.stringify({ lotto: stato.id, feature: materiale.map((m) => m.feature), contributi: materiale.reduce((n, m) => n + m.delLotto.length, 0) })}\n`);
+  process.exit(0);
+}
+
 // --- il banco delle funzioni pure --------------------------------------------------------
 
 function selfCheck() {
@@ -635,6 +949,88 @@ function selfCheck() {
   ok('riga: --shallow-only in fondo', rigaComando('x', { shallowOnly: true }, {}).includes('--shallow-only'));
   ok('riga: modello e budget solo se chiesti', !rigaComando('x', {}, {}).includes('--model') && rigaComando('x', {}, { modello: 'opus', budget: '5' }).includes('--max-budget-usd 5'));
 
+  // La sintesi: la forma che deve avere il documento che chiude un lotto, e il materiale che gli si
+  // mette davanti. Una sintesi non è un contributo — sceglie — e le sue regole sono queste.
+  const buona = [
+    '# Gestione del contesto — sintesi', '',
+    '- **Feature:** gestione-contesto',
+    '- **Lotto:** 20261002120000',
+    '- **Corse:** owner--uno, owner--due',
+    '- **Esito:** adatta', '',
+    '## Cosa portano i target', '', 'uno fa così, due fa cosà', '',
+    '## Quale approccio vince, e perché', '', 'vince due, che compatta presto', '',
+    '## La feature proposta', '', 'una skill nuova', '',
+    '## Cosa resta aperto', '', 'Nessuna', '',
+    '## Prompt per new-feature', '',
+    '```text',
+    '/daiku:new-feature tieni il contesto magro',
+    '',
+    'Lavora in .daiku/features/gestione-contesto/: la cartella esiste già.',
+    '```', '',
+  ].join('\n');
+  const atteso = { feature: 'gestione-contesto', lotto: '20261002120000', corse: ['owner--uno', 'owner--due'] };
+  const fuoriOrdine = buona
+    .replace('## La feature proposta', '## __scambio__')
+    .replace('## Cosa resta aperto', '## La feature proposta')
+    .replace('## __scambio__', '## Cosa resta aperto');
+
+  ok('sintesi: buona passa', uguale(verificaSintesi(buona, atteso), []));
+  ok('sintesi: assente è rossa', verificaSintesi(null, atteso).length === 1);
+  ok('sintesi: segnaposto residuo', verificaSintesi(buona.replace('una skill nuova', 'una <skill nuova>'), atteso).some((f) => f.includes('segnaposto')));
+  ok('sintesi: feature sbagliata', verificaSintesi(buona, { ...atteso, feature: 'memoria' }).some((f) => f.includes('Feature')));
+  ok('sintesi: lotto sbagliato', verificaSintesi(buona, { ...atteso, lotto: 'altro' }).some((f) => f.includes('Lotto')));
+  ok('sintesi: una corsa non nominata', verificaSintesi(buona, { ...atteso, corse: ['owner--uno', 'owner--tre'] }).some((f) => f.includes('non nomina')));
+  ok('sintesi: esito ignoto', verificaSintesi(buona.replace('**Esito:** adatta', '**Esito:** forse'), atteso).some((f) => f.includes('Esito')));
+  ok('sintesi: sezioni fuori ordine', verificaSintesi(fuoriOrdine, atteso).some((f) => f.includes('sezioni')));
+  ok('sintesi: sezione vuota', verificaSintesi(buona.replace('Nessuna\n\n## Prompt', '## Prompt'), atteso).some((f) => f.includes('"Cosa resta aperto"')));
+  ok('sintesi: prompt senza il comando', verificaSintesi(buona.replace('/daiku:new-feature', 'new-feature'), atteso).some((f) => f.includes('non comincia')));
+  ok('sintesi: prompt senza la cartella', verificaSintesi(buona.replace('.daiku/features/gestione-contesto/', 'la sua cartella'), atteso).some((f) => f.includes('non nomina')));
+  ok('sintesi: prompt senza recinto', verificaSintesi(buona.replace('```text\n', '').replace(/```\s*$/, ''), atteso).some((f) => f.includes('recintato')));
+
+  // Un `scarta` non ha niente da far costruire: la sua ultima sezione è la ragione, non un prompt.
+  const scartata = buona
+    .replace('**Esito:** adatta', '**Esito:** scarta')
+    .replace(/\n```text[\s\S]*?```\n/, '\nNiente da costruire: nessuno dei tre batte quello che Daiku ha già.\n');
+  ok('sintesi: un `scarta` senza prompt passa', uguale(verificaSintesi(scartata, atteso), []));
+  ok('sintesi: un esito che propone vuole il prompt', verificaSintesi(
+    buona.replace(/\n```text[\s\S]*?```\n/, '\nNiente da costruire.\n'), atteso
+  ).some((f) => f.includes('recintato')));
+
+  const estrattori = [
+    titolo(buona) === 'Gestione del contesto — sintesi',
+    sezioniTitoli(buona).length === 5,
+    corpoSezione(buona, 'Cosa portano i target') === 'uno fa così, due fa cosà',
+    corpoSezione(buona, 'Non esiste') === null,
+    campo(buona, 'Feature') === 'gestione-contesto',
+    campo(buona, 'Assente') === null,
+    bloccoRecintato(corpoSezione(buona, 'Prompt per new-feature') || '').includes('Lavora in'),
+    segnaposto('niente qui').length === 0,
+  ];
+  ok('sintesi: gli estrattori leggono il markdown', estrattori.every(Boolean));
+
+  // Il materiale: i contributi delle corse del lotto, e gli altri file della cartella che restano
+  // fuori — nominati, non stampati.
+  const catalogo = {
+    '.daiku/features/gestione-contesto/owner--uno.md': '# Uno — gestione\n\ntesto uno',
+    '.daiku/features/gestione-contesto/owner--due.md': '# Due — gestione\n\ntesto due',
+    '.daiku/features/gestione-contesto/owner--zero.md': '# Zero — gestione\n\ntesto zero',
+  };
+  const cartelle = { '.daiku/features/gestione-contesto': ['owner--uno.md', 'owner--due.md', 'owner--zero.md'] };
+  const mat = materialeDelleFeature(
+    [{ corsa: 'owner--uno', feature: 'gestione-contesto' }, { corsa: 'owner--due', feature: 'gestione-contesto' }],
+    { leggi: (p) => catalogo[p] ?? null, elenca: (d) => cartelle[d] ?? [] }
+  );
+  ok('materiale: una voce per feature', uguale(mat.map((m) => m.feature), ['gestione-contesto']));
+  ok('materiale: i contributi del lotto col loro testo', uguale(mat[0].delLotto.map((c) => c.corsa), ['owner--uno', 'owner--due']) && mat[0].delLotto[0].testo.includes('testo uno'));
+  ok('materiale: gli altri file restano fuori', uguale(mat[0].altre.map((a) => a.path), ['.daiku/features/gestione-contesto/owner--zero.md']) && mat[0].altre[0].titolo === 'Zero — gestione');
+  ok('materiale: le feature si ordinano', uguale(
+    materialeDelleFeature([{ corsa: 'b', feature: 'zeta' }, { corsa: 'a', feature: 'alfa' }], { leggi: () => '# t', elenca: () => [] }).map((m) => m.feature),
+    ['alfa', 'zeta']
+  ));
+  ok('materiale: un contributo illeggibile non sparisce', materialeDelleFeature(
+    [{ corsa: 'x', feature: 'f' }], { leggi: () => null, elenca: () => [] }
+  )[0].delLotto[0].testo === null);
+
   const rossi = casi.filter(([, passed]) => !passed);
   for (const [nome] of rossi) process.stderr.write(`red: ${nome}\n`);
   process.stdout.write(JSON.stringify({ checks: casi.length, passed: casi.length - rossi.length, failed: rossi.map(([n]) => n) }) + '\n');
@@ -649,4 +1045,5 @@ if (!argv.length) uso();
 if (argv[0] === 'prepara') prepara();
 else if (argv[0] === 'lancia') await lancia();
 else if (argv[0] === 'applica') applica();
+else if (argv[0] === 'sintesi') sintesi();
 else uso();

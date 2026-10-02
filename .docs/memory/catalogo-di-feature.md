@@ -4,7 +4,7 @@ description: "il valore di uno studio non è il censimento per repo ma il catalo
 metadata:
   node_type: memory
   type: project
-  modified: 2026-09-29
+  modified: 2026-10-02
 ---
 
 Dal 29 settembre 2026 `studia-repository` non produce solo un censimento per repo. Il censimento
@@ -58,4 +58,5 @@ stessa».
 - `lotto.mjs applica` **elenca** il catalogo del lotto, non lo fonde: i contributi li scrivono le
   corse, e il lotto li legge da `run.json.contributi`.
 
-Vedi [[lotto-di-studi]] per il lotto e le voci `allinea`, che nascono dallo stesso giro di lavoro.
+Vedi [[lotto-di-studi]] per il lotto, le voci `allinea` e la sintesi — l'appunto in
+`.daiku/studies/<feature>.md` che dal catalogo trae la proposta e il prompt per `new-feature`.

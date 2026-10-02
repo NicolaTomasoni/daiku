@@ -1,5 +1,5 @@
 ---
-description: "Studia più repository insieme: un elenco di nomi e link, una corsa di studia-repository per ciascuno in parallelo, e un solo passaggio che applica i miglioramenti gratuiti raccolti da tutte — dopo aver messo da parte i conflitti. Non decide niente da sé: quello che richiede una decisione va all'owner."
+description: "Studia più repository insieme: un elenco di nomi e link, una corsa di studia-repository per ciascuno in parallelo, e un solo passaggio che applica i miglioramenti gratuiti raccolti da tutte — dopo aver messo da parte i conflitti. Poi la sintesi: un appunto per feature in `.daiku/studies/` che fra i target studiati sceglie il migliore e ne fa un prompt pronto per `/daiku:new-feature`. Non decide niente da sé: quello che richiede una decisione va all'owner."
 argument-hint: '[--lista <file>] [<target> …] [--assi <lista>] [--versione <v>] [--focus <domanda>] [--cwd <path>] [--deep | --shallow-only] [--parallelo N] [--budget <usd>] [--modello <m>] [--tempo <minuti>]'
 ---
 
@@ -76,8 +76,16 @@ corsa debba avere opzioni diverse dalle altre si fa in due lotti.
    sostituzione), le **rifiutate** col motivo, i **conflitti**, i file scritti e l'esito delle
    quattro verifiche. I conflitti e le rifiutate sono la tua parte.
 
-5. **Porta all'owner** i conflitti e le voci che richiedono una decisione — vedi §4 — e non
-   committare niente. Il commit resta dell'owner.
+5. **Sintesi.** Il confronto che vale non è per repo: le corse hanno depositato i contributi in
+   `.daiku/features/<feature>/`, e questo è il passo che li legge tutti insieme e ne trae **una
+   sola** proposta — vedi §6.
+
+   ```bash
+   node .docs/tools/studia-repository/lotto.mjs sintesi [--feature <slug>]
+   ```
+
+6. **Porta all'owner** i conflitti, le voci che richiedono una decisione — vedi §4 — e quello che la
+   sintesi lascia aperto, e non committare niente. Il commit resta dell'owner.
 
 ## 3. Chi applica, e perché non lo fa la corsa
 
@@ -123,7 +131,56 @@ Ti fermi **solo** qui:
 
 In tutti gli altri casi **non ti fermi**: lanci, leggi, riporti.
 
-## 6. Esito in chat
+## 6. La sintesi
+
+Il censimento vale per un repo; la cosa che vale per tutti è un'altra, ed è il confronto **fra repo
+che portano la stessa cosa**: tre progetti hanno risolto lo stesso problema in tre modi, e qualcuno
+deve leggere i tre e dire quale vince, e cosa si prende da chi. È la sintesi, ed è **una per
+feature** — non una per repo.
+
+**Dove vive.** In `.daiku/studies/<feature>.md`, la sede degli appunti — quella che il contratto del
+prodotto descrive come «un file per tecnologia». La sintesi è la stessa specie di documento: un
+appunto per soggetto, vivo, che ogni lotto riscrive. **Non** nel catalogo delle feature: lì stanno i
+contributi, uno per corsa e mai riscritti, ed è il gate `check-run.mjs` a imporlo.
+
+**La forma è fissa**, e la stampa `sintesi`: quattro campi — `Feature` uguale alla cartella, `Lotto`
+l'id di questo lotto, `Corse` le corse del lotto che hanno contribuito, `Esito` una delle azioni del
+censimento meno `allinea` — e cinque sezioni in quest'ordine: *Cosa portano i target* (una voce per
+repo, il suo approccio in due righe), *Quale approccio vince, e perché* (il confronto, col criterio,
+e cosa si prende da chi), *La feature proposta* (una sola: cosa fa, dove atterra in Daiku, cosa
+tocca, a che costo), *Cosa resta aperto* (le decisioni dell'owner, o `Nessuna`), *Prompt per
+new-feature*.
+
+**Il prompt è la parte che si usa.** Comincia col comando, prosegue con la descrizione, e **nomina la
+cartella `.daiku/features/<feature>/`**: `new-feature` deriva lo slug dalla descrizione, e senza
+quella riga aprirebbe una cartella nuova accanto ai contributi invece di lavorare dentro. Con quella
+riga la corsa sa che la cartella esiste già, e non chiede conferma.
+
+**La scrivi tu, non un subagent.** È un giudizio sul metodo, non un riassunto: un subagent
+riceverebbe i contributi senza il resto — i tre principi, l'albero del prodotto, i divieti — e
+sceglierebbe male con la stessa sicurezza. Le corse hanno già lavorato; qui si sceglie fra loro.
+
+**La verifica è a macchina**, e si lancia dopo aver scritto: è l'unica difesa contro una sintesi
+copiata dallo scheletro e mai riempita.
+
+```bash
+node .docs/tools/studia-repository/lotto.mjs sintesi --verifica
+```
+
+Controlla i quattro campi, le cinque sezioni in ordine, i corpi non vuoti, l'assenza di segnaposto
+`<…>`, e che il prompt cominci col comando e nomini la cartella. Rossa: si corregge la sintesi e si
+rilancia, non si aggira. Un esito `scarta` non vuole il prompt — la sua ultima sezione dice perché
+non c'è niente da costruire — e resta come traccia che quella cosa è stata studiata e scartata.
+
+Un lotto che non ha depositato contributi non ha niente da sintetizzare: il comando lo dice, e il
+passo si salta. Non si inventa una sintesi per riempire il vuoto.
+
+La sintesi si scrive **dopo** `applica`, e da lì quel lotto è chiuso: rilanciare `applica` su di lui
+lo trova rosso, perché il gate confronta la fotografia di ogni corsa con l'albero di adesso, e la
+sintesi è una scrittura fuori dalla radice delle corse. Non è un guasto da riparare — è il lotto che
+ha finito, e un lotto nuovo rifà le sue corse.
+
+## 7. Esito in chat
 
 - **il lotto**: id, quante corse, quante uscite zero, in quanto tempo; le cartelle nuove sotto
   `.docs/studia-repository/`;
@@ -134,6 +191,8 @@ In tutti gli altri casi **non ti fermi**: lanci, leggi, riporti.
 - **il catalogo**: quali feature hanno ricevuto un contributo e da quali corse, con il path delle
   cartelle. I contributi li scrivono le corse, ognuna col proprio nome, quindi il lotto non li
   fonde: li elenca. È la parte del lotto che sopravvive alle sue corse;
+- **la sintesi**: la feature, l'esito, il file scritto in `.daiku/studies/`, l'esito di `--verifica`
+  e il prompt per `/daiku:new-feature` — o il motivo, se l'esito è `scarta`;
 - per ogni corsa, il suo verdetto complessivo e le voci per azione, gli ID `RI-*` mantenuti —
   l'esito di `studia-repository.md` § *Esito in chat*, in una riga per corsa invece che per intero;
 - le `limitations` che una corsa dichiara, se ce ne sono.

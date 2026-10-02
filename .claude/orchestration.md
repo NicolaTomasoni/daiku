@@ -204,7 +204,7 @@ contenuto vive nel file del nodo, che resta l'unico posto in cui si modifica.
 | `collauda-init` | owner | niente: la prova e il suo verdetto sono di un banco, non tuoi | § *Esito* del suo file | no |
 | `rilascia-daiku` | owner | le opzioni del rilascio | § *Esito* del suo file | sì — `daiku:code-review` e `daiku:commit`, skill del prodotto |
 | `studia-repository` | owner, `studia-repository-lotto` | target (repo, pacchetto o path locale), `--assi`, `--versione`, `--focus`, `--cwd`, `--deep`, `--shallow-only` facoltativi | i documenti in `.docs/studia-repository/<slug>/` e § *Esito in chat* del suo file | sì — leggera, triage, acquisizione, grafo, lettori, verificatori, confronto, giudice, report; foglie |
-| `studia-repository-lotto` | owner | elenco dei target (file o riga di comando), le opzioni comuni a tutte le corse, `--parallelo`, `--budget`, `--modello` | le corse sotto `.docs/studia-repository/`, ciascuna con l'esito di `studia-repository`, e § *Esito in chat* del suo file | sì — lancia N corse di `studia-repository` come **sessioni headless**, non come subagent (§4) |
+| `studia-repository-lotto` | owner | elenco dei target (file o riga di comando), le opzioni comuni a tutte le corse, `--parallelo`, `--budget`, `--modello` | le corse sotto `.docs/studia-repository/`, ciascuna con l'esito di `studia-repository`, § *Esito in chat* del suo file, e la sintesi in `.daiku/studies/<feature>.md` | sì — lancia N corse di `studia-repository` come **sessioni headless**, non come subagent (§4) |
 | `translate-skill` | owner | il path del file di Daiku da tradurre | il file riscritto in inglese | no |
 
 **Un arco nuovo si dichiara qui.** Collegare un nodo a un chiamante che non lo aveva significa

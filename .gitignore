@@ -25,3 +25,8 @@
 # Daiku
 .daiku/environment.local.json
 .docs/runtime/review
+
+# Il pool dei worktree di consegna, quello che `.daiku/project.json` dichiara: sono copie di
+# lavoro effimere del repository stesso, e nessun git deve portarle con sé. Il loro registro sta
+# sotto `.docs/runtime/review`, già escluso qui sopra.
+.claude/worktrees/
