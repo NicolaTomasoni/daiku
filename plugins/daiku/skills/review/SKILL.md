@@ -38,6 +38,8 @@ Arguments: `$ARGUMENTS`. **The default is the normal case, and it requires no ar
 
 **Hard scope constraint:** review always and only covers files under `{code_root}`. No external file enters finders or fixes, even if modified, untracked or cited in the review notes. Everything not standing under `{code_root}` — documentation, memory, skill contracts — belongs to `update-memory`, which the commit contract delegates itself. The changelog does not: `skills/commit/SKILL.md` claims it in its own § *Version bump and changelog* and writes it directly, without passing through `update-memory`. This perimeter is drawn by this contract, and no hook enforces it; layer placement inside `{code_root}` stays with `arch`.
 
+**The architecture document, when the project declares one.** The `arch` finder resolves `documents.architecture` in `.daiku/project.json` and reads it: the diff is judged against the structure and the technical decisions the project already made, beside the invariants of the instructions file and the area rules. If that key or its file is missing, the finder proceeds without it, invents none, and the cycle declares it in closing (§6 of `contracts/project-contract.md`).
+
 ## Before starting
 
 Read §2, §4, §5 and §6 of `contracts/orchestration.md` — how a role resolves its model, how a step is delegated and its block validated, concurrency, what no skill may do — and not the rest: who calls whom is named in this file. Each phase declares its own role and you resolve the model with the rule of its §2 — never from here.
@@ -310,7 +312,7 @@ When it runs, delegate it to a **judge** subagent fully reading `skills/commit/S
 
 `independence` is `lost` **only** if the round-1 fan-out did not run on independent subagents: delegation was unavailable and you evaluated the disciplines inline, in the same context. A sequential fan-out on a backend imposing it stays `intact` — contexts are still fresh and blind to each other (§4 of `contracts/orchestration.md`, *Depth and degradation*). It is what distinguishes, downstream, a review from a single pass.
 
-3. **Memory and documentation are neither your task nor the user task.** The "only `{code_root}`" constraint stays: `{hosts.<host>.instructions_file}`, `.daiku/policies/`, `{memory.root}` and `{tech_doc}` belong to `update-memory`, which `/commit` **always** delegates. So **never close with a reminder to the user** like "remember to realign the technical document": what comes out of here with green gate is decided, and a decided work carries its own artefacts itself — a line turning it over to whoever reads only makes it likely not to happen.
+3. **Memory and documentation are neither your task nor the user task.** The "only `{code_root}`" constraint stays: `{hosts.<host>.instructions_file}`, `.daiku/policies/`, `{memory.root}` and the founding documents (`documents.*`) belong to `update-memory`, which `/commit` **always** delegates. So **never close with a reminder to the user** like "remember to realign the founding documents": what comes out of here with green gate is decided, and a decided work carries its own artefacts itself — a line turning it over to whoever reads only makes it likely not to happen.
 
    If in the cycle you saw a **behaviour change visible to the user** (new flow, action, default or semantics a human reader should now read differently), name it in the report as a **fact on the diff**: it serves whoever reads to understand what is being delivered. It is not a code finding and it **does not** enter `to_confirm`.
 

@@ -91,7 +91,9 @@ install while no guardrail is active.
 
 Three commands for everyday work, ordered by size: `/research` procures
 knowledge, `/review` checks a diff, `/new-feature` goes from an idea to the commit by orchestrating
-everything else.
+everything else. Beside them, `/new-project` is launched once, on a project that has just run
+`/init`: it writes the five founding documents — `PRODUCT.md`, `BRAND.md`, `DOMAIN.md`, `STACK.md`
+and `ARCHITECTURE.md` — from the package skeletons, at the paths `.daiku/project.json` declares.
 
 ### `/research`
 

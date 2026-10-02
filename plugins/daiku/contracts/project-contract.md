@@ -64,7 +64,8 @@ of a file, the presence or absence of an area. Three prohibitions, in order of s
 | `code_root` | application code root, with trailing slash; it is also the Git pathspec delimiting every code perimeter |
 | `language.chat` | language of what is written for a person: chat replies, summaries, reports and the method's documents (§5.5) |
 | `language.commit` | language of what ends up in the repository's history: commit messages and changelog entries (§5.5) |
-| `tech_doc` | path of the technical document a human reader opens to learn what the system does and why; absent if the project has none |
+| `documents` | the group of the founding documents, one entry per role — the roles are `product`, `brand`, `domain`, `stack`, `architecture`, fixed by the method |
+| `documents.<role>` | path, relative to the technical root, of the founding document answering that role; absent if the project declares none |
 | `changelog` | path of the released-versions log |
 | `version.file` | file carrying the application's canonical version |
 | `version.field` | exact spot in the file where that version lives |

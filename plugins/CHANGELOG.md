@@ -1,5 +1,11 @@
 # Changelog
 
+### Unreleased
+
+- `/new-project` writes a project's five founding documents — `PRODUCT`, `BRAND`, `DOMAIN`, `STACK` and `ARCHITECTURE` — from the package skeletons to the paths `.daiku/project.json` declares; re-runnable, it realigns them without overwriting the work done by hand.
+
+---
+
 ### 1.0.10 — 2026-10-02
 
 - The worktree pool recycles: a slot whose tree is clean and whose branch holds nothing the integration branch lacks is reset and reused, whatever its HEAD, so a full pool no longer stops every run; a slot holding an unmerged delivery is left alone.

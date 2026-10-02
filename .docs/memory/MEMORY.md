@@ -21,7 +21,7 @@ Indice delle memorie del progetto. Una riga per file, nessun contenuto qui dentr
 - [init aggancia la memoria dell'host](init-aggancia-la-memoria.md) — la sede del corpus la crea in ogni progetto, ma solo su Claude vi porta dentro la memoria dell'host; su Codex non si può
 - [I guardrail nascono spenti](guardrail-nascono-spenti.md) — un hook del pacchetto nega solo ciò che il progetto dichiara, e non esegue mai un file appena scritto
 - [Il confine del giro](confine-del-giro.md) — il turno dell'owner che chiede lavoro si delega, mai si esegue nella conversazione: la regola sta in new-feature §7 e un hook la ricorda con `agent_id`, senza negare niente
-- [I punti di ingresso del prodotto](punti-ingresso-prodotto.md) — i nove entry point in due gruppi, e tutto il resto che è contratto interno
+- [I punti di ingresso del prodotto](punti-ingresso-prodotto.md) — i dieci entry point in due gruppi, e tutto il resto che è contratto interno
 - [Il confine degli identificatori](confine-degli-identificatori.md) — cosa si può rinominare nel pacchetto e cosa no: non conta il tipo del nome, conta chi lo legge
 - [Il valutatore deterministico](valutatore-deterministico.md) — il prodotto ha un programma che possiede l'ordine della catena e risponde a dieci domande meccaniche, e accanto due strumenti che misurano il disco — la review e il pool dei worktree —: il verdetto vincola, e il banco è l'unica difesa
 - [Il pool dei worktree](pool-worktree.md) — `architect/pool.mjs` possiede il registro e la scelta dello slot: riusabile è l'albero pulito che non porta commit fuori dal ramo d'integrazione (`HEAD == HEAD(<INT>)` non c'è più), e il registro dice di chi è ogni slot occupato

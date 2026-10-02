@@ -113,7 +113,7 @@ The limit is only one, and it is where the boundary between reading and guessing
 Start from the skeleton, **empty it of every value not concerning this project** and refill it key by key with table §4 of `contracts/project-contract.md` under your eyes. Three rules, and they are the same holding all the rest of the method:
 
 - **A command is the exact line to run plus the cwd to run it from.** If in the repository that line is declared nowhere, the key **is not written**. A guessed gate is worse than an absent gate: absent skips a step and declares it, guessed fails a step and looks like a problem of the project.
-- **What is not declared does not exist.** A project without frontend has no empty frontend area: it has no key. Valid for `worktree`, for `coverage`, for `tech_doc`, for everything.
+- **What is not declared does not exist.** A project without frontend has no empty frontend area: it has no key. Valid for `worktree`, for `coverage`, for everything.
 - **`memory.root` and `memory.index` are the exception, and they are always written.** They are not the finding of something the repository already has: they are the seat you are assigning to a corpus the method will write anyway, because `update-memory` runs at **every** commit. If the repository already has a memory folder, it is that; if it does not, propose `memory/` at the technical root, with `MEMORY.md` inside. On Claude Code that folder also becomes where the host writes its own memory (*Step 7*), and then proposing it at the technical root is what the step presupposes.
 - **`contract` is copied from the skeleton**, you do not invent it and do not increment it.
 
@@ -122,6 +122,8 @@ For areas: the area name is your naming choice, its `paths` are not — they are
 The two **language** keys are the exception to the first rule, and only because you asked them: you write them with the answers of *Step 0*, verbatim. If you had no answer, you do not write them.
 
 The two `paths` keys of the method's own documents — the notes on a technology and the working folders — are **not a finding of yours**: §4 of `contracts/project-contract.md` assigns their seat under `.daiku/`, and you write them as they are — `paths.studies` is `.daiku/studies`, `paths.features` is `.daiku/features`. A folder of the project's carrying a similar name is **not** adopted for them: those documents are Daiku's corpus, and seated among the project's files they would be documentation the project never asked for. The skills create the folders at first use, and `project.json` is where the user sees them.
+
+**The five founding documents are assigned too, not hunted.** `documents.product`, `documents.brand`, `documents.domain`, `documents.stack` and `documents.architecture` are the paths `new-project` writes the five documents to, one per role, and you write them as they are — the file name at the technical root for each role: `PRODUCT.md`, `BRAND.md`, `DOMAIN.md`, `STACK.md`, `ARCHITECTURE.md`. The files need not exist yet: the seat is declared and `new-project` creates it, exactly as `paths.studies` and `paths.features` declare a folder the skills create at first use. A project that keeps a founding document somewhere else does not have it adopted here: the role names are fixed by the method and the paths are a value the project may change in its own `project.json`, never a folder of the repository's to recognise in its place.
 
 **`paths.review_state` is looked for on a different terrain.** It stands inside the tree but outside version control (§4 of `contracts/project-contract.md`), so *Step 2*'s reading — which takes what the repository versions — does not reach it: look too among the folders **present on disk but ignored by Git**, where a ledger a project already keeps would sit. Where no ignored folder resembles a ledger, propose one inside the tree, excluded from version control and **never under `.daiku/`** — that folder is versioned (§8 of `contracts/project-contract.md`). Its `.gitignore` line, where no line of the repository covers it yet, you write at *Step 8*.
 
@@ -134,9 +136,8 @@ declared it, and they are checked before the key is left out.
   already uses: a stable `xxx:` prefix is `{commit.memory_prefix}` declared, not guessed.
   What the history does not show stays undeclared.
 - **Documents and links for the human artefacts.** The README, the root documents and
-  `docs/` show what a reader opens: a technical document the README points at is
-  `{tech_doc}` confirmed; a released-versions log at the root is `{changelog}` confirmed.
-  A plausible file nobody points at is not confirmed.
+  `docs/` show what a reader opens: a released-versions log at the root is
+  `{changelog}` confirmed. A plausible file nobody points at is not confirmed.
 - **The project's own parameter files for the area commands and the worktree.** A project that
   already ran Daiku carries its own `project.json` and `environment.json` somewhere in its tree —
   `.claude/`, `.codex/`, a folder of its own — and they are the project's declaration, written by
@@ -210,7 +211,7 @@ convention, but a project that already ran Daiku has one, and its values are the
 Where you propose, keep the `<prefix><N>` naming with a small `{worktree.max}` — a proposed seat is
 seen in `project.json` and changeable, an omitted one is a delivery without isolation, silently.
 
-When a value is derivable but not certain — a plausible `tech_doc`, a `changelog` that could be the one — either you confirm it with what you read, or you leave it out.
+When a value is derivable but not certain — a `changelog` that could be the one — either you confirm it with what you read, or you leave it out.
 
 **Create the seat those two keys name.** `{memory.root}` and `{memory.index}` are not a seat the repository already has: they are the seat you are assigning, and creating it is your act. Make `{memory.root}` if it is missing, and inside it `{memory.index}` if it is missing — a title, a line declaring that it is the corpus index, and nothing else. Empty is fine; absent is not, because it is the first file whoever reads that corpus opens. This runs on **both hosts**: the corpus belongs to the method, and `update-memory` writes it at every commit whether or not a host points its own memory at it.
 
@@ -314,7 +315,7 @@ It is the file the host loads on every session — `CLAUDE.md` on Claude Code, `
 
 #### What goes in the placeholders
 
-The *Documentation map* lists the artefacts existing **in this project**, with the trade of each: one line per real artefact, and the line of one missing is removed instead of staying with an invented path inside. **The work-folder line is the exception, and it is not hunted**: it names `{paths.features}`, the seat *Step 3* assigned — the folder appears at the first work folder, and the line is where whoever reads the file has to look. The other artefacts you hunt through the README's links, the root documents and `docs/` — notes folders, queues, technical documents, changelogs — and give each its trade in one line.
+The *Documentation map* lists the artefacts existing **in this project**, with the trade of each: one line per real artefact, and the line of one missing is removed instead of staying with an invented path inside. **The work-folder line and the five founding-document lines are the exception, and they are not hunted**: they are **assigned** from the seats *Step 3* declared — `{paths.features}` for the working folders, and the paths of `documents.product`, `documents.brand`, `documents.domain`, `documents.stack` and `documents.architecture` for the five documents. The folder and the documents appear at first use, and the lines are where whoever reads the file has to look, so they are written even before the files exist. The other artefacts you hunt through the README's links, the root documents and `docs/` — notes folders, queues, other technical documents, changelogs — and give each its trade in one line.
 
 The *Stack and local environment* is the technological inventory of *Step 2*, written in full: **one line per package of the workspace** — the folder, its runtime and versions, its framework, its data stores, its build and test chain, how it starts — plus the shared toolchain and the environment variables that must stay consistent. A package the file does not name is a part of the project the file does not declare, and it is the section making the file useful from the first minute. **It is added, not substituted**: where the project already wrote lines in that section, they stay whole and the inventory goes beside them, even where a line of theirs says less than the manifest does. Filling a placeholder never licenses rewriting a line that was there, and the section's title stays the project's. **Beside is not again**: a fact a kept line already states — a port, a start command, a URL — is not repeated in the inventory line of the same package, which carries only what the kept lines do not say (*One rule, one line* holds here too). It is also the only placeholder you can fill in without risking anything, because every line has a manifest behind.
 
