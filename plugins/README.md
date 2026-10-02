@@ -105,7 +105,7 @@ never *with which values*. Anything project-specific lives one level down:
   out of the history is the machine's override, `.daiku/environment.local.json`.
 - `.daiku/domain/` — local judgement: conventions and criteria that need a *why*.
 - `.daiku/policies/` — architectural rules valid only for certain paths.
-- memory and `tech_doc` — facts not deducible from the code: decisions and whys.
+- memory and the founding documents — facts not deducible from the code: decisions and whys.
 
 If a key is missing, the skill does not invent it: it skips that part and declares it.
 An incomplete JSON makes a skill do less, not do wrong.
@@ -136,7 +136,7 @@ This is the normal case, not an error:
 
 There is no hook keeping parameters up to date on every commit: hooks never write to
 disk by design. Continuous alignment already exists as delegation — every `commit`
-delegates to `update-memory`, which aligns instructions, policies, memory and tech doc
+delegates to `update-memory`, which aligns instructions, policies, memory and the founding documents
 on the staged diff with two brakes: no unjustified update, minimum delta. Returning
 `updated: false` is the expected outcome, not a failure.
 
@@ -144,7 +144,9 @@ on the staged diff with two brakes: no unjustified update, minimum delta. Return
 
 Three commands for everyday work, ordered by size: `/research` procures
 knowledge, `/review` checks a diff, `/new-feature` goes from an idea to the commit by orchestrating
-everything else.
+everything else. Beside them, `/new-project` is launched once, on a project that has just run
+`/init`: it writes the five founding documents — `PRODUCT.md`, `BRAND.md`, `DOMAIN.md`, `STACK.md`
+and `ARCHITECTURE.md` — from the package skeletons, at the paths `.daiku/project.json` declares.
 
 ### `/research`
 

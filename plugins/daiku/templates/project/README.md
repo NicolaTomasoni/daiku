@@ -38,6 +38,7 @@ direction this project chose**. Three promises, each with a mechanism behind it.
 | `/blueprint` | turns an already resolved decision document into the execution brief, and stops there |
 | `/ship-feature` | carries an already studied folder through delivery to the commit, without reopening the study |
 | `/init` | opens Daiku on a project: it writes this folder and the instructions file. Once per project, and again when the package carries a new skeleton |
+| `/new-project` | after `/init`, it writes the project's five founding documents — the offer, the identity, the domain, the stack, the architecture — from the package skeletons, at the paths the project declares |
 | `/sync-host` | on Codex only: it installs guardrails and roles inside the project, and it is re-run after every package update |
 
 ## How a job travels
@@ -66,7 +67,7 @@ codebase, or the machine and the person running it?
 
 **A key that is not declared is not invented.** The step that needed it is skipped and says so in
 its outcome: an incomplete `project.json` makes a skill do less, never do wrong. That is also why
-what this project does not have — an area, a test command, a technical document — is simply absent.
+what this project does not have — an area, a test command, a coverage command — is simply absent.
 
 ## What stays in the repository
 

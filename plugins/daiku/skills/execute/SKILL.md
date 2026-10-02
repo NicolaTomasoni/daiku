@@ -22,6 +22,8 @@ The argument is **a single folder**, as a relative path from the repo root or ab
 
 With the folder you also receive `{memory.index}` and the **paths** of the memories the perimeter touches, to open before writing: it is the channel of §4.1 of `contracts/orchestration.md`. If the caller does not pass them to you, open the index and choose yourself — the constraints and decisions not deducible from the code stand there, and rediscovering them at your own expense costs rework.
 
+**The project's founding documents, the part the work must stay inside.** Resolve `documents.domain`, `documents.stack` and `documents.architecture` in `.daiku/project.json` and read them: they carry the entities, the data and the vocabulary, the technologies in use, and the structure and the decisions already taken — the work beneath this brief must not contradict them. If a key or its file is missing, proceed without that document, invent none, and declare it in the block (§6 of `contracts/project-contract.md`).
+
 ## Principles
 
 1. **The brief is the source of truth, and it commands.** Read `2. blueprint.md` **in full** before touching anything: Mandate, Constraints, The chosen solution, all the tasks, the Journal. The Mandate written in the file prevails over any inclination of yours. If you resume after an interruption or a context compaction, **reread the file from the top**: the work state lives there (checked tasks + Journal), not in session memory.

@@ -88,6 +88,7 @@ import { fileURLToPath } from 'node:url';
 const GRAPH = {
   init: ['owner'],
   'sync-host': ['owner', 'init'],
+  'new-project': ['owner'],
   'new-feature': ['owner'],
   'decision-doc': ['new-feature'],
   research: ['owner', 'new-feature'],

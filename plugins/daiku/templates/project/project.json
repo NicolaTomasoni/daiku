@@ -7,7 +7,13 @@
     "chat": "<language of chat, summaries and the documents the method produces>",
     "commit": "<language of commit messages and changelog entries>"
   },
-  "tech_doc": "<path of the technical document, or drop this key>",
+  "documents": {
+    "product": "<path of the founding document answering the product role: what it does, for whom, why>",
+    "brand": "<path of the founding document answering the brand role: identity and market>",
+    "domain": "<path of the founding document answering the domain role: entities, data, interfaces, vocabulary>",
+    "stack": "<path of the founding document answering the stack role: what it is built with>",
+    "architecture": "<path of the founding document answering the architecture role: structure and technical choices with their why>"
+  },
   "changelog": "<path of the log of released versions, or drop this key>",
   "version": {
     "file": "<file that carries the canonical version>",

@@ -19,14 +19,21 @@ copy.
   stays in the code.
 - **`<memory root>`** — the operational map and the facts recalled by relevance. Its contract is
   `.daiku/domain/memory-contract.md`.
-- **`<technical document>`** — the human document: complete but shallow, what the system does and
-  why, without code names or implementation detail. Not an input to the work; kept aligned when
-  the architecture changes.
+- **`<product document>`** — the offer: what the product does, for whom and why, and what it is
+  not. The human document for that reader, kept aligned when the offer changes.
+- **`<brand document>`** — the identity and the market: name, positioning, competition, channels.
+  The human document for that reader, kept aligned when the identity changes.
+- **`<domain document>`** — the entities, the data, the interfaces and the vocabulary of the
+  project. The human document for that reader, kept aligned when the domain changes.
+- **`<stack document>`** — what the project is built with: languages, frameworks, tooling,
+  hosting. The human document for that reader, kept aligned when the stack changes.
+- **`<architecture document>`** — the structure, the boundaries and the key technical decisions
+  with their why. The human document for that reader, kept aligned when the architecture changes.
 - **`<working folders>`** — upcoming work and the developer's working files. The future lives only
   here, and is never anticipated in memory.
 
-Working base: the code, this file, the loaded policies and the relevant memory. The technical
-document is human output to keep aligned, not an input.
+Working base: the code, this file, the loaded policies and the relevant memory. The founding
+documents are human output to keep aligned, not an input.
 
 ## Behaviour
 

@@ -58,13 +58,13 @@ file but the invocation: the same contract is an **entry point** when you launch
 **internal contract** when a chain delegates to it. `research` is the collection that
 `new-feature` procures for itself when it needs it, with reordering delegated to `study`, and at the same time the command with which you request the notes yourself.
 
-**There are nine entry points, and it is not a number that grows on its own.** A contract is launched by
+**There are ten entry points, and it is not a number that grows on its own.** A contract is launched by
 hand only if it is the **entry point of a chain**, never because it is handy to have it around:
 what sits in the middle of a chain is reached by whoever opened it, and adding it here means
 opening a second way to get there, with different scope and permissions to keep aligned
-forever. The nine fall into two groups, which are not used at the same moments.
+forever. The ten fall into two groups, which are not used at the same moments.
 
-**The method — these seven, and they are all of everyday work:**
+**The method — the everyday work:**
 
 | Entry point | Why |
 |---|---|
@@ -76,13 +76,14 @@ forever. The nine fall into two groups, which are not used at the same moments.
 | `blueprint` | you already have a resolved decision-doc and stop at the brief: from the chosen solution it produces `2. blueprint.md` and stops there — the hand-off that travels to where the execution runs |
 | `ship-feature` | you already have the folder, with or without the brief, and want the whole delivery to the commit in a single run, without reopening the study |
 
-**Installation — two commands that are launched once per project**, and that no chain
-can reach because they run *before* there is a chain:
+**Installation — three commands that are launched once per project**, and that no chain
+can reach because they run at the project's opening, outside a feature:
 
 | Entry point | Why |
 |---|---|
 | `init` | it is the first of all: it opens `.daiku/` on a project that does not have it, and until it runs no other contract has the values to work with |
 | `sync-host` | it carries guardrails and subagent roles into the host layer that cannot receive them from the package; `init` launches it on Codex as its last step, and it is re-launched on every update |
+| `new-project` | after `init` has assigned the seats, it writes the project's five founding documents from the package skeletons — the offer, the identity, the domain, the stack, the architecture — and is re-launched to realign them |
 
 Everything else — `decision-doc`, `update-memory`, `execute`,
 `finder-prompt`, `applier`, `arch-check`, `perf`, `dead-code`, `test-coverage`, `study` — is an **internal contract**: a
@@ -128,6 +129,7 @@ rebuilding the graph from the caller's prose.
 |---|---|---|---|---|
 | `init` | owner | technical root, or nothing and the current directory applies | § *Report* of its file: one line saying the project is all set, or the steps that did not go through; one line saying it already was when § *Scan first* finds nothing missing — in the chat language | yes — `sync-host` on Codex, as its last step |
 | `sync-host` | owner, `init` on Codex | technical root, or nothing and the current directory applies | the report of § *Report* in its file: copied, hooked, not hooked, roles written, and the gestures left to the user | no |
+| `new-project` | owner | technical root, or nothing and the current directory applies | § *Report* of its file: one line per document — created, realigned, or skipped with its reason — in the chat language | no |
 | `new-feature` | owner | description of the feature or problem, in natural language | § *Outcome* of its file: the opened folder, the documents the chain produced and the delivery outcome | yes — per-area investigation, `research`, `decision-doc` twice, `blueprint` for the brief stop, and `ship-feature` as orchestrating child |
 | `decision-doc` | `new-feature` § *The study of decisions* and § *Incorporation* | problem folder, optional subset to analyse, the already written document, the material the request came with, the paths of the `research` notes and of the relevant memories, and on receiving the owner's answers by number | `0.5. strategic-study.md` or `1. decision-doc.md` on disk, with `0. problem.md` refined, and the block of § *The block you return* of its file | no |
 | `research` | owner, `new-feature` § *The missing knowledge* | name of the technology; from `new-feature` also the version in use in the project and the questions the notes must answer | path of the file in `{paths.studies}/`, in both modes, nothing else | yes — fan-out per thematic block (leaves) + `study` as leaf child |
