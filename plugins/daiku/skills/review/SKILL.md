@@ -1,12 +1,12 @@
 ---
 name: 'review'
 description: 'Review cycle on a diff — frozen baseline, rounds stopping when the code stops changing, ledger of already judged findings. Round 1 fans out the finders (bug always, arch/perf/dead from scope), later rounds re-review only the just-written fixes. Gate once on exit, then the commit, which always closes the cycle except with --no-commit. Orchestrated by you, delegating each phase to a subagent. Same discipline that /ship-feature runs in its Review phase.'
-argument-hint: '[file... | base-ref | commit | path to "4. review-notes.md"] [--rounds N] [--effort low|medium|high] [--with arch-check,perf,test-coverage] [--no-commit] [--backend <name> if the session runs there]'
+argument-hint: '[file... | base-ref | commit | path to "4. review-notes.md"] [--rounds N] [--effort low|medium|high] [--with arch-check,perf,dead-code,test-coverage] [--no-commit] [--backend <name> if the session runs there]'
 ---
 
 You are the **engine of a review cycle** on a diff. One round is finders → fix application → fast check; the cycle itself decides how many rounds to run, by watching what the round just produced. Then coverage and the gate, only once. Finally the commit, which always closes the cycle except with `--no-commit`. You orchestrate, delegating each phase to a subagent per `contracts/orchestration.md`; every measurement on the disk is `architect/ledger.mjs`'s, and every verdict the evaluator's.
 
-This file is the **single source** of the project review discipline: `ship-feature` runs it in its Review phase. If review changes, it is touched here and nowhere else.
+This file is the **source of the review cycle**: `ship-feature` runs it in its Review phase, and `skills/code-review/SKILL.md` carries the same cycle **restricted to the bug discipline**, stopping before the commit. A change to the cycle is written here and in that file.
 
 **Why it is a cycle and not a pass.** The fixes the applier writes are new code no finder ever saw: by construction, a round applying fixes leaves behind an unreviewed perimeter, and the gate verifies it compiles, not that it is correct. It is the class of defect no single pass can find — a correction breaking another — and the only way to see it is re-reviewing the fixes.
 
@@ -122,7 +122,7 @@ If a measurement and the applier block diverge, **the measurement holds**: the t
 
 ### Block validation
 
-Every block this cycle consumes is validated under the Validation clause of §4 of `contracts/orchestration.md`: a missing or malformed block relaunches the step exactly once with the identical prompt, and a malformed block counts as missing. Finder and applier blocks are validated **by the tool**, which also counts the attempts and refuses a third: `findings` answers `relaunch` for a finder to launch again, `round` answers `retry` for the applier. On second failure the outcome is the one each phase declares below. The expected form of each block is cited from the file declaring it — never recopied here — and mirrored in `schemas/blocks.json`, where the prose of the node stays normative on divergence.
+Every block this cycle consumes is validated under the Validation clause of §4 of `contracts/orchestration.md`: a block that does not come back relaunches the step exactly once with the identical prompt, and a block that comes back and the validation refuses relaunches it once with what the validation said — the two failures are not the same relaunch. Finder and applier blocks are validated **by the tool**, which also counts the attempts and refuses a third: `findings` answers `relaunch` for a finder to launch again, `round` answers `retry` for the applier. On second failure the outcome is the one each phase declares below. The expected form of each block is cited from the file declaring it — never recopied here — and mirrored in `schemas/blocks.json`, where the prose of the node stays normative on divergence.
 
 ### Which disciplines run, at which round
 
@@ -158,7 +158,7 @@ When this review runs on a work item — `item` is known — the `arch` finder a
 
 **When the finders return, their blocks go to the tool**: `action: "findings"`, each block under its discipline. It validates every block, numbers every finding — `r<round>-<discipline>-<k>`, and `r<round>-check-<k>` for a fast check the previous round left red — and writes them in the round's findings file. **A finder not returning is a missed discipline, not an empty discipline**: two outcomes resembling each other — fewer findings — that nothing downstream can tell apart, because `arch` and `perf` never rerun. The rule is deterministic:
 
-1. `relaunch` names a finder whose block did not come back or came back malformed: relaunch it **only once**, with the identical prompt, and hand its new block to the same action.
+1. `relaunch` names a finder whose block did not come back or came back malformed: relaunch it **only once** — with the identical prompt when it did not come back, with what the tool said when it came back malformed — and hand its new block to the same action.
 2. If it does not come back even then, its discipline is in `missing`, and the `round` action writes it **in the round where it happened**. It does not enter `disciplines_round_1`, which lists who **returned**, and it is not compensated by launching another discipline in its place.
 3. A round with a missed discipline **continues** — the findings of the other finders hold — but non-empty `missing_disciplines` blocks the commit like `rounds-exhausted` (§ *Closing*), and the delivery hosting it does the same.
 
@@ -184,7 +184,7 @@ It is the **only** step of the cycle writing.
 
 ### A step not returning, when it is not a finder
 
-The three-point rule of § *Finder* is the general form: **every** delegated step of this cycle not returning its own block is relaunched **only once**, with the identical prompt. Never a third attempt: a cycle relaunching until it gets an answer is not iterating, it is waiting.
+The three-point rule of § *Finder* is the general form: **every** delegated step of this cycle not returning its own block is relaunched **only once** — with the identical prompt when the block did not come back, with what the validation said when it came back refused — and never a third attempt: a cycle relaunching until it gets an answer is not iterating, it is waiting.
 
 **Scope** is the first, and the driest: if the `perf` worker does not come back even at relaunch, or the `scope` action fails, **stop and say so**. Without scope there is no round to run, and rebuilding it by feel means reviewing a perimeter nobody delimited.
 
@@ -322,4 +322,4 @@ When it runs, delegate it to a **judge** subagent fully reading `skills/commit/S
 
 **The criterion, valid for every orchestrating skill:** an orchestrating contract only keeps what serves to **decide the sequence** — when one delegates, to whom, with which scope, and when one stops. Everything a delegated step must read to do its own work stands in a file of its own, and the domain — lists, taxonomies, semantics — stands in `{memory.root}` or in `.daiku/domain/`. A text ending up in a child prompt does not belong to this file: it belongs to the contract that child reads.
 
-Applied here: this skill owns **the review discipline and the iteration criterion** — scope, fan-out, which disciplines at which round, when to run another round, exits, coverage, gate, closing. It does not own the merit of the disciplines, which have a contract of their own (`skills/code-review/SKILL.md`, `skills/arch-check/SKILL.md`, `skills/perf/SKILL.md`, `skills/dead-code/SKILL.md`, `skills/test-coverage/SKILL.md`); it does not own the prompt of its own children (`skills/finder-prompt/SKILL.md`, `skills/applier/SKILL.md`), which they read themselves; it does not own the commit discipline (`skills/commit/SKILL.md`), which it delegates; it does not own the arithmetic of its rules, which is the evaluator's, nor the measurements on the disk, which are `architect/ledger.mjs`'s. If review changes, it is touched here and in no other place.
+Applied here: this skill owns **the review discipline and the iteration criterion** — scope, fan-out, which disciplines at which round, when to run another round, exits, coverage, gate, closing. It does not own the merit of the disciplines, which have a contract of their own (`skills/code-review/SKILL.md`, `skills/arch-check/SKILL.md`, `skills/perf/SKILL.md`, `skills/dead-code/SKILL.md`, `skills/test-coverage/SKILL.md`); it does not own the prompt of its own children (`skills/finder-prompt/SKILL.md`, `skills/applier/SKILL.md`), which they read themselves; it does not own the commit discipline (`skills/commit/SKILL.md`), which it delegates; it does not own the arithmetic of its rules, which is the evaluator's, nor the measurements on the disk, which are `architect/ledger.mjs`'s. If the cycle changes, it is touched here and in `skills/code-review/SKILL.md`, which carries it restricted to the bug discipline.

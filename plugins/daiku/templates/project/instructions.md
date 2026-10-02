@@ -45,6 +45,8 @@ precision, but use judgement on trivial tasks.
   otherwise.
 - If different readings lead to materially different work, stop and ask; for minor choices pick a
   sensible option and move on.
+- Aligning what this file, a policy, the memory or a reference states to a change you just made is
+  not a choice: when what they say is no longer true, correct them in the same work and move on.
 - If a simpler approach exists, or the request seems to bypass a layer, say so and take the
   architecturally correct path.
 - Turn the task into verifiable criteria; for bugs and validations prefer a test that reproduces

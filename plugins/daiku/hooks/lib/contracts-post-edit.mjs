@@ -138,17 +138,25 @@ export function frontmatterFindings(text) {
 
   const findings = [];
   const seen = new Map();
+  const blockScalars = new Set();
 
-  for (const line of block.split('\n')) {
+  const lines = block.split('\n');
+  for (let i = 0; i < lines.length; i += 1) {
     // Top-level keys only: an indented line belongs to a nested block,
     // where the quoting rules are different.
-    const pair = line.match(/^([A-Za-z0-9_-]+):(.*)$/);
+    const pair = lines[i].match(/^([A-Za-z0-9_-]+):(.*)$/);
     if (!pair) continue;
     const key = pair[1];
     const value = pair[2].trim();
     seen.set(key, value);
 
-    if (!value) continue; // empty here may be a multi-line block: not judged
+    if (!value) {
+      // `key:` with indented children below is a YAML block scalar: the field holds a
+      // populated string, and calling it empty is the false this check exists to avoid.
+      const next = lines[i + 1];
+      if (next !== undefined && /^[ \t]+\S/.test(next)) blockScalars.add(key);
+      continue; // empty here may be a multi-line block: not judged
+    }
     const quoted = /^'.*'$/.test(value) || /^".*"$/.test(value);
     if (quoted) continue;
 
@@ -168,7 +176,7 @@ export function frontmatterFindings(text) {
   for (const required of ['name', 'description']) {
     if (!seen.has(required)) {
       findings.push(`missing \`${required}\`: both hosts' validators demand it`);
-    } else if (!seen.get(required)) {
+    } else if (!seen.get(required) && !blockScalars.has(required)) {
       findings.push(`\`${required}\` is empty: both hosts' validators reject it`);
     }
   }
@@ -233,34 +241,50 @@ export function environmentFindings(text) {
 }
 
 /**
- * The `paths:` and `hygiene:` lists of a policy frontmatter. Both are plain lists of
- * grep fragments — path patterns for `paths:`, text fragments for `hygiene:` — one `-`
- * item per line, quoted or not. Anything else in the frontmatter is not read here.
+ * One item of a frontmatter list: a trailing `# comment` dropped, then the surrounding quotes.
+ * The same order `unquoteYaml` of `architect/ledger.mjs` uses for a policy's `paths`.
+ */
+function yamlItem(value) {
+  const bare = String(value).trim().replace(/\s+#.*$/, '');
+  const quoted = /^(['"])(.*)\1$/.exec(bare);
+  return (quoted ? quoted[2] : bare).trim();
+}
+
+/**
+ * One list of a policy frontmatter, in the three shapes a YAML list admits and
+ * `architect/ledger.mjs` already reads for a policy's `paths`: a block list (`- item` per
+ * line), an inline list (`[a, b]`), or a single value. Anything else in the frontmatter is
+ * not read here.
+ */
+function frontmatterList(block, name) {
+  const lines = block.split('\n');
+  for (let i = 0; i < lines.length; i += 1) {
+    const key = new RegExp(`^${name}\\s*:\\s*(.*)$`).exec(lines[i]);
+    if (!key) continue;
+    const inline = key[1].trim();
+    if (inline.startsWith('[')) return inline.replace(/^\[|\]$/g, '').split(',').map(yamlItem).filter(Boolean);
+    if (inline) return [yamlItem(inline)].filter(Boolean);
+    const out = [];
+    for (let j = i + 1; j < lines.length; j += 1) {
+      const item = /^\s+-\s*(.*)$/.exec(lines[j]);
+      if (item) out.push(yamlItem(item[1]));
+      else if (lines[j].trim() && !lines[j].trim().startsWith('#')) break;
+    }
+    return out.filter(Boolean);
+  }
+  return [];
+}
+
+/**
+ * The `paths:` and `hygiene:` lists of a policy frontmatter — path patterns for `paths:`,
+ * text fragments for `hygiene:` — read with the same reader the rest of the product uses for a
+ * policy's `paths`, so the hygiene step sees what `architect/ledger.mjs` sees: an inline list,
+ * a trailing comment, a glob-free path naming a folder.
  */
 export function hygieneOfPolicy(text) {
   const block = frontmatter(text);
   if (block === null) return { paths: [], patterns: [] };
-  const paths = [];
-  const patterns = [];
-  let current = null;
-  for (const line of block.split('\n')) {
-    const key = line.match(/^([A-Za-z0-9_-]+):\s*$/);
-    if (key) {
-      current = key[1] === 'paths' ? paths : key[1] === 'hygiene' ? patterns : null;
-      continue;
-    }
-    if (current && /^\s*-\s+/.test(line)) {
-      const item = line
-        .replace(/^\s*-\s+/, '')
-        .trim()
-        .replace(/^'(.*)'$/, '$1')
-        .replace(/^"(.*)"$/, '$1');
-      if (item) current.push(item);
-    } else if (line.trim() && !/^\s/.test(line)) {
-      current = null;
-    }
-  }
-  return { paths, patterns };
+  return { paths: frontmatterList(block, 'paths'), patterns: frontmatterList(block, 'hygiene') };
 }
 
 /**
@@ -269,7 +293,7 @@ export function hygieneOfPolicy(text) {
  */
 export function matchGlob(rel, pattern) {
   let out = '';
-  const p = String(pattern).replace(/\\/g, '/');
+  const p = String(pattern).replace(/\\/g, '/').replace(/^\.\//, '');
   for (let i = 0; i < p.length; i += 1) {
     const c = p[i];
     if (c === '*' && p[i + 1] === '*') {
@@ -282,7 +306,10 @@ export function matchGlob(rel, pattern) {
     else if (c === '?') out += '[^/]';
     else out += c.replace(/[.+^${}()|[\]\\]/g, '\\$&');
   }
-  return new RegExp(`^${out}$`).test(rel);
+  if (new RegExp(`^${out}$`).test(rel)) return true;
+  // A glob-free path names a folder, exactly as `covers` of `architect/ledger.mjs` reads it.
+  if (p.endsWith('/')) return rel.startsWith(p);
+  return !/[*?[]/.test(p) && rel.startsWith(`${p}/`);
 }
 
 const HYGIENE_SHOWN = 10;
@@ -488,6 +515,10 @@ function selfCheck() {
   check('unclosed frontmatter is a finding', frontmatterFindings('---\nname: x\n').length === 1);
   check('missing name is a finding', frontmatterFindings("---\ndescription: 'x'\n---\n").some((r) => r.includes('missing `name`')));
   check('empty description is a finding', frontmatterFindings('---\nname: x\ndescription:\n---\n').some((r) => r.includes('`description` is empty')));
+  check(
+    'a block-scalar description is populated, not empty',
+    frontmatterFindings('---\nname: review\ndescription:\n  a long description\n  on two lines\n---\n').length === 0
+  );
   check('CRLF does not change the verdict', frontmatterFindings(healthy.replace(/\n/g, '\r\n')).length === 0);
   check(
     'a nested key is not judged as top-level',
@@ -540,12 +571,21 @@ function selfCheck() {
   check('a policy without hygiene has no patterns', hygieneOfPolicy('---\npaths:\n  - "src/**"\n---\n').patterns.length === 0);
   check('a policy without frontmatter watches nothing', hygieneOfPolicy('# prose\n').patterns.length === 0);
   check('unquoted items are read too', hygieneOfPolicy('---\npaths:\n  - src/**\nhygiene:\n  - TODO\n---\n').patterns.join(',') === 'TODO');
+  check('an inline `paths` list is read', hygieneOfPolicy("---\npaths: ['src/server/**']\nhygiene:\n  - 'console.log'\n---\n").paths.join(',') === 'src/server/**');
+  check(
+    'a trailing comment on an item is dropped',
+    hygieneOfPolicy("---\npaths:\n  - 'src/server/**'  # the server\nhygiene:\n  - 'console.log'\n---\n").paths.join(',') === 'src/server/**'
+  );
+  check('an inline `hygiene` list is read', hygieneOfPolicy("---\npaths:\n  - 'src/**'\nhygiene: ['console.log', 'sk-']\n---\n").patterns.join(',') === 'console.log,sk-');
 
   check('`**` crosses folders', matchGlob('src/server/api/users.ts', 'src/server/**'));
   check('`**` does not match the folder itself', matchGlob('src/server', 'src/server/**') === false);
   check('`*` does not cross folders', !matchGlob('src/server/api/users.ts', 'src/server/*.ts'));
   check('`*` matches inside one folder', matchGlob('src/server/app.ts', 'src/server/*.ts'));
   check('`?` matches one character', matchGlob('src/a.ts', 'src/?.ts') && !matchGlob('src/ab.ts', 'src/?.ts'));
+  check('a glob-free path names a folder', matchGlob('src/api/x.ts', 'src/api'));
+  check('a trailing-slash path names a folder', matchGlob('src/api/x.ts', 'src/api/'));
+  check('a glob-free path does not reach a sibling prefix', !matchGlob('src/apix/y.ts', 'src/api'));
 
   const dirty = 'import x from "./y";\nconsole.log("debug", x);\nconst key = "sk-abc123";\n';
   const found = hygieneFindings(dirty, ['console.log', 'sk-']);
@@ -562,6 +602,11 @@ function selfCheck() {
   };
   const hygieneText = report('src/server/app.ts', R, fakeEnv(watched));
   check('a watched dirty file reaches the report', !!hygieneText && hygieneText.includes('backend.md') && hygieneText.includes('src/server/app.ts:2'));
+  const inlineWatched = {
+    [`${R}/src/server/app.ts`]: dirty,
+    [`${R}/.daiku/policies/backend.md`]: "---\npaths: ['src/server/**']\nhygiene:\n  - 'console.log'\n---\n",
+  };
+  check('a policy whose `paths` is an inline list is not inert', !!report('src/server/app.ts', R, fakeEnv(inlineWatched)));
   check('the hygiene report states it does not block', !!hygieneText && hygieneText.includes('block nothing'));
   const unwatched = {
     [`${R}/src/server/app.ts`]: dirty,

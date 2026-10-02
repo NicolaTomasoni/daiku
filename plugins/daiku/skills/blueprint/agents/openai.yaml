@@ -1,5 +1,5 @@
 interface:
   display_name: "Blueprint"
-  short_description: "Internal contract, opened by ship-feature"
+  short_description: "Internal contract, opened by ship-feature and new-feature"
 policy:
   allow_implicit_invocation: false

@@ -265,11 +265,11 @@ export function scan(rootIn, host, disk = REAL, packageRoot = PACKAGE) {
   const memory = project.memory && typeof project.memory === 'object' ? project.memory : {};
   const memoryRoot = fromRoot(root, memory.root);
   if (memoryRoot) {
-    if (!disk.exists(memoryRoot)) miss('memory-root', '7', memory.root);
+    if (!disk.exists(memoryRoot)) miss('memory-root', '3', memory.root);
     const index = typeof memory.index === 'string' && memory.index.trim() ? memory.index.trim() : null;
     if (index) {
       const candidates = [fromRoot(root, index), join(memoryRoot, index)];
-      if (!candidates.some((c) => c && disk.exists(c))) miss('memory-index', '7', index);
+      if (!candidates.some((c) => c && disk.exists(c))) miss('memory-index', '3', index);
     }
   }
 

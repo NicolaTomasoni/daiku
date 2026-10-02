@@ -15,9 +15,9 @@
  *
  *  - **without `.daiku/project.json` the guard allows everything**, always, without looking
  *    at the line. It is the boundary, not a degradation: see `daiku-config.mjs`;
- *  - **every branch has its own switch** in the JSON, and a missing switch is a
- *    branch switched off — §6 of `contracts/project-contract.md`, *what the JSON does not declare
- *    does not exist*.
+ *  - **a single switch in the whole file**: the worktree pool, `{worktree.pool}`. Every other
+ *    branch denies on every project that has opened Daiku, with no key — §6 of
+ *    `contracts/project-contract.md`, *what the JSON does not declare does not exist*.
  *
  * There are five branches, in three families.
  *
@@ -188,6 +188,10 @@ const NEUTRAL_PREFIXES = new Set([
   'exec',
   'command',
   'builtin',
+  'nice',
+  'timeout',
+  'setsid',
+  'ionice',
   'do',
   'then',
   'else',
@@ -201,6 +205,23 @@ const NEUTRAL_PREFIXES = new Set([
   '(',
   '&&',
   '||',
+]);
+
+/**
+ * The options of a neutral prefix that take a **separate value**, so the scan steps over the value
+ * too (`sudo -u root`, `env -u NAME`, `xargs -I {{}}`, `timeout -s KILL`). A prefix absent from this
+ * map still has its own options skipped — the generic rule — but no value is consumed.
+ * `positional` marks the prefixes that also consume one positional argument before the real command:
+ * `timeout` takes a duration (`timeout 5 git push`).
+ */
+const PREFIX_OPTIONS = new Map([
+  ['sudo', { values: new Set(['-u', '-g', '-p', '-h', '-C', '-T', '--user', '--group', '--prompt', '--host', '--chdir', '--command-timeout']) }],
+  ['env', { values: new Set(['-u', '--unset', '-C', '--chdir', '-S', '--split-string']) }],
+  ['xargs', { values: new Set(['-n', '-I', '-L', '-P', '-a', '-d', '-s', '-E', '--max-args', '--replace', '--max-lines', '--max-procs', '--arg-file', '--delimiter', '--max-chars', '--eof']) }],
+  ['time', { values: new Set(['-o', '--output']) }],
+  ['nice', { values: new Set(['-n', '--adjustment']) }],
+  ['timeout', { values: new Set(['-s', '--signal', '-k', '--kill-after']), positional: true }],
+  ['ionice', { values: new Set(['-c', '-n', '-p', '-P']) }],
 ]);
 
 const WRAPPER = /^(?:bash|sh|zsh|dash|ash|powershell|pwsh|cmd|wsl|busybox)(?:\.exe)?$/i;
@@ -218,6 +239,21 @@ function head(tokens) {
     }
     if (NEUTRAL_PREFIXES.has(t) || (!tokens[i].q && /^[A-Za-z_][A-Za-z0-9_]*=/.test(t))) {
       i += 1;
+      // A neutral prefix carries its own options, and an option may take a value
+      // (`sudo -u root git push`, `env -i git push`, `timeout 5 git push`): without stepping
+      // over them the option — or its value — becomes the head, and the real command walks
+      // past every branch that reads the head. A prefix with no entry still has its options
+      // skipped; only the value-taking ones are named above.
+      if (NEUTRAL_PREFIXES.has(t)) {
+        const opts = PREFIX_OPTIONS.get(t) || { values: new Set() };
+        while (i < tokens.length && !tokens[i].q && tokens[i].t.startsWith('-')) {
+          const raw = tokens[i].t;
+          const name = raw.split('=')[0];
+          i += 1;
+          if (opts.values.has(name) && !raw.includes('=') && i < tokens.length && !tokens[i].q) i += 1;
+        }
+        if (opts.positional && i < tokens.length && !tokens[i].q && !tokens[i].t.startsWith('-')) i += 1;
+      }
       continue;
     }
     return { index: i, name: t };
@@ -519,6 +555,10 @@ function gitInvocations(line, depth = 0) {
       if (payload) found.push(...gitInvocations(payload, depth + 1));
       continue;
     }
+    // The command of a `find -exec` is a line of its own, exactly as `pathGuard` reads it:
+    // `find . -exec git push ;` carries its Git invocation there and nowhere else.
+    const executed = execPayload(tokens, first.index);
+    if (executed && depth < 3) found.push(...gitInvocations(executed, depth + 1));
     if (!GIT.test(first.name)) continue;
     let j = first.index + 1;
     while (j < tokens.length && !tokens[j].q && tokens[j].t.startsWith('-')) {
@@ -836,6 +876,23 @@ const CASES = [
   ['git.exe with quoted path and spaces', '"C:\\Program Files\\Git\\cmd\\git.exe" push', ROOT_CWD, 'deny', 'manual gesture'],
   ['sudo in front of git push', 'sudo git push', ROOT_CWD, 'deny', 'manual gesture'],
   ['git push chained after another command', 'npm test && git push', ROOT_CWD, 'deny', 'manual gesture'],
+
+  // --- a neutral prefix that carries its own option: the option is not the command ------
+  ['sudo with its own option, then git push', 'sudo -u root git push', ROOT_CWD, 'deny', 'manual gesture'],
+  ['sudo -E, then git push', 'sudo -E git push', ROOT_CWD, 'deny', 'manual gesture'],
+  ['env -i, then git push', 'env -i git push', ROOT_CWD, 'deny', 'manual gesture'],
+  ['xargs -0, then git push', 'xargs -0 git push', ROOT_CWD, 'deny', 'manual gesture'],
+  ['time -p, then git push', 'time -p git push', ROOT_CWD, 'deny', 'manual gesture'],
+  ['nice -n 19, then git push', 'nice -n 19 git push', ROOT_CWD, 'deny', 'manual gesture'],
+  ['timeout 5, then git push', 'timeout 5 git push', ROOT_CWD, 'deny', 'manual gesture'],
+  ['sudo -u root, then rm on the junction', 'sudo -u root rm -rf c:/dev/wt/wt-1/node_modules', ROOT_CWD, 'deny', 'crosses a Windows link'],
+  ['env -i, then rm in a pooled worktree', 'env -i rm -rf c:/dev/wt/wt-1/docs', ROOT_CWD, 'deny', 'of the pool'],
+  ['sudo -u root, then commit --no-verify', 'sudo -u root git commit --no-verify -m x', ROOT_CWD, 'deny', 'is not allowed'],
+  ['a neutral prefix with an option, on a command that is not its business', 'nice -n 5 echo hi', ROOT_CWD, 'allow', ''],
+
+  // --- find -exec carries a line of its own, for the git branches too -------------------
+  ['find -exec git push', 'find . -exec git push ;', ROOT_CWD, 'deny', 'manual gesture'],
+  ['find -exec git commit --no-verify', 'find . -exec git commit --no-verify -m x ;', ROOT_CWD, 'deny', 'is not allowed'],
   ['git push --dry-run pushes nothing', 'git push --dry-run', ROOT_CWD, 'allow', ''],
   ['git fetch is not a push', 'git fetch origin main', ROOT_CWD, 'allow', ''],
   ['echo of a sentence talking about git push', 'echo "git push is forbidden"', ROOT_CWD, 'allow', ''],

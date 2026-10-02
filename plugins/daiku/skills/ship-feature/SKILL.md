@@ -16,7 +16,7 @@ When you have **one** feature with `1. decision-doc.md` already resolved and you
 
 **You are launched by hand or by `new-feature` § *Delivery*.** The sequence is the same either way; what changes is where the input comes from and where the outcome goes.
 
-- **By hand (`owner`).** `$ARGUMENTS` carries the folder; the chosen solution only if `<folder>/2. blueprint.md` is absent and the brief still has to be produced — one option id and text per decision, as written. If the folder does not exist or holds no `1. decision-doc.md`, stop and say so. If the brief is absent and the solution is missing or ambiguous against the decision-doc, do not guess and do not ask: stop, and report the options the document truly declares, so the owner relaunches you with the choice. Close with the contract block in chat. You never push: the push stays a manual act of the owner.
+- **By hand (`owner`).** `$ARGUMENTS` carries the folder; the chosen solution only if `<folder>/2. blueprint.md` is absent and the brief still has to be produced — one option id and text per decision, as written. If the folder does not exist or holds no `1. decision-doc.md`, stop and say so. If the brief is absent and the solution is **ambiguous** against the decision-doc — it names a decision or an option that do not exist there — do not guess and do not ask: stop, and report the options the document truly declares, so the owner relaunches you with the choice. If instead the solution was **not passed at all** and no brief exists, use for each decision the **`A`** option — which by contract is the recommended — and declare it in the outcome. Close with the contract block in chat. You never push: the push stays a manual act of the owner.
 - **From `new-feature` § *Delivery*.** Folder and chosen solution arrive resolved in the prompt — there is nobody to ask, and a question asked in here stays hanging (§ *Ask the owner* of `contracts/orchestration.md`). The constraints below hold unchanged, and they are not rewritten in the caller prompt.
 
 ## Input
@@ -60,7 +60,7 @@ process, talks to no model and opens no file of the project — only the package
 | `block` | § *1. Brief* and § *2. Execute* — whether the block of the phase has the form its node declares |
 | `decision` | § *4. Decision* — the classification of the six rows |
 | `unblock` | § *Mechanical unblock* — whether only mechanical work remains |
-| `propagation` | *Block validation*, below — what follows a block that did not come back |
+| `propagation` | *Block validation*, below — what becomes of a step whose block did not come back or came back refused |
 
 **What it reads is one JSON object whose keys are fixed**, and a caller that guesses one of them
 stops the delivery. `question` is always there; **which other keys each question requires is
@@ -69,7 +69,7 @@ one of them, and its bench reads every call to the evaluator in the contracts of
 refuses one whose paragraph does not name them all — so the keys are named where each call is
 made, and not listed again here. Three of them carry a meaning their name does not say: `ledger`
 is `null` when there is none, and for `order` a ledger that exists and is not passed turns into a
-fork for the owner where a verdict was due; `step` is `{"node": …, "block": …|null, "attempt": 1|2}`.
+fork for the owner where a verdict was due; `step` is `{"node": …, "block": …|null, "attempt": 1|2, "invalid": […]}`, where `invalid` is what the `block` question said of that block — its `blockers`, or `[]` when no question judged it.
 These are the nine questions it answers. The four this file does not use directly are asked by the contracts that need them:
 `closing`, `resumption` and `round` by `skills/review/SKILL.md` (§ *Closing*, § *Baseline and ledger*, § *When to run another round*), through
 `architect/ledger.mjs`, the review's disk side, which imports these questions and hands them the ledger and the added lines it read from disk
@@ -134,8 +134,10 @@ Each block carries the field declaring the outcome of its own phase: `ok` for Br
 The phases having their own contract declare the block **at home**, and here it is cited: every local rewrite shrinks at the first modification of the node (§4.2 of `contracts/orchestration.md`).
 
 **Block validation.** Every phase block is validated under the Validation clause of §4 of
-`contracts/orchestration.md`: a missing or malformed block relaunches the phase exactly once
-with the identical prompt, and a malformed block counts as missing. **What follows a failure is asked, not judged here**: call the evaluator with `question: "propagation"` and `step` set to `{"node": <the phase>, "block": <what came back>|null, "attempt": 1|2}` — `retry` is the relaunch with the identical prompt, `fallback` the outcome the skill hosting that phase declares for the case. The **ceiling** stays written here because it is a consequence and not a classification: **exactly one** relaunch, never a third attempt. On second failure the
+`contracts/orchestration.md`, which separates two failures: a block that does not come back
+relaunches the phase exactly once **with the identical prompt**, a block that comes back and the
+validation refuses relaunches it once **with what the validation said** — the two relaunches are not
+the same act, and the refused block came back. **What follows a failure is asked, not judged here**: call the evaluator with `question: "propagation"` and `step` set to `{"node": <the phase>, "block": <what came back>|null, "attempt": 1|2, "invalid": <the blockers the `block` question returned, or []>}` — `retry` is the relaunch, its `detail` says in which of the two forms, `fallback` the outcome the skill hosting that phase declares for the case. The **ceiling** stays written here because it is a consequence and not a classification: **exactly one** relaunch, never a third attempt. On second failure the
 delivery stops at that phase (see *Early block*) with the `detail` of its block — for Review,
 failure is only the absent block, never a measured `gate: "red"`. The expected form of each
 block is cited from the file declaring it, never recopied here, and mirrored in

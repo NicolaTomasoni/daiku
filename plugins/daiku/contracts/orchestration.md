@@ -71,7 +71,7 @@ forever. The nine fall into two groups, which are not used at the same moments.
 | `new-feature` | you start from an idea and there is nothing on disk yet: from the description to the commit, in a single run. Inside live the study, the decisions and the delivery, which is why they are not launched on their own |
 | `research` | notes on a technology are also valuable on their own, before any delivery consumes them. Launched this way it **deposits the reordered file and stops**: it opens nothing downstream |
 | `review` | the review also lives on its own, on a hand-written diff |
-| `code-review` | a bugs-only pass over the scope you tell it, with no rounds and no fixes: eyes on the code without opening a cycle |
+| `code-review` | the bug-only review cycle on the scope you tell it: rounds, fixes, fast check and gate like `/review`, stopping at the report — no coverage, no commit |
 | `commit` | it closes a review launched with `--no-commit`, or a diff written outside a review |
 | `blueprint` | you already have a resolved decision-doc and stop at the brief: from the chosen solution it produces `2. blueprint.md` and stops there — the hand-off that travels to where the execution runs |
 | `ship-feature` | you already have the folder, with or without the brief, and want the whole delivery to the commit in a single run, without reopening the study |
@@ -128,21 +128,21 @@ rebuilding the graph from the caller's prose.
 |---|---|---|---|---|
 | `init` | owner | technical root, or nothing and the current directory applies | § *Report* of its file: one line saying the project is all set, or the steps that did not go through; one line saying it already was when § *Scan first* finds nothing missing — in the chat language | yes — `sync-host` on Codex, as its last step |
 | `sync-host` | owner, `init` on Codex | technical root, or nothing and the current directory applies | the report of § *Report* in its file: copied, hooked, not hooked, roles written, and the gestures left to the user | no |
-| `new-feature` | owner | description of the feature or problem, in natural language | § *Outcome* of its file: the opened folder, the documents the chain produced and the delivery outcome | yes — per-area investigation, `research`, `decision-doc` twice, and `ship-feature` as orchestrating child |
+| `new-feature` | owner | description of the feature or problem, in natural language | § *Outcome* of its file: the opened folder, the documents the chain produced and the delivery outcome | yes — per-area investigation, `research`, `decision-doc` twice, `blueprint` for the brief stop, and `ship-feature` as orchestrating child |
 | `decision-doc` | `new-feature` § *The study of decisions* and § *Incorporation* | problem folder, optional subset to analyse, the already written document, the material the request came with, the paths of the `research` notes and of the relevant memories, and on receiving the owner's answers by number | `0.5. strategic-study.md` or `1. decision-doc.md` on disk, with `0. problem.md` refined, and the block of § *The block you return* of its file | no |
 | `research` | owner, `new-feature` § *The missing knowledge* | name of the technology; from `new-feature` also the version in use in the project and the questions the notes must answer | path of the file in `{paths.studies}/`, in both modes, nothing else | yes — fan-out per thematic block (leaves) + `study` as leaf child |
 | `study` | `research` § *Step 2* only | path of the dirty file, studied technology, studied and latest versions with dates | reordered file in `{paths.studies}/` + the block of § *The block you return* of its file | no — leaf |
-| `blueprint` | `owner`, `ship-feature` phase 1 | folder with `1. decision-doc.md`, chosen solution verbatim, relevant memories | § *What you return* of its file | no |
+| `blueprint` | `owner`, `ship-feature` phase 1, `new-feature` § *Delivery* (brief stop) | folder with `1. decision-doc.md`, chosen solution verbatim, relevant memories | § *What you return* of its file | no |
 | `execute` | `ship-feature` phase 2 | folder with `2. blueprint.md`, relevant memories; on a relaunch, the `handoff` blockers or the round-0 findings | § *What you return* of its file | no |
 | `ship-feature` | `owner`, `new-feature` § *Delivery* | folder and chosen solution | § *Outcome* of its file | yes — its phases, and `review` as orchestrating child |
 | `review` | owner, `ship-feature` phase 3 | base-ref, the commit under review, or path of `4. review-notes.md`, ledger to reopen (chosen on `base` **and** `item`), `--no-commit` from whoever commits on their own, effort, `--backend` when the session runs there, work roots and artefacts when running on a worktree | § *Outcome* of its file | yes — finder, applier, coverage, gate, `commit` |
-| a round's finder (`finder-prompt`) | `review` § *Finder* | discipline and contract, the round range (`from`, `to`, files), effort, the ledger path, the resolved parameters | § *The block you return* of its file | no |
-| `code-review` | owner, `review` as `bug` finder | hand-told scope **or** round scope | report in chat **or** § *The block you return* of `finder-prompt`, with the `confidence` scale its file declares | **no** |
+| a round's finder (`finder-prompt`) | `review` § *Finder*, `code-review` § *The round* | discipline and contract, the round range (`from`, `to`, files), effort, the ledger path, the resolved parameters | § *The block you return* of its file | no |
+| `code-review` | owner, `review` as `bug` finder | hand-told scope, **or** round scope in finder mode | block of § *Outcome* **or** § *The block you return* of `finder-prompt`, with the `confidence` scale its file declares | **yes** — the `bug` finder (`finder-prompt`), `applier`, the gate |
 | `arch-check` | `review` as `arch` finder | round scope | the block of `finder-prompt` § *The block you return*; its file declares scope and permissions | no |
 | `dead-code` | `review` as `dead` finder | round scope | the block of `finder-prompt` § *The block you return*; its file declares scope and permissions | no |
 | `perf` | `review` as `perf` finder | scope **or** round scope | the block of `finder-prompt` § *The block you return*; its § *Finder mode* declares scope and permissions | no |
 | `test-coverage` | `review` § *Coverage* with `--auto` | macro-category **or** final cycle diff and relevant memories | § *Automatic mode* of its file | no |
-| `applier` | `review` § *Applier* | the path of the round's numbered findings file, the ledger path, the round range, relevant memories, the resolved parameters, and the **mode** when it is the closing round on tests | § *The block you return* of its file | no |
+| `applier` | `review` § *Applier*, `code-review` § *The round* | the path of the round's numbered findings file, the ledger path, the round range, relevant memories, the resolved parameters, and the **mode** when it is the closing round on tests | § *The block you return* of its file | no |
 | `commit` | owner, `review` § *Closing* (always, except `--no-commit`) | code-group perimeter; it partitions memory/docs and version/changelog itself (§ *Procedure* 3 of its file) | § *Procedure* 8 of its file, in chat | yes — `update-memory`, **always and without exceptions** |
 | `update-memory` | `ship-feature` phase 5b, `commit` § *Alignment* (**always**, on every `commit` invocation) | diff in index, feature folder where to deposit its own artefact (from `ship-feature`), **commit permission for its own group** | § *Procedure* 7 of its file | no |
 
@@ -254,12 +254,21 @@ Rules valid on every host:
    with the fields the skill declares: read that, not the prose. If the block is missing or
    incomplete, the step has failed — do not interpret it by feel.
 
-   **And a failed step has a ceiling.** It is relaunched **exactly once**, with the same identical
-   prompt; if it still does not come back, what follows is declared by the skill hosting it, and it must
-   declare it in writing. Without that ceiling the same silence produces behaviours that are all
-   defensible and incomparable across runs — relaunching indefinitely, skipping the step, closing
-   the cycle — and in the report the three runs read the same. An orchestrator that relaunches
-   until it gets the answer it wants is not orchestrating.
+   **And a failed step has a ceiling.** It is relaunched **exactly once**; if it still does not come
+   back, what follows is declared by the skill hosting it, and it must declare it in writing. Without
+   that ceiling the same silence produces behaviours that are all defensible and incomparable across
+   runs — relaunching indefinitely, skipping the step, closing the cycle — and in the report the three
+   runs read the same. An orchestrator that relaunches until it gets the answer it wants is not
+   orchestrating.
+
+   **The two failures relaunch differently, and the difference is the form.** A step that
+   **did not return** — no block at all, or prose instead of one — is relaunched with the
+   **identical prompt**, because the work itself has to be produced again. A step whose block
+   **came back and is `invalid`** — a required field absent, malformed, or a field outside its
+   domain — is a form defect, and the form defect is deterministic: the identical prompt reproduces
+   it, and the relaunch can only fail twice. There it is relaunched with the same prompt
+   **plus what said `invalid`**, declaring that the correction is the encoding and not a second
+   thought on the substance. The ceiling is the same for both: one more, never a loop.
 
    **The schema is declared by the node, exactly once.** A step's return block is written
    in the file of the node that produces it. Whoever consumes it **cites** it — "the block that *that file*
@@ -270,11 +279,11 @@ Rules valid on every host:
    exists, with nothing signalling the loss.
 
    **Validation.** A step's return block is validated before use against the fields its node
-   declares: a required field absent or malformed counts as a missing block, and a
-   string that is not the expected block is a block that did not come back. The machine-readable
-   form of every block lives in `schemas/blocks.json`, which declares required and optional
-   fields: the prose of the node stays the normative schema, the JSON file is its checkable
-   mirror, and on divergence the prose holds.
+   declares, so that a required field absent and a field outside its domain are caught here rather
+   than downstream; a string that is not the expected block is a block that did not come back.
+   The machine-readable form of every block lives in `schemas/blocks.json`, which declares required
+   and optional fields: the prose of the node stays the normative schema, the JSON file is its
+   checkable mirror, and on divergence the prose holds.
 3. **One step, one subagent.** Do not merge two phases into a single subagent to save a
    round: the sequence the skill declares is the contract.
 4. **If delegation is unavailable** on the current host, run the step inline while still respecting

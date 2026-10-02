@@ -56,15 +56,15 @@ const KNOWN_EVENTS = [
   'PreCompact',
 ];
 
-/** Entry keys the package itself uses, plus `description`: the template's only
- * annotation, which the Codex validator does not reject (verified 2026-09-26). */
+/** Entry keys the package itself uses, both of a `hooks.json` entry and of the hook object inside
+ * it. An entry-level `description` is not among them: the manifests' only `description` is the
+ * template's top-level note, covered by the top-level check. */
 const KNOWN_ENTRY_KEYS = new Set([
   'type',
   'command',
   'timeout',
   'matcher',
   'hooks',
-  'description',
   'statusMessage',
 ]);
 
@@ -127,6 +127,9 @@ function selfCheck() {
       check(`${label} event ${event} is known`, KNOWN_EVENTS.includes(event));
       check(`${label} event ${event} is not empty`, Array.isArray(entries) && entries.length > 0);
       for (const entry of entries || []) {
+        for (const key of Object.keys(entry || {})) {
+          check(`${label} ${event} entry key ${key} is known`, KNOWN_ENTRY_KEYS.has(key));
+        }
         const hooks = entry && Array.isArray(entry.hooks) ? entry.hooks : [];
         for (const hook of hooks) {
           for (const key of Object.keys(hook || {})) {

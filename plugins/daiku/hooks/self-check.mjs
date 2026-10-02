@@ -53,6 +53,14 @@ const LIB = join(HERE, 'lib');
 const ROOT = join(HERE, '..');
 
 /**
+ * Modules of `lib/` that are imported, not hooked, and carry no bench of their own: the only ones
+ * for which an empty stdout with exit 0 is honestly "no bench". Every other module of `lib/` — every
+ * hook — that exits 0 having printed nothing has lost its bench, which is the fault this file exists
+ * to make visible, and calling it "no bench" would hide it.
+ */
+const NOT_HOOKS = new Set(['project-root.mjs', 'daiku-config.mjs']);
+
+/**
  * A `lib/` `.mjs` is a hook if its bench answers: the other modules have none. The
  * evaluator is not in `lib/` and is added from its own folder.
  */
@@ -107,10 +115,10 @@ function tryOne(bench) {
 
   if (outcome.error) return { name: bench.label, status: 'does not start', detail: outcome.error.message };
   if (!outcome.stdout || !outcome.stdout.trim()) {
-    // No output: either the module has no bench — the case of `daiku-config.mjs`, an
-    // imported module with no entry point of its own — or it exited badly, and then the
-    // exit code says so.
-    return { name: bench.label, status: outcome.status === 0 ? 'no bench' : 'silent', detail: (outcome.stderr || '').trim() };
+    // No output. Only the imported pair may be declared "no bench": any other module that
+    // exited 0 having printed nothing is a hook whose bench stopped running, and is read red.
+    const noBench = outcome.status === 0 && NOT_HOOKS.has(bench.label);
+    return { name: bench.label, status: noBench ? 'no bench' : 'silent', detail: (outcome.stderr || '').trim() };
   }
 
   let report;

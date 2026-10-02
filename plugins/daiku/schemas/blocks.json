@@ -3,16 +3,16 @@
   "blocks": {
     "decision-doc": {
       "producer": "skills/decision-doc/SKILL.md § The block you return",
-      "required": ["stage", "stage_why", "direction", "file", "verdict", "applied_fixes", "premises", "precedents", "decisions", "incorporated", "open_items"],
+      "required": ["stage", "stage_why", "crossed_stages", "direction", "file", "verdict", "applied_fixes", "premises", "precedents", "decisions", "incorporated", "open_items"],
       "optional": [],
       "enums": {
         "stage": ["strategic", "technical"],
         "direction.kind": ["owner-request", "owner-answer", "material"],
-        "precedents.stands": ["yes", "no"],
+        "precedents.stands": ["yes", "no", "closed-elsewhere"],
         "decisions.classification": ["blocker", "serious risk", "weakness", "improvement"],
         "decisions.recommended_id": ["A"]
       },
-      "note": "The three fields between `stage_why` and `decisions` are the ones the stage turns on, and `direction` is null when nothing proposes one. Which of them the stage admits — a technical stage executes the owner's direction and rests on verified premises, a strategic one carries no premises of a direction nobody chose — is not expressible as an enum: it is SHAPES['decision-doc'] of architect/architect.mjs."
+      "note": "The fields between `stage_why` and `decisions` are the ones the stage turns on, and `direction` is null when nothing proposes one. Which of them the stage admits — a technical stage executes the owner's direction and rests on verified premises, a strategic one carries no premises of a direction nobody chose — is not expressible as an enum: it is SHAPES['decision-doc'] of architect/architect.mjs. The same shape holds `crossed_stages` to what the block actually carries, so the crossing of the two stages cannot go undeclared, and admits `closed-elsewhere` only with the `closed_by` that answers a precedent the strategic stage already closed."
     },
     "blueprint": {
       "producer": "skills/blueprint/SKILL.md § What you return",
@@ -45,9 +45,9 @@
       "required": ["applied", "discarded", "to_confirm", "oscillation"],
       "optional": [],
       "enums": {
-        "to_confirm.class": ["arch", "bug", "perf", "test-coverage"]
+        "to_confirm.class": ["arch", "bug", "perf", "dead", "test-coverage"]
       },
-      "note": "Every item of the four lists carries `finding_id`, and every finding handed over has exactly one outcome: the `block` question checks it against the `finding_ids` passed beside the block."
+      "note": "Every item of the four lists carries `finding_id`, and every finding handed over has exactly one outcome: the `block` question checks it against the `finding_ids` passed beside the block. `to_confirm.class` enumerates every discipline a round-1 finder can hand over — `bug`, `arch`, `perf`, `dead` — plus `test-coverage`, the class the closing round on tests adds."
     },
     "coverage-auto": {
       "producer": "skills/test-coverage/SKILL.md § Automatic mode",
@@ -75,6 +75,16 @@
         "commit": ["done", "partial", "not-requested", "skipped"],
         "coverage": ["tests-written", "no-tests-needed", "no-test-command"]
       }
+    },
+    "code-review-outcome": {
+      "producer": "skills/code-review/SKILL.md § Outcome",
+      "required": ["rounds", "outcome", "missing_disciplines", "oscillation", "applied", "severe", "on_previous_fix", "discarded", "gate", "gate_detail", "ledger", "to_confirm"],
+      "optional": [],
+      "enums": {
+        "outcome": ["fixed-point", "diminishing-returns", "oscillation", "rounds-truncated", "rounds-exhausted"],
+        "gate": ["green", "red"]
+      },
+      "note": "The block of the bug-only cycle: the shape of § review-outcome minus the fields a bug-only cycle, stopping at the report, does not produce — `disciplines_round_1` and `independence` (one discipline, `bug`, always), `commit` and `commit_sha` (the cycle never commits), `blocking`, `coverage` and `report`."
     },
     "commit": {
       "producer": "skills/commit/SKILL.md § Procedure 8",

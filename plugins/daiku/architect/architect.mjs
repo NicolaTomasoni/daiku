@@ -51,8 +51,7 @@
  * the review block** (the ledger's is read, by the resumption and the readable-ledger
  * condition), `ledger` **of the review block** (the one handed over beside it is read,
  * by the `order`, the closing and the resumption), `blocking` **as the block's own count**
- * (of each item it is read, by the blocking condition), `commit_sha` (the resumption reads
- * `commit` alone, to know whether the cycle had closed), `report`. Not reading a field is
+ * (of each item it is read, by the blocking condition), `commit`, `commit_sha`, `report`. Not reading a field is
  * also why a missing one among these changes no verdict. Of the brief and execute blocks
  * the content of `brief_path`, `note_review_path`, `verify_detail` and `detail` is not read
  * either — the prose of a step, not its evidence — but their presence is: it is the form
@@ -93,17 +92,17 @@ const GRAPH = {
   'decision-doc': ['new-feature'],
   research: ['owner', 'new-feature'],
   study: ['research'],
-  blueprint: ['owner', 'ship-feature'],
+  blueprint: ['owner', 'ship-feature', 'new-feature'],
   execute: ['ship-feature'],
   'ship-feature': ['owner', 'new-feature'],
   review: ['owner', 'ship-feature'],
-  'finder-prompt': ['review'],
+  'finder-prompt': ['review', 'code-review'],
   'code-review': ['owner', 'review'],
   'arch-check': ['review'],
   'dead-code': ['review'],
   perf: ['review'],
   'test-coverage': ['review'],
-  applier: ['review'],
+  applier: ['review', 'code-review'],
   commit: ['owner', 'review'],
   'update-memory': ['ship-feature', 'commit'],
 };
@@ -490,32 +489,54 @@ function askUnblock(input) {
   });
 }
 
-/** 4. The propagation of a failure — `contracts/orchestration.md` §4, validation clause. */
+/**
+ * 4. The propagation of a failure — `contracts/orchestration.md` §4, validation clause. The two
+ * failures are two different relaunches: a block that did not come back is asked again with the
+ * identical prompt, and a block that came back and the validation refused is asked again with what
+ * the validation said. `step.invalid` is what tells them apart — the blockers of the `block`
+ * question, or `[]` when nothing judged the block — and it is required, because a caller that does
+ * not say whether the block was refused leaves this question unable to tell a block that never
+ * arrived from one that arrived wrong, and the two relaunches are not the same act.
+ */
 function cameBack(blockValue) {
-  return !!blockValue && typeof blockValue === 'object' && !Array.isArray(blockValue) && Object.keys(blockValue).length > 0;
+  return !!blockValue && typeof blockValue === 'object' && !Array.isArray(blockValue);
 }
 
 function askPropagation(input) {
   const step = input.step;
   if (!step || typeof step !== 'object' || Array.isArray(step)) {
-    throw new BadInput('step is required: {"node": <name>, "block": <block>|null, "attempt": 1|2}');
+    throw new BadInput('step is required: {"node": <name>, "block": <block>|null, "attempt": 1|2, "invalid": [<what the validation said>]}');
   }
   if (!nonEmpty(step.node)) throw new BadInput('step.node is required and must be a non-empty string');
   if (step.attempt !== 1 && step.attempt !== 2) {
     throw new BadInput(`step.attempt must be 1 or 2 (the ceiling is one relaunch), got ${JSON.stringify(step.attempt)}`);
   }
-  if (cameBack(step.block)) {
+  if (step.invalid === undefined || step.invalid === null) {
+    throw new BadInput(
+      'step.invalid is required: the blockers the block question returned for this block, or [] when nothing judged it — ' +
+        'without it this question cannot tell a block that did not come back from one the validation refused'
+    );
+  }
+  if (!Array.isArray(step.invalid) || step.invalid.some((fault) => !nonEmpty(fault))) {
+    throw new BadInput('step.invalid must be an array of non-empty strings — one per fault the validation reported, or []');
+  }
+  const returned = cameBack(step.block);
+  if (!returned && step.invalid.length) {
+    throw new BadInput('step.invalid is not empty and no block came back: a block that did not come back was never judged');
+  }
+  if (returned && step.invalid.length === 0) {
     return block({
       verdict: null,
       detail: `${step.node} returned its block: nothing failed, so there is no failure to propagate.`,
     });
   }
-  const how = step.block === null || step.block === undefined ? 'it did not come back at all' : 'what came back is not its block';
+  const how = returned ? `what came back is not a block its contract accepts: ${step.invalid.join('; ')}` : 'it did not come back at all';
+  const again = returned ? 'with the same prompt plus what the validation said' : 'with the identical prompt';
   if (step.attempt === 1) {
     return block({
       verdict: 'retry',
       retry: true,
-      detail: `${step.node} failed — ${how} — and this is the first attempt: the step is relaunched exactly once, with the identical prompt.`,
+      detail: `${step.node} failed — ${how} — and this is the first attempt: the step is relaunched exactly once, ${again}.`,
     });
   }
   return block({
@@ -526,14 +547,13 @@ function askPropagation(input) {
 }
 
 /** 5. The resumption — `skills/review/SKILL.md` § *Baseline and ledger*, and the ledger's tail. */
-function resumeFrom(ledger, outcome) {
+function resumeFrom(ledger) {
   const rounds = Array.isArray(ledger.rounds) ? ledger.rounds : [];
   if (!rounds.length) return 'scope';
   const last = rounds[rounds.length - 1] || {};
   if (last.verdict !== 'stop') return 'finder';
   if (ledger.coverage === undefined || ledger.coverage === null) return 'coverage';
   if (ledger.gate === undefined || ledger.gate === null) return 'gate';
-  if (outcome && outcome.commit === 'done') return 'decision';
   return 'closing';
 }
 
@@ -567,7 +587,7 @@ function askResumption(input) {
         'resumed delivery restarts from the same commit, so the baseline alone does not say whose ledger this is. A new ledger is opened.',
     });
   }
-  const from = resumeFrom(ledger, input.review_outcome);
+  const from = resumeFrom(ledger);
   return block({
     verdict: 'resume',
     resume_from: from,
@@ -958,8 +978,10 @@ const SHAPES = {
     return wrong;
   },
   // skills/decision-doc/SKILL.md § The block you return, skills/new-feature/SKILL.md § 7, and
-  // § *The two stages* of the first: the stage is not a label, it is a claim about three things —
-  // whose direction this is, on what premises it rests, what the project already decided about it.
+  // § *The two stages* of the first: the stage is not a label, it is a claim about whose direction
+  // this is, on what premises it rests, what the project already decided about it — and whether the
+  // two stages were crossed here, because a list the crossing produces is one the owner has never
+  // seen and the run must stop and ask it.
   'decision-doc': (value) => {
     const wrong = [];
     if (value.stage === null) wrong.push('stage is null: it is strategic or technical');
@@ -1005,6 +1027,30 @@ const SHAPES = {
         }
       });
     }
+    /* The crossing of the two stages, declared and then held to what the block carries. The flag is
+       not a declaration to trust: it holds exactly when the stage is technical, the answers just
+       incorporated are there, and a new decision list comes back with them. Declaring a crossing that
+       did not happen invents a list to ask; hiding one that did is how a list the owner never saw
+       reaches them already answered. */
+    const crossing =
+      technical &&
+      Array.isArray(value.incorporated) &&
+      value.incorporated.length > 0 &&
+      Array.isArray(value.decisions) &&
+      value.decisions.length > 0;
+    if ('crossed_stages' in value) {
+      if (typeof value.crossed_stages !== 'boolean') {
+        wrong.push('crossed_stages is neither true nor false: the crossing is declared, and a value that is neither declares nothing');
+      } else if (!rule('decision-doc.the-crossing-is-what-the-block-says', value.crossed_stages === crossing)) {
+        wrong.push(
+          value.crossed_stages
+            ? 'crossed_stages is true and nothing here crossed: a block produced by the crossing is a technical stage that ' +
+              'returns a non-empty decision list together with the answers it has just incorporated'
+            : 'crossed_stages is false and this block crossed: a technical stage returning a non-empty decision list together ' +
+              'with the incorporated answers is a new list the owner has never seen, and not declaring it is how it goes unasked'
+        );
+      }
+    }
     /* A decision the project already closed and this work contradicts. It is a question for the
        owner: the block must name the decision of this list that asks it. */
     if ('precedents' in value && Array.isArray(value.precedents)) {
@@ -1020,6 +1066,29 @@ const SHAPES = {
           wrong.push(
             `precedents[${at}] does not stand and no decision of this list answers it: a precedent that says the ` +
               'opposite is put to the owner, never dismissed here — `answered_by` names the title of the decision that asks it'
+          );
+        }
+      });
+      /* A precedent the work contradicts and an earlier stage of this chain already closed: the
+         technical list cannot ask it, and writing `no` with an `answered_by` that cannot exist is the
+         false this value exists to avoid. */
+      value.precedents.forEach((precedent, at) => {
+        if (!precedent || typeof precedent !== 'object' || precedent.stands !== 'closed-elsewhere') return;
+        if (!rule('decision-doc.closed-elsewhere-belongs-to-the-technical-stage', value.stage !== 'strategic')) {
+          wrong.push(
+            `precedents[${at}] is closed-elsewhere at the strategic stage: direction is settled here, so a reversed ` +
+              'precedent is a question for the owner — `stands: "no"` and a decision of this list answering it'
+          );
+        }
+        if (!rule('decision-doc.closed-elsewhere-names-what-closed-it', nonEmpty(precedent.closed_by))) {
+          wrong.push(
+            `precedents[${at}] is closed-elsewhere and names nothing that closed it: ` +
+              '`closed_by` says which already closed decision answers it, and where it is written'
+          );
+        } else if (!rule('decision-doc.closed-elsewhere-is-not-this-list', !asked.includes(precedent.closed_by))) {
+          wrong.push(
+            `precedents[${at}] is closed-elsewhere and \`closed_by\` names a decision of this list: a precedent this ` +
+              'list asks says so with `stands: "no"` — closed-elsewhere is for one an earlier stage already closed'
           );
         }
       });
@@ -1075,6 +1144,13 @@ const SHAPES = {
         if (!rule('applier.item-names-a-finding', nonEmpty(id))) wrong.push(`${key}[${at}].finding_id is missing: every item names the finding it answers`);
         else if (!rule('applier.finding-was-handed-over', outcomes.has(id))) wrong.push(`${key}[${at}].finding_id ${JSON.stringify(id)} is not a finding that was handed over`);
         else if (key !== 'oscillation') outcomes.get(id).push(key);
+        // An applied fix is identified by `file`, `symbol` and `anchor` — the same identity
+        // `roundsOf` requires of the round it lands in, and the ledger measures `on_previous_fix`
+        // and the oscillation on. Caught here so a fix that lacks one is refused and the applier
+        // relaunched, instead of surviving `valid` and dying in the `round` action.
+        if (key === 'applied' && !rule('applier.applied-identity', !!item && nonEmpty(item.file) && typeof item.symbol === 'string' && nonEmpty(item.anchor))) {
+          wrong.push(`${key}[${at}] needs file, symbol and anchor: a fix is identified by them`);
+        }
       });
     }
     for (const [id, seen] of outcomes) {
@@ -1111,23 +1187,30 @@ function askBlock(input, root) {
   }
   const schema = schemaOf(root, input.name);
   const value = input.block;
-  let wrong;
+  // A value that is not the JSON object its node declares — prose, an array, a number — is «a
+  // block that did not come back», exactly as §4 of `contracts/orchestration.md` already says.
+  // It was never judged, so it carries no blockers: the caller passes `step.invalid = []` to the
+  // `propagation` question and the relaunch is with the identical prompt, not with a validation
+  // feedback. `askPropagation` reads that distinction through `step.invalid`, and it stays strict.
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    wrong = [`the step did not return a JSON object (${value === null ? 'null' : Array.isArray(value) ? 'an array' : typeof value})`];
-  } else {
-    wrong = (schema.required || []).filter((key) => !(key in value)).map((key) => `${key} is missing`);
-    for (const [path, domain] of Object.entries(schema.enums || {})) {
-      for (const got of valuesAt(value, path)) {
-        if (got !== null && !domain.includes(got)) wrong.push(`${path} is ${JSON.stringify(got)}, outside ${domain.join('|')}`);
-      }
-    }
-    if (SHAPES[input.name]) wrong.push(...SHAPES[input.name](value, input));
+    return block({
+      verdict: 'invalid',
+      blockers: [],
+      detail: `the ${input.name} block did not come back — ${value === null ? 'null' : Array.isArray(value) ? 'an array' : typeof value}, not the JSON object its node declares. It was never judged, and it is relaunched with the identical prompt, not with a validation feedback.`,
+    });
   }
+  const wrong = (schema.required || []).filter((key) => !(key in value)).map((key) => `${key} is missing`);
+  for (const [path, domain] of Object.entries(schema.enums || {})) {
+    for (const got of valuesAt(value, path)) {
+      if (got !== null && !domain.includes(got)) wrong.push(`${path} is ${JSON.stringify(got)}, outside ${domain.join('|')}`);
+    }
+  }
+  if (SHAPES[input.name]) wrong.push(...SHAPES[input.name](value, input));
   return block({
     verdict: wrong.length ? 'invalid' : 'valid',
     blockers: wrong,
     detail: wrong.length
-      ? `the ${input.name} block is malformed — ${wrong.length} faults. A malformed block counts as a block that did not come back.`
+      ? `the ${input.name} block is malformed — ${wrong.length} faults, listed in blockers. It came back, and this is what it came back wrong with: it is relaunched with them, not with the identical prompt.`
       : `the ${input.name} block has the shape its producer declares.`,
   });
 }
@@ -1149,7 +1232,7 @@ const ASKS = {
  * input missing one of them before asking, and the bench refuses a call to the evaluator,
  * written in the contracts of `skills/`, whose paragraph does not name them all. A key a
  * question reads only in some cases — `merit` on the second ask of `round`, `finding_ids` for
- * the applier's block, the `commit` of `review_outcome` for `resumption` — is not here: the
+ * the applier's block — is not here: the
  * question checks it where it reads it. A contract that changes the input of a question
  * changes its row here in the same change.
  */
@@ -1275,6 +1358,7 @@ function cites(root, citation) {
 function matches(got, expect) {
   return Object.entries(expect).every(([key, value]) => {
     if (key === 'blockers_include') return (got.blockers || []).some((b) => String(b).includes(value));
+    if (key === 'detail_include') return String(got.detail || '').includes(value);
     if (key === 'blockers_length_at_least') return (got.blockers || []).length >= value;
     if (key === 'remaining_starts_with') return (got.remaining || [])[0] === value;
     if (key === 'readings_length') return (got.readings || []).length === value;
@@ -1308,7 +1392,7 @@ const LAYER = (extra = {}) => ({
   policy: '.daiku/policies/server.md', name: 'api', folders: ['src/server/api/**'], deny_imports: ['src/server/db/**'], ...extra,
 });
 const DOC = (extra = {}, decision = {}) => ({
-  stage: 'technical', stage_why: 'x',
+  stage: 'technical', stage_why: 'x', crossed_stages: false,
   direction: { kind: 'owner-request', where: 'the request that opened the work' },
   file: 'x/1. decision-doc.md', verdict: null, applied_fixes: [],
   premises: [{ claim: 'the reader returns nothing on a real build file', evidence: 'a.mjs:12' }],
@@ -1426,16 +1510,22 @@ const CASES = [
 
   /* --- question: propagation — contracts/orchestration.md §4, validation clause --- */
   { id: 'propagation:retry-once', cites: { file: 'contracts/orchestration.md', section: '4. Delegation' },
-    input: { question: 'propagation', step: { node: 'brief', block: null, attempt: 1 } },
-    expect: { verdict: 'retry', retry: true, fallback: null } },
-  { id: 'propagation:malformed-counts-as-missing', cites: { file: 'contracts/orchestration.md', section: '4. Delegation' },
-    input: { question: 'propagation', step: { node: 'brief', block: 'prose instead of JSON', attempt: 1 } },
+    input: { question: 'propagation', step: { node: 'brief', block: null, attempt: 1, invalid: [] } },
+    expect: { verdict: 'retry', retry: true, fallback: null, detail_include: 'with the identical prompt' } },
+  { id: 'propagation:prose-instead-of-a-block', cites: { file: 'contracts/orchestration.md', section: '4. Delegation' },
+    input: { question: 'propagation', step: { node: 'brief', block: 'prose instead of JSON', attempt: 1, invalid: [] } },
     expect: { verdict: 'retry' } },
+  { id: 'propagation:a-block-the-validation-refused', cites: { file: 'contracts/orchestration.md', section: '4. Delegation' },
+    input: { question: 'propagation', step: { node: 'brief', block: { ok: true }, attempt: 1, invalid: ['brief_path is missing'] } },
+    expect: { verdict: 'retry', detail_include: 'plus what the validation said' } },
+  { id: 'propagation:a-refused-block-at-the-ceiling', cites: { file: 'contracts/orchestration.md', section: '4. Delegation' },
+    input: { question: 'propagation', step: { node: 'brief', block: { ok: true }, attempt: 2, invalid: ['brief_path is missing'] } },
+    expect: { verdict: 'fallback' } },
   { id: 'propagation:fallback-after-the-ceiling', cites: { file: 'contracts/orchestration.md', section: '4. Delegation' },
-    input: { question: 'propagation', step: { node: 'execute', block: null, attempt: 2 } },
+    input: { question: 'propagation', step: { node: 'execute', block: null, attempt: 2, invalid: [] } },
     expect: { verdict: 'fallback', fallback: true, retry: null } },
   { id: 'propagation:a-block-that-came-back', cites: { file: 'contracts/orchestration.md', section: '4. Delegation' },
-    input: { question: 'propagation', step: { node: 'execute', block: { ok: true }, attempt: 1 } },
+    input: { question: 'propagation', step: { node: 'execute', block: { ok: true }, attempt: 1, invalid: [] } },
     expect: { verdict: null } },
 
   /* --- question: resumption — skills/review/SKILL.md § Baseline and ledger --- */
@@ -1451,9 +1541,6 @@ const CASES = [
   { id: 'resumption:resume-at-the-gate', cites: { file: 'skills/review/SKILL.md', section: 'Baseline and ledger' },
     input: { question: 'resumption', entry: 'ship-feature', present: ['1. decision-doc.md'], ledger: { base: 'abc1234', item: 'x/y', rounds: [{ n: 2, verdict: 'stop' }], outcome: 'fixed-point', coverage: 'no-tests-needed', gate: null, gate_detail: null } },
     expect: { verdict: 'resume', resume_from: 'gate' } },
-  { id: 'resumption:resume-past-a-closed-cycle', cites: { file: 'skills/review/SKILL.md', section: 'Baseline and ledger' },
-    input: { question: 'resumption', entry: 'ship-feature', present: ['1. decision-doc.md'], ledger: { base: 'abc1234', item: 'x/y', rounds: [{ n: 2, verdict: 'stop' }], outcome: 'fixed-point', coverage: 'no-tests-needed', gate: 'green', gate_detail: 'ok' }, review_outcome: { commit: 'done', commit_sha: 'deadbee' } },
-    expect: { verdict: 'resume', resume_from: 'decision' } },
   { id: 'resumption:restart-without-ledger', cites: { file: 'skills/review/SKILL.md', section: 'Baseline and ledger' },
     input: { question: 'resumption', entry: 'ship-feature', present: ['1. decision-doc.md'], ledger: null },
     expect: { verdict: 'restart', resume_from: null } },
@@ -1737,6 +1824,30 @@ const CASES = [
   { id: 'block:decision-doc-a-precedent-that-answers-nothing', cites: { file: 'skills/decision-doc/SKILL.md', section: 'The two stages' },
     input: { question: 'block', name: 'decision-doc', block: DOC({ precedents: [{ decision: 'the owner gave Ant up', where: 'a memory', stands: 'no' }] }) },
     expect: { verdict: 'invalid', blockers_include: 'no decision of this list answers it' } },
+  { id: 'block:decision-doc-a-precedent-closed-elsewhere', cites: { file: 'skills/decision-doc/SKILL.md', section: 'The block you return' },
+    input: { question: 'block', name: 'decision-doc', block: DOC({ precedents: [{ decision: 'the owner gave Ant up', where: 'a memory', stands: 'closed-elsewhere', closed_by: '0.5. strategic-study.md, decision 2' }] }) },
+    expect: { verdict: 'valid', blockers: [] } },
+  { id: 'block:decision-doc-closed-elsewhere-names-nothing', cites: { file: 'skills/decision-doc/SKILL.md', section: 'The block you return' },
+    input: { question: 'block', name: 'decision-doc', block: DOC({ precedents: [{ decision: 'the owner gave Ant up', where: 'a memory', stands: 'closed-elsewhere' }] }) },
+    expect: { verdict: 'invalid', blockers_include: 'names nothing that closed it' } },
+  { id: 'block:decision-doc-closed-elsewhere-names-this-list', cites: { file: 'skills/decision-doc/SKILL.md', section: 'The block you return' },
+    input: { question: 'block', name: 'decision-doc', block: DOC({ precedents: [{ decision: 'the owner gave Ant up', where: 'a memory', stands: 'closed-elsewhere', closed_by: 't' }] }) },
+    expect: { verdict: 'invalid', blockers_include: 'names a decision of this list' } },
+  { id: 'block:decision-doc-closed-elsewhere-at-the-strategic-stage', cites: { file: 'skills/decision-doc/SKILL.md', section: 'The two stages' },
+    input: { question: 'block', name: 'decision-doc', block: DOC({ stage: 'strategic', premises: [], precedents: [{ decision: 'the owner gave Ant up', where: 'a memory', stands: 'closed-elsewhere', closed_by: 'a memory, decision 2' }] }, { classification: 'weakness' }) },
+    expect: { verdict: 'invalid', blockers_include: 'closed-elsewhere at the strategic stage' } },
+  { id: 'block:decision-doc-the-crossing', cites: { file: 'skills/decision-doc/SKILL.md', section: 'The block you return' },
+    input: { question: 'block', name: 'decision-doc', block: DOC({ crossed_stages: true, incorporated: ['1 — chose A — written in 0.5. strategic-study.md'] }) },
+    expect: { verdict: 'valid', blockers: [] } },
+  { id: 'block:decision-doc-a-crossing-that-does-not-declare-itself', cites: { file: 'skills/decision-doc/SKILL.md', section: 'The block you return' },
+    input: { question: 'block', name: 'decision-doc', block: DOC({ incorporated: ['1 — chose A — written in 0.5. strategic-study.md'] }) },
+    expect: { verdict: 'invalid', blockers_include: 'crossed_stages is false and this block crossed' } },
+  { id: 'block:decision-doc-a-crossing-nobody-made', cites: { file: 'skills/decision-doc/SKILL.md', section: 'The block you return' },
+    input: { question: 'block', name: 'decision-doc', block: DOC({ crossed_stages: true }) },
+    expect: { verdict: 'invalid', blockers_include: 'crossed_stages is true and nothing here crossed' } },
+  { id: 'block:decision-doc-a-crossing-that-is-not-a-boolean', cites: { file: 'skills/decision-doc/SKILL.md', section: 'The block you return' },
+    input: { question: 'block', name: 'decision-doc', block: DOC({ crossed_stages: 'yes' }) },
+    expect: { verdict: 'invalid', blockers_include: 'neither true nor false' } },
   { id: 'block:decision-doc-no-decision-left', cites: { file: 'skills/decision-doc/SKILL.md', section: 'The block you return' },
     input: { question: 'block', name: 'decision-doc', block: DOC({ decisions: null }) },
     expect: { verdict: 'valid' } },
@@ -1769,7 +1880,7 @@ const CASES = [
     expect: { verdict: 'invalid', blockers_include: 'outside' } },
   { id: 'block:nothing-came-back', cites: { file: 'contracts/orchestration.md', section: '4. Delegation' },
     input: { question: 'block', name: 'decision-doc', block: null },
-    expect: { verdict: 'invalid', blockers_length_at_least: 1 } },
+    expect: { verdict: 'invalid', blockers: [], detail_include: 'identical prompt' } },
   { id: 'block:another-block-by-its-schema-alone', cites: { file: 'skills/ship-feature/SKILL.md', section: '7. Report' },
     input: { question: 'block', name: 'ship-feature-report', block: { ok: true, report_path: 'x/5. review-report.md', detail: '' } },
     expect: { verdict: 'valid' } },
@@ -1797,6 +1908,9 @@ const CASES = [
   { id: 'block:applier-an-invented-finding', cites: { file: 'skills/applier/SKILL.md', section: 'The block you return' },
     input: { question: 'block', name: 'applier', finding_ids: ['r1-bug-1'], block: APPLIER({ applied: [OUTCOME('r1-bug-1', { anchor: 'x' }), OUTCOME('r1-bug-9', { anchor: 'y' })] }) },
     expect: { verdict: 'invalid', blockers_include: 'not a finding that was handed over' } },
+  { id: 'block:applier-an-applied-fix-without-its-anchor', cites: { file: 'skills/applier/SKILL.md', section: 'The block you return' },
+    input: { question: 'block', name: 'applier', finding_ids: ['r1-bug-1'], block: APPLIER({ applied: [OUTCOME('r1-bug-1')] }) },
+    expect: { verdict: 'invalid', blockers_include: 'applied[0] needs file, symbol and anchor' } },
   { id: 'block:applier-an-item-that-names-no-finding', cites: { file: 'skills/applier/SKILL.md', section: 'The block you return' },
     input: { question: 'block', name: 'applier', finding_ids: ['r1-bug-1'], block: APPLIER({ applied: [OUTCOME('r1-bug-1', { anchor: 'x' })], to_confirm: [{ file: 'a.mjs', line: 1, class: 'bug', blocking: true, scenario: 'x' }] }) },
     expect: { verdict: 'invalid', blockers_include: 'to_confirm[0].finding_id is missing' } },
@@ -1824,7 +1938,10 @@ const REJECTED = [
   { id: 'reject:outcome-outside-its-domain', input: { question: 'decision', review_outcome: GREEN({ outcome: 'converged' }) } },
   { id: 'reject:missing-disciplines-not-a-list', input: { question: 'decision', review_outcome: GREEN({ missing_disciplines: 'arch' }) } },
   { id: 'reject:step-absent', input: { question: 'propagation' } },
-  { id: 'reject:attempt-outside-the-ceiling', input: { question: 'propagation', step: { node: 'brief', block: null, attempt: 3 } } },
+  { id: 'reject:attempt-outside-the-ceiling', input: { question: 'propagation', step: { node: 'brief', block: null, attempt: 3, invalid: [] } } },
+  { id: 'reject:step-without-what-the-validation-said', input: { question: 'propagation', step: { node: 'brief', block: null, attempt: 1 } } },
+  { id: 'reject:invalid-not-a-list', input: { question: 'propagation', step: { node: 'brief', block: { ok: true }, attempt: 1, invalid: 'brief_path is missing' } } },
+  { id: 'reject:a-judged-block-that-never-came-back', input: { question: 'propagation', step: { node: 'brief', block: null, attempt: 1, invalid: ['brief_path is missing'] } } },
   { id: 'reject:round-without-ledger', input: { question: 'round', rounds_cap: null } },
   { id: 'reject:round-with-no-round', input: { question: 'round', rounds_cap: null, ledger: LEDGER([]) } },
   { id: 'reject:round-cap-absent', input: { question: 'round', ledger: LEDGER([ROUND([])]) } },

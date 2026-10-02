@@ -168,7 +168,7 @@ Close with the list, without embellishments:
 
   1. **Approve the hooks**: `/hooks` inside Codex, showing the sources and letting them be trusted. Codex records trust on the file **hash**: new or changed hooks stay flagged for review and **are skipped until approved**. That is why step 5 annotates which files changed — they are exactly the ones coming back asking.
   2. **Trust the project**, if not already: the hooks of `<repo>/.codex/` load only when that layer is trusted. User hooks have no such constraint, project ones do.
-  3. **Declare the pool**, if not already done. The command guard only denies removals inside the worktrees `.daiku/project.json` declares in `{worktree.pool}`; push, `--no-verify`, commits of `.daiku/` and commits crediting Claude or Codex are always denied, without a key. Watch what is in the JSON and say so: "pool X" or "no pool", not a generic invite to configure something.
+  3. **Declare the pool**, if not already done. The command guard only denies removals inside the worktrees `.daiku/project.json` declares in `{worktree.pool}`; push, `--no-verify` and commits crediting Claude or Codex are always denied, without a key. Watch what is in the JSON and say so: "pool X" or "no pool", not a generic invite to configure something.
 
   4. **Reopen the session.** `SessionStart` cannot trigger in the session where the file just appeared, and the approval of point 1 is still given to already serving hooks.
 
