@@ -31,7 +31,8 @@ privato nel repository di prodotto di Daiku.
   cade, e `update-memory` non ha più una sede del suo perimetro che non viaggia.
 - **`{memory.root}` può stare sotto `.daiku/`**, e il divieto cade: era la conseguenza del
   versionamento mancante. La sede che `init` propone resta la radice tecnica.
-- **`paths.review_state` resta fuori dal versionamento** — è un ledger, non sorgente — e proprio per
+- **`paths.review_state` resta fuori dal versionamento** — è lo stato della corsa (il ledger della
+  review e, accanto, il registro del pool dei worktree), non sorgente — e proprio per
   questo non sta sotto `.daiku/`, che ora è versionata: la ragione si ribalta, la regola resta.
 
 **How to apply:** la regola vive in cinque sedi e vanno tenute insieme — la §8 di
