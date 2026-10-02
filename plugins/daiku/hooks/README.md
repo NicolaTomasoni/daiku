@@ -9,7 +9,7 @@ the other four never stop anything and only say what they know.
 | `lib/contracts-post-edit.mjs` | `PostToolUse` on `Edit`/`Write` | after a write to the corpus — and to the sources a policy watches — reports faults that would not fail on their own |
 | `lib/run-advice.mjs` | `UserPromptSubmit`, and `PreToolUse` on the write tools | marks the session a run was opened in and states the run's rule once; at a write that conversation makes outside the seats the run owns it repeats the rule — and blocks nothing |
 | `lib/session-advice.mjs` | `SessionStart` | at startup, says whether Daiku is halfway opened and whether work was left in flight |
-| `lib/stop-advice.mjs` | `Stop` | at session end, lists the review ledgers left open, so the next session resumes from them — once per session, never on a stop it caused itself |
+| `lib/stop-advice.mjs` | `Stop` | at session end, names the review ledgers **this session** worked in and left standing — nothing written for hours, no `.abandoned` beside them — so it resumes from them or sets them aside; once per session, never on a stop it caused itself |
 
 Next to them stand two modules that are not hooks: `lib/project-root.mjs` finds the project
 root on both hosts, `lib/daiku-config.mjs` reads `.daiku/project.json`. `project-root` carries a
@@ -125,8 +125,8 @@ written through its `rule()`.
   bypassing both the confirmation the host asks for a command and the hash approval
   Codex demands precisely for hooks.
 - **They write nothing in the project.** They read, and answer the host. Two of them leave one small
-  mark each, and both stay outside the repository: `stop-advice` marks what it announced, so the same
-  notice is not delivered twice in a session, and `run-advice` marks the run this session opened —
+  mark each, and both stay outside the repository: `stop-advice` marks the set of ledgers it
+  announced, so the same notice is not delivered twice in a session, and `run-advice` marks the run this session opened —
   in the session's own scratch directory the host names, or in the OS temporary directory where
   there is none.
 - **They do not speak just to say everything is fine.** A notice that arrives every time stops being read.

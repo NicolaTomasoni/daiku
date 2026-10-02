@@ -43,7 +43,7 @@
  * valeva anche prima, quando entrambe erano collassate.
  *
  * **I contributi: una cartella per feature, un file per corsa.** Le voci che descrivono una feature
- * che Daiku non ha finiscono in `.docs/features/<feature>/<slug-corsa>.md`, e sono l'unica scrittura
+ * che Daiku non ha finiscono in `.daiku/features/<feature>/<slug-corsa>.md`, e sono l'unica scrittura
  * ammessa fuori dalla radice delle corse. Il nome del file è lo slug della corsa, quindi due corse
  * parallele non si incontrano mai; il gate verifica che la corsa tocchi solo file col proprio nome,
  * che non ne cancelli nessuno, e che ogni contributo abbia la forma fissa delle cinque sezioni — la
@@ -80,7 +80,7 @@ const RADICE_CORSE = '.docs/studia-repository';
 
 /** Il catalogo delle feature: una cartella per feature, un contributo per corsa. L'unica altra sede
  *  in cui una corsa scrive, e solo col proprio nome. */
-const RADICE_FEATURE = '.docs/features';
+const RADICE_FEATURE = '.daiku/features';
 
 /** Le sezioni di un contributo, nell'ordine in cui devono comparire: è la forma che rende
  *  confrontabili due repo che portano la stessa feature. */
@@ -922,7 +922,7 @@ function runSelfCheck() {
     }
 
     function scriviContributo(dir, feature, corsa, testo) {
-      const cartella = join(dir, '.docs', 'features', feature);
+      const cartella = join(dir, '.daiku', 'features', feature);
       mkdirSync(cartella, { recursive: true });
       writeFileSync(join(cartella, `${corsa}.md`), testo);
     }
@@ -973,7 +973,7 @@ function runSelfCheck() {
 
     // Il file del contributo col proprio nome è l'unica scrittura ammessa fuori dalla corsa -> verde.
     {
-      const res = corsaConContributo(buildFakeRepo(), { git: [`?? .docs/features/${FEATURE}/${CORSA_PROVA}.md`] });
+      const res = corsaConContributo(buildFakeRepo(), { git: [`?? .daiku/features/${FEATURE}/${CORSA_PROVA}.md`] });
       record('contributo-nel-perimetro-verde', !res.failed.some((f) => f.startsWith('scrittura:')), res.failed.join(' | '));
     }
 
@@ -1034,7 +1034,7 @@ function runSelfCheck() {
     // Un file nel catalogo di una corsa che non lo dichiara -> rosso: una corsa non inventa un
     // contributo a nome di un'altra.
     {
-      const res = corsaConContributo(buildFakeRepo(), { git: [`?? .docs/features/${FEATURE}/altro--repo.md`] });
+      const res = corsaConContributo(buildFakeRepo(), { git: [`?? .daiku/features/${FEATURE}/altro--repo.md`] });
       record('contributo-non-dichiarato-rosso', res.failed.some((f) => f.startsWith('scrittura:contributo-dichiarato')), res.failed.join(' | '));
     }
 
@@ -1056,14 +1056,14 @@ function runSelfCheck() {
       const res = runChecks(mia, 'plugins/daiku', {
         repoOverride: dir,
         radiciNonEseguibili: [join(dir, 'analysis-root').replace(/\\/g, '/')],
-        gitStatusCorrente: [`?? .docs/features/${FEATURE}/altro--repo.md`],
+        gitStatusCorrente: [`?? .daiku/features/${FEATURE}/altro--repo.md`],
       });
       record('contributo-di-una-corsa-parallela-verde', !res.failed.some((f) => f.startsWith('scrittura:')), res.failed.join(' | '));
     }
 
     // Un contributo cancellato -> rosso: sparirebbe l'evidenza di quella corsa.
     {
-      const res = corsaConContributo(buildFakeRepo(), { git: [` D .docs/features/${FEATURE}/${CORSA_PROVA}.md`] });
+      const res = corsaConContributo(buildFakeRepo(), { git: [` D .daiku/features/${FEATURE}/${CORSA_PROVA}.md`] });
       record('contributo-cancellato-rosso', res.failed.some((f) => f.startsWith('scrittura:contributo-dichiarato')), res.failed.join(' | '));
     }
 

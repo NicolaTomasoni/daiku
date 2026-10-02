@@ -17,8 +17,8 @@
     ]
   },
   "paths": {
-    "studies": ".docs/studies",
-    "features": ".docs/features",
+    "studies": ".daiku/studies",
+    "features": ".daiku/features",
     "review_state": ".docs/runtime/review"
   },
   "memory": {
@@ -27,6 +27,9 @@
   },
   "commit": {
     "memory_prefix": "docs(memoria)"
+  },
+  "review": {
+    "disciplines": ["bug"]
   },
   "worktree": {
     "pool": ".claude/worktrees",

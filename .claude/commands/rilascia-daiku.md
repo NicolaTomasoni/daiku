@@ -1,5 +1,5 @@
 ---
-description: 'Rilascia Daiku con bump di versione: verifiche, versione nei due manifest e nel badge, prosa AI, commit in dev, pubblicazione sul canale beta e promozione in produzione secondo il bump'
+description: 'Rilascia Daiku con bump di versione: se il working tree di plugins/ porta modifiche le fa passare da code review e commit, se invece è pulito prende i commit già in dev così come sono; poi verifiche, versione nei due manifest e nel badge, prosa AI, pubblicazione sul canale beta e promozione in produzione secondo il bump'
 argument-hint: '[major | minor | patch] [--with-main]'
 ---
 
@@ -26,21 +26,48 @@ La divisione è fissa: **la versione la scrivi nei tre punti esatti e la verific
 scrivi tu**. I numeri hanno una forma sola e un controllo che li rilegge; la sintesi delle note
 in inglese, la voce di changelog e il messaggio di commit sono prosa, e li giudichi tu.
 
-## 0. Working tree: committare prima?
+## 0. Da dove si parte: lo dice il disco
 
-Prima delle verifiche, guarda se il working tree di dev è sporco:
+Quale strada prende il rilascio non è un giudizio e non si chiede all'owner: si misura una volta
+all'inizio, e resta quella per tutto il rilascio. Il perimetro è `plugins/`, cioè ciò che la copia
+della §6 porta: il resto del working tree non decide niente qui.
 
 ```bash
-git status --porcelain
+# i commit di dev successivi all'ultimo che ha toccato la versione (i due comandi della §3)
+git log --format='%h %s' $(git log --format=%H -n 1 -- plugins/daiku/.claude-plugin/plugin.json)..HEAD
+# ciò che la copia porterebbe e non è ancora committato
+git status --porcelain -- plugins/
 ```
 
-Se l'output è vuoto, vai oltre. Se c'è qualcosa, **chiedi all'owner con AskUserQuestion**
-se vuole prima lanciare `/commit`, e fermati finché non risponde: opzioni «Sì, committa
-prima» / «No, rilascia così».
+Il primo stampa una riga per commit in attesa, o niente; il secondo una riga per file modificato o
+non tracciato dentro `plugins/`, o niente. Da lì la strada, e non se ne esce:
 
-Se risponde sì, esegui `/daiku:commit` (il contratto è `plugins/daiku/skills/commit/SKILL.md`) e
-riprendi da qui con l'albero pulito. Se risponde no, procedi: il perimetro delle note resta quello
-della §3 — commit dopo l'ultimo rilascio più diff del working tree.
+| Working tree su `plugins/` | Commit in attesa | Strada |
+|---|---|---|
+| sporco | qualsiasi | **A — review, poi commit** |
+| pulito | almeno uno | **B — dritto al rilascio** |
+| pulito | nessuno | **C — niente da rilasciare** |
+
+**A — il working tree porta modifiche.** Sono le richieste fatte via chat, e passano dalla review
+prima di entrare nella storia:
+
+1. **`/daiku:code-review`** sul solo diff del working tree: è il perimetro che ha qualcosa da
+   leggere. Va in loop fino a che il codice smette di cambiare, applica da sé le correzioni reali,
+   e si ferma al report.
+2. **`/daiku:commit`** (`plugins/daiku/skills/commit/SKILL.md`), che conosce la convenzione del
+   repository e separa i gruppi: porta ciò che la review ha lasciato.
+3. Da qui la §1: versione e changelog nascono dopo, e li committa la §5.
+
+**B — il working tree è pulito e ci sono commit in attesa.** Li ha lasciati una consegna —
+`daiku:new-feature` o `daiku:ship-feature` — che li ha già fatti passare dalla propria review e li
+ha committati: **non si rivede niente e non si committa niente**, e non c'è nessuna conferma da
+chiedere. Quei commit *sono* il rilascio: si va dritti alla §1.
+
+**C — né modifiche né commit.** Non c'è altro da rilasciare che il numero nuovo: dillo e fermati,
+senza chiedere.
+
+Le modifiche del working tree che **non appartengono al rilascio** — il lavoro in corso di un'altra
+sessione — restano fuori dai suoi commit: la copia della §6 prende `plugins/` e nient'altro.
 
 ## 1. Verifiche pre-rilascio
 
@@ -139,15 +166,16 @@ voce di changelog della §4, e ogni altra modifica del working tree che appartie
 Sono gruppi distinti, e vanno in commit separati secondo la convenzione del repository: lancia
 `/daiku:commit` (`plugins/daiku/skills/commit/SKILL.md`), che li conosce già.
 
-Poi verifica che l'albero sia **pulito**:
+Poi verifica che il perimetro che la copia porta — `plugins/` — sia **pulito**:
 
 ```bash
 git status --porcelain
 ```
 
-Se resta qualcosa, la copia della §6 lo porterebbe in pubblicazione senza che nessun commit di
-dev lo dichiari: committalo, o toglilo dall'albero prima di copiare. **Un rilascio non parte
-con dev sporco.**
+Se resta qualcosa **dentro quel perimetro**, la copia della §6 lo porterebbe in pubblicazione senza
+che nessun commit di dev lo dichiari: committalo, o toglilo dall'albero prima di copiare. Fuori da
+lì il lavoro in corso di un'altra sessione resta dov'è, e la copia non lo prende. **Un rilascio non
+parte con `plugins/` sporco.**
 
 ## 6. Pubblicazione
 

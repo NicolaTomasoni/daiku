@@ -42,10 +42,10 @@ Ogni path è **relativo alla radice del repository** (`C:/dev/daiku-workspace/da
 | `.daiku/` | i parametri del cantiere, e il gate delle guardie di Daiku su questo repository |
 | `PUNTI-APERTI.md` | le decisioni ancora da prendere |
 | `.docs/memory/` + `.docs/memory/MEMORY.md` | la memoria persistente e il suo indice |
-| `.docs/features/<slug>/` | la cartella di un lavoro, con i file numerati `0.`–`5.` |
-| `.docs/studies/<slug>.md` | gli appunti che `daiku:research` deposita ◦ |
+| `.daiku/features/<slug>/` | la cartella di un lavoro, con i file numerati `0.`–`5.` |
+| `.daiku/studies/<slug>.md` | gli appunti che `daiku:research` deposita ◦ |
 | `.docs/studia-repository/<slug>/` | i documenti di una corsa di `studia-repository`: `run.json` e i tre documenti ◦ |
-| `.docs/features/<feature>/` | il catalogo delle feature: un contributo per corsa, `<slug-corsa>.md` — cresce da repo diversi e non appartiene a nessuna corsa ◦ |
+| `.daiku/features/<feature>/` | il catalogo delle feature: un contributo per corsa, `<slug-corsa>.md` — cresce da repo diversi e non appartiene a nessuna corsa ◦ |
 | `.docs/runtime/review/` | i ledger dei giri di `daiku:review`, uno per ciclo |
 | `.docs/esempi/reforgia/` | dominio e politiche di ReforgIA, come esempio compilato |
 | `.docs/tools/` | gli strumenti di chi sviluppa: `check-topology.mjs`, `collauda-init.mjs`, `studia-repository/` |
@@ -173,9 +173,9 @@ rende un passo ripetibile.
 
 **Chi può ri-delegare.** Un passo delegato **esegue**: non delega a sua volta. L'unico nodo
 orchestrante di questo corpus è `studia-repository`, ed è **entry point**: lo lanci tu, e nessuno
-lo invoca come figlio. Ogni altro passo delegato è una **foglia**. `rilascia-daiku` invoca una
-skill **del prodotto** (`daiku:commit`), e la delega di quella la dichiara il contratto del
-prodotto, non questo file.
+lo invoca come figlio. Ogni altro passo delegato è una **foglia**. `rilascia-daiku` invoca due
+skill **del prodotto** (`daiku:code-review` e `daiku:commit`), e la delega di quelle la dichiarano
+i contratti del prodotto, non questo file.
 
 **`studia-repository-lotto` sta fuori dal grafo.** Non delega un passo a un subagent: lancia
 **una sessione headless di Claude Code per target**, con `.docs/tools/studia-repository/lotto.mjs`.
@@ -202,7 +202,7 @@ contenuto vive nel file del nodo, che resta l'unico posto in cui si modifica.
 | Nodo | Chi lo invoca | Riceve già risolto | Restituisce | Ri-delega |
 |---|---|---|---|---|
 | `collauda-init` | owner | niente: la prova e il suo verdetto sono di un banco, non tuoi | § *Esito* del suo file | no |
-| `rilascia-daiku` | owner | le opzioni del rilascio | § *Esito* del suo file | sì — `daiku:commit`, skill del prodotto |
+| `rilascia-daiku` | owner | le opzioni del rilascio | § *Esito* del suo file | sì — `daiku:code-review` e `daiku:commit`, skill del prodotto |
 | `studia-repository` | owner, `studia-repository-lotto` | target (repo, pacchetto o path locale), `--assi`, `--versione`, `--focus`, `--cwd`, `--deep`, `--shallow-only` facoltativi | i documenti in `.docs/studia-repository/<slug>/` e § *Esito in chat* del suo file | sì — leggera, triage, acquisizione, grafo, lettori, verificatori, confronto, giudice, report; foglie |
 | `studia-repository-lotto` | owner | elenco dei target (file o riga di comando), le opzioni comuni a tutte le corse, `--parallelo`, `--budget`, `--modello` | le corse sotto `.docs/studia-repository/`, ciascuna con l'esito di `studia-repository`, e § *Esito in chat* del suo file | sì — lancia N corse di `studia-repository` come **sessioni headless**, non come subagent (§4) |
 | `translate-skill` | owner | il path del file di Daiku da tradurre | il file riscritto in inglese | no |
@@ -223,8 +223,8 @@ sono **sempre** sequenziali: non sono serializzabili altrimenti, e qui la workin
 ## 7. Il gate di questo progetto
 
 È l'unico posto in cui il gate di questo repository è scritto, e lo esegue **chi sta per committare
-una modifica alla forma del pacchetto** — sempre `rilascia-daiku`, come primo passo di un rilascio,
-e a mano prima di una consegna che tocca manifest, contratti o hook. Il ciclo di `daiku:review` ha
+una modifica alla forma del pacchetto** — sempre `rilascia-daiku`, a ogni rilascio, e a mano prima
+di una consegna che tocca manifest, contratti o hook. Il ciclo di `daiku:review` ha
 il proprio gate, che è il valutatore deterministico del prodotto (`plugins/daiku/architect/`), e
 non questo.
 

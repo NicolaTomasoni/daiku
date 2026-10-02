@@ -75,6 +75,7 @@ of a file, the presence or absence of an area. Three prohibitions, in order of s
 | `memory.root` | root of the persistent memory corpus, inside the repository (§8); on Claude Code it is also the folder where the host writes its own memory (§4.2) |
 | `memory.index` | index file of the corpus, the one read first |
 | `commit.memory_prefix` | prefix of the memory-and-documentation commit message |
+| `review.disciplines` | the disciplines the review cycle runs at round 1, among `bug`, `arch`, `perf` and `dead`; declared, they are the whole set — the scope and the judgements add nothing; absent, `bug` runs and the other three are decided on the diff |
 | `worktree.pool` | delivery-worktree pool directory, relative to the technical root |
 | `worktree.prefix` | prefix of the pool worktrees' names, followed by the number (`1`..`worktree.max`) |
 | `worktree.max` | maximum number of pool worktrees: never one more, never an off-convention name |

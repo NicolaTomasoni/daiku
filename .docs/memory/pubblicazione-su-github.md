@@ -44,12 +44,14 @@ owner/repo` su Codex. Un GitLab richiederebbe l'URL git completo su tutti e due,
 le istruzioni di installazione senza dare nulla in cambio. La pubblicazione sta su GitHub
 per questo; lo sviluppo sta su GitLab, dove la forma breve non serve.
 
-**How to apply:** il rilascio ha un percorso solo, `.claude/commands/rilascia-daiku.md`: verifiche
-verdi — le due vetrine comprese, perché il loro guasto si vede solo in chi installa —, versione
-scritta nei due manifest e nel badge del README con la verifica di rilettura, prosa AI (voce di
-changelog e messaggio `release X.Y.Z`), **commit in dev** — la versione, il changelog e ogni
-residuo del working tree, con l'albero pulito prima di copiare — e solo dopo la pubblicazione con
-`pubblica-dist.ps1`, che scrive su beta in UN commit e si ferma se il checkout non sta su beta.
+**How to apply:** il rilascio ha un percorso solo, `.claude/commands/rilascia-daiku.md`. Prima il
+ciclo di **code review** sul diff del rilascio — `daiku:code-review`, in loop finché il codice
+smette di cambiare — e il **commit in dev** di quello che lascia: è il default, e il comando non
+chiede se committare prima. Poi le verifiche verdi — le due vetrine comprese, perché il loro guasto
+si vede solo in chi installa —, la versione scritta nei due manifest e nel badge del README con la
+verifica di rilettura, la prosa AI (voce di changelog e messaggio `release X.Y.Z`), l'ultimo commit
+in dev con versione e changelog, e solo dopo la pubblicazione con `pubblica-dist.ps1`, che scrive
+su beta in UN commit e si ferma se il checkout non sta su beta.
 **Dev è la fonte, la dist è la copia:** pubblicare prima di committare lascia in dev una versione
 che non esiste in nessun commit, e il rilascio successivo calcolerebbe il perimetro da un albero
 sbagliato.

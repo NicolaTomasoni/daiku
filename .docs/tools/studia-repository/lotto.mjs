@@ -509,7 +509,7 @@ function applica() {
   const gates = corse.map(gateDellaCorsa);
   for (const g of gates) process.stdout.write(`  ${g.gate === 'verde' ? 'ok  ' : 'KO  '} ${g.corsa} — gate ${g.gate}${g.checks ? ` (${g.checks} controlli)` : ''}\n`);
   const catalogo = catalogoDelleCorse(corse);
-  for (const [feature, daCorse] of Object.entries(catalogo)) process.stdout.write(`  catalogo: .docs/features/${feature}/ ← ${daCorse.join(', ')}\n`);
+  for (const [feature, daCorse] of Object.entries(catalogo)) process.stdout.write(`  catalogo: .daiku/features/${feature}/ ← ${daCorse.join(', ')}\n`);
 
   const rossi = gates.filter((g) => g.gate !== 'verde');
   if (rossi.length) {

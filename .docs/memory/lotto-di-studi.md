@@ -63,6 +63,6 @@ di rilassare il gate della corsa proprio sulla scrittura nel prodotto.
   «l'attrezzo non installa»: un `.mjs` nuovo lì entra nel conteggio da solo.
 
 Vedi anche [[catalogo-di-feature]] per l'altra metà del lavoro — i contributi che una corsa depone
-in `.docs/features/` — [[guardie-di-macchina]] per il recinto che impone la sessione headless,
+in `.daiku/features/` — [[guardie-di-macchina]] per il recinto che impone la sessione headless,
 [[corpus-di-sviluppo]] per il comando in più nel cantiere, e [[guardrail-nascono-spenti]] per le
 guardie del pacchetto, che sono un'altra cosa.

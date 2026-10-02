@@ -57,8 +57,9 @@ solo `.gitignore` e `.gitattributes` del repository di sviluppo.
 - **`.vscode/`** — `tasks.json` con gli switch fra backend LLM: tooling personale dell'owner, con
   path della sua home. Non c'entra niente con Daiku.
 - **`.daiku/`** — i parametri del **cantiere**, non del prodotto, e versionati come il resto: è
-  ciò che accende le guardie di Daiku su questo repository (vedi [[guardie-di-macchina]]). Il suo
-  `project.json` dichiara `plugins/` come codice, `.docs/` come sedi di lavoro e
+  ciò che accende le guardie di Daiku su questo repository (vedi [[guardie-di-macchina]]), e tiene
+  le sedi dei lavori — `features/` e `studies/`, come vuole il contratto del prodotto. Il suo
+  `project.json` dichiara `plugins/` come codice, `.docs/memory` come memoria e
   `.docs/runtime/review` come ledger; fuori da lì non entra nessun file **nuovo**, in radice e in
   `.claude/` compresi. Vedi [[daiku-versionato]] per la cartella come sede del progetto ospite.
 
