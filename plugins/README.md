@@ -198,8 +198,9 @@ flowchart TD
     style CR fill:#a855f712,stroke:#a855f7
 ```
 
-Two pieces also stand alone: `/code-review` runs a single bug pass with the outcome in
-chat; `/commit` tidies memory and documents and closes in separate commits.
+Two pieces also stand alone: `/code-review` runs the bug-only cycle on the scope you name —
+fixes, re-checks and the gate — and stops at the report, leaving the commit to you; `/commit`
+tidies memory and documents and closes in separate commits.
 
 ## Inspirations
 

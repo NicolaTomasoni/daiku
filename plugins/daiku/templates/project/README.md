@@ -32,7 +32,7 @@ direction this project chose**. Three promises, each with a mechanism behind it.
 |---|---|
 | `/new-feature` | the one every job starts with: from the idea in natural language to the commit, orchestrating the whole chain below |
 | `/review` | the quality cycle on a diff: reviewers, fixes, re-checks, then the commit |
-| `/code-review` | a bugs-only pass on the scope you name, with the outcome in chat and no cycle opened |
+| `/code-review` | the bug-only review cycle on the scope you name: rounds, fixes and the gate, stopping at the report with no commit |
 | `/research` | notes on a library or a technology, gathered from the real sources and tidied into a file |
 | `/commit` | closes a diff written outside a review: it aligns memory and documentation, then commits in separate groups |
 | `/blueprint` | turns an already resolved decision document into the execution brief, and stops there |
