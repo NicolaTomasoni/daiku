@@ -28,6 +28,19 @@ When you have **one** feature with `1. decision-doc.md` already resolved and you
 
 Every delivery works on a pool worktree, never on the main tree. The pool lives in `{worktree.pool}`, names reuse `{worktree.prefix}<N>` with `N` from `1` to `{worktree.max}`, the branch of each is `{worktree.branch_prefix}<name>`. Never a worktree beyond `{worktree.max}`, never a name outside convention: full means full.
 
+**The cap is a knob: `{worktree.max}` in `.daiku/project.json`, and it counts the deliveries in flight.** Raise it to run more in parallel. Lower it and the slots numbered above the new cap leave the pool — nothing standing on them is touched, and acquisition neither reuses nor counts them.
+
+**The pool is run by `architect/pool.mjs`, its disk side**, never by hand: the same root and the same invocation shape as the evaluator (§ *The evaluator*), one JSON object on stdin and one on stdout. Two actions, and together they are the whole lifecycle:
+
+- **`acquire`** (§ *0. Acquisition*) — given `work_root`, `pool`, `prefix`, `branch_prefix`, `max`, the `delivery` folder and `registry`, it measures the registered slots, asks the evaluator which slot the delivery takes, resets or creates it and records the row. It returns `{ok, worktree, branch, worktree_root, detail}`.
+- **`release`** (§ *6c. Cleanup* and the blocked branches) — `state: "free"` resets the slot to the merge SHA and cleans it; `state: "blocked"` leaves the tree as the delivery left it and records it. It returns `{ok, worktree, state, detail}`.
+
+**A slot is reusable when its tree is clean and its branch holds nothing the integration branch lacks.** The slot's HEAD is deliberately not part of the test: `acquire` resets a reused slot to the integration branch, so a slot standing a commit behind is reusable **whatever commit it stands on** — requiring its HEAD to equal the integration branch's was the condition no slot ever met, and it is what filled the pool with clean, unusable slots until the cap stopped every delivery. What the test keeps is the **containment**: a slot whose branch carries commits the integration branch does not, with a clean tree because the delivery committed them, is the merge gone into conflict — reusing it would `reset --hard` those commits away. The cap counts the slots **in flight**, not the deliveries accumulated.
+
+**The registry is the attribution git cannot give.** `{paths.review_state}/worktree-pool.json`, written only by `pool.mjs`, one row per slot: `n`, `name`, `branch`, `state` (`in-use` while a delivery holds it, `free` after its merge and cleanup, `blocked` when it stopped with the tree dirty), `delivery` (the folder that took it) and `updated`. It is what lets a full pool say **whose** each occupied slot is instead of facing anonymous dirt: a slot the registry marks `in-use` whose tree is clean and whose branch holds nothing the integration branch lacks is one a run left behind, and it is reusable all the same. It lives beside the review ledger, in the same folder out of version control.
+
+**A delivery that does not merge records its slot `blocked`.** On `BLOCKED_NO_COMMIT`, on a conflicting merge and on an early block after acquisition, run `release` with `state: "blocked"`: it writes no Git and cleans nothing — the tree is left exactly as the delivery left it — and the registry then names the folder that left it. The blocked paragraphs below already say the tree stays dirty and declared; this is the one line that also records the slot.
+
 Two roots, two roles, passed to every phase already resolved:
 
 - **work root** — inside the worktree, the same relative position the technical root occupies in the main tree: code, diff, stage, commit, gate and fix run here, and from here `{code_root}` and the command cwds of `{areas}` resolve. Do not guess it: derive it from the comparison between `{repo_root}` and the root you are running from.
@@ -61,6 +74,7 @@ process, talks to no model and opens no file of the project — only the package
 | `decision` | § *4. Decision* — the classification of the six rows |
 | `unblock` | § *Mechanical unblock* — whether only mechanical work remains |
 | `propagation` | *Block validation*, below — what becomes of a step whose block did not come back or came back refused |
+| `pool` | § *0. Acquisition* — which worktree a delivery takes, asked by `architect/pool.mjs`, the pool's disk side |
 
 **What it reads is one JSON object whose keys are fixed**, and a caller that guesses one of them
 stops the delivery. `question` is always there; **which other keys each question requires is
@@ -70,12 +84,13 @@ refuses one whose paragraph does not name them all — so the keys are named whe
 made, and not listed again here. Three of them carry a meaning their name does not say: `ledger`
 is `null` when there is none, and for `order` a ledger that exists and is not passed turns into a
 fork for the owner where a verdict was due; `step` is `{"node": …, "block": …|null, "attempt": 1|2, "invalid": […]}`, where `invalid` is what the `block` question said of that block — its `blockers`, or `[]` when no question judged it.
-These are the nine questions it answers. The four this file does not use directly are asked by the contracts that need them:
+These are the ten questions it answers. The five this file does not use directly are asked by the contracts that need them:
 `closing`, `resumption` and `round` by `skills/review/SKILL.md` (§ *Closing*, § *Baseline and ledger*, § *When to run another round*), through
 `architect/ledger.mjs`, the review's disk side, which imports these questions and hands them the ledger and the added lines it read from disk
 (`skills/review/SKILL.md` § *The ledger tool*), and which asks `block` too, on the finder and applier blocks; `layers` by
 `skills/arch-check/SKILL.md` § *How you verify*, the same way, and again by `skills/execute/SKILL.md` § *Principles* point 8, which calls
-`architect/architect.mjs` directly — execute runs before a ledger exists, so it reads the added lines from Git itself; and `block` is asked also
+`architect/architect.mjs` directly — execute runs before a ledger exists, so it reads the added lines from Git itself; `pool` by
+`architect/pool.mjs`, the pool's disk side, which is what § *0. Acquisition* runs; and `block` is asked also
 by `skills/new-feature/SKILL.md` § *7. Decisions are asked in chat*.
 A key a question needs and does not find is a loud failure, never a guessed value.
 
@@ -91,8 +106,8 @@ instruction, not a fact of the harness. Getting it wrong is contained: the comma
 and it is visible, instead of starting and looking in the wrong place.
 
 **The block it returns** is the one `schemas/blocks.json` § *architect* declares, and that is its
-only copy: this file cites it and does not restate it. It always carries all ten fields —
-`ok`, `verdict`, `remaining`, `resume_from`, `blockers`, `retry`, `fallback`, `readings`,
+only copy: this file cites it and does not restate it. It always carries all eleven fields —
+`ok`, `verdict`, `remaining`, `resume_from`, `slot`, `blockers`, `retry`, `fallback`, `readings`,
 `violations`, `detail` —
 with `null` or empty where the question does not use them.
 
@@ -145,21 +160,20 @@ block is cited from the file declaring it, never recopied here, and mirrored in
 
 ### 0. Acquisition — **worker** role
 
-A subagent assigning the worktree. In the prompt: the pool `{worktree.pool}`, the prefix `{worktree.prefix}`, the cap `{worktree.max}`, the branch prefix `{worktree.branch_prefix}`, and the block to return. It runs only these Git commands, in order, without asking confirmation.
+A subagent assigning the worktree. In the prompt: `work_root` (the technical root you run from), `{worktree.pool}`, `{worktree.prefix}`, `{worktree.max}`, `{worktree.branch_prefix}`, the delivery `<folder>`, the registry `{paths.review_state}/worktree-pool.json`, the invocation of `architect/pool.mjs` with the same root as the evaluator (§ *The evaluator*), and the block to return. It runs **one** command, without asking confirmation:
 
-The **integration branch** is the one the main tree is currently positioned on — `git rev-parse --abbrev-ref HEAD` from there, only once — and in the commands below it is written `<INT>`. It is not assumed: a delivery integrates where the owner is working, and a hardwired name would make it end up elsewhere in the project not using that name.
-
-1. `git worktree list --porcelain` and `git rev-parse <INT>` from the main tree: the registered worktrees and the reference HEAD.
-2. Free = registered, with `git -C <pool>/<name> status --porcelain` empty and `git -C <pool>/<name> rev-parse HEAD` equal to the HEAD of `<INT>`. The first free one in number order is yours.
-3. If there is one: `git -C <pool>/<name> reset --hard <INT>` (clean tree: safe) and use it.
-4. If there is none and the registered are fewer than `{worktree.max}`: `git worktree add <pool>/{worktree.prefix}<M> -b {worktree.branch_prefix}{worktree.prefix}<M> <INT>`, with the smallest free `M`.
-5. If there is none and they are already `{worktree.max}`: create nothing and do not reuse a dirty one — return `ok: false`.
-
-```json
-{"ok": true, "worktree": "<name>", "worktree_root": "<<pool>/<name> plus the technical root's position relative to {repo_root}>", "detail": "<if ok=false, why>"}
+```bash
+node <package root>/architect/pool.mjs <package root>      # with this object on stdin
+{"action": "acquire", "work_root": "<the technical root here>", "pool": "{worktree.pool}", "prefix": "{worktree.prefix}", "branch_prefix": "{worktree.branch_prefix}", "max": {worktree.max}, "delivery": "<folder>", "registry": "{paths.review_state}/worktree-pool.json"}
 ```
 
-`ok: false` stops the delivery (see *Early block*): `blocked` report, no stage, no commit. A dirty one is not your residue to clean: it is work of another delivery nobody registered. From here on every phase already receives resolved the `<name>`, the work root and the artefacts root.
+The **integration branch** is the one the main tree is currently positioned on: `pool.mjs` reads it itself. The program is the one that decides **reuse, creation or refusal** — the rule the prose used to carry by hand, with a second «free» condition (`HEAD == HEAD(<INT>)`) no slot ever met. It reuses the first slot that is clean and holds nothing the integration branch lacks — whatever its HEAD — creates the smallest free number when none is reusable, and returns `ok: false` when all `{worktree.max}` slots are registered and none is reusable, naming in `detail` each occupied slot with the delivery the registry attributes it to. The row it writes (`in-use`, with the delivery) is the attribution git cannot give.
+
+```json
+{"ok": true, "worktree": "<name>", "branch": "<{worktree.branch_prefix}<name>>", "worktree_root": "<<pool>/<name> plus the technical root's position relative to {repo_root}>", "detail": "<if ok=false, why>"}
+```
+
+`ok: false` stops the delivery (see *Early block*): `blocked` report, no stage, no commit. A dirty one is not your residue to clean: the registry names whoever left it. From here on every phase already receives resolved the `<name>`, the work root and the artefacts root.
 
 ### 1. Brief — **judge** role
 
@@ -241,7 +255,7 @@ A single attempt per delivery: if the gate stays red do not relaunch the fix —
 
 On `BLOCKED_NO_COMMIT` one does not stage, does not update memory and does not commit — and **the worktree stays dirty on purpose**: the delivery never creates `blocked.patch` nor parks in any form; modifications remain visible on the worktree branch, the main tree is not touched. Before the report list the dirty (`git -C <worktree_root> status --porcelain -- {code_root}`) and declare its paths in the report and in the chat summary.
 
-The worst case is confined instead of prevented: the blocked dirty stays on the branch of its worktree and never enters the integration branch. The price is the shrinking pool: every blocked worktree is one fewer until the owner cleans or hand-commits it, and with an exhausted pool phase 0 stops the delivery.
+The worst case is confined instead of prevented: the blocked dirty stays on the branch of its worktree and never enters the integration branch. The registry marks the slot `blocked` and names the delivery that left it, so whoever reads the pool knows whose it is; the slot returns to the pool once the owner has resolved it — its tree clean and nothing left on its branch that the integration branch lacks. A pool of blocked slots is a pool of declared work, not of anonymous dirt: with every slot occupied and none reusable, acquisition stops the delivery and its `detail` names each one with its delivery.
 
 ### 5. Memory — only if the outcome is **not** `BLOCKED_NO_COMMIT`
 
@@ -283,7 +297,7 @@ A single subagent, up to three distinct commits and in the declared order, on th
 
 **Why this phase is not an invocation of `skills/commit/SKILL.md`**, since the three groups and their order are its own: because that contract **always** delegates alignment to `update-memory` as its own mandatory step, and here alignment already ran at phase 5b, on the diff in index and with commit permission denied. Invoking it would run it twice, and the second with a permission the commit order of this skill does not admit. What remains of its own — the message convention and the version and changelog discipline — is read from there, as commit 1 and commit 3 do.
 
-**If the sequence stops between one group and the next, say so with the paths.** A failed commit 1 leaves in the tree the memory/doc group 5b just wrote, and — if the bump had touched it — also version and changelog: two groups that **are not parked**, because they are artefacts to reconcile by hand, not code to reapply with `git apply`. List them in `detail` and in the report with their paths. They stay in the **worktree**: **phase 0** sees them, which considers free only a worktree with empty `git status --porcelain`, and that worktree leaves the pool until the owner treats it. Declaring them is what lets whoever reads know whose they are, instead of facing a worktree occupied by anonymous dirt.
+**If the sequence stops between one group and the next, say so with the paths.** A failed commit 1 leaves in the tree the memory/doc group 5b just wrote, and — if the bump had touched it — also version and changelog: two groups that **are not parked**, because they are artefacts to reconcile by hand, not code to reapply with `git apply`. List them in `detail` and in the report with their paths. They stay in the **worktree**: **phase 0** sees them, which considers reusable only a slot whose `git status --porcelain` is empty and whose branch holds nothing the integration branch lacks, and that slot leaves the pool until the owner treats it. Declaring them is what lets whoever reads know whose they are, instead of facing a worktree occupied by anonymous dirt.
 
 ```json
 {"committed": true, "commit_sha": "<sha>", "memory_committed": false, "memory_commit_sha": "<sha if it exists>", "version_commit_sha": "<sha if it exists>", "detail": "<...>"}
@@ -307,7 +321,7 @@ A conflicting merge classifies the delivery `BLOCKED_NO_COMMIT` (blocker: the co
 
 ### 6c. Cleanup — **worker** role, only if the merge succeeded
 
-A subagent: `git -C <pool>/<name> reset --hard <merge_sha>` and `git -C <pool>/<name> clean -fd` — without `-x`: the ignored, where the heavy junctions live, are not touched — then `git -C <pool>/<name> status --porcelain` empty for confirmation. The worktree stays registered with its name and its branch: it is ready for the next delivery. On `BLOCKED_NO_COMMIT` or `blocked` this phase does not exist: the worktree stays dirty and declared.
+A subagent: `node <package root>/architect/pool.mjs <package root>` with `{"action": "release", "work_root": "<the main technical root>", "pool": "{worktree.pool}", "name": "<name>", "registry": "{paths.review_state}/worktree-pool.json", "state": "free", "ref": "<merge_sha>", "delivery": "<folder>"}`. It resets the slot to `<merge_sha>` and cleans it (`clean -fd`, without `-x`: the ignored, where the heavy junctions live, are not touched), verifies the tree is empty and records the row `free`. The worktree stays registered with its name and its branch: it is ready for the next delivery, which `acquire` will reuse **whatever the integration branch does next**. On `BLOCKED_NO_COMMIT` or `blocked` this phase does not exist: the worktree stays dirty, and the slot is recorded blocked (§ *Worktree pool*).
 
 ### 7. Report — **worker** role
 
@@ -344,7 +358,7 @@ If Acquisition, Brief or Execute fail, the delivery stops — say so in chat, ha
 
 **Also here the report is a subagent, and also here the prompt is the only channel.** You pass it only the fields of phase 7 existing at that point — file path and tail append, `<folder>` and solution, **which phase stopped** and the `detail` of its block, `status: "blocked"`, the dirty paths under `{code_root}` — and you explicitly tell it the others **do not exist**: gate, commit and memory never ran. Without that line the report tells them anyway, and it is how a delivery never started reads like a delivery arrived badly at the end.
 
-**And also here the worktree stays dirty.** If Execute wrote something under `{code_root}`, before the report you list its paths (`git -C <worktree_root> status --porcelain -- {code_root}`) and declare them in the report and in `reason`; no parking: the worktree stays dirty and declared. The dirt stays confined to its worktree and its branch — but that worktree leaves the pool until the owner cleans or hand-commits it: say so in the report with its name.
+**And also here the worktree stays dirty.** If Execute wrote something under `{code_root}`, before the report you list its paths (`git -C <worktree_root> status --porcelain -- {code_root}`) and declare them in the report and in `reason`; no parking: the worktree stays dirty and declared. The dirt stays confined to its worktree and its branch — but that slot leaves the pool until the owner cleans it: say so in the report with its name.
 
 ## Outcome
 
@@ -385,11 +399,12 @@ Every field comes from a phase, and is reported **verbatim** from there — not 
 | "I commit first and update memory after" | The order is declared: stage → memory → feature commit → doc/memory commit → version/changelog commit. No feature freezes without the artefacts realigned on the **same** diff. |
 | "I add `-A` to the stage, it is more comfortable" | Never: the scope is `{code_root}` and files are listed singly. The second commit has the opposite scope and is exclusive. |
 | "I work on the main tree, it is already there" | Code lives in the worktree acquired at phase 0. On the main tree only merge (6b) and delivery artefacts write. |
-| "The pool is full, I create one more / reuse a dirty one" | No: `{worktree.max}` is a cap, not a suggestion. A dirty one is work of another delivery: exit `blocked` and say so. |
+| "The pool is full, I create one more / reuse a dirty one" | No: `{worktree.max}` is a cap, not a suggestion. A slot that is clean and holds nothing unmerged is reused whatever its HEAD — that is what the pool is for, and `acquire` resets it — but a dirty one, or one with a delivery nobody merged, is not: exit `blocked`, and the registry names whose it is. |
+| "I pick the pool slot by hand, it is only a couple of git commands" | No: `architect/pool.mjs` owns acquisition and release, and the `pool` question owns the choice. The hand-made version is exactly the one that carried `HEAD == HEAD(<INT>)` and never recycled a slot. |
 | "The merge is in conflict, I resolve it by hand" | No: `abort` and `BLOCKED_NO_COMMIT`. A conflict resolved here is code no finder ever saw. The only additive changelog union excepted (6b). |
 | "I use the biggest model, this step looks hard to me" | The model comes from the role declared by the phase, resolved with the rule of §2 of `contracts/orchestration.md`. It is not chosen by feel. |
 | "I summarise gate and to-confirm myself in chat" | They are already in the report. Your summary is state + commits, not a duplicate. |
 
 ## Cut rule
 
-This skill owns **the sequence**: phases, order, contracts, classification, commits, report. It does not own the *content* of the phases: brief, execution, review, memory and commit convention live in their files, read by the subagents on every run. If you catch yourself rewriting here *how* a brief is made or *how* a bug is found, you strayed from the purpose. It also owns the **worktree lifecycle** — acquisition from the pool, work on its branch, merge into the integration branch, cleanup with reuse: no other skill creates, chooses or cleans a delivery worktree.
+This skill owns **the sequence**: phases, order, contracts, classification, commits, report. It does not own the *content* of the phases: brief, execution, review, memory and commit convention live in their files, read by the subagents on every run. If you catch yourself rewriting here *how* a brief is made or *how* a bug is found, you strayed from the purpose. It also owns the **worktree lifecycle** — acquisition from the pool, work on its branch, merge into the integration branch, cleanup with reuse: no other skill creates, chooses or cleans a delivery worktree. That lifecycle is executed by `architect/pool.mjs`, its disk side, which owns the slot's registry and asks the `pool` question for the choice: this file names the actions, and does not re-derive the rule.

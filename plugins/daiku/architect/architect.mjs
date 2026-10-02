@@ -45,7 +45,7 @@
  *
  * **Fields of the blocks it consumes that it deliberately does not read**, declared as
  * §4 point 2 of `contracts/orchestration.md` requires, each standing on the road of
- * none of the nine questions: `rounds` as a count (the rounds themselves live in the
+ * none of the ten questions: `rounds` as a count (the rounds themselves live in the
  * ledger, and the ledger is what this program reads), `disciplines_round_1`,
  * `independence`, `applied`, `severe`, `on_previous_fix`, `discarded`, `coverage` **of
  * the review block** (the ledger's is read, by the resumption and the readable-ledger
@@ -63,7 +63,7 @@
  *
  * **A case the bench does not cover is a delivery that stops**, not a wrong verdict:
  * the verdict binds, and the bench is the only defence. That is the reason the bench
- * below counts one proof for every row of every table the nine questions copy, every
+ * below counts one proof for every row of every table the ten questions copy, every
  * entry point, every case of the ambiguity rule, and every row of the topology table.
  */
 
@@ -271,13 +271,14 @@ function blockingItems(out) {
  * The answer block
  * ------------------------------------------------------------------------- */
 
-/** Every answer carries all ten fields; what a question does not use is `null` or empty. */
+/** Every answer carries all eleven fields; what a question does not use is `null` or empty. */
 function block(fields) {
   return {
     ok: true,
     verdict: null,
     remaining: [],
     resume_from: null,
+    slot: null,
     blockers: [],
     retry: null,
     fallback: null,
@@ -357,7 +358,7 @@ function incoherence(input, question) {
 }
 
 /* ------------------------------------------------------------------------- *
- * The nine questions
+ * The ten questions
  * ------------------------------------------------------------------------- */
 
 /** Where in the chain the entry starts, cut at the furthest phase the artefacts prove. */
@@ -1215,6 +1216,72 @@ function askBlock(input, root) {
   });
 }
 
+/* ------------------------------------------------------------------------- *
+ * 10. The worktree pool — `skills/ship-feature/SKILL.md` § *Worktree pool*
+ * ------------------------------------------------------------------------- */
+
+/**
+ * Which pool worktree a delivery takes: the first reusable one in number order, else the
+ * smallest free number under the cap, else nothing. The disk facts — which slots are
+ * registered, which of them carry a clean tree and which hold nothing the integration
+ * branch lacks — are measured by `architect/pool.mjs`, the pool's disk side; here the
+ * classification alone is made, and it is the rule the prose used to carry with a second
+ * condition that no slot ever met (`HEAD == HEAD(<INT>)`), so a delivery never recycled a
+ * slot and the pool filled up.
+ *
+ * A slot is reusable when **its tree is clean and its branch holds nothing the integration
+ * branch does not already have**. The HEAD equality is gone: the acquisition resets the
+ * slot to the integration branch, so a slot standing a commit behind is reusable all the
+ * same. What replaces it is the containment — a slot whose branch carries commits the
+ * integration branch lacks, with a clean tree because the delivery committed them, is the
+ * merge that went into conflict: reusing it would `reset --hard` those commits away. A
+ * dirty slot is never taken either — it is another delivery's work.
+ */
+function askPool(input) {
+  if (!Array.isArray(input.slots)) {
+    throw new BadInput('slots is required: the registered pool worktrees, each as {"n", "clean", "merged"}');
+  }
+  const seen = new Set();
+  input.slots.forEach((slot, at) => {
+    if (!slot || !Number.isInteger(slot.n) || slot.n < 1 || typeof slot.clean !== 'boolean' || typeof slot.merged !== 'boolean') {
+      throw new BadInput(`slots[${at}] must be {"n": <integer >= 1>, "clean": <boolean>, "merged": <boolean>}`);
+    }
+    if (seen.has(slot.n)) throw new BadInput(`slots[${at}].n is ${slot.n}, declared twice: a slot number is one worktree`);
+    seen.add(slot.n);
+  });
+  if (!Number.isInteger(input.max) || input.max < 1) {
+    throw new BadInput(`max is required: the cap, a positive integer, got ${JSON.stringify(input.max)}`);
+  }
+  // A slot numbered above the cap is off convention — `N` runs from 1 to `max` — and is not
+  // reused: lowering the cap is allowed, and it takes those slots out of the pool without
+  // touching what stands on them.
+  const reusable = [...input.slots].filter((slot) => slot.clean && slot.merged && slot.n <= input.max).sort((a, b) => a.n - b.n);
+  if (rule('pool.reuse', reusable.length > 0)) {
+    return block({
+      verdict: 'reuse',
+      slot: reusable[0].n,
+      detail: `slot ${reusable[0].n} carries a clean tree and nothing the integration branch lacks: it is reset to the integration branch and reused, whatever its HEAD, and no slot is created.`,
+    });
+  }
+  const free = [];
+  for (let n = 1; n <= input.max; n += 1) if (!seen.has(n)) free.push(n);
+  if (rule('pool.create', free.length > 0)) {
+    return block({
+      verdict: 'create',
+      slot: free[0],
+      detail: `no slot is reusable, and number ${free[0]} is free under the cap of ${input.max}: it is created.`,
+    });
+  }
+  const occupied = [...input.slots]
+    .sort((a, b) => a.n - b.n)
+    .map((slot) => `${slot.n}${slot.clean ? '' : ' dirty'}${slot.merged ? '' : ' unmerged'}`)
+    .join(', ');
+  return block({
+    verdict: 'blocked',
+    detail: `all ${input.max} slots are registered and none is reusable (${occupied}): a slot is reusable only with a clean tree and no commit the integration branch lacks. The delivery stops, and no slot is created — the cap is not a suggestion.`,
+  });
+}
+
 const ASKS = {
   decision: askDecision,
   closing: askClosing,
@@ -1225,6 +1292,7 @@ const ASKS = {
   round: askRound,
   layers: askLayers,
   block: askBlock,
+  pool: askPool,
 };
 
 /**
@@ -1246,6 +1314,7 @@ const REQUIRES = {
   round: ['ledger', 'rounds_cap'],
   layers: ['layers', 'added'],
   block: ['name', 'block'],
+  pool: ['slots', 'max'],
 };
 
 /** Every answer goes through here: the keys of `REQUIRES` first, then the question. */
@@ -1689,6 +1758,29 @@ const CASES = [
     input: { question: 'layers', layers: [LAYER({ deny_imports: [] })], added: [{ file: 'src/server/api/x.ts', line: 3, text: "import 'src/server/db/x'" }] },
     expect: { verdict: 'clean', blockers_include: 'malformed' } },
 
+  /* --- question: pool — skills/ship-feature/SKILL.md § Worktree pool, § 0. Acquisition --- */
+  { id: 'pool:reuse-the-first-reusable-slot', cites: { file: 'skills/ship-feature/SKILL.md', section: '0. Acquisition' },
+    input: { question: 'pool', slots: [{ n: 1, clean: false, merged: true }, { n: 3, clean: true, merged: true }, { n: 4, clean: true, merged: true }], max: 5 },
+    expect: { verdict: 'reuse', slot: 3 } },
+  { id: 'pool:a-clean-slot-behind-the-integration-is-reused-anyway', cites: { file: 'skills/ship-feature/SKILL.md', section: '0. Acquisition' },
+    input: { question: 'pool', slots: [{ n: 2, clean: true, merged: true }], max: 5 },
+    expect: { verdict: 'reuse', slot: 2, detail_include: 'whatever its HEAD' } },
+  { id: 'pool:a-clean-slot-holding-unmerged-commits-is-not-reused', cites: { file: 'skills/ship-feature/SKILL.md', section: '0. Acquisition' },
+    input: { question: 'pool', slots: [{ n: 1, clean: true, merged: false }], max: 5 },
+    expect: { verdict: 'create', slot: 2, detail_include: 'no slot is reusable' } },
+  { id: 'pool:create-the-smallest-free-number', cites: { file: 'skills/ship-feature/SKILL.md', section: '0. Acquisition' },
+    input: { question: 'pool', slots: [{ n: 1, clean: false, merged: true }, { n: 3, clean: false, merged: true }], max: 5 },
+    expect: { verdict: 'create', slot: 2 } },
+  { id: 'pool:create-the-first-when-none-is-registered', cites: { file: 'skills/ship-feature/SKILL.md', section: '0. Acquisition' },
+    input: { question: 'pool', slots: [], max: 5 },
+    expect: { verdict: 'create', slot: 1 } },
+  { id: 'pool:a-slot-numbered-above-the-cap-is-not-reused', cites: { file: 'skills/ship-feature/SKILL.md', section: '0. Acquisition' },
+    input: { question: 'pool', slots: [{ n: 1, clean: false, merged: true }, { n: 2, clean: true, merged: true }], max: 1 },
+    expect: { verdict: 'blocked', detail_include: 'the cap is not a suggestion' } },
+  { id: 'pool:blocked-when-all-the-slots-are-taken-and-none-is-reusable', cites: { file: 'skills/ship-feature/SKILL.md', section: '0. Acquisition' },
+    input: { question: 'pool', slots: [{ n: 1, clean: false, merged: true }, { n: 2, clean: true, merged: false }, { n: 3, clean: false, merged: false }], max: 3 },
+    expect: { verdict: 'blocked', detail_include: 'the cap is not a suggestion' } },
+
   /* --- question: block on the brief and on execute — skills/blueprint/SKILL.md and skills/execute/SKILL.md § What you return --- */
   { id: 'block:blueprint-valid', cites: { file: 'skills/blueprint/SKILL.md', section: 'What you return' },
     input: { question: 'block', name: 'blueprint', block: BP_BLOCK() },
@@ -1961,6 +2053,13 @@ const REJECTED = [
   { id: 'reject:block-name-absent', input: { question: 'block', block: {} } },
   { id: 'reject:block-name-unknown', input: { question: 'block', name: 'invented', block: {} } },
   { id: 'reject:block-absent', input: { question: 'block', name: 'decision-doc' } },
+  { id: 'reject:pool-slots-absent', input: { question: 'pool', max: 5 } },
+  { id: 'reject:pool-slots-not-a-list', input: { question: 'pool', slots: 'x', max: 5 } },
+  { id: 'reject:pool-slot-without-its-number', input: { question: 'pool', slots: [{ clean: true }], max: 5 } },
+  { id: 'reject:pool-slot-without-its-cleanliness', input: { question: 'pool', slots: [{ n: 1, merged: true }], max: 5 } },
+  { id: 'reject:pool-slot-without-its-containment', input: { question: 'pool', slots: [{ n: 1, clean: true }], max: 5 } },
+  { id: 'reject:pool-slot-number-declared-twice', input: { question: 'pool', slots: [{ n: 1, clean: true, merged: true }, { n: 1, clean: false, merged: true }], max: 5 } },
+  { id: 'reject:pool-cap-not-positive', input: { question: 'pool', slots: [], max: 0 } },
 ];
 
 /** Calls in prose the doc-test must read right, one per way it can go: the proofs it can fail. */

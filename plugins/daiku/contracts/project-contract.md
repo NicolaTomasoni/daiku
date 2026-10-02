@@ -71,7 +71,7 @@ of a file, the presence or absence of an area. Three prohibitions, in order of s
 | `version.replicated_in` | other files carrying the same version and updated together; empty or absent list if there are none |
 | `paths.studies` | folder of the notes on a studied technology, one file per technology; it stands **under `.daiku/`**, like the key below it |
 | `paths.features` | folder hosting the working folders, one per problem, with the method's numbered files inside — and, beside them, the feature catalogue: one folder per feature, one file per study contributing to it; under `.daiku/` |
-| `paths.review_state` | folder where a review's ledger lives; it stands **inside the repository tree**, under the technical root, but **outside version control** — a `.gitignore` line excludes it — and it is **never under `.daiku/`**, which is versioned (§8); stable, not session-scoped |
+| `paths.review_state` | folder of the run's out-of-version-control state: a review's ledger, and the worktree pool's registry (`worktree-pool.json`, written by `architect/pool.mjs`); it stands **inside the repository tree**, under the technical root, but **outside version control** — a `.gitignore` line excludes it — and it is **never under `.daiku/`**, which is versioned (§8); stable, not session-scoped |
 | `memory.root` | root of the persistent memory corpus, inside the repository (§8); on Claude Code it is also the folder where the host writes its own memory (§4.2) |
 | `memory.index` | index file of the corpus, the one read first |
 | `commit.memory_prefix` | prefix of the memory-and-documentation commit message |

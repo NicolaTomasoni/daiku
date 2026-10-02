@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /**
- * The test benches of the five hooks, of the two programs in `architect/` and of `init`'s scan
+ * The test benches of the five hooks, of the three programs in `architect/` and of `init`'s scan
  * (`skills/init/scan.mjs`), in a single shot.
  *
  * `node hooks/self-check.mjs` from the package root. Exits `0` if every case is
- * green, `1` on the first red, and prints the **counted** total — the sum of what the ten
+ * green, `1` on the first red, and prints the **counted** total — the sum of what the eleven
  * benches really ran, not a number written here.
  *
  * It exists because five fail-open hooks are five ways of staying silent, and a fault in
@@ -16,9 +16,9 @@
  * does not fail open, it fails loudly, and its verdict binds — so a case it does not cover
  * is a delivery that stops, not a wrong verdict. That is why it is launched here too and
  * not only by hand: the promise «the benches run together» is worth more, not less, for the
- * one program whose silence stops work. The other is `architect/ledger.mjs`, the review's disk
- * side, which fails loudly for the same reason and whose bench runs real Git on throwaway
- * repositories under the system temp directory.
+ * one program whose silence stops work. The other two are `architect/ledger.mjs`, the review's
+ * disk side, and `architect/pool.mjs`, the worktree pool's, which fail loudly for the same reason
+ * and whose benches run real Git on throwaway repositories under the system temp directory.
  *
  * **A check nobody saw fail counts as red.** A bench whose rules can be enumerated reports,
  * beside `{checks, passed, failed}`, a `never_red` list: the rules no fixture of its own ever
@@ -26,7 +26,7 @@
  * so a non-empty `never_red` turns that bench red here even when `failed` is empty. The
  * evaluator's bench reports it; a bench that does not is read as before.
  *
- * Those two benches live beside their programs, in `architect/`, and are **not** replicated under `hooks/lib/`:
+ * Those three benches live beside their programs, in `architect/`, and are **not** replicated under `hooks/lib/`:
  * that folder is copied into the user's project by `sync-host`, and a verifier replicated
  * in every project is the duplication `contracts/project-contract.md` §8 condemns.
  *
@@ -48,7 +48,7 @@ const LIB = join(HERE, 'lib');
  * The package root, one level above this file. It is derived from this file's position
  * because this file is a development tool the package never installs: it lives beside the
  * manifest, `skills/`, `contracts/` and `architect/`, and nobody reaches it from a project.
- * The root is needed by the two benches of `architect/`, which take it by argument.
+ * The root is needed by the three benches of `architect/`, which take it by argument.
  */
 const ROOT = join(HERE, '..');
 
@@ -58,7 +58,7 @@ const ROOT = join(HERE, '..');
  * hook — that exits 0 having printed nothing has lost its bench, which is the fault this file exists
  * to make visible, and calling it "no bench" would hide it.
  */
-const NOT_HOOKS = new Set(['project-root.mjs', 'daiku-config.mjs']);
+const NOT_HOOKS = new Set(['daiku-config.mjs']);
 
 /**
  * A `lib/` `.mjs` is a hook if its bench answers: the other modules have none. The
@@ -78,7 +78,7 @@ function benches() {
   for (const name of names) {
     found.push({ label: name, file: join(LIB, name), args: ['--self-check'] });
   }
-  for (const program of ['architect.mjs', 'ledger.mjs']) {
+  for (const program of ['architect.mjs', 'ledger.mjs', 'pool.mjs']) {
     const file = join(ROOT, 'architect', program);
     try {
       readFileSync(file);
