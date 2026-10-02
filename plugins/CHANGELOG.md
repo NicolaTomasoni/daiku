@@ -1,5 +1,12 @@
 # Changelog
 
+### Unreleased
+
+- `/code-review` becomes a full bug-only cycle on the scope you name — rounds, fixes and the gate, then the report; the commit stays yours.
+- Corrections across the package: the command guard crosses a neutral prefix's options and a `find -exec` payload; the evaluator no longer dies on a malformed block; `--no-ask` produces the document and stops without ever executing.
+
+---
+
 ### 1.0.9 — 2026-10-01
 
 - The project's seats move to new `paths` keys: `studies` holds the notes on a technology, `features` the working folders — `lib_notes` is gone.
