@@ -83,4 +83,4 @@ excludes the others:
 | the memory corpus | a fact, a decision, a piece of feedback, or where something lives — nothing a reader could derive from the code |
 | the instructions file | an invariant that holds in every session, everywhere in this project |
 | `.daiku/policies/` | a rule that holds for real paths only, declared in that file's `paths` frontmatter |
-| the technical document | what the system does and why, for a human reader — never code or variable names |
+| the founding documents (`.daiku/project.json` `documents.*`) | what the system does and why, for a human reader — never code or variable names |

@@ -58,13 +58,13 @@ file but the invocation: the same contract is an **entry point** when you launch
 **internal contract** when a chain delegates to it. `research` is the collection that
 `new-feature` procures for itself when it needs it, with reordering delegated to `study`, and at the same time the command with which you request the notes yourself.
 
-**There are nine entry points, and it is not a number that grows on its own.** A contract is launched by
+**There are ten entry points, and it is not a number that grows on its own.** A contract is launched by
 hand only if it is the **entry point of a chain**, never because it is handy to have it around:
 what sits in the middle of a chain is reached by whoever opened it, and adding it here means
 opening a second way to get there, with different scope and permissions to keep aligned
-forever. The nine fall into two groups, which are not used at the same moments.
+forever. The ten fall into two groups, which are not used at the same moments.
 
-**The method — these seven, and they are all of everyday work:**
+**The method — the everyday work:**
 
 | Entry point | Why |
 |---|---|
@@ -76,13 +76,14 @@ forever. The nine fall into two groups, which are not used at the same moments.
 | `blueprint` | you already have a resolved decision-doc and stop at the brief: from the chosen solution it produces `2. blueprint.md` and stops there — the hand-off that travels to where the execution runs |
 | `ship-feature` | you already have the folder, with or without the brief, and want the whole delivery to the commit in a single run, without reopening the study |
 
-**Installation — two commands that are launched once per project**, and that no chain
-can reach because they run *before* there is a chain:
+**Installation — three commands that are launched once per project**, and that no chain
+can reach because they run at the project's opening, outside a feature:
 
 | Entry point | Why |
 |---|---|
 | `init` | it is the first of all: it opens `.daiku/` on a project that does not have it, and until it runs no other contract has the values to work with |
 | `sync-host` | it carries guardrails and subagent roles into the host layer that cannot receive them from the package; `init` launches it on Codex as its last step, and it is re-launched on every update |
+| `new-project` | after `init` has assigned the seats, it writes the project's five founding documents from the package skeletons — the offer, the identity, the domain, the stack, the architecture — and is re-launched to realign them |
 
 Everything else — `decision-doc`, `update-memory`, `execute`,
 `finder-prompt`, `applier`, `arch-check`, `perf`, `dead-code`, `test-coverage`, `study` — is an **internal contract**: a
@@ -128,12 +129,14 @@ rebuilding the graph from the caller's prose.
 |---|---|---|---|---|
 | `init` | owner | technical root, or nothing and the current directory applies | § *Report* of its file: one line saying the project is all set, or the steps that did not go through; one line saying it already was when § *Scan first* finds nothing missing — in the chat language | yes — `sync-host` on Codex, as its last step |
 | `sync-host` | owner, `init` on Codex | technical root, or nothing and the current directory applies | the report of § *Report* in its file: copied, hooked, not hooked, roles written, and the gestures left to the user | no |
+| `new-project` | owner | technical root, or nothing and the current directory applies | § *Report* of its file: one line per document — created, realigned, or skipped with its reason — in the chat language | no |
 | `new-feature` | owner | description of the feature or problem, in natural language | § *Outcome* of its file: the opened folder, the documents the chain produced and the delivery outcome | yes — per-area investigation, `research`, `decision-doc` twice, `blueprint` for the brief stop, and `ship-feature` as orchestrating child |
 | `decision-doc` | `new-feature` § *The study of decisions* and § *Incorporation* | problem folder, optional subset to analyse, the already written document, the material the request came with, the paths of the `research` notes and of the relevant memories, and on receiving the owner's answers by number | `0.5. strategic-study.md` or `1. decision-doc.md` on disk, with `0. problem.md` refined, and the block of § *The block you return* of its file | no |
 | `research` | owner, `new-feature` § *The missing knowledge* | name of the technology; from `new-feature` also the version in use in the project and the questions the notes must answer | path of the file in `{paths.studies}/`, in both modes, nothing else | yes — fan-out per thematic block (leaves) + `study` as leaf child |
 | `study` | `research` § *Step 2* only | path of the dirty file, studied technology, studied and latest versions with dates | reordered file in `{paths.studies}/` + the block of § *The block you return* of its file | no — leaf |
 | `blueprint` | `owner`, `ship-feature` phase 1, `new-feature` § *Delivery* (brief stop) | folder with `1. decision-doc.md`, chosen solution verbatim, relevant memories | § *What you return* of its file | no |
 | `execute` | `ship-feature` phase 2 | folder with `2. blueprint.md`, relevant memories; on a relaunch, the `handoff` blockers or the round-0 findings | § *What you return* of its file | no |
+| `reconcile` | `ship-feature` § *6b-bis. Reconcile* | the work root, the branch of the delivery, the patch path, and the block of 6b with its `dirty_paths` or `conflicts`, already resolved | § *The block you return* of its file | no |
 | `ship-feature` | `owner`, `new-feature` § *Delivery* | folder and chosen solution | § *Outcome* of its file | yes — its phases, and `review` as orchestrating child |
 | `review` | owner, `ship-feature` phase 3 | base-ref, the commit under review, or path of `4. review-notes.md`, ledger to reopen (chosen on `base` **and** `item`), `--no-commit` from whoever commits on their own, effort, `--backend` when the session runs there, work roots and artefacts when running on a worktree | § *Outcome* of its file | yes — finder, applier, coverage, gate, `commit` |
 | a round's finder (`finder-prompt`) | `review` § *Finder*, `code-review` § *The round* | discipline and contract, the round range (`from`, `to`, files), effort, the ledger path, the resolved parameters | § *The block you return* of its file | no |
@@ -346,6 +349,23 @@ to ask and stops there, as it declares a role without naming a model:
 - **`codex`**, and every host without a structured-question tool — the same list, numbered, in
   chat, with the options as letters (`A` first, declared recommended) and the invitation to answer compactly (`1A, 2B, …`). The
   content is identical: only the delivery changes.
+
+**The list is numbered, and it is asked whole.** The place of a question in its list **opens the
+question** — `k/N`, the question's own place and the length of the list the block returned — because
+four questions per call is the ceiling of the tool and not of the list. A list longer than that is
+asked in **consecutive calls, in the same turn**, from `1/N` to `N/N`, and the ask is closed only
+when the last card has been asked: the cards after the ceiling are not a second thought, they are
+the same act. `hooks/lib/ask-guard.mjs` is the seat holding the run to it — it refuses a decision ask
+whose questions carry no place, refuses a batch that does not continue its list, and refuses the
+**launch of a subagent** (§4) while the ask is open, that launch being how the run reaches the work
+that answers the decisions. And a message of the owner closes the ask as it closes everything: their
+free answer prevails over the options, and the run goes on with what they said.
+
+**A list a folder already began opens where it stopped.** `new-feature` accepts a folder already
+opened and there resumes instead of starting again, so the ask of a resumed run carries the cards the
+decision document left without an answer, with the place they have in **that** list — not `1`: the
+numbering of the document is what the owner rereads. It is the only case in which a first batch opens
+above the first card, and the only reason `ask-guard` bends that rule.
 
 **The question is bare; the message above it is not.** The ask renders a title and one line per
 option, and context does not go in there: what the owner reads before choosing is the **chat

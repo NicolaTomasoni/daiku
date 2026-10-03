@@ -1,5 +1,14 @@
 # Changelog
 
+### 1.0.11 — 2026-10-03
+
+- The ask of a run is kept whole: every question of a decision ask carries its place in the list — `k/N` — and a new guard refuses an ask that carries no place, a batch that does not continue its list, and the launch of a subagent while the ask is open. A list longer than the four questions one call carries can no longer lose the cards that come after the ceiling.
+- `/new-feature` accepts a folder already opened and resumes from it: the documents it finds are the state, the phases already on disk are not re-run, and a decision document whose cards are still unanswered comes back to ask — only the cards left open, each with the place it has in that document's list.
+- `/new-project` writes a project's five founding documents — `PRODUCT`, `BRAND`, `DOMAIN`, `STACK` and `ARCHITECTURE` — from the package skeletons to the paths `.daiku/project.json` declares; re-runnable, it realigns them without overwriting the work done by hand.
+- `/ship-feature` reconciles a merge obstructed by another session's uncommitted work or by a conflicting merge: it keeps both sides where they do not touch the same lines and stops to ask the owner where they do, saving the other session's work as a recoverable patch instead of leaving it behind.
+
+---
+
 ### 1.0.10 — 2026-10-02
 
 - The worktree pool recycles: a slot whose tree is clean and whose branch holds nothing the integration branch lacks is reset and reused, whatever its HEAD, so a full pool no longer stops every run; a slot holding an unmerged delivery is left alone.

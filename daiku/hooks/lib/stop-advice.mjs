@@ -3,16 +3,17 @@
  * Stop notice — Stop.
  *
  * It says at session end the one thing whoever stops **cannot see from the
- * transcript tail**: a review ledger left open. A cycle interrupted with
- * `outcome` still `null` restarts from zero unless the ledger is handed over —
- * and with the anchors of the applied gone, `on_previous_fix` and `oscillation`
- * run against another feature's history. The notice lists the open ledgers with
- * their `base` and `item`, so the next session resumes from there instead of
- * reopening the diff blind.
+ * transcript tail**: a review cycle that died with its ledger open. A cycle
+ * interrupted with `outcome` still `null` restarts from zero unless the ledger is
+ * handed over — and with the anchors of the applied gone, `on_previous_fix` and
+ * `oscillation` run against another feature's history. The notice lists those
+ * ledgers with their `base` and `item`, so the session resumes from there instead
+ * of reopening the diff blind.
  *
  * What counts as open is defined once, in `skills/review/SKILL.md`
- * § *Baseline and ledger*: a ledger whose `outcome` is `null`. This hook reads
- * that definition and nothing else — it does not decide what a review is.
+ * § *Baseline and ledger*: a ledger whose `outcome` is `null`, and which no
+ * `<ledger>.abandoned` beside it has set aside. This hook reads that definition and
+ * nothing else — it does not decide what a review is.
  *
  * **Which files are ledgers is a second question, and not the same one.** The state folder is
  * a seat the project chooses, and it may well be shared: a repository that reviewed before
@@ -22,6 +23,35 @@
  * interrupted, at every stop, forever. A file is therefore judged only when it carries **the
  * ledger's own form** (`isLedger`, below): what is not a ledger is not ours to judge, exactly
  * like a file that does not parse.
+ *
+ * **An open ledger is not a stopped cycle, and a stopped cycle is not this session's.**
+ * `outcome: null` is the state of *every* cycle in flight — `outcome`, `coverage`, `gate` and
+ * `gate_detail` stay `null` until the step that writes them, and that step is the exit — and
+ * the state folder of a project is shared by every session open in it. Three questions decide
+ * what this session hears, and each of them is asked of a different seat.
+ *
+ *  - **Is it still running?** A cycle writes nothing between one step and the next: the round
+ *    of 2 October 2026 — four finders and an applier on a whole diff — took twenty-three
+ *    minutes without a single write, and the ledger is rewritten only when the round closes.
+ *    A ledger is **quiet** when neither it nor a round file beside it has been written for
+ *    `QUIET_MS`, and only a quiet ledger is one the cycle left behind. A running cycle is not
+ *    announced at all: there is nothing to tell a reader about work somebody is doing.
+ *  - **Can this session act on it?** The trace the host hands the event (`transcript_path`) is
+ *    read for the work the session really did: only its `tool_use` blocks, and inside them
+ *    only the keys that carry a path. A trace quotes far more than that — file contents, tool
+ *    results, the `git status` of the project at session start — and a folder named inside a
+ *    document the session wrote is not a folder the session worked in. A ledger is this
+ *    session's when the session touched its `item` or, on a review launched by hand on a bare
+ *    base-ref where `item` is `null`, one of its `scope_files`.
+ *  - **What if there is no trace?** Some hosts hand the hook none. The notice is then
+ *    **silent**: which session a ledger belongs to would be a guess, and a guess is worth
+ *    less than silence, exactly as an undeclared state folder is.
+ *
+ * **A dead ledger has a resting place, and it is not the bin.** Where the work is dead, the
+ * ledger is set aside: an empty file named `<ledger>.abandoned`, beside it in the state
+ * folder, keeps the ledger readable as evidence and takes it off the open roll. Deleting it
+ * throws away the anchors the next review would have read; the marker keeps them and stops
+ * the notice.
  *
  * The ledgers live where the project says, via `{paths.review_state}` in
  * `.daiku/project.json`: the same key the review writes them under. When it is
@@ -43,11 +73,13 @@
  *  - **`stop_hook_active`**, read from the input: `true` when the stop being handled is
  *    already the continuation an earlier notice caused. The hook goes silent there — it is
  *    the remedy the harness itself names when it overrides a looping hook.
- *  - **the mark of the session**: the digest of what was announced, written where the host
- *    keeps the session's own scratch files (`scratchpad_dir` of the event, or the OS
- *    temporary directory keyed by `session_id` where the host has none). The same text is
- *    never announced twice, so the notice arrives **once per session** instead of once per
- *    stop — and a host reporting `stop_hook_active` wrongly does not send it in a loop.
+ *  - **the mark of the session**: the set of ledgers announced, reduced to a comparison and
+ *    written where the host keeps the session's own scratch files (`scratchpad_dir` of the
+ *    event, or the OS temporary directory keyed by `session_id` where the host has none). The
+ *    same set is never announced twice, so the notice arrives **once per session** instead of
+ *    once per stop — and a host reporting `stop_hook_active` wrongly does not send it in a
+ *    loop. The mark is the **set**, never the text: the text carries how long ago the ledger
+ *    was last written, and a mark carrying it would call every passing hour a piece of news.
  *
  * The mark is the only thing this hook writes, and it is written **outside the
  * project**: a state folder of Daiku's inside the repository would be one more seat to keep.
@@ -65,7 +97,7 @@
  */
 
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -97,6 +129,28 @@ const LEDGER_FIELDS = [
   'gate',
   'gate_detail',
 ];
+
+/**
+ * How still a ledger must stand before the cycle that opened it is read as gone.
+ *
+ * Two hours is a ceiling, not a guess: a cycle writes at the close of every step, and the
+ * longest step measured — a whole-diff round, four finders and an applier, on 2 October 2026 —
+ * took twenty-three minutes. A window an order of magnitude above that is a cycle nobody is
+ * running, and erring long costs nothing here: the notice is about work to hand over, not an
+ * alarm to answer now.
+ */
+const QUIET_MS = 2 * 60 * 60 * 1000;
+
+/** What a ledger is set aside under: an empty `<ledger>.json.abandoned` beside it. */
+const ABANDONED = '.abandoned';
+
+/**
+ * Where a `tool_use` block keeps the paths it touches. Only these keys are read, and only on
+ * the session's own acts: the rest of a trace is quotation — file contents, tool results, the
+ * project's `git status` at session start — and a path quoted in it was not worked in.
+ * `command` is the shell's own text, so it matches where a path is named inside the command.
+ */
+const TOUCHED_KEYS = ['file_path', 'notebook_path', 'path', 'command'];
 
 /**
  * Is this parsed file one of **our** ledgers?
@@ -131,6 +185,38 @@ function blockingItems(ledger) {
   return items.filter((entry) => entry && entry.blocking === true).length;
 }
 
+/** A path as it is compared: Windows and JSON escaping out of the way, case folded. */
+function norm(value) {
+  return String(value).replace(/\\+/g, '/').toLowerCase();
+}
+
+/** When the file was written, or `null` where there is no clock to ask. */
+function seenAt(env, path) {
+  try {
+    const seen = typeof env.stat === 'function' ? env.stat(path) : null;
+    return seen && typeof seen.mtimeMs === 'number' ? seen.mtimeMs : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The cycle's last sign of life: the newest write among the ledger and the arithmetical files
+ * sharing its stem. The ledger itself is rewritten only when a step closes, so a round in
+ * flight leaves its own file beside it — `findingsPath` of `architect/ledger.mjs` — and the
+ * ledger alone would read as still for as long as the longest step runs.
+ */
+function lastWrite(reviewState, name, names, env) {
+  const stem = name.slice(0, -'.json'.length);
+  let newest = null;
+  for (const other of names) {
+    if (other !== name && !other.startsWith(`${stem}.`)) continue;
+    const mtime = seenAt(env, join(reviewState, other));
+    if (mtime !== null && (newest === null || mtime > newest)) newest = mtime;
+  }
+  return newest;
+}
+
 const REAL_ENV = {
   exists: (path) => existsSync(path),
   read: (path) => readFileSync(path, 'utf-8'),
@@ -141,14 +227,25 @@ const REAL_ENV = {
       return [];
     }
   },
+  stat: (path) => {
+    try {
+      return { mtimeMs: statSync(path).mtimeMs };
+    } catch {
+      return null;
+    }
+  },
   tmpdir: () => tmpdir(),
+  now: () => Date.now(),
   write: (path, text) => {
     mkdirSync(dirname(path), { recursive: true });
     writeFileSync(path, text, 'utf-8');
   },
 };
 
-/** Ledgers left open: `outcome` still `null`, with their blocking count. */
+/**
+ * Ledgers left open: `outcome` still `null`, no `.abandoned` beside them, each with the work it
+ * names, its blocking count and the instant it last moved.
+ */
 export function openLedgers(reviewState, env) {
   const open = [];
   let names;
@@ -157,7 +254,8 @@ export function openLedgers(reviewState, env) {
   } catch {
     return open; // missing folder: stay silent
   }
-  for (const name of [...names].sort()) {
+  const sorted = [...names].sort();
+  for (const name of sorted) {
     if (!name.endsWith('.json')) continue;
     let ledger;
     try {
@@ -168,46 +266,187 @@ export function openLedgers(reviewState, env) {
     if (!ledger || typeof ledger !== 'object' || Array.isArray(ledger)) continue;
     if (!isLedger(ledger)) continue; // another tool's file, or a findings file: not a ledger
     if (ledger.outcome !== null) continue;
+    try {
+      if (env.exists(join(reviewState, name + ABANDONED))) continue; // set aside: no longer open
+    } catch {
+      /* an unanswerable seat is not a declaration: the ledger stays open */
+    }
+    const item = typeof ledger.item === 'string' && ledger.item.trim() ? ledger.item.trim() : null;
+    const files = Array.isArray(ledger.scope_files)
+      ? ledger.scope_files.filter((file) => typeof file === 'string' && file.trim())
+      : [];
     open.push({
       file: name,
       base: typeof ledger.base === 'string' && ledger.base ? ledger.base : '?',
-      item: typeof ledger.item === 'string' && ledger.item ? ledger.item : '?',
+      item: item || '?',
+      work: item,
+      scope_files: files,
       blocking: blockingItems(ledger),
+      lastWrite: lastWrite(reviewState, name, sorted, env),
     });
   }
   return open;
 }
 
-export function advice(root, env, ctx) {
-  if (!ctx || !ctx.present || !ctx.reviewState) return null;
-  const open = openLedgers(ctx.reviewState, env);
-  if (!open.length) return null;
+/** Is the cycle still at work? A write inside the quiet window — or no clock to say it is not. */
+function running(entry, now) {
+  return entry.lastWrite !== null && now - entry.lastWrite < QUIET_MS;
+}
 
-  const listing = open
-    .map(
-      (entry) =>
+/** Every `tool_use` block of one parsed trace line, wherever it sits in it. */
+function callsIn(value) {
+  const found = [];
+  const walk = (node) => {
+    if (!node || typeof node !== 'object') return;
+    if (Array.isArray(node)) {
+      for (const item of node) walk(item);
+      return;
+    }
+    if (node.type === 'tool_use' && node.input && typeof node.input === 'object') found.push(node);
+    for (const key of Object.keys(node)) walk(node[key]);
+  };
+  walk(value);
+  return found;
+}
+
+/** Did this trace line carry a call that worked inside one of the patterns? */
+function lineTouches(line, patterns) {
+  let entry;
+  try {
+    entry = JSON.parse(line);
+  } catch {
+    return false;
+  }
+  for (const call of callsIn(entry)) {
+    for (const key of TOUCHED_KEYS) {
+      const value = call.input[key];
+      if (typeof value !== 'string' || !value.trim()) continue;
+      const candidate = norm(value);
+      for (const pattern of patterns) {
+        if (pattern.under ? candidate.includes(pattern.value) : candidate.endsWith(pattern.value)) {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
+/**
+ * Did this session work on the ledger? Under `item` when the ledger names a work folder; on one
+ * of the `scope_files` when it does not — a review launched by hand on a bare base-ref names no
+ * folder, and its files are the only sign of whose it is. Neither: no sign at all, and no sign
+ * is silence.
+ */
+function touched(entry, transcript) {
+  const patterns = [];
+  if (entry.work) {
+    patterns.push({ value: norm(entry.work), under: true });
+  } else {
+    for (const file of entry.scope_files) patterns.push({ value: norm(file), under: false });
+  }
+  if (!patterns.length) return false;
+  for (const line of String(transcript).split('\n')) {
+    if (!line.includes('"tool_use"')) continue; // the trace's own acts, not what it quotes
+    const flat = norm(line);
+    if (!patterns.some((pattern) => flat.includes(pattern.value))) continue;
+    if (lineTouches(line, patterns)) return true;
+  }
+  return false;
+}
+
+/** The instant the notice is written at: the environment's clock, or the machine's. */
+function instant(env) {
+  try {
+    if (typeof env.now === 'function') return env.now();
+  } catch {
+    /* fall through to the machine's clock */
+  }
+  return Date.now();
+}
+
+/**
+ * The open ledgers this session may be told about: quiet, and worked in by it. Everything else
+ * is silence — a cycle still running has nothing to say, and a ledger of another session is not
+ * this reader's to resume or to throw away.
+ */
+export function announceable(root, env, ctx, site = {}) {
+  if (!ctx || !ctx.present || !ctx.reviewState) return [];
+  const now = instant(env);
+  const quiet = openLedgers(ctx.reviewState, env).filter((entry) => !running(entry, now));
+  if (!quiet.length) return [];
+  const trace = typeof site.transcript === 'string' ? site.transcript.trim() : '';
+  if (!trace) return []; // no trace: whose ledger this is would be a guess
+  let transcript;
+  try {
+    transcript = env.read(trace);
+  } catch {
+    return []; // an unreadable trace is no trace
+  }
+  return quiet.filter((entry) => touched(entry, transcript));
+}
+
+/** How long ago, in the reader's words. */
+function ago(ms) {
+  const minutes = Math.max(1, Math.round(ms / 60000));
+  if (minutes < 120) return `${minutes} minute${minutes === 1 ? '' : 's'}`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 48) return `${hours} hour${hours === 1 ? '' : 's'}`;
+  const days = Math.round(hours / 24);
+  return `${days} day${days === 1 ? '' : 's'}`;
+}
+
+/** The notice itself: the ledgers, what a ledger is for, and where a dead one is set aside. */
+function render(entries, now) {
+  const listing = entries
+    .map((entry) => {
+      const age =
+        entry.lastWrite === null ? '' : `, last written ${ago(now - entry.lastWrite)} ago`;
+      return (
         `- \`${entry.item}\` (base \`${entry.base}\`, ledger \`${entry.file}\`)` +
-        (entry.blocking ? ` — ${entry.blocking} blocking item${entry.blocking === 1 ? '' : 's'}` : '')
-    )
+        (entry.blocking ? ` — ${entry.blocking} blocking item${entry.blocking === 1 ? '' : 's'}` : '') +
+        age
+      );
+    })
     .join('\n');
-  const single = open.length === 1;
+  const single = entries.length === 1;
   return (
-    `${single ? 'One review ledger is' : `${open.length} review ledgers are`} still open — a ` +
-    `review cycle started and stopped before writing its outcome.\n\n${listing}\n\n` +
+    `${single ? 'One review ledger is' : `${entries.length} review ledgers are`} still open — ` +
+    `left by a review cycle that never wrote its outcome, and nothing has written to ` +
+    `${single ? 'it' : 'them'} since.\n\n` +
+    `${listing}\n\n` +
     `A ledger is what a review resumes from: reopened from the diff alone instead of from ` +
     `the same base and item, it loses the anchors every later signal is measured on. Where ` +
-    `the work is dead instead, the ledger comes off.\n\n` +
+    `the work is dead instead, the ledger is set aside: an empty \`<ledger>.json.abandoned\` ` +
+    `beside it keeps the ledger as evidence and takes it off this notice.\n\n` +
     `*Daiku status notice, written at the end of the turn — not a message from the user, and ` +
-    `nothing being worked on has to change. It is delivered once per session, and returns in ` +
-    `a new one while a ledger stays open.*`
+    `nothing being worked on has to change. It is delivered once per session, and returns in a ` +
+    `later one that goes back to the same work while a ledger stays open.*`
   );
+}
+
+export function advice(root, env, ctx, site) {
+  const entries = announceable(root, env, ctx, site);
+  if (!entries.length) return null;
+  return render(entries, instant(env));
 }
 
 // --- the mark of the session ---------------------------------------------------
 
-/** The digest of what was announced: the text itself, reduced to a comparison. */
+/** The digest of what was announced: the set itself, reduced to a comparison. */
 function digest(text) {
   return createHash('sha256').update(text).digest('hex');
+}
+
+/**
+ * The set announced, as the mark keeps it. Never the text: the text carries how long ago the
+ * ledger was last written, so a mark over it would call each passing hour a new piece of news
+ * and speak again — in the session that already heard it.
+ */
+function announcedSet(entries) {
+  return digest(
+    entries.map((entry) => `${entry.file}|${entry.base}|${entry.item}|${entry.blocking}`).join('\n')
+  );
 }
 
 /**
@@ -216,7 +455,7 @@ function digest(text) {
  * `session_id`. `null` when the event carries neither, and then the mark is simply not
  * written: silence is the fallback, never a guess at a shared path.
  *
- * **Never the project.** The five hooks write nothing inside the repository; a folder of
+ * **Never the project.** The six hooks write nothing inside the repository; a folder of
  * Daiku's own there would be one more seat to keep, and a hook that writes where it guards
  * is a hook that has to be guarded itself.
  */
@@ -260,31 +499,51 @@ function markAnnounced(env, path, fingerprint) {
 
 /**
  * What one stop event answers: the notice, or `null` for silence. This is the whole
- * decision — reading the input, the `stop_hook_active` guard, the mark of the session —
- * and it lives here, without leaving the process, so the bench calls it.
+ * decision — reading the input, the `stop_hook_active` guard, the trace the host hands it,
+ * the mark of the session — and it lives here, without leaving the process, so the bench
+ * calls it.
  */
 export function notice(event, root, env, ctx) {
   if (event && event.stop_hook_active === true) return null; // already a continuation: silence
-  const text = advice(root, env, ctx);
-  if (!text) return null;
+  const trace = event && typeof event.transcript_path === 'string' ? event.transcript_path.trim() : '';
+  const site = { transcript: trace || null };
+  const entries = announceable(root, env, ctx, site);
+  if (!entries.length) return null;
   const path = markPath(event || {}, env);
-  const fingerprint = digest(text);
-  if (announced(env, path) === fingerprint) return null; // this session already heard this
+  const fingerprint = announcedSet(entries);
+  if (announced(env, path) === fingerprint) return null; // this session already heard this set
   markAnnounced(env, path, fingerprint);
-  return text;
+  return render(entries, instant(env));
 }
 
 // --- test bench -----------------------------------------------------------
 
+/** A fixed instant, so that "quiet" is a fixture of the bench and not a reading of the clock. */
+const NOW = 1_800_000_000_000;
+const MINUTE = 60 * 1000;
+const HOUR = 60 * MINUTE;
+const DAY = 24 * HOUR;
+
 /**
- * A simulated environment: a path → content map, files only. What the hook writes lands in
- * the same map, so a second call sees the mark the first one left.
+ * A simulated environment: a path → content map, files only, each with a write time. What the
+ * hook writes lands in the same map, so a second call sees the mark the first one left. Files
+ * are `QUIET_MS` old unless the case says otherwise — the notice's normal ground is a cycle
+ * that stopped hours ago.
  */
-function fakeEnv(files, tmp = 'C:/Temp/daiku') {
+function fakeEnv(files, options = {}) {
   const key = (p) => String(p).replace(/\\/g, '/').replace(/\/+$/, '').toLowerCase();
+  const tmp = options.tmp || 'C:/Temp/daiku';
+  const still = options.mtime === undefined ? NOW - 3 * HOUR : options.mtime;
+  const times = new Map(Object.entries(options.times || {}).map(([k, v]) => [key(k), v]));
   const map = new Map(Object.entries(files).map(([k, v]) => [key(k), v]));
+  let clock = NOW;
   return {
     tmpdir: () => tmp,
+    now: () => clock,
+    // Time passes inside a case, so that what the notice says about it can be watched moving.
+    advance: (ms) => {
+      clock += ms;
+    },
     write: (p, text) => {
       map.set(key(p), text);
     },
@@ -293,6 +552,7 @@ function fakeEnv(files, tmp = 'C:/Temp/daiku') {
       if (!map.has(key(p))) throw new Error(`ENOENT ${p}`);
       return map.get(key(p));
     },
+    stat: (p) => (map.has(key(p)) ? { mtimeMs: times.has(key(p)) ? times.get(key(p)) : still } : null),
     list: (p) => {
       const base = key(p) + '/';
       const names = new Set();
@@ -363,6 +623,19 @@ const OPEN_LEDGER = ledger('docs/new-developments/gamma', null, [
 ]);
 const CLOSED_LEDGER = ledger('docs/new-developments/alfa', 'fixed-point');
 
+/** A ledger of a review launched by hand on a bare base-ref: it names no work folder. */
+const HAND_LEDGER = JSON.stringify({
+  base: 'abc1234',
+  item: null,
+  scope_tree: TREE,
+  scope_files: ['src/hot/query.ts'],
+  rounds: [round([])],
+  outcome: null,
+  coverage: null,
+  gate: null,
+  gate_detail: null,
+});
+
 /**
  * What a project that reviewed before Daiku leaves in the folder it declared: another tool's
  * keys — in Italian, in the case measured — under the same file name pattern as ours.
@@ -380,6 +653,43 @@ const FOREIGN_LEDGER = JSON.stringify({
 /** A findings file of ours: same folder, same extension, no `outcome`, not a ledger. */
 const FINDINGS = JSON.stringify({ round: 1, keys: {}, applier_attempts: 0, findings: [] });
 
+const TRACE = `${R}/.claude/trace.jsonl`;
+
+/** A trace line for a call that worked on a file, as the host writes one. */
+const call = (name, input) =>
+  JSON.stringify({
+    type: 'assistant',
+    message: { role: 'assistant', content: [{ type: 'tool_use', name, input }] },
+  });
+
+const read = (path) => call('Read', { file_path: `${R}/${path}` });
+
+/**
+ * The session's trace by default: one that worked on the three work folders the fixtures below
+ * name. A case that needs another session passes its own through `transcript`.
+ */
+const TRACE_TEXT = [
+  read('docs/new-developments/gamma/1. decision-doc.md'),
+  read('docs/new-developments/delta/1. decision-doc.md'),
+  read('docs/new-developments/beta/1. decision-doc.md'),
+].join('\n');
+
+/** The environment of a case: the fixtures, and the trace the host would have handed the hook. */
+const env = (files = {}, options = {}) => {
+  const transcript = options.transcript === undefined ? TRACE_TEXT : options.transcript;
+  const seeded = transcript === null ? { ...files } : { [TRACE]: transcript, ...files };
+  return fakeEnv(seeded, options);
+};
+
+/** The site of a stop: what the host hands the hook, minus the mark's own fields. */
+const SITE = { transcript: TRACE };
+const stop = (extra = {}) => ({
+  hook_event_name: 'Stop',
+  session_id: 'sess-1',
+  transcript_path: TRACE,
+  ...extra,
+});
+
 function selfCheck() {
   const failed = [];
   let ran = 0;
@@ -388,21 +698,21 @@ function selfCheck() {
     if (!condition) failed.push(name);
   };
 
-  check('project without Daiku: silence', advice(R, fakeEnv({}), CTX_ABSENT) === null);
-  check('context missing entirely: silence', advice(R, fakeEnv({}), undefined) === null);
-  check('no review state declared: silence', advice(R, fakeEnv({}), CTX_NO_STATE) === null);
-  check('missing state folder: silence', advice(R, fakeEnv({}), CTX()) === null);
+  check('project without Daiku: silence', advice(R, env(), CTX_ABSENT, SITE) === null);
+  check('context missing entirely: silence', advice(R, env(), undefined, SITE) === null);
+  check('no review state declared: silence', advice(R, env(), CTX_NO_STATE, SITE) === null);
+  check('missing state folder: silence', advice(R, env(), CTX(), SITE) === null);
 
   const closed = { [`${STATE}/review-ledger-abc1234-120000.json`]: CLOSED_LEDGER };
-  check('landed ledger: silence', advice(R, fakeEnv(closed), CTX()) === null);
+  check('landed ledger: silence', advice(R, env(closed), CTX(), SITE) === null);
 
   const open = { [`${STATE}/review-ledger-abc1234-120000.json`]: OPEN_LEDGER };
-  const textOpen = advice(R, fakeEnv(open), CTX());
+  const textOpen = advice(R, env(open), CTX(), SITE);
   check('open ledger: warning', !!textOpen && textOpen.includes('gamma'));
   check('the warning names base and ledger file', !!textOpen && textOpen.includes('abc1234') && textOpen.includes('review-ledger-abc1234-120000.json'));
   check('the warning counts the blocking items', !!textOpen && textOpen.includes('1 blocking item'));
   check('the warning says a review resumes from the ledger', !!textOpen && textOpen.includes('resumes from'));
-  check('the warning says how to close it', !!textOpen && textOpen.includes('comes off'));
+  check('the warning says where a dead ledger is set aside', !!textOpen && textOpen.includes('.abandoned'));
   check('a single ledger agrees in the singular', !!textOpen && textOpen.includes('One review ledger is'));
   // The reader took the notice for the user's next message once, and changed subject on his
   // own. A status line says what it is, and does not read as an order.
@@ -414,34 +724,38 @@ function selfCheck() {
     'the notice says it comes once per session',
     !!textOpen && textOpen.includes('once per session')
   );
+  // The claim is about a cycle nobody is running, so the notice carries the evidence for it:
+  // how long the ledger has stood still.
+  check('the warning says how long the ledger has stood still', !!textOpen && textOpen.includes('last written 3 hours ago'));
 
   const two = {
     [`${STATE}/review-ledger-abc1234-120000.json`]: OPEN_LEDGER,
     [`${STATE}/review-ledger-def5678-121500.json`]: OPEN_LEDGER.replace('abc1234', 'def5678').replace('gamma', 'delta'),
   };
-  const textTwo = advice(R, fakeEnv(two), CTX());
+  const textTwo = advice(R, env(two), CTX(), SITE);
   check('two ledgers: both listed', !!textTwo && textTwo.includes('gamma') && textTwo.includes('delta'));
   check('two ledgers agree in the plural', !!textTwo && textTwo.includes('2 review ledgers are'));
+  check('and the sentence after the count is plural too', !!textTwo && textTwo.includes('written to them since'));
 
   const malformed = { [`${STATE}/review-ledger-abc1234-120000.json`]: '{not json' };
-  check('an unreadable ledger is skipped in silence', advice(R, fakeEnv(malformed), CTX()) === null);
+  check('an unreadable ledger is skipped in silence', advice(R, env(malformed), CTX(), SITE) === null);
 
   const fresh = { [`${STATE}/review-ledger-abc1234-120000.json`]: FRESH_LEDGER };
-  const textFresh = advice(R, fakeEnv(fresh), CTX());
+  const textFresh = advice(R, env(fresh), CTX(), SITE);
   check('a ledger just opened by the scope is open', !!textFresh && textFresh.includes('beta'));
 
   const nonJson = { [`${STATE}/notes.txt`]: 'hello' };
-  check('non-ledger files are ignored', advice(R, fakeEnv(nonJson), CTX()) === null);
+  check('non-ledger files are ignored', advice(R, env(nonJson), CTX(), SITE) === null);
 
   // --- the files that are not ours -------------------------------------------
   // `init` proposes `paths.review_state` from what the repository already keeps, and a project
   // that reviewed before Daiku has its own ledger folder: another tool's keys, the same file
   // names. Those files came back as open cycles at every stop, and the notice spoke forever.
   const foreign = { [`${STATE}/review-ledger-035f906-203614.json`]: FOREIGN_LEDGER };
-  check("another tool's ledger is not ours to judge", advice(R, fakeEnv(foreign), CTX()) === null);
+  check("another tool's ledger is not ours to judge", advice(R, env(foreign), CTX(), SITE) === null);
 
   const findings = { [`${STATE}/review-ledger-abc1234-120000.round-1.findings.json`]: FINDINGS };
-  check('a findings file is not a ledger', advice(R, fakeEnv(findings), CTX()) === null);
+  check('a findings file is not a ledger', advice(R, env(findings), CTX(), SITE) === null);
 
   // A closed review leaves its ledger *and* its findings files behind for good: neither may
   // reopen the notice.
@@ -449,31 +763,140 @@ function selfCheck() {
     [`${STATE}/review-ledger-abc1234-120000.json`]: CLOSED_LEDGER,
     [`${STATE}/review-ledger-abc1234-120000.round-1.findings.json`]: FINDINGS,
   };
-  check('a review that landed leaves nothing open', advice(R, fakeEnv(spent), CTX()) === null);
+  check('a review that landed leaves nothing open', advice(R, env(spent), CTX(), SITE) === null);
 
   // An interrupted one leaves both open files: only the ledger is listed, once.
   const interrupted = {
     [`${STATE}/review-ledger-abc1234-120000.json`]: OPEN_LEDGER,
     [`${STATE}/review-ledger-abc1234-120000.round-1.findings.json`]: FINDINGS,
   };
-  const textInterrupted = advice(R, fakeEnv(interrupted), CTX());
+  const textInterrupted = advice(R, env(interrupted), CTX(), SITE);
   check('an interrupted review is listed once, its findings file beside it', !!textInterrupted && textInterrupted.includes('One review ledger is'));
+
+  // --- a cycle that is running is not a cycle that died ------------------------
+  // `outcome: null` is the state of every cycle in flight. A write inside the quiet window is a
+  // cycle at work, and the notice has nothing to say about work somebody is doing.
+  const runningLedger = { [`${STATE}/review-ledger-abc1234-120000.json`]: OPEN_LEDGER };
+  check(
+    'a ledger written a minute ago is a cycle at work: silence',
+    advice(R, env(runningLedger, { mtime: NOW - MINUTE }), CTX(), SITE) === null
+  );
+  check(
+    'a ledger standing exactly on the quiet threshold is not running',
+    !!advice(R, env(runningLedger, { mtime: NOW - 2 * HOUR }), CTX(), SITE)
+  );
+  // The ledger is rewritten only when a step closes: a round in flight leaves its own file
+  // beside it, and that file is the sign of life the ledger alone would not carry.
+  check(
+    'a round file written a minute ago keeps the ledger running',
+    advice(
+      R,
+      env(
+        {
+          ...runningLedger,
+          [`${STATE}/review-ledger-abc1234-120000.round-1.findings.json`]: FINDINGS,
+        },
+        { mtime: NOW - 3 * HOUR, times: { [`${STATE}/review-ledger-abc1234-120000.round-1.findings.json`]: NOW - MINUTE } }
+      ),
+      CTX(),
+      SITE
+    ) === null
+  );
+
+  // --- the ledger of another session is not this session's --------------------
+  // The trace tells who worked where. A chat on another folder is not told about a ledger it
+  // never touched — the case that put a running cycle in front of a reader with nothing to do
+  // with it.
+  check(
+    'a ledger of work this session never touched: silence',
+    advice(R, env(open, { transcript: read('docs/other/1. decision-doc.md') }), CTX(), SITE) === null
+  );
+  // What the trace *quotes* is not what the session worked in. A session that writes a document
+  // naming another feature has a `tool_use` in its trace whose only path is its own file: the
+  // name is in the content, and content is not a place the session worked.
+  check(
+    'a call that only writes a document naming the folder does not count',
+    advice(
+      R,
+      env(open, {
+        transcript: call('Write', {
+          file_path: `${R}/docs/tickets/gamma-ledger.md`,
+          content: 'the ledger of docs/new-developments/gamma is still open',
+        }),
+      }),
+      CTX(),
+      SITE
+    ) === null
+  );
+  // The same call, with its path inside the folder: that is work, and the notice speaks.
+  check(
+    'a call that wrote inside the folder counts as working in it',
+    !!advice(
+      R,
+      env(open, {
+        transcript: call('Write', {
+          file_path: `${R}/docs/new-developments/gamma/1. decision-doc.md`,
+          content: 'x',
+        }),
+      }),
+      CTX(),
+      SITE
+    )
+  );
+  // And what the host itself quotes: the git status at session start names every folder in
+  // flight, in a line that is no tool call at all.
+  check(
+    'a trace that merely quotes the folder does not count as working in it',
+    advice(
+      R,
+      env(open, {
+        transcript: JSON.stringify({
+          type: 'attachment',
+          attachment: { type: 'session_context', context: { gitStatus: 'D "docs/new-developments/gamma/0. problem.md"' } },
+        }),
+      }),
+      CTX(),
+      SITE
+    ) === null
+  );
+  // A host that hands the hook no trace leaves it unable to tell whose ledger it holds.
+  check('a stop with no trace: silence', advice(R, env(open), CTX(), {}) === null);
+  check('a trace that cannot be read: silence', advice(R, env(open, { transcript: null }), CTX(), SITE) === null);
+
+  // A review launched by hand on a bare base-ref names no work folder: its files are the only
+  // sign of whose it is.
+  const hand = { [`${STATE}/review-ledger-abc1234-120000.json`]: HAND_LEDGER };
+  check(
+    'a ledger without item speaks to the session that touched its files',
+    !!advice(R, env(hand, { transcript: read('src/hot/query.ts') }), CTX(), SITE)
+  );
+  check(
+    'a ledger without item, and no file of its touched: silence',
+    advice(R, env(hand, { transcript: read('docs/other/1. decision-doc.md') }), CTX(), SITE) === null
+  );
+
+  // --- the resting place of a dead ledger -------------------------------------
+  // The work is dead and the ledger is worth keeping: an empty marker beside it takes it off the
+  // open roll without throwing the file away.
+  const laid = {
+    [`${STATE}/review-ledger-abc1234-120000.json`]: OPEN_LEDGER,
+    [`${STATE}/review-ledger-abc1234-120000.json.abandoned`]: '',
+  };
+  check('a ledger set aside is no longer open: silence', advice(R, env(laid), CTX(), SITE) === null);
 
   // --- one notice per session, and never on a continuation ---------------------
   // Speaking at a stop continues the turn: the same notice at every stop loops until the
   // harness overrides the hook. These are the two guards, and each one alone is enough.
-  const stop = (extra = {}) => ({ hook_event_name: 'Stop', session_id: 'sess-1', ...extra });
-
   check(
     'a stop the hook itself caused: silence',
-    notice(stop({ stop_hook_active: true }), R, fakeEnv(open), CTX()) === null
+    notice(stop({ stop_hook_active: true }), R, env(open), CTX()) === null
   );
   check(
     '`stop_hook_active: false` is a fresh stop, not a continuation',
-    !!notice(stop({ stop_hook_active: false }), R, fakeEnv(open), CTX())
+    !!notice(stop({ stop_hook_active: false }), R, env(open), CTX())
   );
 
-  const session = fakeEnv(open);
+  const session = env(open);
   check('the first stop of a session speaks', !!notice(stop(), R, session, CTX()));
   check('the same session hears it once', notice(stop(), R, session, CTX()) === null);
   check('a third stop stays silent too', notice(stop(), R, session, CTX()) === null);
@@ -482,9 +905,10 @@ function selfCheck() {
     !!notice(stop({ session_id: 'sess-2' }), R, session, CTX())
   );
 
-  // The mark is the digest of the text, so a set that moved is said again: a review that
-  // lands while another stays open is news, and stays news once.
-  const moving = fakeEnv(two);
+  // The mark is the set, so a set that moved is said again: a review that lands while another
+  // stays open is news, and stays news once. The text is not the mark, so the passing of the
+  // clock is not news.
+  const moving = env(two);
   check('a first set speaks', !!notice(stop(), R, moving, CTX()));
   check('the same set does not repeat', notice(stop(), R, moving, CTX()) === null);
   moving.write(`${STATE}/review-ledger-abc1234-120000.json`, CLOSED_LEDGER);
@@ -495,11 +919,24 @@ function selfCheck() {
   );
   check('and the new set is not repeated either', notice(stop(), R, moving, CTX()) === null);
 
+  const older = env(open, { mtime: NOW - 5 * DAY });
+  const textOlder = notice(stop(), R, older, CTX());
+  check('a ledger that stood still for days speaks', !!textOlder && textOlder.includes('5 days ago'));
+  older.advance(3 * DAY);
+  check(
+    'the ledger it speaks about has aged, and the notice would say so',
+    !!advice(R, older, CTX(), SITE) && advice(R, older, CTX(), SITE).includes('8 days ago')
+  );
+  check('but the passing clock is not news: the same session stays silent', notice(stop(), R, older, CTX()) === null);
+
   // No session to mark: the notice is not silenced across sessions by a shared path, and
   // `stop_hook_active` stays the only guard there.
-  const anonymous = fakeEnv(open);
+  const anonymous = env(open);
   check('without a session there is no mark to keep', markPath({ hook_event_name: 'Stop' }, anonymous) === null);
-  check('an event without a session still speaks', !!notice({ hook_event_name: 'Stop' }, R, anonymous, CTX()));
+  check(
+    'an event without a session still speaks',
+    !!notice({ hook_event_name: 'Stop', transcript_path: TRACE }, R, anonymous, CTX())
+  );
 
   // The host's own scratch directory wins over the temporary one, and the two paths differ.
   check(
@@ -512,7 +949,7 @@ function selfCheck() {
   );
 
   // A mark that cannot be written or read never silences the notice.
-  const brokenMark = fakeEnv(open);
+  const brokenMark = env(open);
   const readable = brokenMark.read;
   brokenMark.write = () => {
     throw new Error('read-only');
@@ -524,12 +961,16 @@ function selfCheck() {
   check('an unwritable mark still lets the notice out', !!notice(stop(), R, brokenMark, CTX()));
 
   // A closed ledger is no notice, mark or no mark: nothing is announced, so nothing is remembered.
-  const noLedger = fakeEnv({ [`${STATE}/review-ledger-abc1234-120000.json`]: CLOSED_LEDGER });
+  const noLedger = env({ [`${STATE}/review-ledger-abc1234-120000.json`]: CLOSED_LEDGER });
   check('nothing open: silence', notice(stop(), R, noLedger, CTX()) === null);
   check(
     'nothing open: no mark written either',
     noLedger.exists(join('C:/Temp/daiku', 'daiku-stop-advice', 'sess-1.json')) === false
   );
+
+  // A ledger of another session is not announced, so nothing is remembered about it either.
+  const elsewhere = env(open, { transcript: read('docs/other/1. decision-doc.md') });
+  check('another session\'s cycle: no notice', notice(stop(), R, elsewhere, CTX()) === null);
 
   // --- the form the hook recognises mirrors the schema -------------------------
   // The one read this bench makes on disk: `schemas/blocks.json` is the seat declaring the
@@ -570,7 +1011,8 @@ async function readEvent() {
 
 async function main() {
   // No parsable event, no notice: without the input this hook cannot know whether the stop
-  // it is handling is already a continuation, and guessing there is what loops.
+  // it is handling is already a continuation, nor whose ledger it would be speaking about,
+  // and guessing there is what loops.
   const event = await readEvent();
   if (!event) return;
   const text = notice(event, ROOT, REAL_ENV, loadContext(ROOT, REAL_READS));

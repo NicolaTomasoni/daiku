@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <img alt="version 1.0.10" src="https://img.shields.io/badge/version-1.0.10-3b82f6?style=flat" /> <br>
+  <img alt="version 1.0.11" src="https://img.shields.io/badge/version-1.0.11-3b82f6?style=flat" /> <br>
   <a href="https://code.claude.com"><img alt="Claude Code" src="https://img.shields.io/badge/Claude_Code-D97757?style=flat&logo=claude&logoColor=white" /></a>
   <a href="https://developers.openai.com/codex"><img alt="OpenAI Codex" src="https://img.shields.io/badge/OpenAI_Codex-000000?style=flat&logo=openai&logoColor=white" /></a>
 </p>
@@ -20,131 +20,80 @@
 >
 > Daiku does the same with your software. AI agents work fast and autonomously, but
 > **inside the architectural constraints you decided** — and Daiku forces them to respect
-> those constraints, not merely suggest them. Every contribution is checked, pruned,
+> those constraints. Every contribution is checked, pruned,
 > re-checked. That way the project grows, feature after feature, **without losing its
 > shape**. Available for **Claude Code** and **Codex**.
 
 ## Why you will like it
 
-- **You decide the shape.** You declare the project's constraints once — architecture, rules,
-  conventions — and from then on every AI agent works inside them. Not advice in the wind:
-  checks that really fire.
-- **Automatic pruning.** Every job goes through multi-round checks: bugs, architecture,
-  performance, tests. What grows crooked gets corrected, and corrections get
-  re-checked until nothing is left to fix.
-- **You narrate, you do not configure.** You describe the idea in natural language: code investigation,
-  technology study, design, execution — it handles the rest, inside the shape you
-  traced.
-- **Forks stay yours.** When there is a real decision it asks you, with options already
-  studied and one recommended. You answer and it restarts alone, down to the commit.
-- **Nothing gets lost.** Every job lives in a folder of files, not in chat
-  memory: you can interrupt, close everything, resume in a week — it re-reads the files
-  and restarts where it left off. And what is learned by working stays versioned together
-  with the code, and does not vanish with the session.
-- **Silent guards.** Three small checks protect you from costly distractions
-  (a push fired by mistake, a commit skipping the checks) without ever bothering you:
-  on a project not using Daiku they do not even stir.
+- **The workflow has an engine, not a prompt.** A program — the evaluator — owns the order of the
+  chain: given the entry point and what already exists on disk it answers which steps remain, and
+  **its verdict binds**. No phase gets skipped, reordered or declared finished by the agent itself:
+  if the evaluator does not answer, the delivery stops instead of quietly degrading.
+- **Review is a cycle that converges, and it keeps a ledger.** Round one fans out independent
+  reviewers who read the same diff without seeing each other — bugs always, architecture, performance
+  and dead code only where the diff calls for them. Their fixes are new code nobody has read, so the
+  next round re-reviews exactly those, and so on until the code stops changing. Every finding already
+  judged sits in a ledger and is never raised twice; one full compile-and-test gate runs a single
+  time, at the end.
+- **Skills are behaviour only.** The method's files are byte-identical on every project: they say
+  *what* is done and *in what order*, never with which values. Paths, gates and commands live one
+  level down in `.daiku/` — a gate is the exact line plus the directory to run it from, never a
+  description — so the same Daiku works on your stack without a single skill edited.
+- **Decisions come to you already studied.** At a real fork it asks, with two to four mutually
+  exclusive options and one of them recommended, and nothing else moves while it waits — no subagent
+  is still in flight when the question reaches you. You answer, and the chain resumes alone from there
+  down to the commit.
 
 ## How to start
 
-**1. Install the plugin** — once, on your host:
+**1. Install it** — once, on your host:
 
 ```text
-# on Claude Code, from the terminal:
+# Claude Code
 claude plugin marketplace add NicolaTomasoni/daiku
 claude plugin install daiku@daiku
 
-# on Codex, from the terminal:
+# Codex
 codex plugin marketplace add NicolaTomasoni/daiku
 codex plugin add daiku@daiku
 ```
 
-> `marketplace add` clones the repository once, and `install` copies the package out of that local
-> clone: neither one fetches anything, and running the two again changes nothing — a newer Daiku
-> never arrives that way. It arrives through the marketplace update — on Claude Code
-> `claude plugin marketplace update daiku` then `claude plugin update daiku@daiku`, the two lines
-> of the `daiku: update` task `/init` leaves in your editor.
+It needs **Node.js 18 or later**. Without it the six hooks stay silent and the evaluator does not
+start at all: since its verdict binds, a delivery stops instead of degrading.
 
-Only requirement: **Node.js**. Without it the five protection hooks stay silent, and the method's
-evaluator does not start at all: its verdict binds, so a delivery stops there instead of degrading.
-
-**2. Open it on your project** — once per project, from the project's **technical root**: the
-folder carrying your instructions file, which is the repository root unless the code lives in a
-subfolder — then run it from there.
+**2. Open it on a project** — once per project, from the project's **technical root**: the folder
+carrying your instructions file, which is the repository root unless the code lives in a subfolder.
 
 ```text
 /init
 ```
 
-It asks only two things — which language for the chat and which for commits — and from there
-writes everything in one run, then answers `You're all set.` What your repository does not declare
-it leaves out, and the skills already know how to work without it. On Codex it also installs
-protections and roles, by running `/sync-host` itself.
+It asks only two things — the language for the chat and the one for commits — then writes
+everything in one run and answers `You're all set.` What your repository does not declare it leaves
+out, and the skills know how to work without it. On Codex it also installs protections and roles by
+itself. On Claude Code it leaves updates in place too: an update script and a VS Code task,
+`daiku: update` — run it from the editor and it shows you the version in place and asks before
+moving on.
 
-**3. If you are on Codex**, after every package update re-run:
+**3. On Codex only**, re-run after every update:
 
 ```text
 /sync-host
 ```
 
-It realigns protections and roles inside the project (on Claude Code no need: the
-package carries them and they update alone). Its last block is the one you cannot omit — four
-gestures Codex asks of you: approve the changed hooks, trust the project, declare the pool, reopen
-the session. Skip it and Codex reports a clean install while no guardrail is active.
-
-## Skills are behaviour only
-
-Skills stay identical on every project: they say *what* is done and *in what order*,
-never *with which values*. Anything project-specific lives one level down:
-
-- `.daiku/project.json` — paths and literal commands (gates, fixers, coverage, changelog,
-  version file). A gate is the exact line plus its cwd, never a description.
-- `.daiku/environment.json` — host, model per role, backends, machine paths. A machine may
-  replace it whole with its own `.daiku/environment.local.json`. The folder is versioned: it is the
-  configuration the project wrote for itself, and a clone finds it there. The only path staying
-  out of the history is the machine's override, `.daiku/environment.local.json`.
-- `.daiku/domain/` — local judgement: conventions and criteria that need a *why*.
-- `.daiku/policies/` — architectural rules valid only for certain paths.
-- memory and `tech_doc` — facts not deducible from the code: decisions and whys.
-
-If a key is missing, the skill does not invent it: it skips that part and declares it.
-An incomplete JSON makes a skill do less, not do wrong.
-
-## How the contracts cite each other
-
-A contract never writes an absolute path: the package is copied verbatim into each host's cache,
-and that folder changes at every update. Two forms, and only two:
-
-- **to another contract's file** — the path relative to the package root: `skills/review/SKILL.md`,
-  `contracts/orchestration.md`;
-- **to a skill** — its name with a slash: `/review`, `/commit`, `/init`.
-
-The slash form is a name, not a path: it carries no host, no namespace and no installation folder,
-and it is the same on both hosts, so no contract has to know which one it is running on. Each host
-resolves that name its own way.
-
-## If you start from an almost-empty project
-
-This is the normal case, not an error:
-
-1. `/init` on an empty repo leaves out what the repository does not declare yet.
-2. Define stack and language with the agent, then re-run `/init` from the same root.
-   It runs in completion mode: it never overwrites, it writes only the missing pieces.
-   That is how `project.json` evolves when the project takes shape — `update-memory`
-   never touches it.
-3. Then run `/new-feature`: it now reads the real values.
-
-There is no hook keeping parameters up to date on every commit: hooks never write to
-disk by design. Continuous alignment already exists as delegation — every `commit`
-delegates to `update-memory`, which aligns instructions, policies, memory and tech doc
-on the staged diff with two brakes: no unjustified update, minimum delta. Returning
-`updated: false` is the expected outcome, not a failure.
+It realigns protections and roles inside the project (on Claude Code there is nothing to do). Its
+last block is the one you must not skip: four gestures Codex asks of you — approve the changed
+hooks, trust the project, declare the pool, reopen the session. Skip them and Codex reports a clean
+install while no guardrail is active.
 
 ## The commands, from simplest to largest
 
 Three commands for everyday work, ordered by size: `/research` procures
 knowledge, `/review` checks a diff, `/new-feature` goes from an idea to the commit by orchestrating
-everything else.
+everything else. Beside them, `/new-project` is launched once, on a project that has just run
+`/init`: it writes the five founding documents — `PRODUCT.md`, `BRAND.md`, `DOMAIN.md`, `STACK.md`
+and `ARCHITECTURE.md` — from the package skeletons, at the paths `.daiku/project.json` declares.
 
 ### `/research`
 
@@ -155,7 +104,7 @@ Run by hand, the file is the delivery; inside a feature it is invoked as needed.
 
 ### `/new-feature` — from description to commit
 
-The command every job starts with. You tell it the idea in natural language — or hand it the folder where you already collected material, and it resumes from there. First it investigates the code and puts the problem down in black and white; when knowledge is missing, it relies on `/research`.
+The command every job starts with. You tell it the idea in natural language — or hand it a folder already opened, and it resumes from there: the documents it finds are the state, so nothing already written is written again, and the decisions left unanswered come back to ask, each with the place it has in that document's list. Starting from a description, it first investigates the code and puts the problem down in black and white; when knowledge is missing, it relies on `/research`.
 
 Then `decision-doc` studies the options and comes to ask its questions, with a recommended answer: you answer and it records, until every decision is closed.
 
@@ -202,6 +151,18 @@ Two pieces also stand alone: `/code-review` runs the bug-only cycle on the scope
 fixes, re-checks and the gate — and stops at the report, leaving the commit to you; `/commit`
 tidies memory and documents and closes in separate commits.
 
+## About me
+
+I am one developer. I build software in the industry, and I spend my days inside very large
+codebases: corporate projects that reach millions of lines, that were not written yesterday and
+that cannot be stopped.
+
+Daiku is not a method designed at a desk and then tried somewhere: it grew, one intervention after
+another, out of successive refinements on those projects. That is where every rule in it comes from,
+and why it assumes from the first minute a codebase far larger than a demo — and already running.
+It is meant to be adopted the way it was born: gradually, feature after feature, without ever
+stopping the project.
+
 ## Inspirations
 
 Daiku stands on the shoulders of public work that explored the same space before it:
@@ -211,3 +172,5 @@ Daiku stands on the shoulders of public work that explored the same space before
 - [ponytail](https://github.com/DietrichGebert/ponytail) — a minimal-code ruleset pushing agents toward the smallest change that works.
 - [agent-skills](https://github.com/addyosmani/agent-skills) — a production-grade pack of twenty-five skills spanning the whole DEFINE→SHIP cycle across a dozen agents, studied in a full repo confrontation: a deterministic eval of skill routing with a ratchet, a linter over the skill corpus and a diff-scoped floor-guard against a lowered quality bar are its most transferable mechanisms.
 - [andrej-karpathy-skills](https://github.com/multica-ai/andrej-karpathy-skills) — a single-file behavioural preamble for coding agents, from Andrej Karpathy's notes on how LLM agents write code: studied in a full repo confrontation, its four conduct rules turned out to be, in substance, the ones Daiku already carries in the project instructions file.
+- [token-optimizer](https://github.com/alexgreensh/token-optimizer) — a model-free context optimizer for coding hosts: compression functions, fill-threshold checkpoints and post-compact restore from a local SQLite state, with no network calls.
+- [compaction](https://github.com/philipppohlmann/compaction) — a local token-reduction layer under Claude Code, Codex and Cursor: output shaping before generation, byte-exact recovery of every mutated request, and a boundary that fails open on any error.

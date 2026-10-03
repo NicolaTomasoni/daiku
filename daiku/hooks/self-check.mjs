@@ -1,23 +1,24 @@
 #!/usr/bin/env node
 /**
- * The test benches of the five hooks, of the three programs in `architect/` and of `init`'s scan
+ * The test benches of the six hooks, of the four programs in `architect/` and of `init`'s scan
  * (`skills/init/scan.mjs`), in a single shot.
  *
  * `node hooks/self-check.mjs` from the package root. Exits `0` if every case is
- * green, `1` on the first red, and prints the **counted** total — the sum of what the eleven
+ * green, `1` on the first red, and prints the **counted** total — the sum of what the thirteen
  * benches really ran, not a number written here.
  *
- * It exists because five fail-open hooks are five ways of staying silent, and a fault in
- * one of the five is indistinguishable from silence until somebody runs its bench. A single
- * command makes that move repeatable before a release, in a CI, or after touching a file
- * that all five import.
+ * It exists because six hooks are six ways of staying silent — `ask-guard` silent on
+ * everything but its two verdicts — and a fault in one of them is indistinguishable from
+ * silence until somebody runs its bench. A single command makes that move repeatable before a
+ * release, in a CI, or after touching a file several of them import.
  *
  * One of them is `architect/architect.mjs`, and it is the opposite kind of program: it
  * does not fail open, it fails loudly, and its verdict binds — so a case it does not cover
  * is a delivery that stops, not a wrong verdict. That is why it is launched here too and
  * not only by hand: the promise «the benches run together» is worth more, not less, for the
- * one program whose silence stops work. The other two are `architect/ledger.mjs`, the review's
- * disk side, and `architect/pool.mjs`, the worktree pool's, which fail loudly for the same reason
+ * one program whose silence stops work. The other three are `architect/ledger.mjs`, the review's
+ * disk side, `architect/pool.mjs`, the worktree pool's, and `architect/reconcile.mjs`, the merge
+ * reconciliation's, which fail loudly for the same reason
  * and whose benches run real Git on throwaway repositories under the system temp directory.
  *
  * **A check nobody saw fail counts as red.** A bench whose rules can be enumerated reports,
@@ -26,7 +27,7 @@
  * so a non-empty `never_red` turns that bench red here even when `failed` is empty. The
  * evaluator's bench reports it; a bench that does not is read as before.
  *
- * Those three benches live beside their programs, in `architect/`, and are **not** replicated under `hooks/lib/`:
+ * Those four benches live beside their programs, in `architect/`, and are **not** replicated under `hooks/lib/`:
  * that folder is copied into the user's project by `sync-host`, and a verifier replicated
  * in every project is the duplication `contracts/project-contract.md` §8 condemns.
  *
@@ -48,7 +49,7 @@ const LIB = join(HERE, 'lib');
  * The package root, one level above this file. It is derived from this file's position
  * because this file is a development tool the package never installs: it lives beside the
  * manifest, `skills/`, `contracts/` and `architect/`, and nobody reaches it from a project.
- * The root is needed by the three benches of `architect/`, which take it by argument.
+ * The root is needed by the four benches of `architect/`, which take it by argument.
  */
 const ROOT = join(HERE, '..');
 
@@ -78,7 +79,7 @@ function benches() {
   for (const name of names) {
     found.push({ label: name, file: join(LIB, name), args: ['--self-check'] });
   }
-  for (const program of ['architect.mjs', 'ledger.mjs', 'pool.mjs']) {
+  for (const program of ['architect.mjs', 'ledger.mjs', 'pool.mjs', 'reconcile.mjs']) {
     const file = join(ROOT, 'architect', program);
     try {
       readFileSync(file);

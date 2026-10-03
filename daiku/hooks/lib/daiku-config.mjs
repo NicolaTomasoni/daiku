@@ -1,12 +1,12 @@
 /**
  * Daiku's context on this project, read from `.daiku/project.json`.
  *
- * It exists because four of the five hooks need the same two facts — **did this
+ * It exists because five of the six hooks need the same two facts — **did this
  * project open Daiku?** and **what did it declare?** — and because the answer cannot
  * sit hard-wired inside a hook: a package installed on a host runs on *every*
  * repository that host opens, including ones Daiku has never seen.
  *
- * Hence the rule governing three of the five hooks — `session-advice` excepted, which reports a
+ * Hence the rule governing four of the six hooks — `session-advice` excepted, which reports a
  * `.daiku/` left halfway:
  *
  * > **Without `.daiku/project.json` the guards stay silent.** Not a degradation: the

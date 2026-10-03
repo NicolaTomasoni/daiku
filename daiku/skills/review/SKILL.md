@@ -1,6 +1,6 @@
 ---
 name: 'review'
-description: 'Review cycle on a diff — frozen baseline, rounds stopping when the code stops changing, ledger of already judged findings. Round 1 fans out the finders (bug always, arch/perf/dead from scope), later rounds re-review only the just-written fixes. Gate once on exit, then the commit, which always closes the cycle except with --no-commit. Orchestrated by you, delegating each phase to a subagent. Same discipline that /ship-feature runs in its Review phase.'
+description: 'Review cycle on a diff — frozen baseline, rounds stopping when the code stops changing, ledger of already judged findings. Round 1 fans out the finders (bug always; arch/perf/dead from the project key or, without it, from the scope), later rounds re-review only the just-written fixes. Gate once on exit, then the commit, which always closes the cycle except with --no-commit. Orchestrated by you, delegating each phase to a subagent. Same discipline that /ship-feature runs in its Review phase.'
 argument-hint: '[file... | base-ref | commit | path to "4. review-notes.md"] [--rounds N] [--effort low|medium|high] [--with arch-check,perf,dead-code,test-coverage] [--no-commit] [--backend <name> if the session runs there]'
 ---
 
@@ -37,6 +37,8 @@ Arguments: `$ARGUMENTS`. **The default is the normal case, and it requires no ar
 - If the first argument is neither a valid path nor a revision — a ref naming a base, or a raw one naming the commit under review — ask; do not guess.
 
 **Hard scope constraint:** review always and only covers files under `{code_root}`. No external file enters finders or fixes, even if modified, untracked or cited in the review notes. Everything not standing under `{code_root}` — documentation, memory, skill contracts — belongs to `update-memory`, which the commit contract delegates itself. The changelog does not: `skills/commit/SKILL.md` claims it in its own § *Version bump and changelog* and writes it directly, without passing through `update-memory`. This perimeter is drawn by this contract, and no hook enforces it; layer placement inside `{code_root}` stays with `arch`.
+
+**The architecture document, when the project declares one.** The `arch` finder resolves `documents.architecture` in `.daiku/project.json` and reads it: the diff is judged against the structure and the technical decisions the project already made, beside the invariants of the instructions file and the area rules. If that key or its file is missing, the finder proceeds without it, invents none, and the cycle declares it in closing (§6 of `contracts/project-contract.md`).
 
 ## Before starting
 
@@ -76,6 +78,11 @@ Its bench runs with `hooks/self-check.mjs`.
 
 Two parts, and only one is a judgement.
 
+**The round-1 set is written in the project when it declares `{review.disciplines}`**: those are the
+disciplines, and this section has nothing left to judge — `arch` runs only if the list carries it,
+whatever the scope measured, and neither worker below is launched. Without the key the two parts
+below decide, and that is what they describe.
+
 **What can be measured, the tool measures**, and you run it: `action: "scope"`. It freezes the baseline — `git rev-parse` of the base-ref, and the first parent of the commit under review when the input named one (§ *Input*) → `BASE` — photographs the tree of `{code_root}` as it stands, untracked files included and ignored ones out, lists the files that differ from `BASE` there — intersected with the path list when the invocation restricted it (§ *Input*) — and activates **arch** when the `paths` frontmatter of a policy in `.daiku/policies/` covers one of them. The rule list is the only source: keep no layer list here. `empty` means no file remains: there is nothing to review, say so and close — no ledger was opened.
 
 **Whether `perf` runs is a judgement**, and a **worker** subagent makes it: in its prompt `BASE`, the `tree` and the `files` the tool returned, the question — does the diff touch a hot path: rendering, polling, loop, query, serialisation, high-frequency flow? — and the **read-only** constraint, which no harness layer imposes on whoever has `Bash` (§4 of `contracts/orchestration.md`). It returns `{"perf_active": false, "why": "<one line>"}`. `--with perf` skips it; `--with arch-check` forces `arch` whatever the tool said.
@@ -102,7 +109,7 @@ The `rounds` restart the cycle; the four tail fields — `outcome`, `coverage`, 
 
 - **`missing_disciplines` is written in the round where the discipline did not come back**: the `round` action takes it from the findings file. On resumption, `missing_disciplines` of the final block is the **union** of those of all recorded rounds: an `arch` missed at round 1 blocks the commit even if the session fell at round 3 and resumption closed at `fixed-point`. `arch` and `perf` are done only once at round 1: what they did not see then nobody will ever see.
 - **`outcome` is written by the `round` action on exit, `coverage`, `gate` and `gate_detail` by `tail` as soon as their step returns**, not at the end together with the report. They stay `null` until that step ran — the tool refuses them before the cycle exits — and it is that distinction making resumption possible.
-- A ledger is **open** while `outcome` is `null`: the cycle left it before the exit. The Stop hook reads this definition and the ledger's form (§ *ledger* of `schemas/blocks.json`) and nothing else — a file of the state folder carrying another shape, a findings file or another tool's ledger, it skips in silence. A ledger it lists is one this section would resume, never a file it guessed.
+- A ledger is **open** while `outcome` is `null` and no `.abandoned` stands beside it: the cycle left it before the exit. **A dead ledger is set aside, never deleted**: an empty file named `<ledger>.abandoned` in the state folder takes it off the open roll and leaves the file readable as evidence, the anchors included, which deleting it would throw away. The Stop hook reads this definition, the ledger's form (§ *ledger* of `schemas/blocks.json`) and the last write of the ledger and of the round files beside it; it speaks only of a ledger **this session has touched** — `item`, or `scope_files` where `item` is `null` — and only once nothing has written to it for two hours, and it stays silent where the host hands it no trace of the session. A file of the state folder carrying another shape, a findings file or another tool's ledger, it skips in silence; a ledger it lists is one this section would resume, never a file it guessed.
 - **On resumption do not redo what the ledger already declares done.** If the last round carries `verdict: "stop"`, the cycle already exited: skip to the first step still `null`, in the order coverage → gate → closing. Rerunning an already green gate costs the whole suite, that is precisely the resource the gate, running only once, exists not to spend twice.
 
 ### How a fix is identified, between one round and the next
@@ -127,6 +134,13 @@ Every block this cycle consumes is validated under the Validation clause of §4 
 ### Which disciplines run, at which round
 
 It is the rule holding together fan-out and iteration.
+
+**`{review.disciplines}` writes the round-1 set when the project declares it.** Declared, those are
+the disciplines and nothing else runs: the `arch` the scope measured, the `perf` judgement and the
+`dead` judgement are all skipped, and `--with` stays the explicit manual override of § *Input*. `bug`
+is the engine of the cycle and is carried to every round whatever the list says: a list omitting it
+does not remove it, and the outcome declares the reading. Absent, the set is the one the table's
+first row describes.
 
 | Round | Active disciplines | Round range: `git diff <from> <to> -- <files>` |
 |---|---|---|
@@ -298,7 +312,7 @@ When it runs, delegate it to a **judge** subagent fully reading `skills/commit/S
 
 `independence` is `lost` **only** if the round-1 fan-out did not run on independent subagents: delegation was unavailable and you evaluated the disciplines inline, in the same context. A sequential fan-out on a backend imposing it stays `intact` — contexts are still fresh and blind to each other (§4 of `contracts/orchestration.md`, *Depth and degradation*). It is what distinguishes, downstream, a review from a single pass.
 
-3. **Memory and documentation are neither your task nor the user task.** The "only `{code_root}`" constraint stays: `{hosts.<host>.instructions_file}`, `.daiku/policies/`, `{memory.root}` and `{tech_doc}` belong to `update-memory`, which `/commit` **always** delegates. So **never close with a reminder to the user** like "remember to realign the technical document": what comes out of here with green gate is decided, and a decided work carries its own artefacts itself — a line turning it over to whoever reads only makes it likely not to happen.
+3. **Memory and documentation are neither your task nor the user task.** The "only `{code_root}`" constraint stays: `{hosts.<host>.instructions_file}`, `.daiku/policies/`, `{memory.root}` and the founding documents (`documents.*`) belong to `update-memory`, which `/commit` **always** delegates. So **never close with a reminder to the user** like "remember to realign the founding documents": what comes out of here with green gate is decided, and a decided work carries its own artefacts itself — a line turning it over to whoever reads only makes it likely not to happen.
 
    If in the cycle you saw a **behaviour change visible to the user** (new flow, action, default or semantics a human reader should now read differently), name it in the report as a **fact on the diff**: it serves whoever reads to understand what is being delivered. It is not a code finding and it **does not** enter `to_confirm`.
 

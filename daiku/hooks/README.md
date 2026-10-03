@@ -1,15 +1,16 @@
-# The five hooks
+# The six hooks
 
-Daiku ships five hooks. They do two different jobs: one **stops a gesture** before it happens,
+Daiku ships six hooks. They do two different jobs: two **stop a gesture** before it happens,
 the other four never stop anything and only say what they know.
 
 | Hook | Event | What it does |
 |---|---|---|
 | `lib/command-guard.mjs` | `PreToolUse` on `Bash`/`PowerShell` | denies five destructive gestures: four always, one only where the project declares it |
+| `lib/ask-guard.mjs` | `PreToolUse` on `AskUserQuestion` and on the subagent launch, `PostToolUse` on `AskUserQuestion`, `UserPromptSubmit` | keeps the ask of a run whole: refuses a decision ask whose questions carry no place in the list, refuses a batch that does not continue its list, and refuses the launch of a subagent while the ask is open — a delegation and never a file |
 | `lib/contracts-post-edit.mjs` | `PostToolUse` on `Edit`/`Write` | after a write to the corpus — and to the sources a policy watches — reports faults that would not fail on their own |
 | `lib/run-advice.mjs` | `UserPromptSubmit`, and `PreToolUse` on the write tools | marks the session a run was opened in and states the run's rule once; at a write that conversation makes outside the seats the run owns it repeats the rule — and blocks nothing |
 | `lib/session-advice.mjs` | `SessionStart` | at startup, says whether Daiku is halfway opened and whether work was left in flight |
-| `lib/stop-advice.mjs` | `Stop` | at session end, lists the review ledgers left open, so the next session resumes from them — once per session, never on a stop it caused itself |
+| `lib/stop-advice.mjs` | `Stop` | at session end, names the review ledgers **this session** worked in and left standing — nothing written for hours, no `.abandoned` beside them — so it resumes from them or sets them aside; once per session, never on a stop it caused itself |
 
 Next to them stand two modules that are not hooks: `lib/project-root.mjs` finds the project
 root on both hosts, `lib/daiku-config.mjs` reads `.daiku/project.json`. `project-root` carries a
@@ -60,6 +61,27 @@ denial would stop the node that was asked for. What tells the conversation's wri
 is `agent_id`, a field the host fills **only** inside a subagent call: absent, the write is the
 conversation's and the notice speaks; present, a child is doing the work, which is the point.
 
+**`ask-guard` is not a branch of this table either, and it denies two gestures of a run.**
+`new-feature` asks the owner a **list** of decisions, and `AskUserQuestion` carries at most four
+questions per call, so a list of six is asked in two calls: with no boundary on it, a run that asks
+four and carries on answers the remaining two **in the owner's place**, and the owner never learns
+the list had six. The list is therefore numbered — every question opens with `k/N`, its own place
+and the length of the list — and this hook is the seat that holds the run to it: it refuses a
+decision ask whose questions carry no place, refuses a batch that does not continue its list, and
+refuses the **launch of a subagent** while the ask is open, that launch being how the run reaches
+the work that answers the decisions (incorporation, brief, delivery). **It denies no file**: the
+write guard is gone and stays gone, and what is denied here is a delegation. A message of the owner
+closes the ask — their free answer prevails — and the run goes on. A run **resumed** on a folder
+already there (`/new-feature <folder>`) asks the cards its document left open, and there a first batch
+carries the place those cards have in that list instead of `1/N`: the prompt is where the guard reads a
+resume, and it is the only case in which the opening rule bends. Its two boundaries, declared: it
+speaks only in a session that opened a `new-feature` run (reading the mark `run-advice` writes, not
+writing a second one) and only where `.daiku/project.json` exists. The rule it holds is
+`contracts/orchestration.md` § *Ask the owner*. What tells a decision ask from another node's
+question is the form that section fixes for it — the option labels opening with their ids and the
+label of `A` closing with `(recommended)` — so `init`'s two languages and `new-project`'s interview
+pass through untouched.
+
 The first branch has no switch because it is not a policy: `rm -rf` entering a junction and
 destroying what sits on the other side is an operating-system fact, true in every
 project, and a junction cannot be seen by reading the command line. The others have none by
@@ -95,19 +117,20 @@ That is why each carries a test bench running on a simulated filesystem, touchin
 nothing, and printing a counted total:
 
 ```bash
-node hooks/self-check.mjs          # all ten benches at once, with the summed total
+node hooks/self-check.mjs          # all twelve benches at once, with the summed total
 node hooks/lib/command-guard.mjs --self-check   # one only, as sync-host runs it
 ```
 
 The first exits `1` on the first red: the command for a CI and to run before a
 release, next to the two package validators.
 
-They are the five above, `lib/project-root.mjs`, the two programs of `architect/` — the
-evaluator and the review's ledger tool — `skills/init/scan.mjs`, and the bench of the host
-manifests beside this file: the last four outside `lib/`, because that folder is copied into the
-user's project and this one is not. They are the only benches here whose programs **fail loudly**: the five hooks
-stay silent on a fault, so a total that drops is the only sign a bench stopped running, and that
-sign is worth exactly as much for the two programs, whose silence stops a delivery. The ledger
+They are the six above, `lib/project-root.mjs`, the three programs of `architect/` — the
+evaluator, the review's ledger tool and the worktree pool — `skills/init/scan.mjs`, and the bench of
+the host manifests beside this file: the last five outside `lib/`, because that folder is copied
+into the user's project and this one is not. They are the only benches here whose programs **fail
+loudly**: the six hooks stay silent on a fault — `ask-guard` on everything but its two verdicts —
+so a total that drops is the only sign a bench stopped running, and that sign is worth exactly as
+much for the three programs, whose silence stops a delivery. The ledger
 tool's bench runs real Git on throwaway repositories under the system temp directory, so it
 needs `git` on the `PATH`.
 
@@ -125,8 +148,8 @@ written through its `rule()`.
   bypassing both the confirmation the host asks for a command and the hash approval
   Codex demands precisely for hooks.
 - **They write nothing in the project.** They read, and answer the host. Two of them leave one small
-  mark each, and both stay outside the repository: `stop-advice` marks what it announced, so the same
-  notice is not delivered twice in a session, and `run-advice` marks the run this session opened —
+  mark each, and both stay outside the repository: `stop-advice` marks the set of ledgers it
+  announced, so the same notice is not delivered twice in a session, and `run-advice` marks the run this session opened —
   in the session's own scratch directory the host names, or in the OS temporary directory where
   there is none.
 - **They do not speak just to say everything is fine.** A notice that arrives every time stops being read.
@@ -137,7 +160,7 @@ written through its `rule()`.
 
 ## Node and nothing else
 
-The five hooks are `.mjs` files run with `node`, dependency-free: no `package.json`, no
+The six hooks are `.mjs` files run with `node`, dependency-free: no `package.json`, no
 module to install. On a project where `node` is not on the `PATH` they do not start — and since
 the host does not stop a turn for a failing hook, the result is silence. When a project
 has no Node, these guardrails are absent: a requirement, not a graceful degradation.
@@ -161,9 +184,11 @@ re-running `/sync-host` rewrites them.
 After every update, on Codex, changed hooks ask for approval again with
 `/hooks`: trust is recorded on the file hash, and until granted they are skipped.
 
-**Two hooks are Claude Code's alone, and they are declared rather than left to be discovered.** The run
+**Three hooks are Claude Code's alone, and they are declared rather than left to be discovered.** The run
 boundary needs two things of its host — a `UserPromptSubmit` event to mark the session, and an
 `agent_id` on the write event to tell a subagent's write from the conversation's — and the Codex
-template wires neither; `stop-advice` needs a `Stop` event, which it does not wire either. There
-nothing is marked and nothing is said, and the run's rule stands in
-`skills/new-feature/SKILL.md` § *7. Decisions are asked in chat* and in the *Operational constraints*.
+template wires neither; `stop-advice` needs a `Stop` event, which it does not wire either; and
+`ask-guard` needs `AskUserQuestion` and the launch of a subagent as tool events, events that host
+does not carry. There nothing is marked, nothing is asked and nothing is refused, and the rules
+stand where they are written: `skills/new-feature/SKILL.md` § *7. Decisions are asked in chat* and,
+for the ask, `contracts/orchestration.md` § *Ask the owner*.

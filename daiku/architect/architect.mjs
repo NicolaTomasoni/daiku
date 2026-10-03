@@ -45,7 +45,7 @@
  *
  * **Fields of the blocks it consumes that it deliberately does not read**, declared as
  * §4 point 2 of `contracts/orchestration.md` requires, each standing on the road of
- * none of the ten questions: `rounds` as a count (the rounds themselves live in the
+ * none of the eleven questions: `rounds` as a count (the rounds themselves live in the
  * ledger, and the ledger is what this program reads), `disciplines_round_1`,
  * `independence`, `applied`, `severe`, `on_previous_fix`, `discarded`, `coverage` **of
  * the review block** (the ledger's is read, by the resumption and the readable-ledger
@@ -63,7 +63,7 @@
  *
  * **A case the bench does not cover is a delivery that stops**, not a wrong verdict:
  * the verdict binds, and the bench is the only defence. That is the reason the bench
- * below counts one proof for every row of every table the ten questions copy, every
+ * below counts one proof for every row of every table the eleven questions copy, every
  * entry point, every case of the ambiguity rule, and every row of the topology table.
  */
 
@@ -88,12 +88,14 @@ import { fileURLToPath } from 'node:url';
 const GRAPH = {
   init: ['owner'],
   'sync-host': ['owner', 'init'],
+  'new-project': ['owner'],
   'new-feature': ['owner'],
   'decision-doc': ['new-feature'],
   research: ['owner', 'new-feature'],
   study: ['research'],
   blueprint: ['owner', 'ship-feature', 'new-feature'],
   execute: ['ship-feature'],
+  reconcile: ['ship-feature'],
   'ship-feature': ['owner', 'new-feature'],
   review: ['owner', 'ship-feature'],
   'finder-prompt': ['review', 'code-review'],
@@ -358,7 +360,7 @@ function incoherence(input, question) {
 }
 
 /* ------------------------------------------------------------------------- *
- * The ten questions
+ * The eleven questions
  * ------------------------------------------------------------------------- */
 
 /** Where in the chain the entry starts, cut at the furthest phase the artefacts prove. */
@@ -1282,6 +1284,63 @@ function askPool(input) {
   });
 }
 
+/* ------------------------------------------------------------------------- *
+ * 11. The reconciliation of an obstructed merge — skills/reconcile/SKILL.md § How you verify
+ * ------------------------------------------------------------------------- */
+
+/**
+ * Whether the working tree and the branch change the same lines of an obstructed path, so a
+ * merge can keep both together or must stop and ask the owner. The measure is per line
+ * intervals in the frame of the merge base, read from the hunk headers of `git diff -U0` by
+ * `architect/reconcile.mjs`, the node's disk side: `ours` are the lines the working tree
+ * changes, `theirs` those the branch changes, each a list of `[from, to]` closed intervals on
+ * the base's line numbers. The path is obstructed where an interval of `ours` intersects one of
+ * `theirs` — `a <= d && c <= b` for `[a, b]` and `[c, d]`: touching on a shared line is
+ * overlap, pure adjacency is not. `stop` on any such path, because the choice is the owner's;
+ * `reconcile` otherwise, and the node merges without asking.
+ *
+ * This is not a merge algorithm: git already decided the working tree and the branch differ on
+ * these paths — a conflict or an untracked file the merge would overwrite. The question is only
+ * whether the two sides are disjoint enough to be kept together, and that is what the intervals
+ * answer. A path missing from `paths`, or an interval that is not `[from, to]` with
+ * `from <= to`, is a loud failure: a measurement the caller could not express is not `reconcile`.
+ */
+function askReconcile(input) {
+  const paths = input.paths;
+  if (!Array.isArray(paths)) {
+    throw new BadInput('paths is required: the obstructed paths, each as {"file", "ours", "theirs"}');
+  }
+  paths.forEach((entry, at) => {
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry) || !nonEmpty(entry.file)) {
+      throw new BadInput(`paths[${at}] must be an object with a non-empty "file"`);
+    }
+    for (const side of ['ours', 'theirs']) {
+      if (!Array.isArray(entry[side])) {
+        throw new BadInput(`paths[${at}].${side} must be an array of [from, to] intervals — [] when that side changes nothing`);
+      }
+      entry[side].forEach((interval, index) => {
+        const ok =
+          Array.isArray(interval) && interval.length === 2 && interval.every(Number.isInteger) && interval[0] <= interval[1];
+        if (!ok) throw new BadInput(`paths[${at}].${side}[${index}] must be an interval [from, to] of two integers, from <= to`);
+      });
+    }
+  });
+  const overlapping = paths.filter((entry) => overlaps(entry.ours, entry.theirs));
+  const disjoint = paths.length - overlapping.length;
+  return block({
+    verdict: rule('reconcile.disjoint', overlapping.length === 0) ? 'reconcile' : 'stop',
+    blockers: overlapping.map((entry) => entry.file),
+    detail: overlapping.length
+      ? `${overlapping.length} of ${paths.length} obstructed path(s) are touched on the same lines by both sides: keeping them together is a choice with tradeoff, and it is the owner's.`
+      : `${disjoint} obstructed path(s) are disjoint line by line: the two sides can be kept together, and the node merges without asking.`,
+  });
+}
+
+/** Two interval lists share a line: `a <= d && c <= b` for `[a, b]` in `ours` and `[c, d]` in `theirs`. */
+function overlaps(ours, theirs) {
+  return ours.some(([a, b]) => theirs.some(([c, d]) => a <= d && c <= b));
+}
+
 const ASKS = {
   decision: askDecision,
   closing: askClosing,
@@ -1293,6 +1352,7 @@ const ASKS = {
   layers: askLayers,
   block: askBlock,
   pool: askPool,
+  reconcile: askReconcile,
 };
 
 /**
@@ -1315,6 +1375,7 @@ const REQUIRES = {
   layers: ['layers', 'added'],
   block: ['name', 'block'],
   pool: ['slots', 'max'],
+  reconcile: ['paths'],
 };
 
 /** Every answer goes through here: the keys of `REQUIRES` first, then the question. */
@@ -1781,6 +1842,26 @@ const CASES = [
     input: { question: 'pool', slots: [{ n: 1, clean: false, merged: true }, { n: 2, clean: true, merged: false }, { n: 3, clean: false, merged: false }], max: 3 },
     expect: { verdict: 'blocked', detail_include: 'the cap is not a suggestion' } },
 
+  /* --- question: reconcile — skills/reconcile/SKILL.md § How you verify --- */
+  { id: 'reconcile:disjoint-far-apart', cites: { file: 'skills/reconcile/SKILL.md', section: 'How you verify' },
+    input: { question: 'reconcile', paths: [{ file: 'a.txt', ours: [[1, 3]], theirs: [[6, 8]] }] },
+    expect: { verdict: 'reconcile', blockers: [] } },
+  { id: 'reconcile:overlapping-on-a-shared-line', cites: { file: 'skills/reconcile/SKILL.md', section: 'How you verify' },
+    input: { question: 'reconcile', paths: [{ file: 'a.txt', ours: [[1, 3]], theirs: [[3, 7]] }] },
+    expect: { verdict: 'stop', blockers_include: 'a.txt' } },
+  { id: 'reconcile:adjacent-is-not-overlap', cites: { file: 'skills/reconcile/SKILL.md', section: 'How you verify' },
+    input: { question: 'reconcile', paths: [{ file: 'a.txt', ours: [[1, 3]], theirs: [[4, 5]] }] },
+    expect: { verdict: 'reconcile', blockers: [] } },
+  { id: 'reconcile:one-side-changes-nothing', cites: { file: 'skills/reconcile/SKILL.md', section: 'How you verify' },
+    input: { question: 'reconcile', paths: [{ file: 'a.txt', ours: [], theirs: [[1, 5]] }] },
+    expect: { verdict: 'reconcile', blockers: [] } },
+  { id: 'reconcile:only-the-overlapping-file-blocks', cites: { file: 'skills/reconcile/SKILL.md', section: 'How you verify' },
+    input: { question: 'reconcile', paths: [{ file: 'a.txt', ours: [[1, 3]], theirs: [[4, 8]] }, { file: 'b.txt', ours: [[2, 2]], theirs: [[2, 2]] }] },
+    expect: { verdict: 'stop', blockers_length_at_least: 1, blockers_include: 'b.txt' } },
+  { id: 'reconcile:no-obstructed-path', cites: { file: 'skills/reconcile/SKILL.md', section: 'How you verify' },
+    input: { question: 'reconcile', paths: [] },
+    expect: { verdict: 'reconcile', blockers: [] } },
+
   /* --- question: block on the brief and on execute — skills/blueprint/SKILL.md and skills/execute/SKILL.md § What you return --- */
   { id: 'block:blueprint-valid', cites: { file: 'skills/blueprint/SKILL.md', section: 'What you return' },
     input: { question: 'block', name: 'blueprint', block: BP_BLOCK() },
@@ -2018,6 +2099,12 @@ const CASES = [
   { id: 'block:finder-a-finding-without-its-file', cites: { file: 'skills/finder-prompt/SKILL.md', section: 'The block you return' },
     input: { question: 'block', name: 'finder', block: { findings: [{ line: 3, symbol: 'f', confidence: 'high', change: 'x', description: 'y' }] } },
     expect: { verdict: 'invalid', blockers_include: 'findings[0].file' } },
+  { id: 'block:ship-feature-merge-with-dirty-paths', cites: { file: 'skills/ship-feature/SKILL.md', section: '6b. Merge' },
+    input: { question: 'block', name: 'ship-feature-merge', block: { merged: false, merge_sha: null, conflicts: [], dirty_paths: ['plugins/daiku/skills/ship-feature/SKILL.md'], detail: 'the working tree holds the path uncommitted' } },
+    expect: { verdict: 'valid', blockers: [] } },
+  { id: 'block:ship-feature-merge-without-dirty-paths', cites: { file: 'skills/ship-feature/SKILL.md', section: '6b. Merge' },
+    input: { question: 'block', name: 'ship-feature-merge', block: { merged: false, merge_sha: null, conflicts: [], detail: '' } },
+    expect: { verdict: 'invalid', blockers_include: 'dirty_paths is missing' } },
 ];
 
 /** The input that must be refused loudly. Nothing here is a verdict. */
@@ -2060,6 +2147,11 @@ const REJECTED = [
   { id: 'reject:pool-slot-without-its-containment', input: { question: 'pool', slots: [{ n: 1, clean: true }], max: 5 } },
   { id: 'reject:pool-slot-number-declared-twice', input: { question: 'pool', slots: [{ n: 1, clean: true, merged: true }, { n: 1, clean: false, merged: true }], max: 5 } },
   { id: 'reject:pool-cap-not-positive', input: { question: 'pool', slots: [], max: 0 } },
+  { id: 'reject:reconcile-paths-absent', input: { question: 'reconcile' } },
+  { id: 'reject:reconcile-paths-not-a-list', input: { question: 'reconcile', paths: 'x' } },
+  { id: 'reject:reconcile-an-entry-without-its-file', input: { question: 'reconcile', paths: [{ ours: [], theirs: [] }] } },
+  { id: 'reject:reconcile-an-interval-that-is-not-a-pair', input: { question: 'reconcile', paths: [{ file: 'a', ours: [[1]], theirs: [] }] } },
+  { id: 'reject:reconcile-an-interval-falling-backwards', input: { question: 'reconcile', paths: [{ file: 'a', ours: [[3, 1]], theirs: [] }] } },
 ];
 
 /** Calls in prose the doc-test must read right, one per way it can go: the proofs it can fail. */

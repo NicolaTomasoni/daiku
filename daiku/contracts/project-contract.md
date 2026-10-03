@@ -64,7 +64,8 @@ of a file, the presence or absence of an area. Three prohibitions, in order of s
 | `code_root` | application code root, with trailing slash; it is also the Git pathspec delimiting every code perimeter |
 | `language.chat` | language of what is written for a person: chat replies, summaries, reports and the method's documents (§5.5) |
 | `language.commit` | language of what ends up in the repository's history: commit messages and changelog entries (§5.5) |
-| `tech_doc` | path of the technical document a human reader opens to learn what the system does and why; absent if the project has none |
+| `documents` | the group of the founding documents, one entry per role — the roles are `product`, `brand`, `domain`, `stack`, `architecture`, fixed by the method |
+| `documents.<role>` | path, relative to the technical root, of the founding document answering that role; absent if the project declares none |
 | `changelog` | path of the released-versions log |
 | `version.file` | file carrying the application's canonical version |
 | `version.field` | exact spot in the file where that version lives |
@@ -75,6 +76,7 @@ of a file, the presence or absence of an area. Three prohibitions, in order of s
 | `memory.root` | root of the persistent memory corpus, inside the repository (§8); on Claude Code it is also the folder where the host writes its own memory (§4.2) |
 | `memory.index` | index file of the corpus, the one read first |
 | `commit.memory_prefix` | prefix of the memory-and-documentation commit message |
+| `review.disciplines` | the disciplines the review cycle runs at round 1, among `bug`, `arch`, `perf` and `dead`; declared, they are the whole set — the scope and the judgements add nothing; absent, `bug` runs and the other three are decided on the diff |
 | `worktree.pool` | delivery-worktree pool directory, relative to the technical root |
 | `worktree.prefix` | prefix of the pool worktrees' names, followed by the number (`1`..`worktree.max`) |
 | `worktree.max` | maximum number of pool worktrees: never one more, never an off-convention name |

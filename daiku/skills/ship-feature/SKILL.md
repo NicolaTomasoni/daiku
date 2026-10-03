@@ -75,6 +75,7 @@ process, talks to no model and opens no file of the project — only the package
 | `unblock` | § *Mechanical unblock* — whether only mechanical work remains |
 | `propagation` | *Block validation*, below — what becomes of a step whose block did not come back or came back refused |
 | `pool` | § *0. Acquisition* — which worktree a delivery takes, asked by `architect/pool.mjs`, the pool's disk side |
+| `reconcile` | § *6b-bis. Reconcile* — whether the obstructed merge's two sides are disjoint line by line, asked by `architect/reconcile.mjs`, the node's disk side |
 
 **What it reads is one JSON object whose keys are fixed**, and a caller that guesses one of them
 stops the delivery. `question` is always there; **which other keys each question requires is
@@ -84,13 +85,14 @@ refuses one whose paragraph does not name them all — so the keys are named whe
 made, and not listed again here. Three of them carry a meaning their name does not say: `ledger`
 is `null` when there is none, and for `order` a ledger that exists and is not passed turns into a
 fork for the owner where a verdict was due; `step` is `{"node": …, "block": …|null, "attempt": 1|2, "invalid": […]}`, where `invalid` is what the `block` question said of that block — its `blockers`, or `[]` when no question judged it.
-These are the ten questions it answers. The five this file does not use directly are asked by the contracts that need them:
+These are the eleven questions it answers. The five this file does not use directly are asked by the contracts that need them:
 `closing`, `resumption` and `round` by `skills/review/SKILL.md` (§ *Closing*, § *Baseline and ledger*, § *When to run another round*), through
 `architect/ledger.mjs`, the review's disk side, which imports these questions and hands them the ledger and the added lines it read from disk
 (`skills/review/SKILL.md` § *The ledger tool*), and which asks `block` too, on the finder and applier blocks; `layers` by
 `skills/arch-check/SKILL.md` § *How you verify*, the same way, and again by `skills/execute/SKILL.md` § *Principles* point 8, which calls
 `architect/architect.mjs` directly — execute runs before a ledger exists, so it reads the added lines from Git itself; `pool` by
-`architect/pool.mjs`, the pool's disk side, which is what § *0. Acquisition* runs; and `block` is asked also
+`architect/pool.mjs`, the pool's disk side, which is what § *0. Acquisition* runs; `reconcile` by `architect/reconcile.mjs`, the
+reconciliation's disk side, which is what § *6b-bis. Reconcile* runs; and `block` is asked also
 by `skills/new-feature/SKILL.md` § *7. Decisions are asked in chat*.
 A key a question needs and does not find is a loud failure, never a guessed value.
 
@@ -209,7 +211,7 @@ Review **is part of the delivery**: it is not an optional step, it is not postpo
 
 Fully run `skills/review/SKILL.md` — scope → finder and fix rounds, until the cycle converges → gate — on file `<folder>/4. review-notes.md` in the **artefacts root** (fixed name by `execute` contract: do not concatenate the returned path, its format is not guaranteed). It is the same discipline running from standalone `/review`: a single source, no copy — **do not rewrite it here**. In the prompt also pass it the worktree work root and the artefacts root: diff, fix, coverage and gate run in the first, ledger and `5. review-report.md` in the second (`skills/review/SKILL.md`, § *When review runs on a worktree*).
 
-**Delegate it to a subagent** executing that contract, on the **worker** role: its exits, its rounds and its closing are verdicts of the evaluator and of `architect/ledger.mjs`, and what stays with it is bookkeeping plus the merit verdict of rule 3, taken on criteria its contract writes down. Do not orchestrate its phases yourself. The yield of its round 1 stands in the independence of the finders, and orchestrating it from here — where you have in mind the brief, the execution and what you expect — is the already self-convinced pass the fan-out exists to avoid (§4 of `contracts/orchestration.md`, *Depth and degradation*). If you are **resuming** a delivery whose review had already started, pass it the ledger path you find in `{paths.review_state}/` with the `base` of this delivery **and** with `item` equal to `<folder>`: it restarts from the next round instead of running the whole triage again. The two fields are watched together because the baseline alone does not identify a review — a resumed delivery restarts from the same commit — and **if the candidates remain more than one, or if the ledger carries no `item`, you pass none of them**: the triage is run again, while the ledger of another feature silently switches off `on_previous_fix` and `oscillation`. `--with` is not used here: the conditional disciplines are decided by the scope from the diff.
+**Delegate it to a subagent** executing that contract, on the **worker** role: its exits, its rounds and its closing are verdicts of the evaluator and of `architect/ledger.mjs`, and what stays with it is bookkeeping plus the merit verdict of rule 3, taken on criteria its contract writes down. Do not orchestrate its phases yourself. The yield of its round 1 stands in the independence of the finders, and orchestrating it from here — where you have in mind the brief, the execution and what you expect — is the already self-convinced pass the fan-out exists to avoid (§4 of `contracts/orchestration.md`, *Depth and degradation*). If you are **resuming** a delivery whose review had already started, pass it the ledger path you find in `{paths.review_state}/` with the `base` of this delivery **and** with `item` equal to `<folder>`: it restarts from the next round instead of running the whole triage again. The two fields are watched together because the baseline alone does not identify a review — a resumed delivery restarts from the same commit — and **if the candidates remain more than one, or if the ledger carries no `item`, you pass none of them**: the triage is run again, while the ledger of another feature silently switches off `on_previous_fix` and `oscillation`. `--with` is not used here: the disciplines are decided by the project (`{review.disciplines}`) or, without that key, by the scope from the diff.
 
 **Instead always pass it `--no-commit`**, and it is mandatory: `/review` closes with the commit by its own setting (§ *Closing* of its file), and the commit of this delivery is **phase 6**, after the decision of phase 4 and the alignment of 5b. Without that flag review would commit the code before you evaluated its open items, phase 6 would find the tree already clean, and `update-memory` would run twice — once from `/commit` inside review, once as phase 5b — on a diff meanwhile already entered.
 
@@ -253,7 +255,7 @@ If the verdict is `unblock`, delegate **one** worker subagent which, in the work
 
 A single attempt per delivery: if the gate stays red do not relaunch the fix — the second pass is oscillating work, and oscillation is declared, not repeated. This is the only road reopening a `BLOCKED_NO_COMMIT` inside the same delivery: blocking items, forks and missed disciplines are never unblocked this way.
 
-On `BLOCKED_NO_COMMIT` one does not stage, does not update memory and does not commit — and **the worktree stays dirty on purpose**: the delivery never creates `blocked.patch` nor parks in any form; modifications remain visible on the worktree branch, the main tree is not touched. Before the report list the dirty (`git -C <worktree_root> status --porcelain -- {code_root}`) and declare its paths in the report and in the chat summary.
+On `BLOCKED_NO_COMMIT` one does not stage, does not update memory and does not commit — and **the worktree stays dirty on purpose**: the delivery never parks the worktree's own work as a patch, and modifications remain visible on the worktree branch. The one patch the delivery writes is § *6b-bis*'s `main-tree.patch`, which holds the **main tree's** uncommitted work — another session's, kept recoverable — and never the delivery's own blocked work. Before the report list the dirty (`git -C <worktree_root> status --porcelain -- {code_root}`) and declare its paths in the report and in the chat summary.
 
 The worst case is confined instead of prevented: the blocked dirty stays on the branch of its worktree and never enters the integration branch. The registry marks the slot `blocked` and names the delivery that left it, so whoever reads the pool knows whose it is; the slot returns to the pool once the owner has resolved it — its tree clean and nothing left on its branch that the integration branch lacks. A pool of blocked slots is a pool of declared work, not of anonymous dirt: with every slot occupied and none reusable, acquisition stops the delivery and its `detail` names each one with its delivery.
 
@@ -273,9 +275,9 @@ If `staged` is `false`, there is nothing to deliver: skip 5b and 6, go to the re
 
 - read in full `skills/update-memory/SKILL.md` and follow that contract to the letter;
 - the diff to inspect is the one **in index** under `{code_root}` in the **work root** of the worktree: `git -C <worktree_root> diff --cached --stat -- {code_root}` and `git -C <worktree_root> diff --cached -- {code_root}`; it is the full diff of the feature, the same the commit will produce;
-- **every seat of your perimeter stands in the work root.** `{hosts.<host>.instructions_file}`, `{memory.root}`, `{tech_doc}` and `.daiku/policies/` are versioned: the commit of phase 6 carries them, and the merge of 6b brings them onto the main tree together with the code. Nothing of your perimeter stays behind — a policy written in the work root is a policy the merge carries over like the rest;
+- **every seat of your perimeter stands in the work root.** `{hosts.<host>.instructions_file}`, `{memory.root}`, the founding documents (`documents.*`) and `.daiku/policies/` are versioned: the commit of phase 6 carries them, and the merge of 6b brings them onto the main tree together with the code. Nothing of your perimeter stays behind — a policy written in the work root is a policy the merge carries over like the rest;
 - the **feature folder** is `<folder>` in the **artefacts root**: deposit there your return block as `3. memory-report.md`, as described in point 7 of its § *Procedure*. It is the phase closest to the context limit — it reads the full diff — and it is the only one whose outcome, without that file, does not survive interruption: on resumption memory is already aligned, `files` comes back empty and commit 2 has no more scope;
-- **you are not authorised to commit your group**: run no Git writing command and do not touch the index of `{code_root}`; you limit yourself to modifying `{hosts.<host>.instructions_file}`, `.daiku/policies/`, `{memory.root}` and `{tech_doc}` — plus the artefact above, which is the trace of the phase and not a memory update — and return `committed: null`. Commits are phase 6, which makes them in the declared order — first the feature, then doc and memory — and that order is the reason permission is not granted here.
+- **you are not authorised to commit your group**: run no Git writing command and do not touch the index of `{code_root}`; you limit yourself to modifying `{hosts.<host>.instructions_file}`, `.daiku/policies/`, `{memory.root}` and the founding documents (`documents.*`) — plus the artefact above, which is the trace of the phase and not a memory update — and return `committed: null`. Commits are phase 6, which makes them in the declared order — first the feature, then doc and memory — and that order is the reason permission is not granted here.
 
 Commit permission is a property **of the invocation**, not of the node: the same contract, invoked by `/commit`, receives it. Telling it explicitly in the prompt is not a repetition — without that line its default is "no", and it is the right default, but it is the line that makes clear why it is so here.
 
@@ -305,23 +307,36 @@ A single subagent, up to three distinct commits and in the declared order, on th
 
 ### 6b. Merge — **worker** role, only if the outcome is not `BLOCKED_NO_COMMIT`
 
-A subagent, Git commands in the main tree, in order, without asking confirmation. Merge is the only step writing on the main tree.
+A subagent, Git commands in the main tree, in order, without asking confirmation. Merge is the only step writing on the main tree besides § *6b-bis*.
 
-1. Cleanup of commit groups on the main tree: `git status --porcelain` on the pathspecs of the three groups `skills/commit/SKILL.md` § *Procedure* 3 enumerates — code, memory/doc, version/changelog — must be empty. The uncommitted artefacts of the delivery (`2./3./4./5.` and ledger) stand outside those pathspecs and do not count.
+1. Cleanup of commit groups on the main tree: `git status --porcelain` on the pathspecs of the three groups `skills/commit/SKILL.md` § *Procedure* 3 enumerates — code, memory/doc, version/changelog — **holds none of the delivery's own work**. If the working tree holds uncommitted work on a path the merge would touch — another session's, the delivery never commits it — do **not** abort and do **not** merge: close with `merged: false`, `conflicts: []`, `dirty_paths: [<the dirty paths>]`, and the delivery goes on to § *6b-bis*. The uncommitted artefacts of the delivery (`2./3./4./5.` and ledger) stand outside those pathspecs and do not count.
 2. `git merge --no-ff {worktree.branch_prefix}<name> -m "merge: <folder>"`. Never `git push`.
-3. If the merge goes into conflict: `git merge --abort` and no manual resolution — a conflict resolved here is code no finder ever saw — and close with `merged: false` and the conflicting paths in `conflicts`.
-
-Exception to point 3: the conflict on `{changelog}` alone resolves itself by union, and it is the only one resolved inside the delivery. Valid only if purely additive — both parts add distinct entries in the unreleased section, without overlapping on the same lines nor touching version headers: keep both entries, remove the markers, do `git add` of the changelog alone and close with `git commit --no-edit`, verifying the diff contains both entries and nothing else unexpected. Any other conflict, or a non-purely-additive changelog, stays point 3 as is (abort + `BLOCKED_NO_COMMIT`): an invented union on overlapping lines is a decision with tradeoff, and those are not taken here.
+3. If the merge goes into conflict: do **not** abort and do not resolve by hand — leave the merge **in progress** (`MERGE_HEAD` present) so § *6b-bis* can measure the three stages — and close with `merged: false`, `conflicts` holding the conflicting paths, `dirty_paths: []`.
 
 ```json
-{"merged": true, "merge_sha": "<HEAD sha after the merge>", "conflicts": [], "detail": "<...>"}
+{"merged": false, "merge_sha": null, "conflicts": [], "dirty_paths": [], "detail": "<...>"}
 ```
 
-A conflicting merge classifies the delivery `BLOCKED_NO_COMMIT` (blocker: the conflicting paths, branch kept on the worktree): committed on the branch, not integrated. The worktree stays as it is — no cleanup — and the report says branch and conflicts.
+On a successful merge the block carries `merged: true`, the `merge_sha`, `conflicts: []` and `dirty_paths: []`.
+
+**A purely additive changelog is the reconciliation's ordinary case.** Two sides that add distinct entries in the unreleased section, without overlapping lines nor touching version headers, are disjoint line by line, and § *6b-bis* keeps both. Where the two sides touch the same lines, the node stops and the owner decides: an invented union on overlapping lines is a decision with tradeoff, and it is not taken here.
+
+When 6b returns `merged: false` with a non-empty `conflicts` or `dirty_paths`, the delivery does not stop and does not classify: it goes to § *6b-bis*, which reconciles or asks. Only a reconciliation that cannot proceed, or an owner who chooses to abort, closes the delivery `BLOCKED_NO_COMMIT`.
+
+### 6b-bis. Reconcile — **worker** role, only if § *6b. Merge* returned `merged: false` with non-empty `conflicts` or `dirty_paths`
+
+One subagent running the node `reconcile`: read in full `skills/reconcile/SKILL.md` and follow that contract to the letter. In the prompt, already resolved: the **work root** (the main tree, where the Git commands run), the delivery `<folder>`, the branch `{worktree.branch_prefix}<name>`, and the block § *6b. Merge* returned with its `dirty_paths` or `conflicts`, so the node knows whether the merge is in progress or the tree is merely dirty. The node runs `architect/reconcile.mjs` with `action: "measure"` — the same root as the evaluator — writing the patch artefact at `<folder>/main-tree.patch`: the recoverable copy of the other session's uncommitted work, kept while the working tree stays untouched.
+
+The node asks the evaluator `question: "reconcile"` — through `architect/reconcile.mjs`, which names the `paths`, one entry per obstructed path — and reads the verdict:
+
+- **`reconcile`** — the two sides are disjoint line by line. The node runs `architect/reconcile.mjs` with `action: "merge"`, which lands the merge keeping both — `git merge --no-ff --autostash` on a dirty tree, the union of the disjoint sides on a merge in progress — and returns `merged: true` with the `merge_sha`. The delivery goes on to § *6c. Cleanup*, and the slot is `free`.
+- **`stop`** — at least one path is changed on the same lines by both sides. The node merges nothing and returns `merged: false` with `overlap` naming those paths, `patch`, `dirty_paths` and the structured `question`. Carry the question into the chat as § *Ask the owner* of `contracts/orchestration.md` prescribes, and **stop**: the run resumes on the same folder and re-opens this node in **resolved mode** — the class of § *Invocation modes* of `skills/reconcile/SKILL.md` — with the owner's answer, which completes the merge. Until then the slot is `blocked`.
+
+The node fails loudly if it cannot proceed — a missing input, or an overlap that a union would have to invent — and on that, or on an owner who chooses to abort, the delivery closes `BLOCKED_NO_COMMIT` (slot `blocked`): no stage, no memory, no commit beyond what the branch already holds, the worktree left as it is, and the `reason` names the overlap. In no case does the reconciliation commit the other session's uncommitted work: the working tree stays as it was, `main-tree.patch` is the declared recoverable copy.
 
 ### 6c. Cleanup — **worker** role, only if the merge succeeded
 
-A subagent: `node <package root>/architect/pool.mjs <package root>` with `{"action": "release", "work_root": "<the main technical root>", "pool": "{worktree.pool}", "name": "<name>", "registry": "{paths.review_state}/worktree-pool.json", "state": "free", "ref": "<merge_sha>", "delivery": "<folder>"}`. It resets the slot to `<merge_sha>` and cleans it (`clean -fd`, without `-x`: the ignored, where the heavy junctions live, are not touched), verifies the tree is empty and records the row `free`. The worktree stays registered with its name and its branch: it is ready for the next delivery, which `acquire` will reuse **whatever the integration branch does next**. On `BLOCKED_NO_COMMIT` or `blocked` this phase does not exist: the worktree stays dirty, and the slot is recorded blocked (§ *Worktree pool*).
+A subagent: `node <package root>/architect/pool.mjs <package root>` with `{"action": "release", "work_root": "<the main technical root>", "pool": "{worktree.pool}", "name": "<name>", "registry": "{paths.review_state}/worktree-pool.json", "state": "free", "ref": "<merge_sha>", "delivery": "<folder>"}`. It resets the slot to `<merge_sha>` and cleans it (`clean -fd`, without `-x`: the ignored, where the heavy junctions live, are not touched), verifies the tree is empty and records the row `free`. The worktree stays registered with its name and its branch: it is ready for the next delivery, which `acquire` will reuse **whatever the integration branch does next**. On `BLOCKED_NO_COMMIT` or `blocked` — including when § *6b-bis* stopped on an overlap and is waiting for the owner — this phase does not exist: the worktree stays dirty, and the slot is recorded blocked (§ *Worktree pool*).
 
 ### 7. Report — **worker** role
 
@@ -336,13 +351,13 @@ It is the only phase having to report fields produced by **seven others**, and a
 - from **phase 4**: the classified `status` and the remaining `to_confirm` items, with their `scenario`;
 - from the **phase 5b** block: `updated` and the `confirm_with_owner` items;
 - from the **phase 6** block: `committed` and the three SHAs — `commit_sha`, `memory_commit_sha`, `version_commit_sha` — plus the dirty paths declared by phase 4 (no parking: the worktree stays dirty and declared);
-- from **phase 6b**: `merged`, `merge_sha` and possible `conflicts`; from **phase 0**: the `<name>` of the worktree and its branch;
+- from **phase 6b**: `merged`, `merge_sha`, possible `conflicts` and `dirty_paths`; and when § *6b-bis* stopped on an overlap, its `overlap`, its `patch` and the question put to the owner — the artefact `<folder>/main-tree.patch` holds the other session's uncommitted work and is the recoverable copy; from **phase 0**: the `<name>` of the worktree and its branch;
 - the form of the block to write and the JSON block to return, which are those below.
 
 A single block, at the tail of the review report:
 
 - title `## Delivery`;
-- below, **continuous prose in paragraphs**: what was delivered (distill the chosen solution to its essence, do not paste it verbatim); a paragraph on the review outcome (gate and its synthesis in one sentence, plus the limits review declared on itself — missed disciplines, lost independence — if any); a paragraph with final state and commits; if open items remain — blockers, post-commit forks, memory facts to confirm with the owner — a last paragraph summarising them grouped by theme and written **in a simple way**: what is at stake, which are the options and what changes by choosing one or the other, understandable without opening the code. If none remain — the normal case, because review and delivery resolve alone what they know how to resolve — omit that paragraph.
+- below, **continuous prose in paragraphs**: what was delivered (distill the chosen solution to its essence, do not paste it verbatim); a paragraph on the review outcome (gate and its synthesis in one sentence, plus the limits review declared on itself — missed disciplines, lost independence — if any); a paragraph with final state and commits, and — when the merge needed § *6b-bis* — how the reconciliation ended and where `main-tree.patch` was left; if open items remain — blockers, post-commit forks, memory facts to confirm with the owner — a last paragraph summarising them grouped by theme and written **in a simple way**: what is at stake, which are the options and what changes by choosing one or the other, understandable without opening the code. If none remain — the normal case, because review and delivery resolve alone what they know how to resolve — omit that paragraph.
 
 Paragraphs separated by an empty line, readable at a glance.
 
@@ -398,10 +413,10 @@ Every field comes from a phase, and is reported **verbatim** from there — not 
 | "I leave this as a post-commit decision, so the user decides" | Post-commit decisions are true forks, not what nobody wanted to resolve. If one road is clearly the right one, it is resolved where the finding originates. |
 | "I commit first and update memory after" | The order is declared: stage → memory → feature commit → doc/memory commit → version/changelog commit. No feature freezes without the artefacts realigned on the **same** diff. |
 | "I add `-A` to the stage, it is more comfortable" | Never: the scope is `{code_root}` and files are listed singly. The second commit has the opposite scope and is exclusive. |
-| "I work on the main tree, it is already there" | Code lives in the worktree acquired at phase 0. On the main tree only merge (6b) and delivery artefacts write. |
+| "I work on the main tree, it is already there" | Code lives in the worktree acquired at phase 0. On the main tree only merge (6b), the reconciliation (§ *6b-bis*) and delivery artefacts write. |
 | "The pool is full, I create one more / reuse a dirty one" | No: `{worktree.max}` is a cap, not a suggestion. A slot that is clean and holds nothing unmerged is reused whatever its HEAD — that is what the pool is for, and `acquire` resets it — but a dirty one, or one with a delivery nobody merged, is not: exit `blocked`, and the registry names whose it is. |
 | "I pick the pool slot by hand, it is only a couple of git commands" | No: `architect/pool.mjs` owns acquisition and release, and the `pool` question owns the choice. The hand-made version is exactly the one that carried `HEAD == HEAD(<INT>)` and never recycled a slot. |
-| "The merge is in conflict, I resolve it by hand" | No: `abort` and `BLOCKED_NO_COMMIT`. A conflict resolved here is code no finder ever saw. The only additive changelog union excepted (6b). |
+| "The merge is in conflict, I resolve it by hand" | No: § *6b-bis* measures the three stages and keeps both sides only where they are disjoint, and stops to ask where they touch on the same lines. A conflict resolved by hand is code no finder ever saw, and a union invented on shared lines is a decision with tradeoff. |
 | "I use the biggest model, this step looks hard to me" | The model comes from the role declared by the phase, resolved with the rule of §2 of `contracts/orchestration.md`. It is not chosen by feel. |
 | "I summarise gate and to-confirm myself in chat" | They are already in the report. Your summary is state + commits, not a duplicate. |
 
