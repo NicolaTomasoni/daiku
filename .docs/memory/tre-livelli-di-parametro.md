@@ -29,10 +29,6 @@ nessun `diff` la mostra, e su una macchina col recinto di Daiku nessun agente pu
 perché le radici di lavoro non la contengono. La valvola per l'owner multiplo o per la macchina con
 uno switcher diverso resta `environment.local.json`.
 
-**`temp_dir` non si scrive.** Assente significa la cartella temporanea del sistema operativo, che è
-la risposta giusta su ogni macchina e che i lettori usano già: dichiararla serve solo dove quel
-ripiego è sbagliato, e così l'unico path di macchina è uscito dal file dei parametri.
-
 **Why:** il 18 settembre 2026 il corpus è stato separato dal progetto su cui era nato, e la scelta
 è stata di non aprire un quarto livello: i tre bastavano tutti e tre, e un livello nuovo avrebbe
 dovuto essere spiegato in ogni skill che lo tocca.

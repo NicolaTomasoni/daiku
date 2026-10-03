@@ -252,10 +252,6 @@ a host's configuration paths hold for anybody: those stay. What identifies someb
 **You never write `.daiku/environment.local.json`.** It is the machine's override and the user
 creates it; one written by you would declare this machine's values as the project's.
 
-**`temp_dir` you do not write.** An absent `temp_dir` is the normal case and not a key you failed
-to find: the readers fall back on the operating system's temporary directory, which is the right
-answer on every machine. Write it only where that fallback is wrong.
-
 **`write_roots` you do not write either**: it lists one machine's folders, and it belongs in the
 `environment.local.json` the user creates.
 

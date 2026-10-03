@@ -95,7 +95,8 @@ export function loadContext(root, reads = REAL_READS) {
  * The `writeRoots` of the run's reminder: the folders the machine admits, where a write made
  * from the conversation is not the run's own violation. The environment file of §8 — the
  * machine's local one first, **taken whole**: where it exists and parses, the project one is not
- * read. Absent is the normal case, and reads as no root at all.
+ * read. Absent is the normal case, and reads as no root at all. A declared root that does not
+ * resolve on disk is dropped: nobody writes there, so the reminder has nothing to stay silent for.
  */
 function resolveWriteRoots(root, reads) {
   for (const file of [
@@ -111,7 +112,7 @@ function resolveWriteRoots(root, reads) {
     }
     if (!json || typeof json !== 'object') continue;
     const declared = Array.isArray(json.write_roots) ? json.write_roots : [];
-    return Object.freeze(declared.map((x) => resolvePath(x, root)).filter(Boolean));
+    return Object.freeze(declared.map((x) => resolvePath(x, root)).filter((p) => p && reads.exists(p)));
   }
   return Object.freeze([]);
 }
