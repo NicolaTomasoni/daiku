@@ -16,11 +16,11 @@ ciclo di review, il commit e l'allineamento della memoria sono le sue skill, inv
 (`new-feature`, `ship-feature`, `review`, `code-review`, `commit`, `update-memory`, `research`,
 `blueprint`, `execute`, `decision-doc`). Un comando che ha il suo gemello là non vive anche qui.
 
-**I cinque comandi che restano** coprono ciò che Daiku non fa per un progetto, perché riguarda il
-costruire e il pubblicare Daiku stesso: `collauda-init`, `rilascia-daiku`, `studia-repository`,
-`studia-repository-lotto`, `translate-skill`. Il contratto che li lega è `.claude/orchestration.md`,
+**I tre comandi che restano** coprono ciò che Daiku non fa per un progetto, perché riguarda il
+costruire e il pubblicare Daiku stesso: `rilascia-daiku`, `studia-repository`,
+`translate-skill`. Il contratto che li lega è `.claude/orchestration.md`,
 potato con loro: i due ruoli e i loro modelli, come si lancia un subagent, la delega, la topologia
-dei cinque, il gate del repository, i tre gruppi di commit. Valori scritti per esteso e niente
+dei tre, il gate del repository, i tre gruppi di commit. Valori scritti per esteso e niente
 worktree, come prima.
 
 **Lo strumento resta indietro rispetto all'albero, ed è voluto.** L'ultima beta pubblicata è la

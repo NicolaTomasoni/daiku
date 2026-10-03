@@ -1,0 +1,26 @@
+{
+  "corsa": "compaction-deterministica-euristica-e-locale",
+  "data": "2026-10-03",
+  "avvio": "2026-10-03T09:50:11.854Z",
+  "lista": "repoDaStudiare.md",
+  "sezione": "Compaction deterministica — euristica e locale",
+  "target": [
+    {
+      "nome": "alexgreensh/token-optimizer",
+      "url": "https://github.com/alexgreensh/token-optimizer",
+      "descrizione": "token fantasma e sopravvivenza alla compaction senza alcun modello: nove funzioni di compressione (Delta Mode, Structure Map, compressione dei comandi Bash su 111 comandi), checkpoint a soglie di riempimento (20/35/50/65/80%) e ricostruzione post-compact da SQLite, tutto in locale e a zero chiamate di rete; ma la licenza è PolyForm Noncommercial, non open source, e supporta ormai dieci host (Claude Code, Codex, Cursor, Copilot, Pi, Hermes, OpenCode…); 2,5k stelle",
+      "slug": "alexgreensh--token-optimizer",
+      "appunto": "appunti/alexgreensh--token-optimizer.md"
+    },
+    {
+      "nome": "philipppohlmann/compaction",
+      "url": "https://github.com/philipppohlmann/compaction",
+      "descrizione": "compaction locale su Claude Code, **Codex** e Cursor con un «adaptive engine» e nessun modello hosted in mezzo: blocchi di codice, comandi, path e riferimenti file:riga restano byte-esatti, ogni richiesta modificata conserva l'originale recuperabile con `compaction gateway recover`; risparmi misurati su una sessione Codex (input −14%, output −25% stimato); Apache 2.0, 1 stella",
+      "slug": "philipppohlmann--compaction",
+      "appunto": "appunti/philipppohlmann--compaction.md"
+    }
+  ],
+  "attrezzo": {
+    "node": "v22.23.2"
+  }
+}

@@ -48,8 +48,8 @@ solo `.gitignore` e `.gitattributes` del repository di sviluppo.
 
 - **`CLAUDE.md`** — le istruzioni per chi sviluppa Daiku. Non è Daiku.
 - **`.claude/`** — come si lavora *su* Daiku, non come Daiku funziona. Dentro c'è:
-  - `orchestration.md` + `commands/` (cinque comandi: `collauda-init`, `rilascia-daiku`,
-    `studia-repository`, `studia-repository-lotto`, `translate-skill`) — i soli
+  - `orchestration.md` + `commands/` (tre comandi: `rilascia-daiku`,
+    `studia-repository`, `translate-skill`) — i soli
     contratti di sviluppo che il prodotto non ha, coi valori scritti per esteso e senza worktree.
     Il resto del metodo sono le skill di Daiku installate dal marketplace. Vedi
     [[corpus-di-sviluppo]].
@@ -74,7 +74,6 @@ solo `.gitignore` e `.gitattributes` del repository di sviluppo.
 - `esempi/reforgia/` — dominio e politiche di ReforgIA, come esempio di un livello Dominio
   compilato davvero
 - `backup/skill-estratte.md` — il registro ad append di ciò che è stato tolto dalle skill
-- `studia-repository/<slug>/` — i documenti di una corsa di `studia-repository`
 - `tools/check-topology.mjs` — verifica la topologia del corpus, nel gate e a mano prima del
   rilascio; sta qui e non sotto `plugins/` così non viaggia con ciò che si pubblica
 - `tools/check-corpus.mjs` — verifica le sette invarianti del corpus che i contratti dichiarano in
@@ -86,8 +85,10 @@ solo `.gitignore` e `.gitattributes` del repository di sviluppo.
   leggibili, che ogni voce risolva a una cartella vera dentro l'albero e che le due portino allo
   stesso pacchetto; ha il suo banco in `--self-check`. È il solo controllo che guarda le vetrine,
   e copre il punto in cui il repository di `multica-ai/andrej-karpathy-skills` è inciampato
-- `tools/studia-repository/` — gli attrezzi deterministici del comando `studia-repository`
-- `tools/` — accanto, il banco della prova di `init` (`collauda-init.mjs`), la pubblicazione
+- `tools/studia-repository/corsa.mjs` — l'attrezzo deterministico del comando
+  `studia-repository`: legge l'elenco, apre la cartella della corsa e ne chiude il gate, col suo
+  banco (`--self-check`)
+- `tools/` — accanto, la pubblicazione
   (`pubblica-dist.ps1` che committa sul canale beta e `promuovi-dist.ps1` che prepara la
   produzione: **non** pushano — vedi [[push-solo-manuale]] e [[pubblicazione-su-github]]) col loro
   banco (`check-channel.mjs`), il controllo che nessuno script del cantiere invochi un push

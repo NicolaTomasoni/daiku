@@ -12,6 +12,7 @@
       "native_backend": "claude"
     }
   },
+  "prompt_dump_chars": 4000,
   "backends": {
     "claude": {}
   }

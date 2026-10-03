@@ -1,0 +1,7 @@
+# Cache di lettura: delta e structure map
+
+- **Slug:** cache-lettura-delta-structure-map
+- **Cosa fa:** i subagent di Daiku rileggono gli stessi file molte volte (contratti, memorie, sorgenti nei giri successivi di `/review`); questa feature serve la rilettura come diff unificato quando il file è cambiato poco, e come scheletro di firme e import quando è un file codice grande — ogni rilettura smette di pagare il file intero.
+- **Dove atterra:** un `.mjs` in `plugins/daiku/hooks/lib/` più la sua voce in `hooks/hooks.json` (`PreToolUse` su `Read`), e il modulo deterministico di delta e scheletro in `plugins/daiku/architect/`; la cache in un file di sessione fuori dal progetto.
+- **Come si costruisce:** da alexgreensh/token-optimizer (B3) si prendono i due modi (delta e structure map), le guardie sul costo quadratico e sull'estensione, e la modalità `shadow` — con cui si misura il guadagno prima di servire davvero la sostituzione —, coerente con la disciplina di Daiku di misurare invece che fidarsi. La sostituzione cade sempre sul file intero quando potrebbe perdere informazione. Atterra di fatto su Claude Code.
+- **Prompt per new-feature:** /daiku:new-feature Cache di lettura nelle riletture di Daiku: un hook PreToolUse su Read che serve un diff unificato quando il file è cambiato poco e uno scheletro (firme, import, gerarchia) per un file codice grande, con un modulo deterministico in architect/, guardie sul costo quadratico e modalità shadow per misurare il guadagno (meccanismo da alexgreensh/token-optimizer)

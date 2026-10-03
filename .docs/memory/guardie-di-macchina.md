@@ -49,8 +49,7 @@ l'account dell'owner è amministratore con UAC predefinito, che non è un confin
 - Un blocco del recinto o del presidio che sembra sbagliato non si aggira: si diagnostica e si
   propone la correzione.
 - Il presidio salta l'**ambiente in testa** alla riga prima di decidere qual è il programma:
-  `NODE_ENV=x npm ci` è `npm ci`, non `x`. Senza questo, un comando legittimo con una variabile in
-  testa sarebbe letto come un programma che non esiste.
+  `NODE_ENV=x npm ci` è `npm ci`, e `OPENSRC_HOME="…" opensrc path …` è `opensrc`.
 - Il recinto fa un'espansione testuale delle variabili: `$NOME` diventa la variabile d'ambiente
   omonima (`$_` escluso). Un falso positivo su un path che «non esiste» va cercato lì per primo.
   Scatta anche sulle **scritture**, e legge come path le opzioni `//FI` di `tasklist` e `//v` di
@@ -59,10 +58,9 @@ l'account dell'owner è amministratore con UAC predefinito, che non è un confin
   `allowManagedPermissionRulesOnly: true` Claude Code ignora ogni `allow`, `ask` o `deny` di utente
   e progetto: una lista di permessi in `.claude/settings.json` non serve.
 - **Il recinto legge come path ogni token che comincia per `/`**, anche quando è il nome di un
-  comando: `claude -p "/studia-repository …"` è negato con «Lettura fuori dal perimetro:
-  `C:\studia-repository`». Non è un falso positivo da aggirare con un'altra forma della stessa
-  riga: è il motivo per cui una skill che ne lancia un'altra headless lo fa da un processo, non da
-  una riga di Bash — vedi [[lotto-di-studi]].
+  comando: `claude -p "/una-skill …"` è negato con «Lettura fuori dal perimetro: `C:\una-skill`».
+  Non è un falso positivo da aggirare con un'altra forma della stessa riga: una riga di comando che
+  comincia con una barra non si scrive da un tool Bash.
 
 **Trappole di PowerShell 5.1** per chi tocca lo strumento o scrive una correzione:
 - **Il BOM spegne un hook in silenzio.** `Set-Content -Encoding utf8` scrive il BOM, e un

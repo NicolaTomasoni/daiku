@@ -51,16 +51,15 @@ macchina. Se un aggiornamento o una correzione non li hai letti, annulla.
 Tre regole, per un guardrail contro la distrazione:
 
 1. **L'esecuzione del target**, in ogni progetto: un repository di terzi preso in analisi da
-   `studia-repository` si legge, si indicizza e si cita, non si esegue. Nega i comandi che eseguono
+   `studia-repository` si legge e si cita, non si esegue. Nega i comandi che eseguono
    dentro una `radici_non_eseguibili` o che girano con il cwd già lì; lascia passare i
    `programmi_permessi_sulle_radici` (`graphify`, `opensrc`, le letture), purché non concatenino
    un secondo comando.
 
    Il programma di una riga è il primo **dopo** l'ambiente con cui la si lancia: un'assegnazione in
-   testa — `OPENSRC_HOME="…" opensrc path zod`, `NODE_ENV=production npm ci` — non è il gesto. Vale
-   nei due versi, ed è il punto: il ramo profondo di `studia-repository` invoca `opensrc` proprio
-   con l'ambiente in testa, e una lista dei programmi permessi che leggesse lì il nome del programma
-   negherebbe l'unico attrezzo che deve poter leggere la radice.
+   testa — `NODE_ENV=production npm ci`, `FOO=1 bar` — non è il gesto. Vale nei due versi: una lista
+   dei programmi permessi che leggesse lì il nome del programma negherebbe la riga proprio quando
+   l'ambiente è in testa.
 2. **Le installazioni di pacchetti**, nei `progetti` dichiarati: `npm install`, `pip install`,
    `uv tool install`, `winget install` e le altre famiglie, comprese quelle dei prerequisiti.
 3. **I gesti che nei `progetti` dichiarati non servono mai**: `npm test`, `npm run`, `yarn`, `pnpm`,
@@ -76,13 +75,9 @@ progetto, e quei gesti vanno negati solo qui. Nel `.claude/settings.json` di un 
 
 Il presidio è **fail-open**: davanti a un guasto tace ed esce `0`, e lo dichiara su stdout.
 
-**Il gate del ramo profondo lo interroga.** `check-toolchain.mjs` di `studia-repository` non si
-accontenta di sapere che `opensrc` risponde a `--version`: importa la `valuta()` della copia
-**installata** e le pone due domande — la forma con cui il contratto invoca `opensrc` passa? una
-esecuzione dentro la radice è ancora negata? Se il presidio che gira è più vecchio del sorgente che
-sa leggere quella forma, il gate è rosso e rimanda ad «Aggiorna da repository». La seconda domanda è
-il verso che impedisce alla prima di mentire: un presidio che lascia passare tutto direbbe «sì» alla
-forma documentata senza essere più una guardia.
+**La `valuta()` è esportata**, perché un attrezzo possa chiedere un verdetto senza eseguire nessun
+comando. La copia che conta è quella **installata**: se gira più vecchia del sorgente, il verdetto è
+quello della copia vecchia, e si porta dentro con «Aggiorna da repository».
 
 ## Prima installazione
 

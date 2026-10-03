@@ -32,21 +32,29 @@ Quale strada prende il rilascio non è un giudizio e non si chiede all'owner: si
 all'inizio, e resta quella per tutto il rilascio. Il perimetro è `plugins/`, cioè ciò che la copia
 della §6 porta: il resto del working tree non decide niente qui.
 
+**Cosa resta da pubblicare lo dice il dist, non la storia di dev.** Un confine misurato sui commit
+di dev — «l'ultimo che ha toccato la versione» — presume che ogni commit di versione in dev sia già
+stato copiato, e non è sempre così: se la §5 ha committato la versione e la §6 è fallita (checkout
+non su `beta`, gate dei residui), quel contenuto resta in dev senza essere mai uscito, e al rilascio
+successivo un confine interno a dev lo scavalcherebbe — le note lo perderebbero e, ad albero pulito,
+si sceglierebbe la strada C mentre il dist è indietro. La misura giusta è il confronto con ciò che
+beta contiene davvero, lo stesso `diff` della §8:
+
 ```bash
-# i commit di dev successivi all'ultimo che ha toccato la versione (i due comandi della §3)
-git log --format='%h %s' $(git log --format=%H -n 1 -- plugins/daiku/.claude-plugin/plugin.json)..HEAD
 # ciò che la copia porterebbe e non è ancora committato
 git status --porcelain -- plugins/
+# contenuto di dev non ancora nel dist: vuoto = allineati, righe = mai pubblicato
+diff -rq plugins/ ../daiku -x .git
 ```
 
-Il primo stampa una riga per commit in attesa, o niente; il secondo una riga per file modificato o
-non tracciato dentro `plugins/`, o niente. Da lì la strada, e non se ne esce:
+Il primo stampa una riga per file modificato o non tracciato dentro `plugins/`, o niente; il secondo
+una riga per ciò che il dist non ha ancora, o niente. Da lì la strada, e non se ne esce:
 
-| Working tree su `plugins/` | Commit in attesa | Strada |
+| Working tree su `plugins/` | dist vs `plugins/` | Strada |
 |---|---|---|
 | sporco | qualsiasi | **A — review, poi commit** |
-| pulito | almeno uno | **B — dritto al rilascio** |
-| pulito | nessuno | **C — niente da rilasciare** |
+| pulito | diverso | **B — dritto al rilascio** |
+| pulito | uguale | **C — niente da rilasciare** |
 
 **A — il working tree porta modifiche.** Sono le richieste fatte via chat, e passano dalla review
 prima di entrare nella storia:
@@ -58,10 +66,12 @@ prima di entrare nella storia:
    repository e separa i gruppi: porta ciò che la review ha lasciato.
 3. Da qui la §1: versione e changelog nascono dopo, e li committa la §5.
 
-**B — il working tree è pulito e ci sono commit in attesa.** Li ha lasciati una consegna —
-`daiku:new-feature` o `daiku:ship-feature` — che li ha già fatti passare dalla propria review e li
-ha committati: **non si rivede niente e non si committa niente**, e non c'è nessuna conferma da
-chiedere. Quei commit *sono* il rilascio: si va dritti alla §1.
+**B — il working tree è pulito e il dist è indietro.** Il contenuto in attesa è già committato in
+dev e il dist ancora non lo ha: o perché l'ha lasciato una consegna — `daiku:new-feature` o
+`daiku:ship-feature` — che l'ha già fatto passare dalla propria review, o perché la pubblicazione di
+un rilascio precedente non è arrivata a destinazione dopo che la versione era già committata.
+**Non si rivede niente e non si committa niente**, e non c'è nessuna conferma da chiedere. Quel
+contenuto *è* il rilascio: si va dritti alla §1.
 
 **C — né modifiche né commit.** Non c'è altro da rilasciare che il numero nuovo: dillo e fermati,
 senza chiedere.
@@ -79,11 +89,12 @@ claude plugin validate plugins
 python "$HOME/.codex/skills/.system/plugin-creator/scripts/validate_plugin.py" plugins/daiku
 node plugins/daiku/hooks/self-check.mjs
 node .docs/tools/check-topology.mjs plugins/daiku
-node .docs/tools/check-corpus.mjs plugins/daiku
 node .docs/tools/check-marketplace.mjs plugins
 node .docs/tools/check-no-push.mjs --self-check
 node .docs/tools/check-channel.mjs
 ```
+
+Il corpus non è qui: lo impone il gate dell'area `daiku` a ogni consegna che tocca il pacchetto.
 
 Le due vetrine sono lì dentro perché il loro guasto non si vede da qui: si vede solo in chi
 installa, dopo che il rilascio è già uscito. `check-no-push` non guarda il pacchetto ma il
@@ -122,11 +133,16 @@ resta coerente prima di scrivere il changelog.
 
 ## 3. La prosa: note AI in inglese
 
-Leggi cosa è cambiato dall'ultimo rilascio — il perimetro è deterministico: i commit
-di dev dopo l'ultimo che ha toccato la versione, più il diff del working tree:
+Leggi cosa è cambiato dall'ultimo stato che il dist già contiene — il perimetro è deterministico:
+i commit di dev che toccano `plugins/` dopo il confine, più il diff del working tree. Il confine è
+l'ultimo commit di dev il cui `plugins/` è identico alla radice del dist:
 
 ```bash
-git log --format='%h %s' $(git log --format=%H -n 1 -- plugins/daiku/.claude-plugin/plugin.json)..HEAD
+# il confine: l'ultimo commit il cui plugins/ è già nel dist
+# (nessuno combacia = il dist non contiene ancora nulla, si parte dalla radice)
+T=$(git -C ../daiku rev-parse 'HEAD^{tree}')
+C=$(for c in $(git log --format=%H -n 400 -- plugins/); do [ "$(git rev-parse "$c:plugins")" = "$T" ] && { echo "$c"; break; }; done)
+git log --format='%h %s' "${C:-$(git rev-list --max-parents=0 HEAD)}..HEAD" -- plugins/
 git diff --stat HEAD
 ```
 

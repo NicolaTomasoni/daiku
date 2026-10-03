@@ -13,7 +13,7 @@ insieme, e un file di appunti per tecnologia in `.daiku/studies/<slug>.md`. Non 
 aspetta, e dice cosa è atterrato. È il passo 4 di `new-feature` in blocco, invece che una tecnologia
 per volta.
 
-**È un processo e non un subagent**, per la stessa ragione del lotto: il presidio di macchina nega le
+**È un processo e non un subagent**: il presidio di macchina nega le
 righe di comando che contengono un token che comincia per `/`, quindi `/daiku:research …` non si può
 scrivere da un tool Bash — e una corsa di `research` è già un orchestratore che apre i suoi subagent
 per blocco tematico, quindi tenerla dentro un'altra sessione la farebbe crescere di una corsa intera
@@ -32,6 +32,8 @@ passerebbe per il lavoro di questa corsa. I file toccati che nessun target riven
 codice di uscita della corsa, e le due cose restano separate: una sessione uccisa dal budget lascia
 l'appunto a metà, e l'esito lo dice.
 
-Non è il lotto e non lo sostituisce: il lotto confronta repository con Daiku e ne trae contributi e
-sintesi, questo popola la sede degli appunti. Vedi [[lotto-di-studi]] e [[catalogo-di-feature]] per
-l'altra metà.
+Non è `studia-repository` e non lo sostituisce: quello confronta un insieme di repository di terzi
+che affrontano lo stesso problema — un subagent per repository, gli appunti su file, una sintesi che
+sceglie la strada — e ne trae cosa portare in Daiku; questo popola la sede degli appunti con la
+conoscenza di una tecnologia, che è materia di `new-feature`. Le due convivono in `.daiku/studies/`:
+il fan-out scrive un file `<slug>.md`, `studia-repository` una cartella `<corsa>/`.

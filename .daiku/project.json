@@ -36,5 +36,14 @@
     "prefix": "agent-tree-",
     "max": 5,
     "branch_prefix": "worktree-"
+  },
+  "areas": {
+    "daiku": {
+      "paths": ["plugins/daiku/"],
+      "gate": {
+        "cwd": ".",
+        "run": ["node .docs/tools/check-corpus.mjs plugins/daiku"]
+      }
+    }
   }
 }

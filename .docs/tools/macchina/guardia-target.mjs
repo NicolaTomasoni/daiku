@@ -13,7 +13,7 @@
  * **Cosa presidia, in tre regole.**
  *
  *  1. **L'esecuzione del target.** Un repo di terzi preso in analisi da `studia-repository` si
- *     legge, si indicizza e si cita: non si esegue. Vale **in ogni progetto**: nessuna sessione ha
+ *     legge e si cita: non si esegue. Vale **in ogni progetto**: nessuna sessione ha
  *     ragione di eseguire codice dentro una `radici_non_eseguibili`.
  *  2. **Le installazioni di pacchetti.** Nei `progetti` dichiarati, a presidio acceso non ne passa
  *     nessuna — nemmeno quelle dei prerequisiti. L'interruttore (`enabled`) e' la via per
@@ -436,7 +436,7 @@ function main() {
 
 /**
  * Il modulo si importa anche: `valuta()` e' esportata perche' un altro attrezzo possa chiedere un
- * verdetto senza eseguire nessun comando (lo fa `check-toolchain.mjs` di `studia-repository`).
+ * verdetto senza eseguire nessun comando.
  * Importato, pero', `main()` leggerebbe lo stdin del processo che importa — e un `readFileSync(0)`
  * su un terminale non torna mai. L'hook gira quindi solo quando il file e' il programma.
  */

@@ -1,0 +1,75 @@
+{
+  "corsa": "prima-che-arrivi-al-modello-output-dei-tool-e-serializzazione",
+  "data": "2026-10-03",
+  "avvio": "2026-10-03T16:02:21.508Z",
+  "lista": "repoDaStudiare.md",
+  "sezione": "Prima che arrivi al modello — output dei tool e serializzazione",
+  "target": [
+    {
+      "nome": "rtk-ai/rtk",
+      "url": "https://github.com/rtk-ai/rtk",
+      "descrizione": "proxy CLI che taglia il consumo di token sui comandi di sviluppo",
+      "slug": "rtk-ai--rtk",
+      "appunto": "appunti/rtk-ai--rtk.md"
+    },
+    {
+      "nome": "headroomlabs-ai/headroom",
+      "url": "https://github.com/headroomlabs-ai/headroom",
+      "descrizione": "comprime output dei tool, log, file e chunk RAG **prima** che arrivino al modello: libreria, proxy, server MCP",
+      "slug": "headroomlabs-ai--headroom",
+      "appunto": "appunti/headroomlabs-ai--headroom.md"
+    },
+    {
+      "nome": "claudioemmanuel/squeez",
+      "url": "https://github.com/claudioemmanuel/squeez",
+      "descrizione": "compressore a hook su **sette host** (Claude Code, Copilot CLI, OpenCode, Gemini CLI, Codex CLI, Pi, Hermes): quattro stadi — rimozione di ANSI, dedup in `[×N]`, raggruppamento, troncamento — e riscrittura `PreToolUse` dei comandi sicuri",
+      "slug": "claudioemmanuel--squeez",
+      "appunto": "appunti/claudioemmanuel--squeez.md"
+    },
+    {
+      "nome": "Mibayy/token-savior",
+      "url": "https://github.com/Mibayy/token-savior",
+      "descrizione": "server MCP che naviga il codice per simboli e riscrive i comandi Bash nel `PreToolUse`; i numeri che dichiara vanno letti con la sua stessa avvertenza",
+      "slug": "mibayy--token-savior",
+      "appunto": "appunti/mibayy--token-savior.md"
+    },
+    {
+      "nome": "mksglu/context-mode",
+      "url": "https://github.com/mksglu/context-mode",
+      "descrizione": "sandbox dell'output dei tool (‑98%), memoria di sessione persistente e routing via MCP + hook su 17 piattaforme",
+      "slug": "mksglu--context-mode",
+      "appunto": "appunti/mksglu--context-mode.md"
+    },
+    {
+      "nome": "Madhan230205/token-reducer",
+      "url": "https://github.com/Madhan230205/token-reducer",
+      "descrizione": "compressione di contesto locale e senza API: RAG ibrido BM25 + vettori, chunking AST, reranking",
+      "slug": "madhan230205--token-reducer",
+      "appunto": "appunti/madhan230205--token-reducer.md"
+    },
+    {
+      "nome": "CoderDayton/semantic-cache-mcp",
+      "url": "https://github.com/CoderDayton/semantic-cache-mcp",
+      "descrizione": "server MCP di caching semantico dei file: diff semantici e chunking content-defined",
+      "slug": "coderdayton--semantic-cache-mcp",
+      "appunto": "appunti/coderdayton--semantic-cache-mcp.md"
+    },
+    {
+      "nome": "toon-format/toon",
+      "url": "https://github.com/toon-format/toon",
+      "descrizione": "Token-Oriented Object Notation: serializzazione compatta e leggibile di JSON per i prompt, con SDK e benchmark",
+      "slug": "toon-format--toon",
+      "appunto": "appunti/toon-format--toon.md"
+    },
+    {
+      "nome": "microsoft/LLMLingua",
+      "url": "https://github.com/microsoft/LLMLingua",
+      "descrizione": "ricerca Microsoft sulla compressione di prompt e KV-cache: fino a 20× con perdita minima",
+      "slug": "microsoft--llmlingua",
+      "appunto": "appunti/microsoft--llmlingua.md"
+    }
+  ],
+  "attrezzo": {
+    "node": "v22.23.2"
+  }
+}

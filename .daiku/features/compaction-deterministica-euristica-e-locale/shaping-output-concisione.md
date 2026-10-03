@@ -1,0 +1,7 @@
+# Shaping dell'output: concisione prima della generazione
+
+- **Slug:** shaping-output-concisione
+- **Cosa fa:** Daiku governa *cosa* fanno e *cosa* restituiscono gli agenti, non *quanto* scrivono; questa feature aggancia all'inizio di un turno un blocco di istruzioni content-free che chiede concisione (niente preamboli, niente ripetizione, formato stretto) — l'unico punto in cui si possono ridurre i token che il modello genera, perché il post-processing non li tocca.
+- **Dove atterra:** un `.mjs` in `plugins/daiku/hooks/lib/` più la sua voce in `plugins/daiku/hooks/hooks.json`, e lo scheletro della policy in `plugins/daiku/templates/project/policies/README.md`; su Codex `sync-host` lo copia come gli altri.
+- **Come si costruisce:** da philipppohlmann/compaction (B1) si prendono il blocco content-free, il marker che impedisce di agganciarlo due volte, la versione per hash — così una calibrazione vecchia non si applica a un testo nuovo — e il limite esplicito a **non** toccare i blocchi di ritorno, che sono contratto e devono restare completi. Un hook nuovo vuole il banco in `hooks/self-check.mjs`.
+- **Prompt per new-feature:** /daiku:new-feature Shaping dell'output di Daiku: un hook che aggancia all'inizio del turno un blocco di istruzioni di concisione content-free, con marker anti-doppione, versione per hash e il divieto di toccare i blocchi di ritorno dei contratti, col banco in hooks/self-check.mjs (meccanismo da philipppohlmann/compaction)

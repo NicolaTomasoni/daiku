@@ -43,12 +43,12 @@ Ogni path è **relativo alla radice del repository** (`C:/dev/daiku-workspace/da
 | `PUNTI-APERTI.md` | le decisioni ancora da prendere |
 | `.docs/memory/` + `.docs/memory/MEMORY.md` | la memoria persistente e il suo indice |
 | `.daiku/features/<slug>/` | la cartella di un lavoro, con i file numerati `0.`–`5.` |
+| `.daiku/features/<corsa>/` | le feature proposte da una corsa di `studia-repository`, un file per feature ◦ |
 | `.daiku/studies/<slug>.md` | gli appunti che `daiku:research` deposita ◦ |
-| `.docs/studia-repository/<slug>/` | i documenti di una corsa di `studia-repository`: `run.json` e i tre documenti ◦ |
-| `.daiku/features/<feature>/` | il catalogo delle feature: un contributo per corsa, `<slug-corsa>.md` — cresce da repo diversi e non appartiene a nessuna corsa ◦ |
+| `.daiku/studies/<corsa>/` | la cartella di una corsa di `studia-repository`: `corsa.json`, `appunti/`, `sintesi.md` ◦ |
 | `.docs/runtime/review/` | i ledger dei giri di `daiku:review`, uno per ciclo |
 | `.docs/esempi/reforgia/` | dominio e politiche di ReforgIA, come esempio compilato |
-| `.docs/tools/` | gli strumenti di chi sviluppa: `check-topology.mjs`, `check-corpus.mjs`, `collauda-init.mjs`, `studia-repository/` |
+| `.docs/tools/` | gli strumenti di chi sviluppa: `check-topology.mjs`, `check-corpus.mjs`, `studia-repository/` |
 | `.docs/audit/` | i report del prompt audit, con il diff che propongono ◦ |
 
 Le sedi marcate **◦ non esistono ancora**: le crea il contratto che le usa, al primo uso. Non sono
@@ -177,18 +177,6 @@ lo invoca come figlio. Ogni altro passo delegato è una **foglia**. `rilascia-da
 skill **del prodotto** (`daiku:code-review` e `daiku:commit`), e la delega di quelle la dichiarano
 i contratti del prodotto, non questo file.
 
-**`studia-repository-lotto` sta fuori dal grafo.** Non delega un passo a un subagent: lancia
-**una sessione headless di Claude Code per target**, con `.docs/tools/studia-repository/lotto.mjs`.
-È la cosa che questa §4 chiede — un contesto fresco per ogni corsa — presa alla radice invece che un
-livello sotto, per due ragioni. La prima: una corsa di `studia-repository` è già essa stessa un
-orchestratore che delega dieci passi, e tenerla dentro la sessione madre la farebbe crescere di una
-corsa intera per ogni target. La seconda: il presidio di macchina nega le righe di comando che
-contengono un token che comincia per `/` — lo scambia per un path assoluto fuori dal perimetro —
-quindi `/studia-repository …` non si può scrivere da un tool Bash, e chi lo lancia deve essere un
-processo, non un comando. Le corse che ne escono non sono figlie nel senso di questa §4: hanno la
-propria catena di delega, e il lotto le guarda dall'esterno — non riceve i loro blocchi di ritorno,
-legge i loro file e i loro gate.
-
 Un nodo che si accorge di voler delegare, e non è fra questi, sta eseguendo il lavoro di qualcun
 altro: torna a contratto e lascia decidere a chi l'ha chiamato.
 
@@ -201,10 +189,8 @@ contenuto vive nel file del nodo, che resta l'unico posto in cui si modifica.
 
 | Nodo | Chi lo invoca | Riceve già risolto | Restituisce | Ri-delega |
 |---|---|---|---|---|
-| `collauda-init` | owner | niente: la prova e il suo verdetto sono di un banco, non tuoi | § *Esito* del suo file | no |
 | `rilascia-daiku` | owner | le opzioni del rilascio | § *Esito* del suo file | sì — `daiku:code-review` e `daiku:commit`, skill del prodotto |
-| `studia-repository` | owner, `studia-repository-lotto` | target (repo, pacchetto o path locale), `--assi`, `--versione`, `--focus`, `--cwd`, `--deep`, `--shallow-only` facoltativi | i documenti in `.docs/studia-repository/<slug>/` e § *Esito in chat* del suo file | sì — leggera, triage, acquisizione, grafo, lettori, verificatori, confronto, giudice, report; foglie |
-| `studia-repository-lotto` | owner | elenco dei target (file o riga di comando), le opzioni comuni a tutte le corse, `--parallelo`, `--budget`, `--modello` | le corse sotto `.docs/studia-repository/`, ciascuna con l'esito di `studia-repository`, § *Esito in chat* del suo file, e la sintesi in `.daiku/studies/<feature>.md` | sì — lancia N corse di `studia-repository` come **sessioni headless**, non come subagent (§4) |
+| `studia-repository` | owner | l'elenco dei target (`--lista`, `--sezione`, `--nome`, o i target sulla riga di comando) | la cartella `.daiku/studies/<corsa>/` con i suoi appunti e la sintesi, le feature in `.daiku/features/<corsa>/`, i target rientrati in fondo a *Inspirations* del README di prodotto e tolti dall'elenco, e § *Esito in chat* del suo file | sì — un appunto per target e la sintesi: i primi foglie, la seconda giudice, mai un terzo livello |
 | `translate-skill` | owner | il path del file di Daiku da tradurre | il file riscritto in inglese | no |
 
 **Un arco nuovo si dichiara qui.** Collegare un nodo a un chiamante che non lo aveva significa
@@ -237,11 +223,14 @@ claude plugin validate plugins
 python ~/.codex/skills/.system/plugin-creator/scripts/validate_plugin.py plugins/daiku
 node plugins/daiku/hooks/self-check.mjs
 node .docs/tools/check-topology.mjs plugins/daiku
-node .docs/tools/check-corpus.mjs plugins/daiku
 node .docs/tools/check-marketplace.mjs plugins
 node .docs/tools/check-no-push.mjs --self-check
 node .docs/tools/check-channel.mjs
 ```
+
+Il corpus non è in questo elenco perché nessuno lo lancia a mano: lo impone il **gate dell'area
+`daiku`** (`.daiku/project.json`), che la fase *Gate* di `daiku:review` esegue da sé su ogni consegna
+che tocca `plugins/daiku/`, e un rosso blocca il commit.
 
 **I due validatori vanno passati entrambi, sullo stesso albero, e la seconda riga non si salta**
 (`CLAUDE.md`, § *Verificare il pacchetto*): non coprono le stesse cose — è quello di Codex a
