@@ -1,0 +1,5 @@
+interface:
+  display_name: "Reconcile"
+  short_description: "Internal contract, opened by ship-feature"
+policy:
+  allow_implicit_invocation: false
