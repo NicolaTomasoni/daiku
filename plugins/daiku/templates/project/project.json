@@ -51,7 +51,7 @@
       },
       "lint_fix": {
         "cwd": "<directory to run from>",
-        "run": ["<the line that applies only the safe lint fixes to <FILES>>"]
+        "run": ["<the line that applies the safe lint and format fixes to <FILES>>"]
       },
       "test_targeted": {
         "cwd": "<directory to run from>",
