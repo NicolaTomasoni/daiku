@@ -193,7 +193,7 @@ Apply **immediately**, with surgical modifications, the findings requiring no de
 
 ### Phase 3 — Decision list, and the document carrying it
 
-Everything remaining becomes a numbered list, and each item already comes in the form in which it will be asked: a short title, the problem in one line, 2-4 options to choose from.
+Everything remaining becomes a numbered list, and each item already comes in the form in which it will be asked: a short title, the problem in one line, 2-4 options to choose from. **The numbering of the list is the place every question carries when it is asked** — `k/N`, its own number and the length of the list — because the tool that asks them carries at most four per call and the list does not: the caller asks it from `1/N` to `N/N`, in this order, and nobody renumbers it.
 
 Two of them are owed and are easy to leave out, because each one looks like a line of the document rather than a question:
 

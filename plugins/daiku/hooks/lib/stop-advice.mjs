@@ -455,7 +455,7 @@ function announcedSet(entries) {
  * `session_id`. `null` when the event carries neither, and then the mark is simply not
  * written: silence is the fallback, never a guess at a shared path.
  *
- * **Never the project.** The five hooks write nothing inside the repository; a folder of
+ * **Never the project.** The six hooks write nothing inside the repository; a folder of
  * Daiku's own there would be one more seat to keep, and a hook that writes where it guards
  * is a hook that has to be guarded itself.
  */

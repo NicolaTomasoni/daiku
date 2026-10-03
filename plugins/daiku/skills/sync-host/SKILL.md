@@ -63,7 +63,7 @@ The two coincide almost always. When they **do not** coincide, installation stil
 
 You know it from where you are running: do not ask it.
 
-On **Claude Code**: you write nothing. Declare the package already carries its hooks and the subagent roles of its `agents/` folder, updating with it, and that for this project there is no gesture to make. Close here. Do not hook those same five hooks a second time from `.claude/settings.json`: the package already hooks them, and the user would find every guard run twice.
+On **Claude Code**: you write nothing. Declare the package already carries its hooks and the subagent roles of its `agents/` folder, updating with it, and that for this project there is no gesture to make. Close here. Do not hook those same six hooks a second time from `.claude/settings.json`: the package already hooks them, and the user would find every guard run twice.
 
 On **Codex**: continue.
 
@@ -92,7 +92,7 @@ For each `.mjs` file that is a hook, launch `node <file> --self-check` and read 
 - non-empty `failed` → **do not hook it**. Copy it anyway, but leave it out of `hooks.json` and report its red cases in the report.
 - No output, or unparsable output → treat it as red. The imported module `daiku-config.mjs` has no bench and is no hook: it is copied and nothing more, and the benches of the hooks importing it cover it indirectly. `project-root.mjs` is no hook either, but it carries a bench of its own.
 
-This step exists because the five hooks are **fail-open**: on failure they stay silent and exit 0. A broken hook and a hook with nothing to say resemble each other too much to be trusted without the bench.
+This step exists because the six hooks are **fail-open**: on failure they stay silent and exit 0. A broken hook and a hook with nothing to say resemble each other too much to be trusted without the bench.
 
 ### 4-bis. Check the shape of what you will write
 

@@ -54,6 +54,9 @@ precision, but use judgement on trivial tasks.
   sensible option and move on.
 - Aligning what this file, a policy, the memory or a reference states to a change you just made is
   not a choice: when what they say is no longer true, correct them in the same work and move on.
+- A reference that resolves to nothing — a path, a section, a `[[name]]` link — is corrected in the
+  same work, not listed for later, and the correction is reported as done. Where you cannot tell
+  where it should point now, ask for the destination, never for permission to repair it.
 - If a simpler approach exists, or the request seems to bypass a layer, say so and take the
   architecturally correct path.
 - Turn the task into verifiable criteria; for bugs and validations prefer a test that reproduces

@@ -350,6 +350,23 @@ to ask and stops there, as it declares a role without naming a model:
   chat, with the options as letters (`A` first, declared recommended) and the invitation to answer compactly (`1A, 2B, …`). The
   content is identical: only the delivery changes.
 
+**The list is numbered, and it is asked whole.** The place of a question in its list **opens the
+question** — `k/N`, the question's own place and the length of the list the block returned — because
+four questions per call is the ceiling of the tool and not of the list. A list longer than that is
+asked in **consecutive calls, in the same turn**, from `1/N` to `N/N`, and the ask is closed only
+when the last card has been asked: the cards after the ceiling are not a second thought, they are
+the same act. `hooks/lib/ask-guard.mjs` is the seat holding the run to it — it refuses a decision ask
+whose questions carry no place, refuses a batch that does not continue its list, and refuses the
+**launch of a subagent** (§4) while the ask is open, that launch being how the run reaches the work
+that answers the decisions. And a message of the owner closes the ask as it closes everything: their
+free answer prevails over the options, and the run goes on with what they said.
+
+**A list a folder already began opens where it stopped.** `new-feature` accepts a folder already
+opened and there resumes instead of starting again, so the ask of a resumed run carries the cards the
+decision document left without an answer, with the place they have in **that** list — not `1`: the
+numbering of the document is what the owner rereads. It is the only case in which a first batch opens
+above the first card, and the only reason `ask-guard` bends that rule.
+
 **The question is bare; the message above it is not.** The ask renders a title and one line per
 option, and context does not go in there: what the owner reads before choosing is the **chat
 message immediately preceding it**, where the decision arrives whole — decision by decision, the

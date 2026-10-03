@@ -1,7 +1,7 @@
 ---
 name: 'new-feature'
-description: 'Opens a feature from a natural-language description and carries it to the commit in a single run: code investigation, study of the technologies you do not know well enough, decision document, decisions asked in chat, and from there the whole delivery delegated to ship-feature'
-argument-hint: '<feature or problem description> [--stop-at-brief] [--no-ask]'
+description: 'Opens a feature from a natural-language description — or resumes a folder already opened, reading what it carries and picking the chain up where its documents stop — and carries it to the commit in a single run: code investigation, study of the technologies you do not know well enough, decision document, decisions asked in chat, and from there the whole delivery delegated to ship-feature'
+argument-hint: '<feature or problem description, or a folder already opened> [--stop-at-brief] [--no-ask]'
 ---
 
 You are the node **opening** a work and not leaving it halfway. You receive a natural-language description, you investigate the code, you procure the missing knowledge, you have the decisions studied, you bring them to the owner in chat — and with their answers in hand you continue to the commit without them having to relaunch anything.
@@ -12,7 +12,7 @@ You are the node **opening** a work and not leaving it halfway. You receive a na
 
 ## When to use it
 
-Use it when you start from an idea or a problem and there is nothing on disk yet. It is the only entry point that starts from the **code** instead of a document, and the only one that opens the folder; `decision-doc` is its internal phase, never launched on its own, while `ship-feature` is its delivery and can also be launched by hand on the folder.
+Use it when you start from an idea or a problem and there is nothing on disk yet — or when the folder is already there and the work has to be **resumed**: given a folder under `{paths.features}/` instead of a description, the run reads what that folder carries and starts where its documents stop, asking no confirmation of its own (point 1). It is the only entry point that starts from the **code** instead of a document, and the only one that opens the folder; `decision-doc` is its internal phase, never launched on its own, while `ship-feature` is its delivery and can also be launched by hand on the folder.
 
 ## Before starting
 
@@ -22,7 +22,9 @@ Read `contracts/orchestration.md`: roles, host, how to launch a subagent, how a 
 
 Arguments: `$ARGUMENTS` — the work description in natural language. It can be a feature to make, a question on how to do something the system does not do yet, a gap ("the wiring between X and Y is missing"), an architectural tension ("two components do the same thing"). A trailing `--stop-at-brief` stops the run at the execution brief instead of delivering (point 10): the folder with problem, decision-doc and blueprint, and nothing else.
 
-A trailing `--no-ask` stops the run at the **document** instead: the decisions are never asked — the run takes the recommended option (`A`) for every card — and the folder is left with the document of the stage the run reached (`0.5. strategic-study.md` or `1. decision-doc.md`), for someone to implement later. It never reaches the brief or the delivery, so it does not compose with `--stop-at-brief`: there is no brief for that flag to stop at.
+**Or it can be a folder already opened** — the slug under `{paths.features}/`, or its path. The run is then a **resume**: the folder is the one named, and what it does next comes from the documents inside it (point 1). The flags below compose the same way, and the description is not asked for: a resume that carries one is a resume with a problem statement in hand.
+
+A trailing `--no-ask` stops the run at the **document** instead: the decisions are never asked — the run takes the recommended option (`A`) for every card, which on a resume are the cards the document left open — and the folder is left with the document of the stage the run reached (`0.5. strategic-study.md` or `1. decision-doc.md`), for someone to implement later. It never reaches the brief or the delivery, so it does not compose with `--stop-at-brief`: there is no brief for that flag to stop at.
 
 If `$ARGUMENTS` is empty, **ask** what is worked on and wait until it arrives. It is the only question admitted before the decisions. With `--no-ask` there is nobody to answer: report that the description is missing and stop, opening nothing.
 
@@ -35,6 +37,13 @@ Progress and findings go **in chat**, as you go: one line when a phase starts an
 ### 1. Open the folder, and the memory
 
 From the description derive a kebab-case **slug** saying the *problem*, not the solution — you have not chosen the solution yet, and a slug naming it orients everything coming after. The folder is `{paths.features}/<slug>/`: create it. If it already exists, ask confirmation before working inside it — it is the only other question admitted before the decisions. With `--no-ask` that confirmation is not asked either: the run works inside the folder, where the study updates in place what it finds still valid.
+
+**When the argument names a folder already there, the run resumes — and it starts from what it finds, not from the code.** The folder is that one: no slug is derived from prose, and **no confirmation is asked**, because pointing at it is the confirmation. Two things are read, and nothing is judged by feel:
+
+- **The verdict.** Call `architect/architect.mjs` with `question: "order"`, `entry: "new-feature"`, `present` (the documents the folder carries) and `ledger` (this folder's review ledger in `{paths.review_state}/`, or `null`) — the input § *The evaluator* of `skills/ship-feature/SKILL.md` declares. It binds: `stop` stops the run here, reported; `remaining` names the phases left, and **the phases before them are not re-run** — a phase whose document is already there is not written again, so `0. problem.md` present means no investigation fan-out and no new first draft, only the surgical corrections point 5 justifies.
+- **The ask first, whatever phase the verdict names.** `1. decision-doc.md` present proves the decisions **studied**, not answered: before anything else, read the folder's decision documents (`0.5. strategic-study.md`, `1. decision-doc.md`) and, if any card lacks its `Choice:` line, the phase is **point 7** — the cards left open, and point 6 does not run. A brief or a review report standing above an unanswered document is the one exception, and it is not a reading to pick: it is an incoherence to **report**, because answering those cards under it would leave a plan written on decisions that have changed.
+
+Then the phase the verdict names: no decision document at all, **point 6** (nothing was studied yet); a document with every card answered and the technical stage not on disk, **point 8** (incorporation: the answers are already in the document); `acquisition` or later, **point 10**, the delivery. A folder carrying a decision document under a name this chain does not know is a fault to **report**, not a document to ignore: the numbers and the answers live in the declared names, and the run stops there rather than studying the same problem a second time.
 
 Open `{memory.index}` and the memories the problem area touches: it is the channel of §4.1 of `contracts/orchestration.md`. A gap a memory already closed is not a gap, and a trade-off the owner already decided is not reopened here. The paths you choose now you will pass to every step deciding or writing.
 
@@ -50,7 +59,7 @@ If a front stays uncovered or doubtful, do a targeted reading yourself before cl
 
 ### 3. First draft of `0. problem.md`
 
-Write `{paths.features}/<slug>/0. problem.md`: it describes the problem, documents how it works today, identifies the concrete gaps, highlights trade-offs and doubts, delimits the boundary. **It does not propose solutions** — those arrive from the study of the decisions.
+Write `{paths.features}/<slug>/0. problem.md`: it describes the problem, documents how it works today, identifies the concrete gaps, highlights trade-offs and doubts, delimits the boundary. **It does not propose solutions** — those arrive from the study of the decisions. **On a resume, when it is already there, it is not written again**: it is the document the run corrects on what the notes and the decisions contradict, and everything else in it stands.
 
 ```markdown
 # <Problem title> — the problem
@@ -133,7 +142,7 @@ This step is yours and is not delegated: you wrote the document, and you are the
 
 A subagent in a fresh context. In the prompt:
 
-- the **contract to read**: `skills/decision-doc/SKILL.md`, in full, before acting, in the *From `new-feature` — study* mode that file declares;
+- the **contract to read**: `skills/decision-doc/SKILL.md`, in full, before acting, in the *From `new-feature` — study* mode that file declares. **On a resume this point runs only when the folder carries no decision document** — nothing was studied yet; a document already there is not studied again, it is asked at point 7, and if a reopened problem puts the study back in discussion, that contract updates it in place;
 - the **resolved input**: the `{paths.features}/<slug>/` folder and, inside, `0. problem.md` — it is already the base document of the problem, there is nothing to concatenate;
 - the **material the request came with**: a brief, an analysis, a plan, when they exist outside that folder. They travel as material **to interrogate**, never as a direction already settled — and an implementation plan or a list of open decisions among them is the first thing the stage judgement has to face, not the frame it inherits: a direction resting on them is `material` in the block, and the stage that follows is `strategic`;
 - the **note paths** point 4 produced or reused, with the instruction to open them before studying the options. They are the reason you spent that fan-out: a technical option motivated on model memory, when the source is on disk, is the defect this chain exists to avoid;
@@ -147,15 +156,20 @@ A subagent in a fresh context. In the prompt:
 
 Otherwise, the block came back and carries **structured** `decisions`, and the phase that produced it is closed: every subagent of this run has returned, and nothing is still in flight. You ask them of the owner as a structured question, per § *Ask the owner* of `contracts/orchestration.md`, which says what precedes the ask, how that form renders on the current host, and what interrupts it.
 
+**On a resume the list does not come from a block.** It is what the folder's decision document carries **without an answer** — the cards without their `Choice:` line, read from the document itself, same titles and same options in the same order, nothing summarised and nothing added — and each question carries **the card's own number in that document's list**: the numbering the owner rereads, and the only place a resumed list opens that is not `1/N`. There is no block to validate with the evaluator here: the document was validated when it was written, and this is its ask.
+
+**The list is asked whole, and its place is written in the question.** Each question opens with `k/N` — its own place and the length of the list — and the calls follow one another **in this same turn** until `N/N` has been asked: four is the ceiling of the tool, never the end of the list, and the cards after the ceiling are not a second thought but the same act. `hooks/lib/ask-guard.mjs` is the seat that holds the run to it: it refuses a batch that does not continue its list, and it refuses the launch of a subagent while the ask stands open — so the run cannot reach the incorporation, the brief or the delivery with cards the owner has not seen. An owner's message closes the ask as it closes everything, and their free answer prevails.
+
 **An instruction covers the list it was given on, and that list alone.** When the owner answers — "{A}" on three cards, or "use the recommended ones" over a block laid in front of them — that answer is theirs **on that list**, and it is not a preference standing for decisions that did not exist when they spoke. A list they have never seen is asked, always: the answers already in hand do not reach it, and reading a general instruction as permission to decide the rest is exactly the inference this point exists to forbid. A run that has already asked once is where the temptation arrives, and a run that has already asked once is where it must not land. The only lists not asked are the ones `--no-ask` suppresses, and the one the owner covers by naming it: they must say so — the stage, or a scope reaching it ("from now on the recommended ones", "the technical ones too"). Failing that, ask.
 
 **Before the question, the message.** In chat, decision by decision and in the block's own order, you report what it carries as it came back: the title, the problem, each option with its letter and with what it entails and costs, the recommended one with its why. It is the functional content of the document hosting them — `1. decision-doc.md` at the technical stage, `0.5. strategic-study.md` at the strategic one — the same cards, nothing summarised and nothing reordered — and it is what the owner reads before choosing: the chat goes quiet, they read the problems and the proposed solutions, and only then the options appear.
 
 **Before it, two declarations.** The block carries whose direction this stage executes (`direction`, with the owner's words) and the claims it rests on (`premises`, with the source of each): report both as they came back, in two lines. They are what the owner checks fastest, and the only place where a direction that is not theirs — one the material proposed, that nobody confirmed — is seen by them before it becomes an answer.
 
-From each block item you derive a single question: the title and the problem in question form, its 2-4 options **in the same order of the block** (by contract the recommended is always `A` and already stands first), each with one line on what it entails, and `A` declared as recommended. The recommended is said by `recommended_id`, never by bold in the document: you do not infer it, you read it.
+From each block item you derive a single question, **opening with its place in the list** — `k/N`, its own place and the length of the list — then the title and the problem in question form, its 2-4 options **in the same order of the block** (by contract the recommended is always `A` and already stands first), each with one line on what it entails, and `A` declared as recommended. The recommended is said by `recommended_id`, never by bold in the document: you do not infer it, you read it.
 
 - **Do not summarise and do not reorder** what the subagent wrote, and add no options. A summarised list is a list to which the owner answers with less than was studied.
+- **On a resume, do not re-ask what the document already answers and do not renumber.** Only the cards without their `Choice:` line are asked, and they keep the place they have in the document: renumbered from `1`, the chat and the document would count different things — and the document is what the owner rereads when deciding.
 - **Whether the block has its shape is asked, not eyeballed.** Call `architect/architect.mjs` — the evaluator that `skills/ship-feature/SKILL.md` § *The evaluator* declares — with `question: "block"`, `name: "decision-doc"` and `block` (what came back, parsed, or `null`). It checks the fields and domains `schemas/blocks.json` declares, and the rules of `skills/decision-doc/SKILL.md` § *The block you return*: `decisions` an array or `null`, `recommended_id` always `"A"`, options `A`, `B` (, `C`, `D`) in order, 2 to 4 of them, and `crossed_stages` in agreement with the stage, the incorporated answers and the list returned. **A block that did not come back and a block that came back `invalid` fail differently**, and one relaunch each (§4.2 of `contracts/orchestration.md`):
   - **nothing came back** — no block at all, or prose instead of one — the step did not return. Relaunch it once with the **identical prompt**: it has to produce the same work again.
   - **a block came back and the evaluator called it `invalid`** — a required field absent, malformed, or a field outside its domain. It came back, and this is a form defect, deterministic by nature: the identical prompt reproduces it, so relaunch the **same** subagent with the same prompt **plus `blockers`**, declaring that what is asked is the encoding and not a second thought on the substance: fixing the field is not re-deciding.
@@ -164,7 +178,7 @@ From each block item you derive a single question: the title and the problem in 
 - **Do not turn into a question what is not a decision.** The verdict, the already applied fixes and the findings judged legitimate choices stand in the block for you to **report** them, not to ask them.
 - If the owner answers **outside** the options, that answer prevails and passes verbatim to incorporation.
 
-**It is the only point where you stop.** When the answers arrive you do not ask confirmation to continue: continue. **An answer that asks is not an answer**: if the owner's reply carries a question, you answer it in chat and the run stops there — no second question, the decisions stay open — and it is the owner who asks to resume the chain, launching this node again on the same problem: the folder is already there, and point 1 asks confirmation before working inside it.
+**It is the only point where you stop.** When the answers arrive you do not ask confirmation to continue: continue. **An answer that asks is not an answer**: if the owner's reply carries a question, you answer it in chat and the run stops there — no second question, the decisions stay open — and it is the owner who asks to resume the chain, launching this node again **naming the folder** — which is the resume of point 1: the folder is the confirmation, and the chain picks up where its documents say.
 
 **A turn that asks for work is neither an answer nor a question.** A reply asking for something to be **made** — a correction to `0. problem.md`, another technology to study, a decision reconsidered, and code as well, once the delivery has run — is work, and work is not done here. You **delegate it**: one subagent in a fresh context, on the **worker** role where the work applies a delimited change and on the **judge** role where it decides, with the contract of the step of this sequence that owns the artefact it touches, and the owner's request **verbatim** as its resolved input. What comes back is its block, and you report that. Writing it here is what fills this window with the work itself, and the window is the thing the run exists to keep small: it is the same rule by which no phase of the sequence is done in here (§4 of `contracts/orchestration.md`), applied to the turns that arrive from outside it.
 
@@ -172,7 +186,7 @@ From each block item you derive a single question: the title and the problem in 
 
 ### 8. Incorporation — `decision-doc`, **judge** role
 
-A second subagent, fresh context. Same contract, *From `new-feature` — incorporation* mode. In the prompt, besides folder, notes and memory as at point 6: the **owner answers**, decision by decision, **verbatim**, including the free ones.
+A second subagent, fresh context. Same contract, *From `new-feature` — incorporation* mode. In the prompt, besides folder, notes and memory as at point 6: the **owner answers**, decision by decision, **verbatim**, including the free ones — and on a resume that found them already written in the document, the answers are the document's, cited as such.
 
 ### 9. If the stage was strategic, return to 7
 
@@ -221,12 +235,15 @@ In chat, a few lines:
 - the crossed stages, the decisions asked and the answer received for each;
 - the delivery outcome: `status`, commit and merge SHA, and the report path — the detail is already inside there, **do not repeat it**. With `--stop-at-brief` there is no delivery outcome: report the brief path instead, and that carrying the folder on is the owner's manual act. With `--no-ask` there is no delivery outcome: report the stage reached and the document the folder carries — produced with the recommended option for every card — and that the run stops there without asking and without delivering, with the command that resumes the chain — the same one point 7 declares for a run stopped at the ask.
 
-If the chain stopped before delivery, say so with the point where it stopped and the command the owner resumes it with.
+If the chain stopped before delivery, say so with the point where it stopped and the command the owner resumes it with — **this node, naming the folder** — and with what the resume will find there: the card left open, or the phase its documents reach.
 
 ## Self-deceptions (stop them before they stop you)
 
 | If you are telling yourself… | The truth |
 |---|---|
+| "The folder is already there, so I redo the investigation and write the problem again" | The documents are the state the chain keeps: the verdict says where it resumes, and a phase whose document is present is not written again. |
+| "The cards are in the document, so I ask them all again" | Only the cards without their `Choice:` line are asked: re-asking a closed one makes the owner decide it twice. |
+| "I renumber the cards left open from 1" | The document's numbering is the card's identity, in the chat and in the document alike: the open cards keep the place they have in it. |
 | "I know this library, I skip the study" | It is the sentence preceding an invented signature. The point-4 criterion is a list of conditions, not a feel. |
 | "The notes came back, I pass them downstream and go" | Point 5 is not a handoff: it is you putting back in discussion what you wrote before knowing them. |
 | "I summarise the decisions, so the owner reads less" | Decisions are asked verbatim. What you cut is exactly what you are not letting them choose on. |

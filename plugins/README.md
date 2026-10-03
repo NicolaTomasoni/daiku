@@ -59,7 +59,7 @@ codex plugin marketplace add NicolaTomasoni/daiku
 codex plugin add daiku@daiku
 ```
 
-It needs **Node.js 18 or later**. Without it the five hooks stay silent and the evaluator does not
+It needs **Node.js 18 or later**. Without it the six hooks stay silent and the evaluator does not
 start at all: since its verdict binds, a delivery stops instead of degrading.
 
 **2. Open it on a project** — once per project, from the project's **technical root**: the folder
@@ -104,7 +104,7 @@ Run by hand, the file is the delivery; inside a feature it is invoked as needed.
 
 ### `/new-feature` — from description to commit
 
-The command every job starts with. You tell it the idea in natural language — or hand it the folder where you already collected material, and it resumes from there. First it investigates the code and puts the problem down in black and white; when knowledge is missing, it relies on `/research`.
+The command every job starts with. You tell it the idea in natural language — or hand it a folder already opened, and it resumes from there: the documents it finds are the state, so nothing already written is written again, and the decisions left unanswered come back to ask, each with the place it has in that document's list. Starting from a description, it first investigates the code and puts the problem down in black and white; when knowledge is missing, it relies on `/research`.
 
 Then `decision-doc` studies the options and comes to ask its questions, with a recommended answer: you answer and it records, until every decision is closed.
 
