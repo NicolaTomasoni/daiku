@@ -358,7 +358,7 @@ function validateLedger(ledger, schemas) {
       for (const key of spec.round_required) if (!has(round, key)) wrong.push(`rounds[${at}].${key} is missing`);
       for (const key of Object.keys(round)) if (!fields.has(key)) wrong.push(`rounds[${at}].${key} is not a field of a round`);
       if (round.n !== at + 1) wrong.push(`rounds[${at}].n must be ${at + 1}`);
-      for (const key of ['disciplines', 'missing_disciplines', 'applied', 'discarded', 'to_confirm', 'oscillation', 'check_fast']) {
+      for (const key of ['disciplines', 'missing_disciplines', 'applied', 'discarded', 'to_confirm', 'oscillation', 'check_fast', 'check_tests']) {
         if (has(round, key) && !Array.isArray(round[key])) wrong.push(`rounds[${at}].${key} must be an array`);
       }
       for (const key of ['pre_apply_tree', 'post_apply_tree']) if (!nonEmpty(round[key])) wrong.push(`rounds[${at}].${key} must be a tree`);
@@ -582,10 +582,19 @@ function actFindings(input, root) {
     });
   }
   if (!closing && n > 1) {
-    ledger.rounds[n - 2].check_fast.filter((check) => check.status === 'red').forEach((check, at) => {
+    const previous = ledger.rounds[n - 2];
+    const fastReds = previous.check_fast.filter((check) => check.status === 'red');
+    fastReds.forEach((check, at) => {
       findings.push({
         finding_id: `${prefix}-check-${at + 1}`, discipline: 'check', file: (check.files || []).join(' '), line: 0, symbol: '',
         confidence: 'high', change: '', description: `the fast check of area ${check.area} is red on the files round ${n - 1} touched: ${check.detail}`,
+      });
+    });
+    // The numbering continues the fast check's: the ids of its reds do not move, the tests' follow.
+    previous.check_tests.filter((check) => check.status === 'red').forEach((check, at) => {
+      findings.push({
+        finding_id: `${prefix}-check-${fastReds.length + at + 1}`, discipline: 'check', file: (check.files || []).join(' '), line: 0, symbol: '',
+        confidence: 'high', change: '', description: `the targeted tests of area ${check.area} are red on the test files round ${n - 1} named: ${check.detail}`,
       });
     });
   }
@@ -643,6 +652,43 @@ function checksOf(input, areas) {
       fail(`check_fast declared on area ${area.area}, which this round touched: run it on ${area.files.join(' ')} and pass its status`);
     }
     if (!area.commands.check_fast) out.push({ area: area.area, status: 'skipped', detail: 'the area declares no check_fast', files: area.files });
+  }
+  return out;
+}
+
+const TEST_OUTCOMES = ['green', 'red', 'skipped'];
+
+/**
+ * The targeted tests of the round, specular to `checksOf` and with one difference: the `files` are
+ * the **test files the agent named**, not the touched files. An area that declares `test_targeted`
+ * and was touched must be reported — on the files the agent read out of the repository — while an
+ * area that declares none is recorded synthetic `skipped`, because it has no command to run.
+ */
+function testsOf(input, areas) {
+  const given = input.check_tests === undefined ? [] : input.check_tests;
+  if (!Array.isArray(given)) fail('check_tests must be an array of {"area", "status": "green"|"red"|"skipped", "detail", "files"}');
+  const declaring = new Map(areas.filter((area) => area.commands.test_targeted).map((area) => [area.area, area]));
+  const seen = new Set();
+  const out = [];
+  given.forEach((entry, at) => {
+    if (!isObject(entry) || !nonEmpty(entry.area) || !TEST_OUTCOMES.includes(entry.status) || typeof entry.detail !== 'string' || !Array.isArray(entry.files) || !entry.files.every(nonEmpty)) {
+      fail(`check_tests[${at}] must be {"area", "status": "green"|"red"|"skipped", "detail": <the output, or "">, "files": <the test files>}`);
+    }
+    if (!declaring.has(entry.area)) fail(`check_tests[${at}]: area ${entry.area} is not an area this round touched that declares test_targeted`);
+    if (seen.has(entry.area)) fail(`check_tests[${at}]: area ${entry.area} is reported twice`);
+    seen.add(entry.area);
+    if (entry.status === 'skipped') {
+      if (entry.files.length) fail(`check_tests[${at}]: a skipped entry names no test file, got ${entry.files.join(' ')}`);
+    } else if (!entry.files.length) {
+      fail(`check_tests[${at}]: a ${entry.status} entry must name the test files it ran, and this one names none`);
+    }
+    out.push({ area: entry.area, status: entry.status, detail: entry.detail.slice(0, 2000), files: entry.files });
+  });
+  for (const area of areas) {
+    if (area.commands.test_targeted && !seen.has(area.area)) {
+      fail(`test_targeted declared on area ${area.area}, which this round touched: run it on ${area.files.join(' ')} and pass its status`);
+    }
+    if (!area.commands.test_targeted) out.push({ area: area.area, status: 'skipped', detail: 'the area declares no test_targeted', files: [] });
   }
   return out;
 }
@@ -738,6 +784,7 @@ function actRound(input, root) {
 
   const areas = areasOf(cwd, pre, post, codeRoot, projectOf(input), touched);
   const checks = failed ? [] : checksOf(input, areas);
+  const tests = failed ? [] : testsOf(input, areas);
   const previous = ledger.rounds.flatMap((round) => round.applied);
   const applied = block.applied.map((fix) => ({ ...fix, anchor: anchorOf(fix.anchor) }));
   const measured = measure(previous, applied, touched.length ? hunksOf(cwd, pre, post, codeRoot) : new Map());
@@ -760,6 +807,7 @@ function actRound(input, root) {
   const round = {
     n, disciplines, missing_disciplines: missing, pre_apply_tree: pre, post_apply_tree: post,
     applied, discarded: block.discarded, to_confirm: block.to_confirm, oscillation: block.oscillation, check_fast: checks,
+    check_tests: tests,
     verdict: null, why: null,
   };
   if (input.cost !== undefined) round.cost = input.cost;
@@ -1254,6 +1302,80 @@ function runBench(root) {
         JSON.stringify(recorded)
       );
       check('checks:a-declaring-area-still-carries-its-reported-status', recorded.some((entry) => entry.area === 'web' && entry.status === 'green'), JSON.stringify(recorded));
+    });
+
+    attempt('check-tests', () => {
+      const fx = fixture('check-tests');
+      const project = readJson(fx.project, 'project');
+      project.areas.web.test_targeted = { cwd: '.', run: ['true <FILES>'] };
+      writeJson(fx.project, project);
+      put(join(fx.cwd, 'src', 'b.js'), 'export const b = 2;\n');
+      const { ledger } = scopeOf(fx);
+      call({ action: 'findings', ledger, blocks: { bug: { findings: [] } } });
+      // Written after the scope, so it is the delta round 1 judges: it touches `web` and `assets`.
+      put(join(fx.cwd, 'src', 'assets', 'new.js'), 'export const n = 1;\n');
+      const round = (extra) => ({ action: 'round', ledger, ...fx.base(), project: fx.project, rounds_cap: null, ...extra });
+      const fastGreen = { area: 'web', status: 'green', detail: '' };
+
+      refused('check-tests:not-a-list', round({ check_fast: [fastGreen], check_tests: 'red' }), 'check_tests must be an array');
+      refused('check-tests:green-with-no-files', round({ check_fast: [fastGreen], check_tests: [{ area: 'web', status: 'green', detail: '', files: [] }] }), 'must name the test files');
+      refused('check-tests:skipped-with-files', round({ check_fast: [fastGreen], check_tests: [{ area: 'web', status: 'skipped', detail: '', files: ['tests/a.test.mjs'] }] }), 'names no test file');
+      refused('check-tests:on-an-area-that-declares-none', round({ check_fast: [fastGreen], check_tests: [{ area: 'assets', status: 'green', detail: '', files: ['tests/a.test.mjs'] }] }), 'declares test_targeted');
+      refused('check-tests:a-declaring-area-left-unreported', round({ check_fast: [fastGreen], check_tests: [] }), 'run it on');
+    });
+
+    attempt('check-tests-record', () => {
+      const fx = fixture('check-tests-record');
+      const project = readJson(fx.project, 'project');
+      project.areas.web.test_targeted = { cwd: '.', run: ['true <FILES>'] };
+      writeJson(fx.project, project);
+      put(join(fx.cwd, 'src', 'b.js'), 'export const b = 2;\n');
+      const { ledger } = scopeOf(fx);
+      call({ action: 'findings', ledger, blocks: { bug: { findings: [] } } });
+      put(join(fx.cwd, 'src', 'assets', 'new.js'), 'export const n = 1;\n');
+      closeRound(fx, ledger, {
+        merit: 'continue', merit_why: 'watch the recording',
+        check_fast: [{ area: 'web', status: 'green', detail: '' }],
+        check_tests: [{ area: 'web', status: 'green', detail: 'ok', files: ['tests/a.test.mjs'] }],
+      });
+      const round1 = readJson(ledger, 'ledger').rounds[0];
+      const recorded = round1.check_tests || [];
+      check(
+        'check-tests:a-declaring-area-records-the-test-files-it-ran',
+        recorded.some((entry) => entry.area === 'web' && entry.status === 'green' && JSON.stringify(entry.files) === '["tests/a.test.mjs"]'),
+        JSON.stringify(recorded)
+      );
+      check(
+        'check-tests:an-area-that-declares-none-is-recorded-skipped',
+        recorded.some((entry) => entry.area === 'assets' && entry.status === 'skipped' && entry.detail === 'the area declares no test_targeted' && entry.files.length === 0),
+        JSON.stringify(recorded)
+      );
+      check('check-tests:its-record-is-a-list-on-the-round', Array.isArray(round1.check_tests), JSON.stringify(round1));
+    });
+
+    attempt('check-tests-finding', () => {
+      const fx = fixture('check-tests-finding');
+      const project = readJson(fx.project, 'project');
+      project.areas.web.test_targeted = { cwd: '.', run: ['true <FILES>'] };
+      writeJson(fx.project, project);
+      put(join(fx.cwd, 'src', 'b.js'), 'export const b = 2;\n');
+      const { ledger } = scopeOf(fx);
+      call({ action: 'findings', ledger, blocks: { bug: { findings: [bug('src/b.js', 1)] } } });
+      put(join(fx.cwd, 'src', 'b.js'), 'export const b = 3;\n');
+      closeRound(fx, ledger, {
+        merit: 'continue', merit_why: 'a red of the test check continues the round',
+        applier: { applied: [fix('r1-bug-1', 'src/b.js', 'export const b = 3;')], discarded: [], to_confirm: [], oscillation: [] },
+        check_fast: [{ area: 'web', status: 'green', detail: '' }],
+        check_tests: [{ area: 'web', status: 'red', detail: 'a test failed', files: ['tests/a.test.mjs'] }],
+      });
+      const findings2 = call({ action: 'findings', ledger, blocks: { bug: { findings: [] } } });
+      const state = readJson(findings2.findings_file, 'findings');
+      const check1 = state.findings.find((finding) => finding.finding_id === 'r2-check-1');
+      check(
+        'check-tests:a-red-of-the-previous-round-becomes-a-finding-naming-the-test-files',
+        !!check1 && check1.discipline === 'check' && check1.file === 'tests/a.test.mjs',
+        JSON.stringify(state.findings)
+      );
     });
 
     attempt('tail-order', () => {

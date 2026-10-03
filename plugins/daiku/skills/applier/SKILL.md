@@ -12,7 +12,7 @@ You are the **only** step of the cycle that modifies files: finders do not write
 
 ## What you receive from the caller
 
-- the **path of the round's findings file**: the findings of all finders of the round, each with its `finding_id` and its discipline. A finding of discipline `check` is the output of the fast check the previous round left red: its errors are verified defects of the files it names;
+- the **path of the round's findings file**: the findings of all finders of the round, each with its `finding_id` and its discipline. A finding of discipline `check` is the output of the fast check **or of the targeted tests** the previous round left red: its errors are verified defects of the files it names — the files the fast check returned, or the **test files** the round named, which can stand outside the diff and inside `{code_root}` all the same;
 - the **ledger path**: the **applied entries of previous rounds** are there (`file`, `symbol`, `anchor`, `what`), for `on_previous_fix` and for oscillation;
 - the round range and the `BASE`, and `work_root`;
 - `{memory.index}` and the **paths** of the memories your perimeter touches, to open before deciding: it is the channel of §4.1 of `contracts/orchestration.md`. If the caller does not pass them to you, open the index and choose yourself — you are the only step of the cycle that writes, and a fact not deducible from the code here nobody will ever review again;

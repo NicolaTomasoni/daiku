@@ -201,6 +201,15 @@ declared it, and they are checked before the key is left out.
   absence, and a guessed command fails a step instead of skipping it. One command seen is one key
   written; the others stay out.
 
+  **Say where the derived `check_fast` is weaker than the gate.** §4 forbids `check_fast` from
+  running tests, so a command checking only the types or the lint covers a **weaker class** than
+  the gate that also runs the tests: that is the derivation being faithful, not a defect, and the
+  key is written all the same. But you **signal** it — one line, beside the area you opened — so
+  whoever reads `project.json` sees which class the fast check left uncovered. The gap is declared,
+  never repaired with a heavier command: a `check_fast` that runs the tests is forbidden by §4
+  whatever it would cover, and the review cycle compensates with the targeted tests it runs at
+  every round (§ *Applier* of `skills/review/SKILL.md`).
+
   **The gate is the whole command, not one of the five things it covers.** §4 says the gate covers
   lint, format, type-check, test and package build; it does not say that any one of them, declared
   alone, is a gate. A manifest carrying only a package build, or only `lint`, or only `type-check`,
