@@ -24,9 +24,10 @@
  *  - `{memory.root}` and its index;
  *  - on Claude Code, the two memory keys in `.claude/settings.local.json`, and no memory file
  *    left in the host's default folder under `~/.claude/projects/`;
- *  - the `.gitignore` lines: the machine's files and `{paths.review_state}` ignored by **the
- *    repository's own** `.gitignore` — a global excludes file or `.git/info/exclude` is one
- *    machine's, and a clone carries none of it — and `.daiku/` and the memory corpus not ignored.
+ *  - the `.gitignore` lines: the machine's files, `{paths.review_state}` and — where it stands
+ *    inside the repository — `{worktree.pool}`, ignored by **the repository's own** `.gitignore`
+ *    — a global excludes file or `.git/info/exclude` is one machine's, and a clone carries none of
+ *    it — and `.daiku/` and the memory corpus not ignored.
  *
  * What it does not check: the domain roles the project may answer in a file written after the
  * first run. Telling that needs reading the repository, and this program reads only what `init`
@@ -290,6 +291,13 @@ export function scan(rootIn, host, disk = REAL, packageRoot = PACKAGE) {
     const out = [join(daiku, 'environment.local.json')];
     const review = fromRoot(root, project.paths && project.paths.review_state);
     if (review) out.push(review);
+    // The delivery-worktree pool holds working copies of the repository: inside the tree it must be
+    // ignored like the review state; declared outside it, there is nothing to ask of `.gitignore`.
+    const pool = fromRoot(root, project.worktree && project.worktree.pool);
+    if (pool) {
+      const rel = toRepo(top, pool);
+      if (rel && !rel.startsWith('..') && !isAbsolute(rel)) out.push(pool);
+    }
     if (host === 'claude') out.push(join(root, '.claude', 'settings.local.json'));
     const keep = [projectFile];
     if (memoryRoot) keep.push(join(memoryRoot, basename(String(memory.index || 'MEMORY.md'))));
@@ -452,6 +460,40 @@ function selfCheck() {
       fakeDisk({}).checkIgnore(top, paths) + '.gitignore:9:.daiku/\tsrc/.daiku/project.json\n',
   });
   check('an ignored .daiku/ is missing', ids(scan(T, 'claude', daikuIgnored, PKG)).includes('gitignore-in:src/.daiku/project.json'));
+
+  // The delivery-worktree pool: inside the repository it is ignored like the review state; declared
+  // outside it, `.gitignore` is not asked about it at all.
+  const withPool = (value, checkIgnore) =>
+    fakeDisk(
+      {
+        ...complete(),
+        [`${T}/.daiku/project.json`]: JSON.stringify({
+          contract: 1,
+          memory: { root: 'memory', index: 'memory/MEMORY.md' },
+          paths: { review_state: '.dev-runtime/review' },
+          worktree: { pool: value },
+        }),
+      },
+      { checkIgnore }
+    );
+  const pooled = withPool(
+    '.daiku-worktrees',
+    () => fakeDisk({}).checkIgnore() + '.gitignore:6:.daiku-worktrees\tsrc/.daiku-worktrees\n'
+  );
+  check('a pool inside the repository and ignored: nothing missing', scan(T, 'claude', pooled, PKG).missing.length === 0);
+
+  const poolUnignored = withPool('.daiku-worktrees', () => fakeDisk({}).checkIgnore());
+  const poolMissing = ids(scan(T, 'claude', poolUnignored, PKG));
+  check('a pool inside the repository and not ignored: listed', poolMissing.includes('gitignore-out:src/.daiku-worktrees'));
+  check('a pool inside the repository and not ignored: nothing else listed', poolMissing.length === 1);
+
+  const poolOutside = withPool('../../pool-outside', () => fakeDisk({}).checkIgnore());
+  const outsideMissing = ids(scan(T, 'claude', poolOutside, PKG));
+  check('a pool outside the repository: `.gitignore` is not asked about it', outsideMissing.length === 0);
+  check(
+    'a pool outside the repository: nothing is listed for it',
+    !outsideMissing.some((id) => id.includes('pool-outside'))
+  );
 
   const gitDown = fakeDisk(complete(), { checkIgnore: () => null });
   check('git that does not answer: fail-open, nothing listed', scan(T, 'claude', gitDown, PKG).missing.length === 0);

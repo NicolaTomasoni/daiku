@@ -1,6 +1,10 @@
 # BRAND
 
-> <one line: the identity and the market this document states>
+> **What goes here.** Identity and market: the name and what it carries, the positioning, who else
+> stands in the same place, and the channels this product reaches people through. It is what a
+> page, a release note or a listing is written from — no product behaviour (that is `PRODUCT.md`)
+> and no technical decisions (that is `ARCHITECTURE.md`). Where the project has not decided, the
+> section says so instead of choosing.
 
 ## Contents
 

@@ -66,6 +66,8 @@ The argument is the **library/technology name** (e.g. `DBOS`, `LangGraph`, `Taur
 - Create the `{paths.studies}/` folder if it does not exist.
 - The file's resolved path is the **handoff to `study`**: no intermediate file, `study` reorders in place.
 
+**The ground this note is written for.** Before writing, resolve `documents.stack` and `documents.architecture` in `.daiku/project.json` and read them: the technologies the project actually has, with the versions it runs, and the boundaries and decisions the note must respect. They are what makes the note operational *here* instead of generally true — the version to document is the one in use, and a library the structure forbids in a layer is written as forbidden. If a key or its file is missing, proceed without it, invent none, and let the absence be visible in the note (§6 of `contracts/project-contract.md`).
+
 ## Content objective
 
 Notes **operational for development**, not marketing. Priorities, in order:

@@ -23,7 +23,12 @@
  * every script it deposits — `daiku:script <version>` — which the skeleton must carry as a
  * placeholder: a literal there would be a second seat of the package version, and it is from
  * that line that a relaunched `init` recognises a script written by an older Daiku and
- * recreates it whole. What it deliberately does not check: key-level acceptance by
+ * recreates it whole. And it checks the five founding-document skeletons under
+ * `templates/project/documents/` — the file is there, the `H1` is the role in uppercase, the index
+ * lists exactly the numbered sections in order, and the closing section is there: that frame is
+ * what tells a document of this kind from a file of the project's standing at the same seat, which
+ * `new-project` closes into the git stash instead of overwriting. What it deliberately does not check:
+ * key-level acceptance by
  * the hosts — neither real validator looks inside these files (verified with
  * `validate_plugin.py`, which is silent on hooks, on 2026-09-26), so `description`
  * stays in the Codex template until a validator rejects it for real. The day a
@@ -245,6 +250,61 @@ function selfCheck() {
     'update script template carries one daiku:script marker line, and no more',
     (script.match(/^\/\/ daiku:script/gm) || []).length === 1
   );
+
+  // The five founding-document skeletons: the frame `new-project` keys on to tell a document of
+  // this kind from a file of the project's at the same seat. The roles are fixed by the method and
+  // `documents.<role>` resolves each by name, so what is decidable without a host is decided here.
+  const ROLES = ['PRODUCT', 'BRAND', 'DOMAIN', 'STACK', 'ARCHITECTURE'];
+  const documentDir = join(ROOT, 'templates', 'project', 'documents');
+  let documents = [];
+  try {
+    documents = readdirSync(documentDir).filter((name) => name.endsWith('.md')).sort();
+  } catch {
+    documents = [];
+  }
+  check(
+    'the package carries the five founding-document skeletons, and no more',
+    documents.length === ROLES.length && ROLES.every((role) => documents.includes(`${role}.md`))
+  );
+  for (const role of ROLES) {
+    let text = '';
+    try {
+      text = readFileSync(join(documentDir, `${role}.md`), 'utf-8');
+    } catch {
+      text = '';
+    }
+    check(`${role}.md exists`, text !== '');
+    const lines = text.split(/\r?\n/);
+    check(`${role}.md opens with its H1`, lines[0] === `# ${role}`);
+    // The guide paragraph: it says what the document must contain and what does not belong there,
+    // and it is the one part of the frame that tells whoever opens the file whether they are even in
+    // the right one. A skeleton without it produces documents nobody can use correctly.
+    const guide = lines.slice(1).find((line) => line.trim()) || '';
+    check(
+      `${role}.md carries the guide paragraph under its H1`,
+      guide.startsWith('> ') && guide.includes('**What goes here.**')
+    );
+    const sections = lines
+      .filter((line) => /^## \d+\. /.test(line))
+      .map((line) => line.replace(/^## \d+\.\s+/, '').trim());
+    const contents = lines.indexOf('## Contents');
+    const firstSection = lines.findIndex((line) => /^## \d+\. /.test(line));
+    const indexed =
+      contents === -1 || firstSection === -1
+        ? []
+        : lines
+            .slice(contents + 1, firstSection)
+            .filter((line) => line.trim())
+            .map((line) => line.replace(/^\d+\.\s+/, '').trim());
+    check(
+      `${role}.md's index lists exactly its numbered sections, in order`,
+      sections.length > 0 && indexed.join('|') === sections.join('|')
+    );
+    check(
+      `${role}.md closes with what the document rests on`,
+      sections.length > 0 && sections[sections.length - 1].toLowerCase().startsWith('what this rests on')
+    );
+  }
 
   process.stdout.write(JSON.stringify({ checks: ran, passed: ran - failed.length, failed }, null, 2) + '\n');
   return failed.length ? 1 : 0;
