@@ -25,6 +25,7 @@
       "native_backend": "codex"
     }
   },
+  "prompt_dump_chars": "<characters past which the prompt opening a run is called a raw dump in the run's opening notice, or drop this key>",
   "backends": {
     "claude": {},
     "codex": {},

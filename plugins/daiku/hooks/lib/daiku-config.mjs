@@ -33,6 +33,7 @@ const ABSENT = Object.freeze({
   libNotes: null,
   reviewState: null,
   writeRoots: Object.freeze([]),
+  promptDumpChars: null,
   channels: null,
 });
 
@@ -51,11 +52,14 @@ function resolvePath(value, root) {
  * command guard, `paths.features` — the working folders, the seat the run works in — and
  * `paths.studies` — the notes on a technology — for the two hooks that speak about the run's
  * seats, with the machine's `write_roots` for the reminder, and
- * `paths.review_state` for the ledger notice of `stop-advice`. Every path comes from a key of
- * `.daiku/project.json` (§4 of the contract), except `write_roots`, which belongs to the
- * environment file of §8 — the machine's local file first, **taken whole**, never merged. A
- * missing or unresolvable key contributes `null`, never a guessed path: §6 of the contract,
- * applied to a hook. Nothing is read outside the project: no seat of Daiku lives in the user home.
+ * `paths.review_state` for the ledger notice of `stop-advice`, and the environment file for the two
+ * keys of `run-advice`: `write_roots`, the folders this machine admits, and `prompt_dump_chars`, the
+ * size above which the notice that opens a run calls a prompt a raw dump (§7 of
+ * `contracts/orchestration.md`). Every path comes from a key of `.daiku/project.json` (§4 of the
+ * contract); the environment's two come from the file of §8 — the machine's local one first,
+ * **taken whole**, never merged. A missing or unresolvable key contributes `null`, never a guessed
+ * path and never a guessed number: §6 of the contract, applied to a hook. Nothing is read outside
+ * the project: no seat of Daiku lives in the user home.
  */
 export function loadContext(root, reads = REAL_READS) {
   try {
@@ -79,6 +83,7 @@ export function loadContext(root, reads = REAL_READS) {
 
     const declared = json.guardrails;
     const channels = json.channels && typeof json.channels === 'object' ? json.channels : null;
+    const environment = readEnvironment(root, reads);
     return {
       present: true,
       pool: resolvePath(json.worktree && json.worktree.pool, root),
@@ -86,7 +91,8 @@ export function loadContext(root, reads = REAL_READS) {
       studies: resolvePath(json.paths && json.paths.studies, root),
       guardrails: declared && typeof declared === 'object' ? declared : {},
       reviewState: resolvePath(json.paths && json.paths.review_state, root),
-      writeRoots: resolveWriteRoots(root, reads),
+      writeRoots: environment.writeRoots,
+      promptDumpChars: environment.promptDumpChars,
       // The two branch names of the channels group. `production` is the switch of the branch
       // guard of `command-guard.mjs`; `development` names the branch the work lives on. A group
       // absent, or a member that is not a non-empty string, contributes `null`.
@@ -103,13 +109,19 @@ export function loadContext(root, reads = REAL_READS) {
 }
 
 /**
- * The `writeRoots` of the run's reminder: the folders the machine admits, where a write made
- * from the conversation is not the run's own violation. The environment file of §8 — the
- * machine's local one first, **taken whole**: where it exists and parses, the project one is not
- * read. Absent is the normal case, and reads as no root at all. A declared root that does not
- * resolve on disk is dropped: nobody writes there, so the reminder has nothing to stay silent for.
+ * The two keys `run-advice` reads from the environment file of §8 — the machine's local one first,
+ * **taken whole**: where it exists and parses, the project one is not read. Absent is the normal
+ * case for both.
+ *
+ * - `write_roots` — the folders the machine admits, where a write made from the conversation is
+ *   not the run's own violation. A declared root that does not resolve on disk is dropped: nobody
+ *   writes there, so the reminder has nothing to stay silent for.
+ * - `prompt_dump_chars` — the size at which the notice opening a run calls the prompt a raw dump.
+ *   A positive integer, or `null`. Zero, negative, `NaN` and a value that is not a number all read
+ *   as *not declared*: §6 of the contract, applied to a hook — the notice then has no threshold to
+ *   measure against, and stays silent about the size rather than picking one.
  */
-function resolveWriteRoots(root, reads) {
+function readEnvironment(root, reads) {
   for (const file of [
     join(root, '.daiku', 'environment.local.json'),
     join(root, '.daiku', 'environment.json'),
@@ -123,9 +135,13 @@ function resolveWriteRoots(root, reads) {
     }
     if (!json || typeof json !== 'object') continue;
     const declared = Array.isArray(json.write_roots) ? json.write_roots : [];
-    return Object.freeze(declared.map((x) => resolvePath(x, root)).filter((p) => p && reads.exists(p)));
+    const raw = json.prompt_dump_chars;
+    return {
+      writeRoots: Object.freeze(declared.map((x) => resolvePath(x, root)).filter((p) => p && reads.exists(p))),
+      promptDumpChars: typeof raw === 'number' && Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : null,
+    };
   }
-  return Object.freeze([]);
+  return { writeRoots: Object.freeze([]), promptDumpChars: null };
 }
 
 /** Is `absolute` inside `base`? Prefix comparison, insensitive to Windows case. */
@@ -166,6 +182,7 @@ export function fakeContext(fields = {}) {
     guardrails: fields.guardrails || {},
     reviewState: seat(fields.reviewState),
     writeRoots: Array.isArray(fields.writeRoots) ? fields.writeRoots.map(seat).filter(Boolean) : [],
+    promptDumpChars: typeof fields.promptDumpChars === 'number' && fields.promptDumpChars > 0 ? Math.floor(fields.promptDumpChars) : null,
     channels: fields.channels || null,
   };
 }

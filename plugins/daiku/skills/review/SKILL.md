@@ -142,7 +142,7 @@ is the engine of the cycle and is carried to every round whatever the list says:
 does not remove it, and the outcome declares the reading. Absent, the set is the one the table's
 first row describes.
 
-| Round | Active disciplines | Round range: `git diff <from> <to> -- <files>` |
+| Round | Active disciplines | Round range: `git diff <from> <to> -- <files>`, shaped as `skills/finder-prompt/SKILL.md` § *Rules* says |
 |---|---|---|
 | **1** | `bug` always; `arch`, `perf` and `dead` if scope activated them | `BASE` → the scope's `tree`, on its `files`: the whole diff, untracked files included |
 | **≥2** | `bug` only | the previous round's `pre_apply_tree` → `post_apply_tree`, on its `touched` files: only what its applier wrote |

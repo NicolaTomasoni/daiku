@@ -18,7 +18,11 @@
  *    and the rule is stated once, there, where it is about to matter. The mark is what makes the
  *    scope of the rule decidable: *this* conversation opened a run, and a conversation that did not
  *    owes the rule nothing. Once per session, never repeated — a notice that arrives every time
- *    stops being read.
+ *    stops being read. **And that same moment carries the second thing it says**: where the project
+ *    declares `prompt_dump_chars` and the opening prompt is longer than it, the notice also names
+ *    the size and the seats that exist for a payload that large — a file and its path, or
+ *    `research`. The text still enters the context whole: the notice truncates nothing and blocks
+ *    nothing, because moving a dump is the owner's gesture and not the hook's.
  *  - **`PreToolUse` on the write tools** — while a marked session writes **from the conversation
  *    itself**, outside the seats the run owns (`{paths.features}`, `{paths.studies}` and the
  *    `{write_roots}` the machine declares), the write is **reminded of the rule** and goes through.
@@ -202,7 +206,7 @@ function writtenPath(input) {
 // --- the two things it says ---------------------------------------------------
 
 /**
- * What the prompt event answers: the notice, once per session, or `null` for silence. `mark` says
+ * What the prompt event answers: the notice, once per session, or `null` for silence. `marked` says
  * whether a mark was written, so the bench can see both halves.
  */
 export function promptDecision(event, root, env, ctx) {
@@ -217,7 +221,19 @@ export function promptDecision(event, root, env, ctx) {
 
   if (isMarked(env, path)) return { text: null, marked: true }; // this session already heard it
   setMark(env, path);
-  return { text: notice(), marked: true };
+  return { text: openingText(prompt, ctx), marked: true };
+}
+
+/**
+ * What the notice says, and it can be two things at once: the rule, always, and — where the project
+ * declared a threshold and this prompt is over it — the fact that what was pasted is a raw dump,
+ * with the seats that exist for it. The second is **added, never substituted**: the rule of the run
+ * is due in every session, dumped prompt or not.
+ */
+function openingText(prompt, ctx) {
+  const threshold = typeof ctx.promptDumpChars === 'number' ? ctx.promptDumpChars : null;
+  if (!threshold || prompt.length <= threshold) return notice();
+  return `${notice()}\n\n${dumpNotice(prompt.length, threshold)}`;
 }
 
 /**
@@ -256,6 +272,26 @@ export function notice() {
     '`skills/new-feature/SKILL.md` \u00a7 *7. Decisions are asked in chat*.\n\n' +
     '*Daiku notice, written when the run opened — not a message from the user, and nothing ' +
     'being worked on has to change.*'
+  );
+}
+
+/**
+ * The size of the prompt that opened the run, and where a payload that size belongs. A **fact about
+ * this prompt** and a pointer to two seats, never an order: what was pasted reaches the model whole,
+ * nothing is truncated, and only the owner decides whether to move it — the seats are named because
+ * naming them is the whole help.
+ */
+export function dumpNotice(size, threshold) {
+  return (
+    `Daiku notice: this prompt is ${size} characters, over the ${threshold} this project declares ` +
+    'in `prompt_dump_chars` (`.daiku/environment.json`, or the machine’s ' +
+    '`.daiku/environment.local.json`, which replaces it whole where it exists). A payload that size ' +
+    'is usually a raw dump ' +
+    '— a log, a file, an export — and it enters the context whole and stays there for the rest of ' +
+    'the session. The seats that exist for it: the text goes in a file and its **path** is passed, ' +
+    'so the run reads the part it needs; or it is handed to `research`, which keeps it in ' +
+    '`{paths.studies}` and gives the notes back. This is a note and not a block: nothing is ' +
+    'truncated, and the run opens either way.'
   );
 }
 
@@ -393,6 +429,30 @@ function selfCheck() {
     'another session hears it again',
     !!promptDecision(session({ session_id: 'sess-2', prompt: '/new-feature' }), R, once, CTX()).text
   );
+
+  // --- the size of the prompt that opened the run -----------------------------
+  const DUMP = () => fakeContext({ features: ['docs/features'], promptDumpChars: 40 });
+  const long = `/new-feature ${'x'.repeat(200)}`;
+  const big = promptDecision(session({ prompt: long }), R, fakeEnv(), DUMP());
+  check('a prompt over the declared size is called by its size', !!big && big.text.includes(`${long.length} characters`));
+  check('and it names the declared threshold', !!big && big.text.includes('over the 40'));
+  check('and the key it comes from', !!big && big.text.includes('prompt_dump_chars'));
+  check(
+    'and it names both environment files, not only the shared one',
+    !!big && big.text.includes('.daiku/environment.json') && big.text.includes('.daiku/environment.local.json')
+  );
+  check(
+    'and the seats that exist for a payload that size',
+    !!big && big.text.includes('research') && big.text.includes('{paths.studies}')
+  );
+  check('and it says it blocks nothing', !!big && big.text.includes('not a block'));
+  check('and the rule of the run is still stated with it', !!big && big.text.includes('delegated'));
+  const small = promptDecision(session({ prompt: '/new-feature a short description' }), R, fakeEnv(), DUMP());
+  check('under the declared size the notice is the rule and nothing else', !!small && !small.text.includes('prompt_dump_chars'));
+  const noKey = promptDecision(session({ prompt: long }), R, fakeEnv(), CTX());
+  check('a project that declares no size is not spoken to about it', !!noKey && !noKey.text.includes('prompt_dump_chars'));
+  check('the size notice is a fact, not an order', dumpNotice(200, 40).startsWith('Daiku notice:'));
+  check('and it truncates nothing', dumpNotice(200, 40).includes('nothing is truncated'));
 
   check(
     'the scratchpad of the event is where the mark goes',

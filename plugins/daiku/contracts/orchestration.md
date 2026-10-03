@@ -444,6 +444,7 @@ looked up, are §8 of `contracts/project-contract.md`.
 | `backends.<backend>.sequential_fanout` | declared only on backends whose fan-out must be sequentialised (§5) |
 | `backends.<backend>.caveats` | that backend's warnings to report in summary, one per line; absent if there are none |
 | `write_roots` | folders the machine admits, where **a write made from the conversation is not the run's own violation**: `run-advice` measures the run's seats (`{paths.features}`, `{paths.studies}`) and adds these, so the reminder does not speak where the machine already declared the folder writable — a machine's own paths, so they belong in `environment.local.json`, and the folder is named, not the side it stands on; **absent is the normal case**, and the reminder then knows only the run's seats |
+| `prompt_dump_chars` | the size, in characters, past which the notice opening a run calls the prompt a **raw dump**: `run-advice` measures the whole prompt that opens it, and over that size the notice adds the size, this key, and the seats that exist for a payload that large — the text in a file with its path passed instead, or `research` — while **truncating nothing and blocking nothing**, because moving a dump is the owner's gesture and not the hook's; **absent is the normal case**, and the notice then says nothing about the size |
 
 No key is mandatory besides `contract`: for everything else the degradation of
 §6 of `contracts/project-contract.md` applies.
