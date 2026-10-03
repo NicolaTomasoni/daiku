@@ -4,8 +4,8 @@
  * (`skills/init/scan.mjs`), in a single shot.
  *
  * `node hooks/self-check.mjs` from the package root. Exits `0` if every case is
- * green, `1` on the first red, and prints the **counted** total — the sum of what the thirteen
- * benches really ran, not a number written here.
+ * green, `1` on the first red, and prints the **counted** total — the sum of what the benches
+ * really ran, not a number written here.
  *
  * It exists because six hooks are six ways of staying silent — `ask-guard` silent on
  * everything but its two verdicts — and a fault in one of them is indistinguishable from
@@ -95,6 +95,15 @@ function benches() {
     found.push({ label: 'skills/init/scan.mjs', file, args: ['--self-check'] });
   } catch (error) {
     process.stderr.write(`cannot read skills/init/scan.mjs: ${error.message}\n`);
+  }
+  // The deterministic step that creates and checks out the development branch, launched by
+  // `init` beside the scan: its bench runs real Git on throwaway repositories too.
+  try {
+    const file = join(ROOT, 'skills', 'init', 'branch.mjs');
+    readFileSync(file);
+    found.push({ label: 'skills/init/branch.mjs', file, args: ['--self-check'] });
+  } catch (error) {
+    process.stderr.write(`cannot read skills/init/branch.mjs: ${error.message}\n`);
   }
   // The host manifests have a bench of their own, beside this file: like the
   // evaluator it is not a hook, so discovery by folder would never list it.

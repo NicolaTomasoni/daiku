@@ -38,6 +38,10 @@
     "max": 0,
     "branch_prefix": "<prefix of each worktree's branch>"
   },
+  "channels": {
+    "development": "<name of the development branch the work lives on, asked at init — e.g. develop>",
+    "production": "<name of the production branch, where the work does not commit and which advances only by a release; drop this key and the branch guard stays off>"
+  },
   "areas": {
     "<area name>": {
       "paths": ["<a path belonging to the area, usable as a Git pathspec>"],

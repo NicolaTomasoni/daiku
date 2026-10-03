@@ -1,12 +1,12 @@
 ---
 name: 'init'
-description: 'Opens Daiku on a project not having it yet, in one shot after asking the two languages: writes `.daiku/` — `project.json`, `environment.json`, `domain/`, `policies/`, `README.md` — the project instructions file and the `.gitignore` lines the method needs, starting from the package skeletons and filling them with what it reads in the repository. Idempotent: it never overwrites a file belonging to the project, and recreates whole the scripts it deposits, which carry the version of the package that wrote them. It launches once per project, and again when the package carries a new skeleton, and again after every update, to bring its own scripts up to the version in place.'
+description: 'Opens Daiku on a project not having it yet, in one shot after asking the two languages and the name of the development branch: writes `.daiku/` — `project.json`, `environment.json`, `domain/`, `policies/`, `README.md` — the project instructions file and the `.gitignore` lines the method needs, starting from the package skeletons and filling them with what it reads in the repository, and creates the development branch when the two channels are declared. Idempotent: it never overwrites a file belonging to the project, and recreates whole the scripts it deposits, which carry the version of the package that wrote them. It launches once per project, and again when the package carries a new skeleton, and again after every update, to bring its own scripts up to the version in place.'
 argument-hint: '[technical root, optional — default: current directory]'
 ---
 
 You are the step making a project **usable by Daiku**. Neither host lets a package write inside the user project: the Parameters and Domain levels cannot be delivered by installation, they can only be **generated** by a command the user launches. That command is you, and you are the only admitted way.
 
-**You run in one shot.** The two languages of *Step 0* are the only thing you ask; after them you ask the user nothing — not a choice, not a confirmation, not a follow-up — and you hand back nothing to do: whatever the repository lets you derive, you write; whatever it does not declare, does not exist in this project (§6 of `contracts/project-contract.md`) and the skills already know how to work without it. When the run ends the project is open, and you say so in one line (*Step 10*).
+**You run in one shot.** The two languages and the development branch of *Step 0* are the only thing you ask; after them you ask the user nothing — not a choice, not a confirmation, not a follow-up — and you hand back nothing to do: whatever the repository lets you derive, you write; whatever it does not declare, does not exist in this project (§6 of `contracts/project-contract.md`) and the skills already know how to work without it. When the run ends the project is open, and you say so in one line (*Step 10*).
 
 ## You have no project parameters, and you are the only one
 
@@ -62,20 +62,24 @@ The skeletons are read on every run, and **you lay down all the ones you find**,
 
 ## Procedure
 
-### 0. Ask the two languages
+### 0. Ask the languages and the development branch
 
-Only on a `fresh` run (*Scan first*). It is **the only thing you ask**, and you ask it because it is the only thing the repository cannot tell you with certainty: two identical projects may want different languages, and erring here shows in every line the skills will write from now on.
+Only on a `fresh` run (*Scan first*). They are **the only thing you ask**, and you ask them because they are the only things the repository cannot tell you with certainty: two identical projects may want different languages, and a branch is a name, which no file declares yet.
 
-They are two questions, not one, because they are two different audiences (§5.5 of `contracts/project-contract.md`):
+The first two are two questions, not one, because they are two different audiences (§5.5 of `contracts/project-contract.md`):
 
 1. **the chat language** — answers, summaries, reports and the documents the method produces;
 2. **the commit language** — commit messages and changelog entries, that is what remains in the shared history of the repository.
 
-They concern **the future**, not this run: neither changes one line of what you are about to write, which is in English however they answer. Ask them just the same, and before everything else, because they end up in `project.json`.
+The third is a value of the project, not a language:
 
-**Ask bare, with no preamble.** Use `AskUserQuestion` with two questions: `Chat language` — `Which language for chat replies, summaries, reports and method documents?` — and `Commit language` — `Which language for commit messages and changelog entries?` Options in both: Italiano, English. Do not add `Other`: the tool appends it by itself, and listing it again shows it twice. You may mark one option as recommended from what you read (`README.md` and the instructions file for chat, `git log --oneline -30` for commits); the question text stays exactly as above, with nothing added.
+3. **the development branch** — the name of the branch the work will live on, secondary to the production branch: every commit lands there, and production advances only by a release. Propose `develop` as the recommended name.
 
-If the user does not answer — because you are running inside a chain, or because the session has no interactive channel — **do not invent**: leave the two keys out of `project.json`. §5.5 already declares what happens without them, and a silent default here is worse than their absence.
+All three concern **the future**, not this run: none changes one line of what you are about to write, which is in English however they answer. Ask them just the same, and before everything else, because they end up in `project.json`.
+
+**Ask bare, with no preamble.** Use `AskUserQuestion` with the questions: `Chat language` — `Which language for chat replies, summaries, reports and method documents?` — `Commit language` — `Which language for commit messages and changelog entries?` — and `Development branch` — `What name for the branch the work will live on?`. For the two languages the options are Italiano and English; for the branch, propose `develop` as the recommended option and, optionally, a second plausible name. Do not add `Other`: the tool appends it by itself, and listing it again shows it twice. You may mark one language option as recommended from what you read (`README.md` and the instructions file for chat, `git log --oneline -30` for commits); the question text stays exactly as above, with nothing added.
+
+If the user does not answer — because you are running inside a chain, or because the session has no interactive channel — **do not invent**: leave the keys out of `project.json`, the two languages and the development branch alike. §5.5 declares what happens without the languages, §6 of `contracts/project-contract.md` what happens without the branch, and a silent default here is worse than their absence.
 
 **From the answer on, you run in one shot**: nothing else is asked.
 
@@ -85,7 +89,7 @@ On **Claude Code** hooks and subagents are carried by the package and update the
 
 On **Codex** the manifest rejects `agents` and `hooks`, and `plugin_hooks` is a removed feature: that layer must be written inside the project, under `.codex/`. **You do not write it yourself**: it is the trade of `sync-host`, which copies the `.mjs` files, tries them with their bench and hooks only the healthy ones, and which generates `.codex/agents/*.toml` from the package roles. You launch it as your last step (*Step 9*), so the project closes the run with its guardrails and roles in place.
 
-Do not ask the user on which host it runs: you know it from where you are running. The host is the only thing you do **not** ask; the two languages of *Step 0* are the only thing you ask.
+Do not ask the user on which host it runs: you know it from where you are running. The host is the only thing you do **not** ask; the two languages and the development branch of *Step 0* are the only thing you ask.
 
 ### 2. Read the repository before writing
 
@@ -120,6 +124,8 @@ Start from the skeleton, **empty it of every value not concerning this project**
 For areas: the area name is your naming choice, its `paths` are not — they are the real paths belonging to them, usable as Git pathspecs. Declare an area only if it truly has its own gate; two folders passing through the same command are a single area. A command at the workspace root that only calls the areas' gates is no area: it has no gate of its own, and declaring it would run every gate twice, over paths the areas already cover.
 
 The two **language** keys are the exception to the first rule, and only because you asked them: you write them with the answers of *Step 0*, verbatim. If you had no answer, you do not write them.
+
+**The two channels are written from *Step 0* and the branch you stand on.** `channels.development` is the branch name the user gave at *Step 0*, verbatim; `channels.production` is the branch the repository stands on now — `git -C "<technical root>" rev-parse --abbrev-ref HEAD` — because that is the branch you are running on. Where the branch name was not answered, you write **neither** key: §6 of `contracts/project-contract.md`, and a project without them keeps a single branch and nothing changes. These two names are what the branch guard (§4.1 of `contracts/project-contract.md`) and the `release` node read; a project that writes them adopts the two-branch flow. This rests on you running on the **production** branch: a project already on a working branch declares `channels.production` by hand.
 
 The two `paths` keys of the method's own documents — the notes on a technology and the working folders — are **not a finding of yours**: §4 of `contracts/project-contract.md` assigns their seat under `.daiku/`, and you write them as they are — `paths.studies` is `.daiku/studies`, `paths.features` is `.daiku/features`. A folder of the project's carrying a similar name is **not** adopted for them: those documents are Daiku's corpus, and seated among the project's files they would be documentation the project never asked for. The skills create the folders at first use, and `project.json` is where the user sees them.
 
@@ -228,6 +234,16 @@ seen in `project.json` and changeable, an omitted one is a delivery without isol
 When a value is derivable but not certain — a `changelog` that could be the one — either you confirm it with what you read, or you leave it out.
 
 **Create the seat those two keys name.** `{memory.root}` and `{memory.index}` are not a seat the repository already has: they are the seat you are assigning, and creating it is your act. Make `{memory.root}` if it is missing, and inside it `{memory.index}` if it is missing — a title, a line declaring that it is the corpus index, and nothing else. Empty is fine; absent is not, because it is the first file whoever reads that corpus opens. This runs on **both hosts**: the corpus belongs to the method, and `update-memory` writes it at every commit whether or not a host points its own memory at it.
+
+### 3-bis. Create the development branch
+
+**Applies only if you wrote `channels.development`.** The key names a branch, and a branch is not a file: this is the deterministic step that makes the key true — it creates the branch if it is not there and stands the working copy on it, idempotently. Run exactly:
+
+```
+node "<package root>/skills/init/branch.mjs" "<technical root>" <development> <production>
+```
+
+— `<package root>` the folder two levels above this file, `<development>` and `<production>` the two names you just wrote, production omitted where you wrote none. It prints one JSON object, `{ok, action, branch, detail}`, and its answer decides: `ok: true` is a branch created, checked out, already there, or nothing to do because the two channels coincide; `ok: false` is a step that did not go through — a dirty tree when the branch was to be created, or a repository with no commit yet, where there is no production branch to be identical to — and you declare it at *Step 10* and create nothing in its place. The dirty-tree failure belongs to **creation** alone: the relaunch, when the branch already exists, does not fail on a dirty tree, because `init` is relaunchable and a working repository is normally dirty. `branch.mjs` writes no file, commits nothing and pushes nothing.
 
 ### 4. Write `.daiku/environment.json` if missing
 
@@ -492,9 +508,10 @@ and the way you took instead — concerns nobody.
 
 Two things only are written, one line per item, in `{language.chat}`:
 
-- **A step that did not go through** — a write denied or failed, a move refused, a folder still on
-  the wrong side of `.gitignore` after *Step 8*: the file, and what it still lacks. The project is
-  then not all set, and the closing line is **not** written.
+- **A step that did not go through** — a write denied or failed, a move refused, the development
+  branch of *Step 3-bis* not created, a folder still on the wrong side of `.gitignore` after
+  *Step 8*: the file, or the branch, and what it still lacks. The project is then not all set, and
+  the closing line is **not** written.
 - **On Codex, the gestures `sync-host` hands to the user** (*Step 9*): they go above the closing line,
   because without them no guardrail is active and only a person can make them.
 
@@ -518,7 +535,7 @@ The third is the **explicit request** of the user on a precise file: then you re
 
 ## What you do not do
 
-- **You ask nothing beyond the two languages.** No other question, no confirmation, no proposal waiting for a yes: what the repository declares you write, what it does not stays out.
+- **You ask nothing beyond the two languages and the development branch.** No other question, no confirmation, no proposal waiting for a yes: what the repository declares you write, what it does not stays out.
 - **You do not touch the code**, ever, for any reason — dependency manifests included: a command whose tool no manifest declares stays out, it is not made to run by adding the tool.
 - **You do not create a Git repository**, you do not commit and do not stage what you wrote: whoever launched `init` watches what appeared before versioning it.
 - **You do not compose rules.** A domain answer or an area policy you write points at what the project already wrote (*Step 5*); where the project wrote nothing, nothing is written in its place.

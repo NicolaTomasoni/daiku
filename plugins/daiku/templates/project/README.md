@@ -37,6 +37,7 @@ direction this project chose**. Three promises, each with a mechanism behind it.
 | `/commit` | closes a diff written outside a review: it aligns memory and documentation, then commits in separate groups |
 | `/blueprint` | turns an already resolved decision document into the execution brief, and stops there |
 | `/ship-feature` | carries an already studied folder through delivery to the commit, without reopening the study |
+| `/release` | for a project that declared its two channels: it asks the version once on the block of commits accumulated on the development branch and moves production onto it, without pushing |
 | `/init` | opens Daiku on a project: it writes this folder and the instructions file. Once per project, and again when the package carries a new skeleton |
 | `/new-project` | after `/init`, it writes the project's five founding documents — the offer, the identity, the domain, the stack, the architecture — from the package skeletons, at the paths the project declares |
 | `/sync-host` | on Codex only: it installs guardrails and roles inside the project, and it is re-run after every package update |

@@ -15,11 +15,12 @@
  *
  *  - **without `.daiku/project.json` the guard allows everything**, always, without looking
  *    at the line. It is the boundary, not a degradation: see `daiku-config.mjs`;
- *  - **a single switch in the whole file**: the worktree pool, `{worktree.pool}`. Every other
- *    branch denies on every project that has opened Daiku, with no key — §6 of
- *    `contracts/project-contract.md`, *what the JSON does not declare does not exist*.
+ *  - **two switches in the whole file**: the worktree pool, `{worktree.pool}`, and the project's
+ *    channels, `channels.production`. Every other branch denies on every project that has opened
+ *    Daiku, with no key — §6 of `contracts/project-contract.md`, *what the JSON does not declare
+ *    does not exist*.
  *
- * There are five branches, in three families.
+ * There are six branches, in three families.
  *
  * **An operating-system fact**, on in every Daiku project because it depends on
  * no choice of whoever works:
@@ -50,6 +51,11 @@
  *     removal carries away uncommitted files without recovery, and `pnpm install` rewrites
  *     the shared `node_modules` `virtualStoreDir`, leaving the
  *     root installation inconsistent. No declared pool, neither check.
+ *  6. **The channels** (`channels.production`). The work lives on the development branch and
+ *     production advances only by a release: while the production branch is active, `git commit`
+ *     and `git merge` are denied, and `git checkout`/`git switch` towards it are denied too — so
+ *     one never arrives there to commit. The branch is read only on a line naming `git`, and only
+ *     here: no declared production branch, no branch read and no check.
  *
  * Where the host has a system `deny`, that stays the real door for 2 and 3: absolute, and
  * no source below can remove it. The two branches here close the shapes prefix
@@ -73,6 +79,7 @@
  * fail-open hook is indistinguishable from one with nothing to say.
  */
 
+import { spawnSync } from 'node:child_process';
 import { lstatSync, readFileSync } from 'node:fs';
 import { isAbsolute, join, resolve } from 'node:path';
 import { invokedDirectly, projectRoot } from './project-root.mjs';
@@ -523,12 +530,12 @@ function pathGuard(line, cwd, env, ctx, depth = 0) {
 
 // --- git guard -----------------------------------------------------------
 //
-// Three branches behind the project gate, and a single switch in the whole file.
-// The gate stays: without `.daiku/project.json` this project has not opened Daiku, and the
-// guard does not even read the line. Behind the gate, push, `--no-verify` and commits
-// crediting the agent are denied **always** — an agent is never left any of these
-// freedoms, and never trusting an LLM is the rule saying so (see `CLAUDE.md`). The only
-// thing the project declares is the worktree pool.
+// Four branches behind the project gate, and two switches in the whole file. The gate stays:
+// without `.daiku/project.json` this project has not opened Daiku, and the guard does not even
+// read the line. Behind the gate, push, `--no-verify` and commits crediting the agent are denied
+// **always** — an agent is never left any of these freedoms, and never trusting an LLM is the
+// rule saying so (see `CLAUDE.md`). The two things the project declares are the worktree pool and
+// the channels' production branch.
 //
 // The reason for reading the line instead of relying on a host rule is that a
 // rule matches by **prefix** and does not enter `sh -c`, so it sees neither a
@@ -604,6 +611,62 @@ function pushGuard(line) {
         'of the owner. If the work is ready, stop and say so: whoever holds the ' +
         'credentials launches it.',
     };
+  }
+  return null;
+}
+
+/** The branch guard: the project's work lives on the development branch, never on production.
+ *
+ * It is the one branch that **reads the world** — the current branch — and it reads it only when
+ * the line names a `git` invocation, so an ordinary command pays nothing. It is switched on by
+ * `channels.production`: where the project declares no production branch, the guard is off and
+ * nothing changes. Three gestures are denied while the production branch is active or aimed at:
+ * `git commit` and `git merge` **on** it, and `git checkout`/`git switch` **towards** it — so one
+ * never arrives there to commit. Every other branch — the development one and the pool's
+ * `{worktree.branch_prefix}*` — stays legitimate, and the delivery is untouched.
+ *
+ * The branch is asked of Git **through `env`**, like every other reading of the world, so the
+ * bench can answer without a repository; a Git that does not answer reads `null` and the guard
+ * allows — the fail-open contract, proved by the bench.
+ */
+function branchGuard(line, cwd, env, ctx) {
+  const production = ctx && ctx.channels && ctx.channels.production;
+  if (!production) return null;
+  const invocations = gitInvocations(line);
+  if (!invocations.length) return null; // not a Git line: the branch is never read
+  let branch = null;
+  try {
+    branch = env.branch(cwd || process.cwd());
+  } catch {
+    branch = null;
+  }
+  if (!branch) return null; // Git did not answer: allow
+  for (const invocation of invocations) {
+    if (!invocation.length) continue;
+    const sub = invocation[0].t;
+    const args = invocation.slice(1);
+    // `git merge --abort`/`--continue`/`--quit` are recovery, not work landing on production:
+    // denying them would trap a merge already in progress. Only the merge itself is denied.
+    const recovery = args.some((x) => !x.q && (x.t === '--abort' || x.t === '--continue' || x.t === '--quit'));
+    if ((sub === 'commit' || sub === 'merge') && !recovery && branch === production) {
+      return {
+        reason:
+          `\`git ${sub}\` while the production branch \`${production}\` is active: the work lives on ` +
+          `the development branch \`{channels.development}\`, and production advances only by a ` +
+          'release. Switch to the development branch before committing or merging.',
+      };
+    }
+    if (sub === 'checkout' || sub === 'switch') {
+      const target = args.find((x) => !isFlag(x));
+      if (target && target.t === production) {
+        return {
+          reason:
+            `\`git ${sub} ${production}\` would put the production branch active: the work lives on ` +
+            `the development branch \`{channels.development}\`. Production advances only by a ` +
+            'release, which moves the branch without checking it out.',
+        };
+      }
+    }
   }
   return null;
 }
@@ -692,6 +755,21 @@ const REAL_ENV = {
       return null;
     }
   },
+  /** The branch active where `cwd` stands, or `null` when Git does not answer (no repository,
+   * no commit yet, a detached HEAD reads `HEAD` — none of them is production, and none stops a
+   * gesture). The only reading of the world the branch guard pays for, and only on a Git line. */
+  branch: (cwd) => {
+    try {
+      const run = spawnSync('git', ['-C', cwd, 'rev-parse', '--abbrev-ref', 'HEAD'], {
+        encoding: 'utf-8',
+      });
+      if (run.error || run.status !== 0) return null;
+      const name = (run.stdout || '').trim();
+      return name || null;
+    } catch {
+      return null;
+    }
+  },
 };
 
 /** The decision, without leaving the process: what the test bench calls.
@@ -709,7 +787,8 @@ function evaluate(line, cwd, env, ctx) {
     pathGuard(line, cwd, env, ctx) ||
     commitGuard(line) ||
     attributionGuard(line, cwd, env) ||
-    pushGuard(line)
+    pushGuard(line) ||
+    branchGuard(line, cwd, env, ctx)
   );
 }
 
@@ -730,7 +809,7 @@ function safeDecide(line, cwd, env, ctx) {
 /** A simulated filesystem: the project's technical root, and next to it a worktree pool
  * where `node_modules` and the venv are junctions — the layout this guard watches
  * when a project declares `{worktree.pool}`. */
-function fakeEnv() {
+function fakeEnv(branch = 'main') {
   const key = (p) => String(p).replace(/\\/g, '/').replace(/\/+$/, '').toLowerCase();
   const tree = new Map(
     Object.entries({
@@ -771,6 +850,9 @@ function fakeEnv() {
         'c:/dev/project/msg-signed.txt':
           'feat: add the parser\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\n',
       })[key(p)] ?? null,
+    // The branch the simulated session is on. The real environment asks Git; here it is the
+    // fixture's choice, so a case can stand on production, on development or on a pool branch.
+    branch: () => branch,
   };
 }
 
@@ -782,6 +864,9 @@ const CTX_FULL = fakeContext({ pool: 'C:/dev/wt' });
 
 /** A project that opened Daiku and declared neither pool nor guardrails. */
 const CTX_BARE = fakeContext({});
+
+/** A project that declared the two channels: the branch guard is on, and its production is `main`. */
+const CTX_CHANNELS = fakeContext({ channels: { development: 'develop', production: 'main' } });
 
 /** A repository Daiku never opened: the guard does not exist here. */
 const CTX_ABSENT = fakeContext({ present: false });
@@ -898,6 +983,21 @@ const CASES = [
   ['echo of a sentence talking about git push', 'echo "git push is forbidden"', ROOT_CWD, 'allow', ''],
   ['grep for git push in the corpus', 'grep -rn "git push" .claude/', ROOT_CWD, 'allow', ''],
 
+  // --- the branch guard: off without `channels`, on with it --------------------------------
+  ['branch project: commit on production is denied', 'git commit -m "x"', ROOT_CWD, 'deny', 'production branch', CTX_CHANNELS, 'main'],
+  ['commit on development passes', 'git commit -m "x"', ROOT_CWD, 'allow', '', CTX_CHANNELS, 'develop'],
+  ['commit on a pool branch passes', 'git commit -m "x"', WT_CWD, 'allow', '', CTX_CHANNELS, 'worktree-agent-tree-1'],
+  ['merge on production is denied', 'git merge feature -m x', ROOT_CWD, 'deny', 'production branch', CTX_CHANNELS, 'main'],
+  ['merge on development passes', 'git merge feature -m x', ROOT_CWD, 'allow', '', CTX_CHANNELS, 'develop'],
+  ['git merge --abort on production is recovery, not denied', 'git merge --abort', ROOT_CWD, 'allow', '', CTX_CHANNELS, 'main'],
+  ['checkout towards production is denied', 'git checkout main', ROOT_CWD, 'deny', 'production branch', CTX_CHANNELS, 'develop'],
+  ['switch towards production is denied', 'git switch main', ROOT_CWD, 'deny', 'production branch', CTX_CHANNELS, 'develop'],
+  ['checkout of the development branch passes', 'git checkout develop', ROOT_CWD, 'allow', '', CTX_CHANNELS, 'main'],
+  ['creating the development branch from production passes', 'git checkout -b develop', ROOT_CWD, 'allow', '', CTX_CHANNELS, 'main'],
+  ['without channels the branch guard is off: commit on production passes', 'git commit -m "x"', ROOT_CWD, 'allow', '', CTX_FULL, 'main'],
+  ['without channels a checkout of production passes', 'git checkout main', ROOT_CWD, 'allow', '', CTX_BARE, 'develop'],
+  ['a non-git command never reads the branch', 'rm -rf build', ROOT_CWD, 'allow', '', CTX_CHANNELS, 'main'],
+
   // --- what is not this guard's business --------------------------------
   // They stay here as explicit proof: readers must see that the read perimeter,
   // the enforcement surface and the Git gestures towards HEAD belong to the host
@@ -923,11 +1023,11 @@ function selfCheck() {
   const failed = [];
   let ran = 0;
 
-  for (const [name, line, cwd, expected, contains, ctx] of CASES) {
+  for (const [name, line, cwd, expected, contains, ctx, branch] of CASES) {
     ran += 1;
     let outcome;
     try {
-      outcome = evaluate(line, cwd, env, ctx || CTX_FULL);
+      outcome = evaluate(line, cwd, branch ? fakeEnv(branch) : env, ctx || CTX_FULL);
     } catch (error) {
       failed.push(`${name}: exception ${error && error.message}`);
       continue;
@@ -951,11 +1051,15 @@ function selfCheck() {
     readMessage: () => {
       throw new Error('filesystem unreachable');
     },
+    branch: () => {
+      throw new Error('git unreachable');
+    },
   };
   // The link branch is the one interrogating the disk, and it allows when the disk does not
   // answer. The commit-message file is the other disk read, and a message it cannot open is
-  // skipped, leaving the line alone to decide. The others decide on paths and parameters,
-  // which need no disk to read, and stay denied.
+  // skipped, leaving the line alone to decide. The branch read is the third: a Git that does not
+  // answer lets the gesture through. The others decide on paths and parameters, which need no
+  // disk to read, and stay denied.
   const brokenEnv = [
     ['rm -rf c:/dev/wt/wt-1/node_modules', ROOT_CWD, 'deny'],
     ['rm -rf c:/dev/project/node_modules', ROOT_CWD, 'allow'],
@@ -965,12 +1069,13 @@ function selfCheck() {
     ['git commit -m x', ROOT_CWD, 'allow'],
     ['git commit -F msg-signed.txt', ROOT_CWD, 'allow'],
     ['git commit -m x -m "Co-Authored-By: Claude"', ROOT_CWD, 'deny'],
+    ['git commit -m x', ROOT_CWD, 'allow', CTX_CHANNELS],
   ];
-  for (const [line, cwd, expected] of brokenEnv) {
+  for (const [line, cwd, expected, ctx] of brokenEnv) {
     ran += 1;
     let decision;
     try {
-      decision = safeDecide(line, cwd, broken, CTX_FULL);
+      decision = safeDecide(line, cwd, broken, ctx || CTX_FULL);
     } catch (error) {
       failed.push(`fail-open on \`${line}\`: threw ${error && error.message}`);
       continue;

@@ -107,6 +107,7 @@ const GRAPH = {
   applier: ['review', 'code-review'],
   commit: ['owner', 'review'],
   'update-memory': ['ship-feature', 'commit'],
+  release: ['owner'],
 };
 
 /**
@@ -163,12 +164,13 @@ const ENTRIES = {
 };
 
 /**
- * `study` launched alone is atomic: it reorders its notes and stops, it opens no
- * chain and calls the evaluator on none — so as an `entry` it is not an error, it is
- * a stop with a reason.
+ * Entries launched alone that open **no chain**: asked with `order`, they answer `stop` with the
+ * reason. `study` reorders its notes and stops; `release` promotes the development branch onto
+ * production and stops — neither runs the delivery chain, so there is no sequence to order.
  */
 const ATOMIC = {
   study: 'study launched alone is atomic: it reorders its notes and stops, it opens no chain and calls the evaluator on none. There is no sequence to order, so the chain stops here.',
+  release: 'release promotes the development branch onto production and stops: it opens no chain and calls the evaluator on none. There is no sequence to order, so the chain stops here.',
 };
 
 /** Artefacts that exclude each other: a folder cannot be both before and after delivery. */

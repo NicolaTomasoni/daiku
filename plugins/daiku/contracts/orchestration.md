@@ -58,11 +58,11 @@ file but the invocation: the same contract is an **entry point** when you launch
 **internal contract** when a chain delegates to it. `research` is the collection that
 `new-feature` procures for itself when it needs it, with reordering delegated to `study`, and at the same time the command with which you request the notes yourself.
 
-**There are ten entry points, and it is not a number that grows on its own.** A contract is launched by
+**There are eleven entry points, and it is not a number that grows on its own.** A contract is launched by
 hand only if it is the **entry point of a chain**, never because it is handy to have it around:
 what sits in the middle of a chain is reached by whoever opened it, and adding it here means
 opening a second way to get there, with different scope and permissions to keep aligned
-forever. The ten fall into two groups, which are not used at the same moments.
+forever. The eleven fall into two groups, which are not used at the same moments.
 
 **The method — the everyday work:**
 
@@ -75,6 +75,7 @@ forever. The ten fall into two groups, which are not used at the same moments.
 | `commit` | it closes a review launched with `--no-commit`, or a diff written outside a review |
 | `blueprint` | you already have a resolved decision-doc and stop at the brief: from the chosen solution it produces `2. blueprint.md` and stops there — the hand-off that travels to where the execution runs |
 | `ship-feature` | you already have the folder, with or without the brief, and want the whole delivery to the commit in a single run, without reopening the study |
+| `release` | the promotion of a project that declared its channels: it asks the version once on the block of commits accumulated on the development branch and moves production onto it, without pushing. On a project that declared no channels it has nothing to promote and says so |
 
 **Installation — three commands that are launched once per project**, and that no chain
 can reach because they run at the project's opening, outside a feature:
@@ -147,6 +148,7 @@ rebuilding the graph from the caller's prose.
 | `test-coverage` | `review` § *Coverage* with `--auto` | macro-category **or** final cycle diff and relevant memories | § *Automatic mode* of its file | no |
 | `applier` | `review` § *Applier*, `code-review` § *The round* | the path of the round's numbered findings file, the ledger path, the round range, relevant memories, the resolved parameters, and the **mode** when it is the closing round on tests | § *The block you return* of its file | no |
 | `commit` | owner, `review` § *Closing* (always, except `--no-commit`) | code-group perimeter; it partitions memory/docs and version/changelog itself (§ *Procedure* 3 of its file) | § *Procedure* 8 of its file, in chat | yes — `update-memory`, **always and without exceptions** |
+| `release` | owner | the technical root, or nothing and the current directory applies | § *What you return* of its file: what was promoted — the version written, the development branch and where production now stands — or why nothing was | no |
 | `update-memory` | `ship-feature` phase 5b, `commit` § *Alignment* (**always**, on every `commit` invocation) | diff in index, feature folder where to deposit its own artefact (from `ship-feature`), **commit permission for its own group** | § *Procedure* 7 of its file | no |
 
 **A new arc is declared in the program, and its row here follows it.** Connecting a node to a

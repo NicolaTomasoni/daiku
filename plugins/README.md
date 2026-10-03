@@ -69,7 +69,7 @@ carrying your instructions file, which is the repository root unless the code li
 /init
 ```
 
-It asks only two things — the language for the chat and the one for commits — then writes
+It asks three things — the language for the chat, the one for commits, and the name of the development branch the work will live on — then writes
 everything in one run and answers `You're all set.` What your repository does not declare it leaves
 out, and the skills know how to work without it. On Codex it also installs protections and roles by
 itself. On Claude Code it leaves updates in place too: an update script and a VS Code task,
@@ -151,6 +151,17 @@ Two pieces also stand alone: `/code-review` runs the bug-only cycle on the scope
 fixes, re-checks and the gate — and stops at the report, leaving the commit to you; `/commit`
 tidies memory and documents and closes in separate commits.
 
+### `/release` — the promotion
+
+For a project that declared its **two channels**. Every commit lands on the **development branch**;
+production advances only when you say so. `/release` reads the block of commits accumulated since
+the last release, asks you the version **once** on that whole block — major, minor or patch — writes
+version and changelog as the last commit on the development branch, and **fast-forwards** production
+onto that tip. It never pushes: the promotion stops at the local ref, and the push stays your
+gesture. A branch guard, switched on by `channels.production`, keeps the work off production in the
+meantime: it reads the branch only on a line naming `git`, and on a project that declared no
+channels it is off and nothing changes.
+
 ## About me
 
 I am one developer. I build software in the industry, and I spend my days inside very large
@@ -174,3 +185,12 @@ Daiku stands on the shoulders of public work that explored the same space before
 - [andrej-karpathy-skills](https://github.com/multica-ai/andrej-karpathy-skills) — a single-file behavioural preamble for coding agents, from Andrej Karpathy's notes on how LLM agents write code: studied in a full repo confrontation, its four conduct rules turned out to be, in substance, the ones Daiku already carries in the project instructions file.
 - [token-optimizer](https://github.com/alexgreensh/token-optimizer) — a model-free context optimizer for coding hosts: compression functions, fill-threshold checkpoints and post-compact restore from a local SQLite state, with no network calls.
 - [compaction](https://github.com/philipppohlmann/compaction) — a local token-reduction layer under Claude Code, Codex and Cursor: output shaping before generation, byte-exact recovery of every mutated request, and a boundary that fails open on any error.
+- [rtk](https://github.com/rtk-ai/rtk) — a single-binary Rust proxy between the agent and the shell: it rewrites a command into its filtered equivalent, or runs it and compresses the output before the agent reads it, with a three-level filter lookup a project can extend.
+- [headroom](https://github.com/headroomlabs-ai/headroom) — a context-compression layer for coding agents, usable as a library, a local proxy, an MCP server or an agent wrapper: a staged pipeline over tool output, logs, files and RAG chunks, with the original recoverable from disk.
+- [squeez](https://github.com/claudioemmanuel/squeez) — a Rust hook compressor across seven hosts: it strips ANSI, folds repeats into a count, groups and truncates tool output, and rewrites safe Bash commands in PreToolUse — a transparent optimiser rather than a method.
+- [token-savior](https://github.com/Mibayy/token-savior) — an MCP server, with a CLI for hosts without one, that navigates code by symbol, keeps a persistent SQLite memory and rewrites Bash commands in PreToolUse; the savings it advertises are declared unverified by the project itself.
+- [context-mode](https://github.com/mksglu/context-mode) — an MCP server with hooks that keeps raw tool bytes out of the context, indexes them in FTS5 and rebuilds the session after compaction, routed across seventeen client platforms.
+- [token-reducer](https://github.com/Madhan230205/token-reducer) — a local, API-free Claude Code plugin that compresses context before the model: hybrid BM25-and-vector retrieval, AST chunking and reranking, all on the machine.
+- [semantic-cache-mcp](https://github.com/CoderDayton/semantic-cache-mcp) — a Python MCP server that puts every file operation behind one cache: fourteen tools over vendored SQLite, with semantic diffs and content-defined chunking.
+- [toon](https://github.com/toon-format/toon) — Token-Oriented Object Notation: a lossless, compact recoding of the JSON data model for prompts, with SDKs, a CLI and a benchmark harness.
+- [LLMLingua](https://github.com/microsoft/LLMLingua) — a Microsoft research library that drops non-essential tokens from a prompt, or from a JSON key by key, before it reaches the model, returning the compression ratio alongside the compressed text.

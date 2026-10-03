@@ -33,6 +33,7 @@ const ABSENT = Object.freeze({
   libNotes: null,
   reviewState: null,
   writeRoots: Object.freeze([]),
+  channels: null,
 });
 
 /** A path from the JSON, resolved against the technical root (§3 of the contract). */
@@ -77,6 +78,7 @@ export function loadContext(root, reads = REAL_READS) {
       .filter(Boolean);
 
     const declared = json.guardrails;
+    const channels = json.channels && typeof json.channels === 'object' ? json.channels : null;
     return {
       present: true,
       pool: resolvePath(json.worktree && json.worktree.pool, root),
@@ -85,6 +87,15 @@ export function loadContext(root, reads = REAL_READS) {
       guardrails: declared && typeof declared === 'object' ? declared : {},
       reviewState: resolvePath(json.paths && json.paths.review_state, root),
       writeRoots: resolveWriteRoots(root, reads),
+      // The two branch names of the channels group. `production` is the switch of the branch
+      // guard of `command-guard.mjs`; `development` names the branch the work lives on. A group
+      // absent, or a member that is not a non-empty string, contributes `null`.
+      channels: channels
+        ? {
+            development: typeof channels.development === 'string' ? channels.development.trim() || null : null,
+            production: typeof channels.production === 'string' ? channels.production.trim() || null : null,
+          }
+        : null,
     };
   } catch {
     return ABSENT;
@@ -155,5 +166,6 @@ export function fakeContext(fields = {}) {
     guardrails: fields.guardrails || {},
     reviewState: seat(fields.reviewState),
     writeRoots: Array.isArray(fields.writeRoots) ? fields.writeRoots.map(seat).filter(Boolean) : [],
+    channels: fields.channels || null,
   };
 }
