@@ -48,16 +48,9 @@ l'account dell'owner è amministratore con UAC predefinito, che non è un confin
   rimappando `$cartella`; la esegue l'owner dallo strumento. Finita, il blocco torna vuoto.
 - Un blocco del recinto o del presidio che sembra sbagliato non si aggira: si diagnostica e si
   propone la correzione.
-- `check-run.mjs` e `check-toolchain.mjs` di `studia-repository` leggono l'interruttore dalla
-  configurazione installata, non dal sorgente. E il secondo va oltre: importa la `valuta()` della
-  copia installata e le chiede se accetta la forma con cui il contratto invoca `opensrc`, e se
-  un'esecuzione dentro la radice è ancora negata. Sono due domande perché il verso verde da solo
-  mentirebbe: un presidio che lascia passare tutto risponderebbe «sì» senza essere più una guardia.
 - Il presidio salta l'**ambiente in testa** alla riga prima di decidere qual è il programma:
-  `OPENSRC_HOME="…" opensrc path …` è `opensrc`, e `NODE_ENV=x npm ci` è `npm ci`. Senza questo, il
-  ramo profondo di `studia-repository` sarebbe negato proprio nell'attrezzo che deve leggere e
-  indicizzare la radice. Finché il sorgente aggiornato non è portato dentro con «Aggiorna da
-  repository», `check-toolchain.mjs` è rosso su quella domanda — ed è il rosso giusto.
+  `NODE_ENV=x npm ci` è `npm ci`, non `x`. Senza questo, un comando legittimo con una variabile in
+  testa sarebbe letto come un programma che non esiste.
 - Il recinto fa un'espansione testuale delle variabili: `$NOME` diventa la variabile d'ambiente
   omonima (`$_` escluso). Un falso positivo su un path che «non esiste» va cercato lì per primo.
   Scatta anche sulle **scritture**, e legge come path le opzioni `//FI` di `tasklist` e `//v` di

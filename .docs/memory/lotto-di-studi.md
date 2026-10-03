@@ -1,6 +1,6 @@
 ---
 name: lotto-di-studi
-description: "studia-repository-lotto studia più repository in parallelo con una sessione headless per target, applica lui le voci `allinea` — le uniche che una corsa propone e non scrive — e chiude con la sintesi: un appunto per feature che sceglie il migliore dei target e ne fa un prompt per `new-feature`"
+description: "studia-repository-lotto studia più repository in parallelo con una sessione headless per target, applica lui le voci `allinea` — le uniche che una corsa propone e non scrive — e chiude con la sintesi: il problema della feature in `.daiku/features/<feature>/0. problem.md`, che sceglie fra i target il migliore e ne scrive il problema pronto per `new-feature`"
 metadata:
   node_type: memory
   type: project
@@ -15,21 +15,20 @@ dell'appunto che ne esce). Il contratto è `.claude/commands/studia-repository-l
 `.claude/orchestration.md` §5.
 
 **La sintesi è quello che rende il lotto una proposta, non un mucchio di censimenti.** Le corse
-depositano i contributi in `.daiku/features/<feature>/`, uno per corsa e mai riscritti; la sintesi è
-il documento che li legge tutti insieme e ne trae **una sola** proposta — quale approccio vince fra i
-target studiati, e cosa si prende da chi. Vive in `.daiku/studies/<feature>.md`, la sede degli
-appunti — un file per soggetto, la stessa che `daiku:research` usa per una tecnologia — e **non** nel
-catalogo: lì una corsa scrive solo il proprio file, ed è il gate a imporlo. La scrive chi chiude il
-lotto, **non un subagent**: è un giudizio sul metodo, e un subagent riceverebbe i contributi senza il
-resto. Finisce con un blocco recintato che è il **prompt per `/daiku:new-feature`**, e che nomina la
-cartella della feature perché quella corsa lavori dentro i contributi invece di aprirne una nuova.
-`sintesi` stampa il materiale e lo scheletro; `sintesi --verifica` controlla campi, sezioni,
-segnaposto e prompt — è l'unica difesa contro una sintesi copiata e mai riempita.
+depositano i contributi in `.daiku/features/<feature>/`, uno per corsa e mai riscritti; la sintesi li
+legge tutti insieme e ne trae **un solo** documento — quale approccio vince fra i target studiati, e
+cosa si prende da chi. Vive in `.daiku/features/<feature>/0. problem.md`: **il problema della
+feature**, scritto nella forma che `new-feature` apre per primo, con la provenienza — il lotto e le
+corse — nei suoi campi. Non è un appunto sull'argomento né un secondo censimento: è il documento da
+cui la catena riparte. Lo scrive chi chiude il lotto, **non un subagent**: è un giudizio sul metodo,
+e un subagent riceverebbe i contributi senza il resto. `sintesi` stampa il materiale e lo scheletro;
+`sintesi --verifica` controlla campi, sezioni e segnaposto — è l'unica difesa contro un problema
+copiato e mai riempito.
 
 **Una sessione headless per target, non un subagent.** `lancia` esegue `claude -p
 "/studia-repository <target> …" --permission-mode bypassPermissions` con `spawn`, fino a
 `--parallelo` insieme (predefinito 3), log in `%TEMP%/daiku-lotto/<id>/`. Due ragioni, e la seconda
-è una scoperta: una corsa di `studia-repository` è già un orchestratore che delega dieci passi, e
+è una scoperta: una corsa di `studia-repository` è già un orchestratore che delega i suoi passi, e
 tenerla dentro la sessione madre la farebbe crescere di una corsa intera per target; e **il recinto
 di macchina nega le righe di comando che contengono un token che comincia per `/`**, scambiandolo
 per un path assoluto — quindi `/studia-repository …` non si può scrivere da un tool Bash, e chi lo
@@ -70,8 +69,8 @@ di rilassare il gate della corsa proprio sulla scrittura nel prodotto.
   fermarsi, quella corsa finisce fra i gap col suo log.
 - Il criterio dell'allineamento è uno: **non decide, ripara.** Se per scegliere fra due forme serve
   una decisione, non è `allinea`. Se non sai scrivere `prima` e `dopo`, non è un gratuito.
-- I banchi: `node .docs/tools/studia-repository/self-check.mjs` somma i tre fratelli
-  (`check-toolchain.mjs`, `check-run.mjs`, `lotto.mjs`), a totale contato.
+- I banchi: `node .docs/tools/studia-repository/self-check.mjs` somma i due fratelli
+  (`check-run.mjs`, `lotto.mjs`), a totale contato.
 - `.docs/tools/studia-repository/` è la cartella dell'attrezzo, e `self-check.mjs` la scandisce per
   «l'attrezzo non installa»: un `.mjs` nuovo lì entra nel conteggio da solo.
 

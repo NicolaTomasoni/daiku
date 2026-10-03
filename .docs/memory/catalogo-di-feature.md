@@ -52,11 +52,12 @@ stessa».
 - Il seat è dichiarato, non dedotto: `.claude/orchestration.md` § *Le sedi di questo progetto*, e
   `.claude/commands/studia-repository.md` § *Il catalogo delle feature* è il contratto.
 - Il gate è tutto in `check-run.mjs`: la forma del contributo, il doppio senso con
-  `run.json.contributi` e con la scheda, e il perimetro. `self-check.mjs` somma i tre fratelli.
+  `run.json.contributi` e con la scheda, e il perimetro. `self-check.mjs` somma i due fratelli.
 - Chi riprende una voce per costruirla parte da `.daiku/features/<feature>/`, non dal censimento di
   una corsa: il censimento è la prova che quel repo ha quella cosa, il catalogo è il confronto.
 - `lotto.mjs applica` **elenca** il catalogo del lotto, non lo fonde: i contributi li scrivono le
   corse, e il lotto li legge da `run.json.contributi`.
 
-Vedi [[lotto-di-studi]] per il lotto, le voci `allinea` e la sintesi — l'appunto in
-`.daiku/studies/<feature>.md` che dal catalogo trae la proposta e il prompt per `new-feature`.
+Vedi [[lotto-di-studi]] per il lotto, le voci `allinea` e la sintesi — il problema in
+`.daiku/features/<feature>/0. problem.md` che dal catalogo trae la scelta e lo scrive per
+`new-feature`.

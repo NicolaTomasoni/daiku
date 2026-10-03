@@ -30,6 +30,11 @@ nessun `permissionDecision`, mai. Il marchio sta nello scratch della sessione o 
 temporanea di sistema, mai nel repository; è l'accensione **per sessione e non per progetto**, ed è
 l'unica che un hook scrive da sé.
 
+**Il confine del giro ha anche un diniego, dal 2 ottobre 2026, e non è un diniego di scrittura:**
+`hooks/lib/ask-guard.mjs` rifiuta il **lancio di un subagent** mentre la lista delle decisioni non è
+stata chiesta intera — `run-advice` continua a lasciar passare ogni scrittura. Vedi
+[[guardrail-nascono-spenti]].
+
 **Why il promemoria e non il divieto** (decisione dell'owner, 30 settembre 2026). La regola è il
 **default di un giro**, non un divieto su un gesto: la stessa conversazione fa anche altri mestieri in
 cui scrivere è suo — `/commit` aggiorna changelog e versione a mano, per contratto — e un diniego

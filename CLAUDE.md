@@ -8,6 +8,14 @@ documento, un contratto, un rimando o una memoria a una modifica appena fatta, p
 vero — è lavoro obbligato, non una decisione: si fa e basta, nella stessa tornata. Si ferma e si chiede
 solo quando le strade sono due e portano a risultati diversi.
 
+**Un rimando morto si corregge, non si segnala.** Un riferimento che non risolve più — un path che non
+esiste, un file rinominato o spostato, una sezione che non c'è più — si sistema sul posto, nella stessa
+tornata, e nel resoconto si dice che è stato sistemato. Non è un'iniziativa oltre la richiesta: è lo
+stesso lavoro obbligato di cui sopra, perché un rimando rotto non è un appunto invecchiato ma una bugia
+che il prossimo agente eseguirà credendoci. Elencarlo fra le cose da fare senza averlo toccato è un
+lavoro lasciato a metà travestito da rapporto. Se non si sa dove debba puntare adesso, si chiede la
+destinazione — mai il permesso di sistemarlo.
+
 Fai solo quello che l'owner ti chiede, e niente iniziative oltre la richiesta. L'autonomia vale per
 *come* esegui un ordine, non per *cosa* decidi di fare: nessun passo in più che l'owner non ha chiesto.
 Vale soprattutto fuori da questo repository — la cache del plugin installato, i progetti ospiti, la

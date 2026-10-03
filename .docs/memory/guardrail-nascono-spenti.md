@@ -1,6 +1,6 @@
 ---
 name: guardrail-nascono-spenti
-description: "la guardia nega sempre push, --no-verify e le firme di Claude o Codex, e solo il pool si dichiara; nessun hook esegue un file perché è appena comparso"
+description: "la guardia nega sempre push, --no-verify e le firme di Claude o Codex, e solo il pool si dichiara; ask-guard nega due gesti del giro, e nessun file; nessun hook esegue un file perché è appena comparso"
 metadata: 
   node_type: memory
   type: project
@@ -28,6 +28,26 @@ in cui il diniego è deterministico, una chiave per dichiararlo sarebbe una riga
 
 **Secondo: un hook non esegue un file perché è comparso.** Il controllo post-scrittura *ricorda* di
 lanciare il banco di prova di una guardia riscritta, e non lo lancia.
+
+**Terzo: un diniego nuovo è un diniego di gesto, non di file.** Dal 2 ottobre 2026
+`hooks/lib/ask-guard.mjs` nega due gesti del solo giro `new-feature`: una domanda di decisione che
+non porta il proprio posto nella lista (`k/N`) e il **lancio di un subagent** mentre la lista non è
+stata chiesta tutta. Nasce **acceso**, senza chiave, come la regola del 21 settembre, con due confini
+dichiarati: parla solo in una sessione che ha aperto un giro — legge il marchio che `run-advice`
+scrive, non ne scrive un secondo — e solo dove `.daiku/project.json` esiste. Nega la **delega**
+perché è la delega a portare il giro oltre la domanda (incorporazione, brief e consegna sono
+subagenti), e **non nega nessun file**: la guardia sulle scritture è uscita il 1° ottobre 2026 e
+resta fuori. Un messaggio dell'owner chiude la domanda come chiude tutto: la risposta libera prevale,
+e al `UserPromptSubmit` lo stato cade.
+
+**Why il terzo.** `new-feature` chiede all'owner una **lista** di decisioni, e `AskUserQuestion` ne
+porta al massimo quattro per chiamata: una lista di sei si chiede in due chiamate, e il testo del
+contratto — «make more calls in sequence» — la seconda non la imponeva. Un giro che ne chiedeva
+quattro e tirava dritto **rispondeva al posto dell'owner** sulle altre due, in silenzio, e la perdita
+non si vedeva da nessuna parte: il modulo era completo, il blocco tornava ben formato, il documento
+veniva scritto. Da lì il posto nella domanda: non è una cortesia, è la sola cosa che dice quanto è
+lunga la lista — e la lunghezza dichiarata dalla domanda è anche quella che l'owner legge, `3/6`,
+mentre risponde.
 
 **Why:** fino a quel giorno `command-guard.mjs` era la guardia di ReforgIA trapiantata nel
 pacchetto — negava `git push` a chiunque, su qualunque repository, rimandando a sezioni di un
