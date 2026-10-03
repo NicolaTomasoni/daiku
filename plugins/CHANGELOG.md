@@ -1,7 +1,10 @@
 # Changelog
 
-### Unreleased
+### 1.1.0 — 2026-10-03
 
+- `/init` closes the instructions file it finds at the project's root into a git stash instead of renaming it to `.old`: the original survives intact and the host stops loading it. It also ignores the delivery-worktree pool when that falls inside the repository.
+- `/new-project` closes into the stash a file of the project's found at a founding document's seat instead of overwriting it, and leaves the skeleton's placeholder verbatim where the project has not answered — a declared gap, not an invented sentence. The five document skeletons now carry a guide paragraph saying what belongs in each.
+- `/new-feature` and `/research` read the ground the project already declared — `documents.domain`, `documents.stack`, `documents.architecture` — before fanning out or writing notes, so the work verifies what is declared instead of re-deriving it.
 - The environment pair resolves the same way in every reader: `.daiku/environment.local.json` still wins whole over `.daiku/environment.json`, and now a local file that does not parse is skipped so the shared one is read; a path declared there that is not on disk is read as an absent key — a `write_root` that does not exist no longer keeps the guard silent.
 - `temp_dir` is gone from the parameters: an artefact that must not enter the repository goes to the operating system's temporary directory, which was already what the readers did with no key declared.
 
