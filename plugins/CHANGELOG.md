@@ -3,6 +3,7 @@
 ### Unreleased
 
 - `/new-project` writes a project's five founding documents — `PRODUCT`, `BRAND`, `DOMAIN`, `STACK` and `ARCHITECTURE` — from the package skeletons to the paths `.daiku/project.json` declares; re-runnable, it realigns them without overwriting the work done by hand.
+- `/ship-feature` reconciles a merge obstructed by another session's uncommitted work or by a conflicting merge: it keeps both sides where they do not touch the same lines and stops to ask the owner where they do, saving the other session's work as a recoverable patch instead of leaving it behind.
 
 ---
 
