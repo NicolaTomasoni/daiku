@@ -173,7 +173,7 @@ declared it, and they are checked before the key is left out.
   |---|---|
   | `gate` | the manifest's own full command: a `check`, `verify`, `ci` or `test` script, or the aggregate one the CI job calls |
   | `check_fast` | a declared script checking **without writing and without running tests** — `typecheck`, `lint` without `--fix`, `format:check`, `tsc --noEmit` — with the file argument opened as `<FILES>` **only where opening it leaves the check unchanged**, and **called by name** through the package manager where it does not; where several declared scripts qualify, the one checking the **types** wins, then the one checking the **lint**, then the one checking the **format** — the ladder ranks **declared scripts** and nothing else: a type-checker present only as configuration (`mypy.ini`, `pyrightconfig.json`) that no script runs is not on a rung, and the search falls through to the lint |
-  | `lint_fix` | a declared script that **applies the safe lint fixes** — often `lint:fix` — or the **linter's own runner with its unambiguous fix flag**, taken from a declared lint script and written as every opened line (`lint: eslint .` → `pnpm exec eslint --fix <FILES>`, `ruff check` → `ruff check --fix <FILES>`). A formatter (`format`, `prettier --write`) is **not** one: the key is a lint fix, and what a formatter writes is the formatting the gate checks. Where no declared lint runner has a fix flag, the key is not written |
+  | `lint_fix` | a declared script that **applies the safe lint and format fixes** — often `lint:fix`, or a lint script and a format script together — or, written as every opened line, the **linter's own runner with its unambiguous fix flag** taken from a declared lint script (`lint: eslint .` → `pnpm exec eslint --fix <FILES>`, `ruff check` → `ruff check --fix <FILES>`), **and, as a second `run` line written after it,** the **formatter's writing form derived from the format check the gate declares**, its check flag swapped for the formatter's writing flag where the default does not write (`prettier --check <FILES>` → `prettier --write <FILES>`) and removed where the default already writes (`ruff format --check <FILES>` → `ruff format <FILES>`), `<FILES>` in place of its argument. Where the gate declares no format check, or no writing is derivable from the declared command, the key stays at the lint fix alone. Where no declared lint runner has a fix flag, the key is not written |
   | `test_targeted` | the test script with the runner's own **file-argument** form: `<runner> <FILES>`, keeping every other flag the declared script carries |
   | `coverage` | a declared script producing the measure — `test:coverage`, `coverage`, `cov` — in a manifest, the workspace file, the CI job or the project's parameter files. **It is often declared nowhere**: then it stays out |
 
@@ -193,7 +193,10 @@ declared it, and they are checked before the key is left out.
   would not run as it is; or **the script's name through the package manager** (`pnpm run
   typecheck`, `npm run lint`), where it does not. The name and not the bare body, because §3 wants a
   line running exactly as written, and a body is a line the package manager runs with its own
-  `PATH`. Where the runner's file-argument form is not certain — an unnamed wrapper, a Makefile
+  `PATH`. `lint_fix` is the key whose rule produces **two** `run` lines: where the gate declares a
+  check of the format, the lint fix comes first and **after the lint** the format's writing line is
+  appended, because a lint fix can change the formatting and the format must be the last write.
+  Where the runner's file-argument form is not certain — an unnamed wrapper, a Makefile
   target, a task runner whose CLI you have not read — **do not write the key**: §6 already covers its
   absence, and a guessed command fails a step instead of skipping it. One command seen is one key
   written; the others stay out.
@@ -204,6 +207,17 @@ declared it, and they are checked before the key is left out.
   carries no gate — so it is **no area**, and declaring one for it hands `review` a gate that is not
   the gate. §4's list is read as what the area's command runs, the way a manifest's own `check`
   script runs them all.
+
+  **Where the gate checks the format, that check is the seat of `lint_fix`'s second line.** Resolve
+  the aggregate command into its declared scripts and recognise the one that **checks the format**
+  (`format:check`, `prettier --check`, `ruff format --check`); derive its writing form with the
+  formatter's **writing flag**, not the absence of its check flag: where the default does not write,
+  put the writing flag in the flag's place (`prettier --check <FILES>` → `prettier --write
+  <FILES>`); where the default already writes, removing the check flag is enough (`ruff format
+  --check <FILES>` → `ruff format <FILES>`), `<FILES>` in place of the argument in both, and append
+  that line to `lint_fix` **after the lint**. Where no declared script **checks the format**, or no
+  writing is derivable from the command it declares, `lint_fix` stays at the lint fix alone: §6
+  already covers its absence, and a guessed command fails a step instead of skipping it.
 
 The `{worktree.*}` keys are read where the project declares them — its own parameter files, first
 of all — and are **proposed** only where nothing declares them: no repository invents a pool
