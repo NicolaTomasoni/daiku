@@ -1,5 +1,12 @@
 # Changelog
 
+### Unreleased
+
+- The environment pair resolves the same way in every reader: `.daiku/environment.local.json` still wins whole over `.daiku/environment.json`, and now a local file that does not parse is skipped so the shared one is read; a path declared there that is not on disk is read as an absent key — a `write_root` that does not exist no longer keeps the guard silent.
+- `temp_dir` is gone from the parameters: an artefact that must not enter the repository goes to the operating system's temporary directory, which was already what the readers did with no key declared.
+
+---
+
 ### 1.0.11 — 2026-10-03
 
 - The ask of a run is kept whole: every question of a decision ask carries its place in the list — `k/N` — and a new guard refuses an ask that carries no place, a batch that does not continue its list, and the launch of a subagent while the ask is open. A list longer than the four questions one call carries can no longer lose the cards that come after the ceiling.
