@@ -236,7 +236,18 @@ Verifica la topologia del corpus (nodi su disco = righe di tabella, handoff fra 
 rimandi di sezione), con totale contato ed uscita `1` al primo caso rosso. Si lancia a mano
 prima di un rilascio, accanto al self-check.
 
-Nessuno dei tre guarda le **due vetrine** del repository pubblicato — la sola parte che il
+```bash
+node .docs/tools/check-corpus.mjs plugins/daiku
+```
+
+Verifica le sette invarianti che i contratti dichiarano in prosa ma nessun altro controllo impone —
+nessun carattere di controllo in una riga, ogni chiave `{…}` citata esistente con lo specchio
+`schemas/blocks.json` concorde con la prosa, ogni path interno che risolve, ogni blocco json
+parsabile, nessuna skill che nomina un modello, la riga d'apertura §5.1 dove serve, l'agente dal
+toolset ristretto — con totale contato, il banco in `--self-check` ed uscita `1` al primo caso
+rosso. Si lancia a mano prima di un rilascio, accanto agli altri.
+
+Nessuno di questi guarda le **due vetrine** del repository pubblicato — la sola parte che il
 repository studiato ha rotto senza accorgersene, e l'unica il cui errore non si vede in locale ma
 solo in chi installa:
 
@@ -252,6 +263,15 @@ pacchetto — e ha il suo banco, da lanciare accanto al controllo:
 
 ```bash
 node .docs/tools/check-marketplace.mjs --self-check
+```
+
+Due verifiche riguardano il **cantiere**, non il pacchetto: che nessuno script invochi un push —
+una riga dentro un file non passa da nessuna guardia — e che i due script di canale si comportino
+come dichiarato su repository usa e getta:
+
+```bash
+node .docs/tools/check-no-push.mjs --self-check
+node .docs/tools/check-channel.mjs
 ```
 
 <!-- daiku:instructions — this file was structured by Daiku's init skill. It is yours now: rewrite

@@ -106,13 +106,18 @@ Tre regole, e sono quelle di `CLAUDE.md`:
   Se aggiungi un obbligo a una skill, chiediti dove sta il banco che lo verifica — e se non c'è,
   o lo costruisci o non aggiungi l'obbligo.
 - **I numeri del `contract` non si incrementano da soli.**
-- **Le due validazioni e i due banchi si lanciano a ogni correzione**, e non si salta:
+- **L'elenco delle verifiche si lancia a ogni correzione**, e non si salta:
 
 ```bash
 claude plugin validate plugins/daiku
+claude plugin validate plugins
 python "$HOME/.codex/skills/.system/plugin-creator/scripts/validate_plugin.py" plugins/daiku
 node plugins/daiku/hooks/self-check.mjs
 node .docs/tools/check-topology.mjs plugins/daiku
+node .docs/tools/check-corpus.mjs plugins/daiku
+node .docs/tools/check-marketplace.mjs plugins
+node .docs/tools/check-no-push.mjs --self-check
+node .docs/tools/check-channel.mjs
 ```
 
 Un rosso qui batte qualunque asse: si sistema prima quello.

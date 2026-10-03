@@ -48,7 +48,7 @@ Ogni path è **relativo alla radice del repository** (`C:/dev/daiku-workspace/da
 | `.daiku/features/<feature>/` | il catalogo delle feature: un contributo per corsa, `<slug-corsa>.md` — cresce da repo diversi e non appartiene a nessuna corsa ◦ |
 | `.docs/runtime/review/` | i ledger dei giri di `daiku:review`, uno per ciclo |
 | `.docs/esempi/reforgia/` | dominio e politiche di ReforgIA, come esempio compilato |
-| `.docs/tools/` | gli strumenti di chi sviluppa: `check-topology.mjs`, `collauda-init.mjs`, `studia-repository/` |
+| `.docs/tools/` | gli strumenti di chi sviluppa: `check-topology.mjs`, `check-corpus.mjs`, `collauda-init.mjs`, `studia-repository/` |
 | `.docs/audit/` | i report del prompt audit, con il diff che propongono ◦ |
 
 Le sedi marcate **◦ non esistono ancora**: le crea il contratto che le usa, al primo uso. Non sono
@@ -233,9 +233,14 @@ comando:
 
 ```bash
 claude plugin validate plugins/daiku
+claude plugin validate plugins
 python ~/.codex/skills/.system/plugin-creator/scripts/validate_plugin.py plugins/daiku
-node .docs/tools/check-topology.mjs plugins/daiku
 node plugins/daiku/hooks/self-check.mjs
+node .docs/tools/check-topology.mjs plugins/daiku
+node .docs/tools/check-corpus.mjs plugins/daiku
+node .docs/tools/check-marketplace.mjs plugins
+node .docs/tools/check-no-push.mjs --self-check
+node .docs/tools/check-channel.mjs
 ```
 
 **I due validatori vanno passati entrambi, sullo stesso albero, e la seconda riga non si salta**
@@ -243,7 +248,7 @@ node plugins/daiku/hooks/self-check.mjs
 rifiutare i campi di manifest non ammessi, ed è quello di Claude Code a segnalare le skill che si
 caricherebbero con i metadati vuoti.
 
-I banchi che quell'ultimo comando lancia sono a **totale contato**: ognuno esce con un JSON che porta
+I banchi che `self-check.mjs` lancia sono a **totale contato**: ognuno esce con un JSON che porta
 `checks`, `passed` e `failed`, e il comando somma i `checks` di tutti. **Si riporta il numero di `checks`, non solo il verde**: un
 totale che cala mentre i controlli crescono è un banco che ha smesso di girare, e il verde da solo
 non lo mostra.

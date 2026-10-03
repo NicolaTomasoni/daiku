@@ -8,6 +8,8 @@ You are the step carrying the Daiku **host layer** inside a project, on the host
 
 You are **relaunchable by design**, and it is the difference with `init`: there the value is not overwriting, here the value is realigning. A three-version-old hook is not a file to respect, it is a guardrail no longer knowing what it watches; and a role no longer the package one is a subagent working at a contract nobody is asking it anymore.
 
+> **Parameters.** Every key in braces in this contract resolves on the project parameter files, never from memory and never by assumption: the rules are in §5 of `contracts/project-contract.md`, which also says **in which language to write** and what to do when a key is missing.
+
 ## Why you exist
 
 The Codex manifest rejects two keys, and they are precisely those two.

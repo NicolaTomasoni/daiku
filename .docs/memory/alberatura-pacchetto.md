@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 48eaa498-ed6e-4a36-847d-3f8fa95f7f21
-  modified: 2026-10-02
+  modified: 2026-10-03
 ---
 
 Il repo ospita il prodotto Daiku. Questo repository sta in `C:\dev\daiku-workspace\daiku-dev`,
@@ -77,6 +77,11 @@ solo `.gitignore` e `.gitattributes` del repository di sviluppo.
 - `studia-repository/<slug>/` — i documenti di una corsa di `studia-repository`
 - `tools/check-topology.mjs` — verifica la topologia del corpus, nel gate e a mano prima del
   rilascio; sta qui e non sotto `plugins/` così non viaggia con ciò che si pubblica
+- `tools/check-corpus.mjs` — verifica le sette invarianti del corpus che i contratti dichiarano in
+  prosa senza che nessun controllo le imponesse (caratteri di controllo, chiavi citate e specchio
+  `schemas/blocks.json`, path interni, blocchi json, modelli nominati dalle skill, riga §5.1,
+  toolset degli agenti); ha il suo banco in `--self-check`, che accanto al totale elenca le regole
+  `never_red`
 - `tools/check-marketplace.mjs` — verifica le due vetrine del repository pubblicato: che siano
   leggibili, che ogni voce risolva a una cartella vera dentro l'albero e che le due portino allo
   stesso pacchetto; ha il suo banco in `--self-check`. È il solo controllo che guarda le vetrine,
