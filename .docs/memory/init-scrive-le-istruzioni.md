@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: bb0219dd-76c8-4a09-bf9b-4cb040132a6e
-  modified: 2026-09-30T12:10:29.559Z
+  modified: 2026-10-03T14:35:07.098Z
 ---
 
 Dal 19 settembre 2026 `init` **scrive il file di istruzioni** del progetto ospite (`CLAUDE.md` o
@@ -51,19 +51,28 @@ ognuna ha ora anche la sua sede deterministica:
 I controlli sono due assi nuovi del banco — l'inventario che nomina ogni pacchetto, e il file trovato
 parcheggiato **intatto** — provati in rosso contro l'output dei giri che li violavano.
 
-**Il file trovato non si riscrive sul posto: si parcheggia.** `init` lo rinomina scambiando
-l'estensione con `.old` — `CLAUDE.md` diventa `CLAUDE.old`, mai `CLAUDE.md.old` — e scrive il nuovo
-accanto. Il parcheggio compra due cose: l'host smette di caricare il vecchio, perché `.old` non è un
-file che legge, e il testo originale resta **com'era** come materiale e come prova. Il parcheggiato è
-la fonte migliore del nuovo file: quello che dice e il repository contraddice non si corregge in
-silenzio, si dichiara nel report. Un `CLAUDE.old` già presente si sovrascrive: è la versione
-precedente dello stesso file, accanto a `{hosts.<host>.instructions_file}`.
+**Il file trovato non si riscrive sul posto: si chiude in uno stash git.** `init` lo legge, poi lo
+chiude e lo rimuove dall'albero di lavoro:
+
+```
+git stash push -u -m "daiku: instructions — <nome> superseded by <nome>" -- "<path>"
+```
+
+**Il pathspec non è opzionale**: un `git stash` nudo porterebbe via tutto il working tree, e ciò che
+vi sta d'altro non è roba sua. Non fa mai `pop` né `drop`: lo stash è un luogo di deposito. Il gesto
+compra due cose: l'host smette di caricare il vecchio, perché il file non sta più su disco, e il
+testo originale resta **com'era** — nello stash, la sola cosa che una riscrittura non può restituire.
+Lo stash è uno stack: una voce vecchia per lo stesso file può restare, e due voci sono due versioni,
+entrambe leggibili. Il file chiuso è la fonte migliore del nuovo, e lo si legge **prima** di
+chiuderlo — dopo lo si ripesca con `git stash show -p stash@{n} -- "<path>"`, o
+`git show stash@{n}^3:"<path>"` per un file che era untracked — e quello che dice e il repository
+contraddice non si corregge in silenzio, si dichiara nel report.
 
 **La chiave è una per host, ed è scesa in `environment.json`.** Il file di istruzioni è di un host —
 `CLAUDE.md` e `AGENTS.md` sono due file diversi — quindi la chiave vive in
 `hosts.<host>.instructions_file` (§7 di `contracts/orchestration.md`), e le skill la citano così.
 `init` la tiene solo per gli host il cui file esiste davvero, e **il file dell'altro host non lo
-tocca e non lo parcheggia**: lo compila un `init` lanciato lì.
+tocca e non lo chiude nello stash**: lo compila un `init` lanciato lì.
 
 **Il 29 settembre 2026 si è aggiunta la parte che mancava: il file si compila, non si accoda.**
 «Conservato verbatim» senza una regola di fusione produce, su un file scritto in un'altra lingua,

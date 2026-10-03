@@ -4,6 +4,8 @@ description: "gli script che init deposita portano la versione del pacchetto che
 metadata:
   node_type: memory
   type: project
+  originSessionId: 99901030-abdd-4caa-92ce-5d7a0a1dfbc2
+  modified: 2026-10-03T14:35:08.419Z
 ---
 
 Dal 1 ottobre 2026 ogni script che `init` deposita — oggi solo `.daiku/update.mjs` — porta in testa
@@ -21,9 +23,9 @@ script che questo pacchetto ha scritto, che resta, e uno che non ha scritto, che
 **How to apply:**
 
 - **Lo script non è del progetto.** È l'unica cosa sotto `.daiku/` che `init` riscrive: dove lo
-  trova con un'altra versione lo rifà intero e basta, senza parcheggiarlo come fa col file di
-  istruzioni ([[init-scrive-le-istruzioni]]), perché un `.old` per ogni aggiornamento sarebbe
-  solo rifiuto. La regola sta in *Step 5-bis* e in §8 di `contracts/project-contract.md`.
+  trova con un'altra versione lo rifà intero e basta, senza chiuderlo nello stash come fa col file
+  di istruzioni ([[init-scrive-le-istruzioni]]), perché una voce di stash per ogni aggiornamento
+  sarebbe solo rifiuto. La regola sta in *Step 5-bis* e in §8 di `contracts/project-contract.md`.
 - **La versione non si scrive in due posti.** Lo scheletro la porta come segnaposto `<version>`, e
   il rilascio continua a bumpare i soli tre punti — i due manifest e il badge: una copia letterale
   nello scheletro sarebbe una quarta sede che diverge, e `hooks/template-check.mjs` la rifiuta.
