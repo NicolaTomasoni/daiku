@@ -1,5 +1,11 @@
 # Changelog
 
+### Unreleased
+
+- `/init` also derives the formatter's writing line from the format check the gate declares, appending it to `lint_fix` after the lint fix, so a formatting-only failure is repairable before the gate — `lint_fix` now applies safe lint and format fixes.
+
+---
+
 ### 1.1.0 — 2026-10-03
 
 - `/init` closes the instructions file it finds at the project's root into a git stash instead of renaming it to `.old`: the original survives intact and the host stops loading it. It also ignores the delivery-worktree pool when that falls inside the repository.
