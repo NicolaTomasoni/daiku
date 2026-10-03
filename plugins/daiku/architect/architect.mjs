@@ -57,9 +57,9 @@
  * either — the prose of a step, not its evidence — but their presence is: it is the form
  * the `block` question checks.
  * Of each round of the ledger, the trees are read only as present — the `round` question
- * refuses a round after one without them — and the fast check only by its `status`; `cost`,
- * `deviations`, the fast check's `detail` and `files`, the trees' values themselves are not
- * read: they are what `architect/ledger.mjs` measured, for the reader and for the next range.
+ * refuses a round after one without them — and the fast check and the targeted tests only by
+ * their `status`; `cost`, `deviations`, their `detail` and `files`, the trees' values themselves
+ * are not read: they are what `architect/ledger.mjs` measured, for the reader and for the next range.
  *
  * **A case the bench does not cover is a delivery that stops**, not a wrong verdict:
  * the verdict binds, and the bench is the only defence. That is the reason the bench
@@ -183,7 +183,7 @@ const DECISIONS = ['GREEN_COMMITTED', 'GREEN_WITH_POST_DECISIONS', 'BLOCKED_NO_C
 const MERITS = ['continue', 'stop'];
 /** The quick checks of `skills/execute/SKILL.md` § *Principles* 8; the bench holds it equal to `schemas/blocks.json`. */
 const PREFLIGHT_STEPS = ['check_fast', 'lint_fix', 'test_targeted', 'layers'];
-/** The outcome of the fast check `skills/review/SKILL.md` § *Applier* runs after each applier. */
+/** The outcome of the fast check and of the targeted tests `skills/review/SKILL.md` § *Applier* runs after each applier. */
 const CHECKS = ['green', 'red', 'skipped'];
 
 /** The guardrail `skills/review/SKILL.md` § *Exits* sets when no `--rounds N` was passed. */
@@ -648,6 +648,16 @@ function roundsOf(ledger) {
         }
       });
     }
+    if (round.check_tests !== undefined) {
+      if (!rule('round.check-tests-list', Array.isArray(round.check_tests))) {
+        throw new BadInput(`ledger.rounds[${index}].check_tests must be an array`);
+      }
+      round.check_tests.forEach((entry, at) => {
+        if (!rule('round.check-tests-entry', !!entry && nonEmpty(entry.area) && CHECKS.includes(entry.status))) {
+          throw new BadInput(`ledger.rounds[${index}].check_tests[${at}] must be {"area", "status": ${CHECKS.join('|')}}`);
+        }
+      });
+    }
     round.applied.forEach((fix, at) => {
       if (!fix || !nonEmpty(fix.file) || typeof fix.symbol !== 'string' || !nonEmpty(fix.anchor)) {
         throw new BadInput(`ledger.rounds[${index}].applied[${at}] needs file, symbol and anchor: a fix is identified by them`);
@@ -726,12 +736,18 @@ function askRound(input) {
 
   const severe = current.applied.filter((fix) => fix.severe).length;
   const regressing = current.applied.filter((fix) => fix.on_previous_fix).length;
-  // A fix the fast check rejects is code that does not pass the gate either: the round that
-  // wrote it cannot be the last one, whatever else it applied.
+  // A fix the fast check or the targeted tests reject is code that does not pass the gate either:
+  // the round that wrote it cannot be the last one, whatever else it applied.
   const red = (current.check_fast || []).filter((entry) => entry.status === 'red').map((entry) => entry.area);
+  const redTests = (current.check_tests || []).filter((entry) => entry.status === 'red').map((entry) => entry.area);
   let why;
   if (severe >= 3) why = `rule 2: ${severe} severe fixes in round ${n}`;
-  else if (!rule('round.fast-check-green', !red.length)) why = `rule 2: the fast check is red on ${red.join(', ')} after round ${n}`;
+  else if (!rule('round.fast-check-green', !red.length && !redTests.length)) {
+    const parts = [];
+    if (red.length) parts.push(`the fast check is red on ${red.join(', ')}`);
+    if (redTests.length) parts.push(`the targeted tests are red on ${redTests.join(', ')}`);
+    why = `rule 2: ${parts.join(', and ')} after round ${n}`;
+  }
   else if (regressing) why = `rule 3: ${regressing} fixes rewrite a previous fix (on_previous_fix)`;
   else if (merit === null) {
     return block({
@@ -1806,6 +1822,12 @@ const CASES = [
   { id: 'round:a-red-fast-check-at-the-cap-truncates', cites: { file: 'skills/review/SKILL.md', section: 'Exits' },
     input: { question: 'round', rounds_cap: 1, ledger: LEDGER([ROUND([FIX('a.mjs', 'f', '1')], [], { check_fast: [{ area: 'web', status: 'red', detail: 'x' }] })]) },
     expect: { verdict: 'rounds-truncated' } },
+  { id: 'round:rule-2-a-red-check-tests', cites: { file: 'skills/review/SKILL.md', section: 'When to run another round' },
+    input: { question: 'round', rounds_cap: null, merit: 'stop', ledger: LEDGER([ROUND([FIX('a.mjs', 'f', '1')], [], { check_tests: [{ area: 'web', status: 'red', detail: 'a test failed', files: ['tests/a.test.mjs'] }] })]) },
+    expect: { verdict: 'continue' } },
+  { id: 'round:a-green-check-tests-leaves-the-merit', cites: { file: 'skills/review/SKILL.md', section: 'When to run another round' },
+    input: { question: 'round', rounds_cap: null, ledger: LEDGER([ROUND([FIX('a.mjs', 'f', '1')], [], { check_tests: [{ area: 'web', status: 'green', detail: '', files: ['tests/a.test.mjs'] }, { area: 'api', status: 'skipped', detail: '', files: [] }] })]) },
+    expect: { verdict: 'merit' } },
   { id: 'round:the-last-round-needs-no-trees-yet', cites: { file: 'skills/review/SKILL.md', section: 'Which disciplines run, at which round' },
     input: { question: 'round', rounds_cap: null, ledger: LEDGER([ROUND([], [], { pre_apply_tree: undefined, post_apply_tree: undefined })]) },
     expect: { verdict: 'fixed-point' } },
@@ -2155,6 +2177,8 @@ const REJECTED = [
   { id: 'reject:round-after-a-round-without-its-post-tree', input: { question: 'round', rounds_cap: null, ledger: LEDGER([ROUND([FIX('a.mjs', 'f', '1')], [], { post_apply_tree: '' }), ROUND([])]) } },
   { id: 'reject:round-fast-check-outside-its-domain', input: { question: 'round', rounds_cap: null, ledger: LEDGER([ROUND([FIX('a.mjs', 'f', '1')], [], { check_fast: [{ area: 'web', status: 'yellow' }] })]) } },
   { id: 'reject:round-fast-check-not-a-list', input: { question: 'round', rounds_cap: null, ledger: LEDGER([ROUND([FIX('a.mjs', 'f', '1')], [], { check_fast: 'red' })]) } },
+  { id: 'reject:round-check-tests-outside-its-domain', input: { question: 'round', rounds_cap: null, ledger: LEDGER([ROUND([FIX('a.mjs', 'f', '1')], [], { check_tests: [{ area: 'web', status: 'yellow' }] })]) } },
+  { id: 'reject:round-check-tests-not-a-list', input: { question: 'round', rounds_cap: null, ledger: LEDGER([ROUND([FIX('a.mjs', 'f', '1')], [], { check_tests: 'red' })]) } },
   { id: 'reject:block-applier-without-its-finding-ids', input: { question: 'block', name: 'applier', block: { applied: [], discarded: [], to_confirm: [], oscillation: [] } } },
   { id: 'reject:block-applier-with-repeated-finding-ids', input: { question: 'block', name: 'applier', finding_ids: ['r1-bug-1', 'r1-bug-1'], block: { applied: [], discarded: [], to_confirm: [], oscillation: [] } } },
   { id: 'reject:layers-absent', input: { question: 'layers', added: [] } },

@@ -181,11 +181,12 @@
   "ledger": {
     "producer": "skills/review/SKILL.md § Baseline and ledger",
     "required": ["base", "item", "scope_tree", "scope_files", "rounds", "outcome", "coverage", "gate", "gate_detail"],
-    "round_required": ["n", "disciplines", "missing_disciplines", "pre_apply_tree", "post_apply_tree", "applied", "discarded", "to_confirm", "oscillation", "check_fast", "verdict", "why"],
+    "round_required": ["n", "disciplines", "missing_disciplines", "pre_apply_tree", "post_apply_tree", "applied", "discarded", "to_confirm", "oscillation", "check_fast", "check_tests", "verdict", "why"],
     "round_optional": ["cost", "deviations"],
     "enums": {
       "rounds.verdict": ["continue", "stop"],
-      "rounds.check_fast.status": ["green", "red", "skipped"]
+      "rounds.check_fast.status": ["green", "red", "skipped"],
+      "rounds.check_tests.status": ["green", "red", "skipped"]
     },
     "note": "Written only by architect/ledger.mjs, which validates it against this entry before every write. `outcome`, `coverage` and `gate` take the domains of § review-outcome and § gate once set; until their step ran they are null. `cost` holds only the numbers the host reported for each step, never an estimate."
   },
