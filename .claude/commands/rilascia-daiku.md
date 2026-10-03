@@ -79,6 +79,7 @@ claude plugin validate plugins
 python "$HOME/.codex/skills/.system/plugin-creator/scripts/validate_plugin.py" plugins/daiku
 node plugins/daiku/hooks/self-check.mjs
 node .docs/tools/check-topology.mjs plugins/daiku
+node .docs/tools/check-corpus.mjs plugins/daiku
 node .docs/tools/check-marketplace.mjs plugins
 node .docs/tools/check-no-push.mjs --self-check
 node .docs/tools/check-channel.mjs
