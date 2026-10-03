@@ -41,7 +41,9 @@ of a file, the presence or absence of an area. Three prohibitions, in order of s
 ## 3. Form conventions
 
 - **Every path is relative to the technical root** (the directory the skills run from), except
-  `repo_root` which is absolute. Separators are `/`: they work in both PowerShell and POSIX
+  `repo_root` which is absolute — the clone path of **this** copy, so on a machine that clones the
+  repository elsewhere it does not resolve, and a path that does not resolve **degrades as an absent
+  key** (§6). Separators are `/`: they work in both PowerShell and POSIX
   shells, and the paths Git returns already have that form. Those pointing **outside** the
   technical root climb it with `../`, and Git accepts them in that form both as pathspecs and
   as `git add` arguments: use them as they are, without rewriting them.
@@ -162,7 +164,7 @@ diverge at the first change: a reference reaches the rules without duplicating t
 
 - a path appearing in the §4 table → `.daiku/project.json`;
 - a path appearing in §7 of `contracts/orchestration.md` — `hosts`, `backends`,
-  `default_host`, `temp_dir`, `write_roots` → `environment.json`, whose §8 says where to look.
+  `default_host`, `write_roots` → `environment.json`, whose §8 says where to look.
 
 No key lives in both (§8), so the cited path is enough to say where to look.
 
@@ -311,6 +313,10 @@ the statement that that thing, in this project, is not there.
 
 - **A key needed by a step is missing**: the step is skipped, and the outcome declares it in one
   line. No fallback value, no heuristics, no guessed command.
+- **A value is present and unusable**: a parameters file that does not parse is **skipped**, and the
+  next one in its order is read — the machine's environment file first, the project's after it (§8).
+  A declared path that does not resolve on disk **degrades as an absent key**: it is declared in the
+  outcome like a key that was never there, and no seat is added to report it.
 - **An area is missing**: the work concerning it does not exist. A project without a frontend
   does not produce a red frontend gate: it produces nothing, and says so.
 - **`.daiku/project.json` is missing**: the skill cannot be parameterised on this project. Stop and
@@ -409,13 +415,12 @@ this order:
 
 **The first one found wins, and is taken whole**: the two are not merged. The local file is a
 complete alternative file, not a list of differences — so what is read stays a single file, and
-nobody must reconstruct in their head which of the two each key comes from. It is the same pair as
+nobody must reconstruct in their head which of the two each key comes from. **That completeness is
+the trap**: where the local file exists and parses, a project key it does not repeat is **not read**
+— the shared file is not consulted for the missing key, and the key goes quiet until it is copied
+back into the local file. It is the same pair as
 `settings.json` and `settings.local.json` (§4.2): the shared file is versioned, the local one is
 not, and the local one is the only path under `.daiku/` staying out of the history.
-
-**One thing the file does not carry: `temp_dir`.** An absent `temp_dir` is not a degradation, it is
-the normal case: the operating system's temporary directory is the correct answer on every machine
-anyway. Write it only where that answer is wrong.
 
 **Nor does it carry `write_roots`**: the folders a machine lets its agents write in are that
 machine's, and they go in `environment.local.json`. The folder is named, not the side it stands on,

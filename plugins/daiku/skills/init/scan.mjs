@@ -254,8 +254,10 @@ export function scan(rootIn, host, disk = REAL, packageRoot = PACKAGE) {
   const labelled = new RegExp(`"label"\\s*:\\s*"${TASK_LABEL}"`);
   if (tasks === null || !labelled.test(tasks)) miss('update-task', '5-bis', `.vscode/tasks.json — task "${TASK_LABEL}"`);
 
-  // The instructions file of this host, with the marker.
-  const env = readJson(disk, disk.exists(localEnv) ? localEnv : sharedEnv) || {};
+  // The instructions file of this host, with the marker. The environment pair of §8: the first file
+  // that exists **and parses** wins, taken whole — a local file that does not parse is skipped and the
+  // shared one is read, and the built-in default is only the fallback when neither names the key.
+  const env = readJson(disk, localEnv) || readJson(disk, sharedEnv) || {};
   const declared = env.hosts && env.hosts[host] && env.hosts[host].instructions_file;
   const instructionsName = typeof declared === 'string' && declared.trim() ? declared.trim() : DEFAULT_INSTRUCTIONS[host];
   const instructions = readText(disk, join(root, instructionsName));
@@ -417,6 +419,21 @@ function selfCheck() {
 
   const localEnv = { ...without(complete(), `${T}/.daiku/environment.json`), [`${T}/.daiku/environment.local.json`]: '{"contract":1}' };
   check('the machine environment file counts', !ids(scan(T, 'claude', fakeDisk(localEnv), PKG)).includes('environment'));
+
+  // The pair of §8: the first file that exists **and parses** wins, taken whole. A local file that
+  // does not parse is skipped and the shared one is read — its non-standard name is honoured, and the
+  // built-in default is never reached. `CLAUDE.md` is deliberately absent, so the only way `instructions`
+  // stays unlisted is that `GUIDE.md` was read.
+  const unreadableLocal = {
+    ...without(complete(), `${T}/CLAUDE.md`),
+    [`${T}/.daiku/environment.json`]: JSON.stringify({ contract: 1, hosts: { claude: { instructions_file: 'GUIDE.md' } } }),
+    [`${T}/.daiku/environment.local.json`]: '{ this is not json',
+    [`${T}/GUIDE.md`]: `# Project\n\n${MARKER} -->\n`,
+  };
+  check(
+    'a local file that does not parse is skipped, the shared one names the instructions file',
+    !ids(scan(T, 'claude', fakeDisk(unreadableLocal), PKG)).includes('instructions')
+  );
 
   const codex = scan(T, 'codex', fakeDisk({ ...without(complete(), `${T}/.claude/settings.local.json`), [`${T}/AGENTS.md`]: `${MARKER} -->` }), PKG);
   check('on Codex the host memory is not checked', !ids(codex).includes('host-memory'));

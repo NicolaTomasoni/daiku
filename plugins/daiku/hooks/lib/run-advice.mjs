@@ -459,6 +459,7 @@ function selfCheck() {
   const machineFile = loadContext(R, readers({
     [`${R}/.daiku/project.json`]: '{"contract": 1}',
     [`${R}/.daiku/environment.local.json`]: '{"contract": 1, "write_roots": ["C:/dev/work"]}',
+    'C:/dev/work': '',
   }));
   check(
     'write_roots resolves from the machine local file',
@@ -468,8 +469,28 @@ function selfCheck() {
     [`${R}/.daiku/project.json`]: '{"contract": 1}',
     [`${R}/.daiku/environment.local.json`]: '{"contract": 1}',
     [`${R}/.daiku/environment.json`]: '{"contract": 1, "write_roots": ["C:/dev/work"]}',
+    'C:/dev/work': '',
   }));
   check('the machine local file is taken whole, not merged', (wholeFile.writeRoots || []).length === 0);
+  // The pair of §8 reads the same way here: a local file that does not parse is skipped and the
+  // shared one is read, taken whole.
+  const unreadableLocal = loadContext(R, readers({
+    [`${R}/.daiku/project.json`]: '{"contract": 1}',
+    [`${R}/.daiku/environment.local.json`]: '{ not json',
+    [`${R}/.daiku/environment.json`]: '{"contract": 1, "write_roots": ["C:/dev/work"]}',
+    'C:/dev/work': '',
+  }));
+  check(
+    'a local file that does not parse is skipped: the roots come from the shared file',
+    (unreadableLocal.writeRoots || []).some((r) => isInside('C:/dev/work/x.md', r))
+  );
+  // A declared root that is not on disk is dropped: the reminder never stays silent for a folder
+  // nobody will write to.
+  const missingRoot = loadContext(R, readers({
+    [`${R}/.daiku/project.json`]: '{"contract": 1}',
+    [`${R}/.daiku/environment.local.json`]: '{"contract": 1, "write_roots": ["C:/dev/ghost"]}',
+  }));
+  check('a declared root that does not resolve on disk is dropped', (missingRoot.writeRoots || []).length === 0);
   const noEnvironment = loadContext(R, readers({ [`${R}/.daiku/project.json`]: '{"contract": 1}' }));
   check('an absent environment file reads as no write root', (noEnvironment.writeRoots || []).length === 0);
   check(
