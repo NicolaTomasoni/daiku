@@ -125,9 +125,9 @@
       "required": ["ok", "verdict", "remaining", "resume_from", "slot", "blockers", "retry", "fallback", "readings", "violations", "detail"],
       "optional": [],
       "enums": {
-        "verdict": ["BLOCKED_NO_COMMIT", "GREEN_COMMITTED", "GREEN_WITH_POST_DECISIONS", "blocked", "clean", "commit", "continue", "create", "diminishing-returns", "fallback", "fixed-point", "invalid", "merit", "oscillation", "proceed", "restart", "resume", "retry", "reuse", "rounds-exhausted", "rounds-truncated", "stop", "unblock", "valid", "violations"]
+        "verdict": ["BLOCKED_NO_COMMIT", "GREEN_COMMITTED", "GREEN_WITH_POST_DECISIONS", "blocked", "clean", "commit", "continue", "create", "diminishing-returns", "fallback", "fixed-point", "invalid", "merit", "oscillation", "proceed", "reconcile", "restart", "resume", "retry", "reuse", "rounds-exhausted", "rounds-truncated", "stop", "unblock", "valid", "violations"]
       },
-      "note": "The effective domain of `verdict` depends on `question`: this enum is the union of the ten domains, one per question — decision, closing, unblock, propagation, resumption, order, round, layers, block, pool — and `verdict` is `null` when the question does not apply, that is `propagation` on a block that came back. `remaining` and `resume_from` are filled by `order` and `resumption` alone; `slot` by `pool` alone, the number of the pool worktree to reuse or create; `retry` and `fallback` by `propagation` alone; `readings` by the ambiguity rule alone; `violations` by `layers` alone, one `{file, line, policy, layer, fragment, text}` per violating line. Field names of the blocks this one consumes are not renamed on either side: `gate`, `gate_detail`, `outcome`, `missing_disciplines`, `blocking`, `to_confirm`, `base`, `item`, `rounds`, `commit`, `commit_sha`."
+      "note": "The effective domain of `verdict` depends on `question`: this enum is the union of the eleven domains, one per question — decision, closing, unblock, propagation, resumption, order, round, layers, block, pool, reconcile — and `verdict` is `null` when the question does not apply, that is `propagation` on a block that came back. `remaining` and `resume_from` are filled by `order` and `resumption` alone; `slot` by `pool` alone, the number of the pool worktree to reuse or create; `retry` and `fallback` by `propagation` alone; `readings` by the ambiguity rule alone; `violations` by `layers` alone, one `{file, line, policy, layer, fragment, text}` per violating line. Field names of the blocks this one consumes are not renamed on either side: `gate`, `gate_detail`, `outcome`, `missing_disciplines`, `blocking`, `to_confirm`, `base`, `item`, `rounds`, `commit`, `commit_sha`."
     },
     "ship-feature-outcome": {
       "producer": "skills/ship-feature/SKILL.md § Outcome",
@@ -152,9 +152,17 @@
     },
     "ship-feature-merge": {
       "producer": "skills/ship-feature/SKILL.md § Merge",
-      "required": ["merged", "merge_sha", "conflicts", "detail"],
+      "required": ["merged", "merge_sha", "conflicts", "dirty_paths", "detail"],
       "optional": [],
-      "enums": {}
+      "enums": {},
+      "note": "Two failures stay distinct: `conflicts` are the paths a content merge put in conflict, `dirty_paths` the paths the merge would touch that the working tree holds uncommitted. On either, `merged` is false and `merge_sha` is null, and the delivery opens `reconcile` instead of aborting."
+    },
+    "reconcile": {
+      "producer": "skills/reconcile/SKILL.md § The block you return",
+      "required": ["ok", "merged", "merge_sha", "overlap", "patch", "dirty_paths", "question", "detail"],
+      "optional": [],
+      "enums": {},
+      "note": "The block the reconcile node returns. `merged` is true when the reconciliation landed the merge, with its `merge_sha`; `overlap` names the paths the working tree and the branch change on the same lines — empty when the two sides are disjoint — and it is non-empty exactly when the run stops to ask. `patch` is the path of the artefact that saves the uncommitted work of the working tree; `dirty_paths` the paths the merge would touch that the working tree holds uncommitted; `question` the structured question for the owner when `overlap` is not empty, `null` otherwise; `ok` false when the node could not proceed. `verdict` and the other fields of § architect are not part of it: the node asks the `reconcile` question of the evaluator and reports its own outcome here."
     },
     "ship-feature-report": {
       "producer": "skills/ship-feature/SKILL.md § Report",

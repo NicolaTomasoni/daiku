@@ -9,7 +9,7 @@
   "interface": {
     "displayName": "Daiku",
     "shortDescription": "The autonomous development method, as contracts in prose",
-    "longDescription": "Eighteen contracts describing what to do and in which order: problem study, decision document, execution brief, execution, multi-round review cycle, memory and documentation alignment, commit. Who runs each step and on which model is declared by a single orchestration contract; the guest project's values live outside the skills, in two parameter files.",
+    "longDescription": "Twenty-one contracts describing what to do and in which order: problem study, decision document, execution brief, execution, multi-round review cycle, memory and documentation alignment, merge reconciliation, commit. Who runs each step and on which model is declared by a single orchestration contract; the guest project's values live outside the skills, in two parameter files.",
     "developerName": "Nicola Tomasoni",
     "category": "Developer Tools",
     "capabilities": ["Interactive", "Write"],
