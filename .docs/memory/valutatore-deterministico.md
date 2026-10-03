@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 43bcfac4-1cc3-4310-acf9-530699fcf261
-  modified: 2026-09-30T13:27:14.948Z
+  modified: 2026-10-03T17:38:03.540Z
 ---
 
 **Dal 23 settembre 2026 il prodotto ha un valutatore deterministico.** È
@@ -24,7 +24,9 @@ e applicatore dallo strumento del ledger), lo slot del pool dei worktree (`pool`
 `architect/pool.mjs`) e se le due parti di un merge ostruito toccano le stesse righe (`reconcile`,
 chiesta da `architect/reconcile.mjs`) — e **possiede l'ordine della catena**: la tabella di §3 di
 `contracts/orchestration.md` non lo dichiara più, ne è il riflesso, e il banco del valutatore
-rifiuta la divergenza nei due versi.
+rifiuta la divergenza nei due versi. Gli entry che aprono **nessuna catena** — `study` lanciato a
+mano, e dal 3 ottobre 2026 `release` — stanno in `ATOMIC` di `architect.mjs`: chiesti con `order`
+rispondono `stop` con la loro ragione, perché non c'è una sequenza da ordinare.
 
 Le misure sul codice si fermano al brief: `blueprint` è l'ultimo passo che guarda il codice per
 costruire le sue mappe (consumatori, fatti ritirati), da `execute` in avanti nessuno rimisura sul

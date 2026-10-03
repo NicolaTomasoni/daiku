@@ -1,11 +1,11 @@
 ---
 name: guardrail-nascono-spenti
-description: "la guardia nega sempre push, --no-verify e le firme di Claude o Codex, e solo il pool si dichiara; ask-guard nega due gesti del giro, e nessun file; nessun hook esegue un file perché è appena comparso"
+description: "la guardia nega sempre push, --no-verify e le firme di Claude o Codex, e solo il pool dei worktree e i canali si dichiarano; ask-guard nega due gesti del giro, e nessun file; nessun hook esegue un file perché è appena comparso"
 metadata: 
   node_type: memory
   type: project
   originSessionId: 7f30fa0d-9a97-482d-ba1b-c32231e0c9e1
-  modified: 2026-09-30T19:04:53.984Z
+  modified: 2026-10-03T17:37:57.485Z
 ---
 
 **Deciso il 19 settembre 2026, preparando gli hook per la distribuzione.** Un pacchetto si
@@ -17,8 +17,8 @@ niente e non leggono nemmeno la riga — questo resta. Con quel file, dal 21 set
 negano sempre, senza interruttore: `git push` e `git commit
 -n`/`--no-verify`. Dal 25 settembre 2026 nega sempre,
 senza interruttore, anche il `git commit` il cui messaggio accredita l'agente — un `Co-Authored-By`
-che nomina Claude o Codex, o una riga `Generated with` — in `-m`, `--trailer`, heredoc o file `-F`. L'unico ramo che resta spento finché il progetto non lo accende è il pool dei
-worktree, con `{worktree.pool}`. La rimozione ricorsiva che attraversa una junction di Windows non
+che nomina Claude o Codex, o una riga `Generated with` — in `-m`, `--trailer`, heredoc o file `-F`. I rami che restano spenti finché il progetto non li accende sono due: il pool dei
+worktree, con `{worktree.pool}`, e la guardia del ramo, con `channels.production` (dal 3 ottobre 2026: nega `git commit` e `git merge` mentre è attivo il ramo di produzione e `git checkout`/`git switch` verso di esso, e legge il ramo solo sulle righe che nominano git). La rimozione ricorsiva che attraversa una junction di Windows non
 ha mai avuto interruttore: non è una policy ma un fatto del sistema operativo.
 
 Il ribaltamento è una decisione dell'owner, non un fatto nuovo: a un agente non si lascia mai la
@@ -60,16 +60,16 @@ gli hook. Un hook che dice «lancia il banco» e uno che lo lancia da solo hanno
 diagnostico e un rischio molto diverso.
 
 Il 21 settembre 2026 l'owner ha ristretto questa decisione ai soli rami che dipendono davvero dal
-progetto (il pool): push e `--no-verify` negano sempre, perché un diniego che
+progetto (il pool dei worktree, e dal 3 ottobre 2026 la guardia del ramo, accesa dai canali): push e `--no-verify` negano sempre, perché un diniego che
 dipende da una chiave che qualcuno deve ricordarsi di accendere protegge solo i progetti diligenti.
 
 **How to apply:** un ramo nuovo nasce **acceso**, senza chiave — è la regola dal 21 settembre 2026:
-dove un divieto può avere una sede deterministica, ce l'ha sempre. Fa eccezione il ramo che dipende
-davvero dal progetto (oggi solo il pool dei worktree): quello nasce **spento**, con la sua chiave
-nel JSON, e nel banco un caso che prova che da spento **non** nega. Ogni ramo ha la sua riga nella
+dove un divieto può avere una sede deterministica, ce l'ha sempre. Fanno eccezione i rami che dipendono
+davvero dal progetto (oggi il pool dei worktree e la guardia del ramo): quelli nascono **spenti**, con la loro chiave
+nel JSON, e nel banco un caso che prova che da spenti **non** negano. Ogni ramo ha la sua riga nella
 tabella di `plugins/daiku/hooks/README.md`, e i banchi di tutto ciò che il pacchetto esegue — i
-moduli di `hooks/lib/` con un banco, il banco dei manifest, i quattro programmi di `architect/` e la
-scansione di `init` (`skills/init/scan.mjs`) — si lanciano insieme con `node plugins/daiku/hooks/self-check.mjs`, che somma i controlli e esce `1` al
+moduli di `hooks/lib/` con un banco, il banco dei manifest, i quattro programmi di `architect/` e i due
+passi di `init` (`skills/init/scan.mjs` e `skills/init/branch.mjs`) — si lanciano insieme con `node plugins/daiku/hooks/self-check.mjs`, che somma i controlli e esce `1` al
 primo rosso: va aggiunto a ogni verifica di rilascio accanto ai due validatori. Il numero dei banchi
 e dei controlli lo dice l'uscita dello strumento, non questo file.
 
