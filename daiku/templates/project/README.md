@@ -61,7 +61,10 @@ codebase, or the machine and the person running it?
   memory root, the commit convention.
 - **`.daiku/environment.json`** — the machine and the host: default host, model per role, backends.
   One machine may replace it whole with `.daiku/environment.local.json`, which stays out of version
-  control.
+  control. To override it on one machine, copy the shared file whole to `.daiku/environment.local.json`
+  and change there only the values of that machine and not of the project — `write_roots`, the folders
+  it admits writes in, is one. It is a complete alternative, not a list of differences: whatever it
+  does not repeat is not read from the shared file.
 - **`.daiku/domain/` and `.daiku/policies/`** — local judgement: conventions and criteria needing a
   *why*, and architectural rules valid only for certain paths.
 

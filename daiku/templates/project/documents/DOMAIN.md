@@ -1,6 +1,10 @@
 # DOMAIN
 
-> <one line: the entities, data, interfaces and vocabulary this document fixes>
+> **What goes here.** The world the system talks about: the entities it knows and what each
+> carries, the boundaries it exposes and consumes, and the terms this project uses with a meaning
+> of its own. It is written in behavioural terms, not as a schema — the structure is in
+> `ARCHITECTURE.md` and the technologies in `STACK.md`. Read it before naming anything, so one word
+> does not come to mean two things.
 
 ## Contents
 

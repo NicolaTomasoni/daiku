@@ -252,10 +252,6 @@ a host's configuration paths hold for anybody: those stay. What identifies someb
 **You never write `.daiku/environment.local.json`.** It is the machine's override and the user
 creates it; one written by you would declare this machine's values as the project's.
 
-**`temp_dir` you do not write.** An absent `temp_dir` is the normal case and not a key you failed
-to find: the readers fall back on the operating system's temporary directory, which is the right
-answer on every machine. Write it only where that fallback is wrong.
-
 **`write_roots` you do not write either**: it lists one machine's folders, and it belongs in the
 `environment.local.json` the user creates.
 
@@ -325,21 +321,15 @@ What belongs to this project but holds for **only one of its parts** is not an i
 
 #### If the file already exists
 
-**You park it and write the new one beside it.** You read it in full, **rename it** so that its
-extension becomes `.old` — `CLAUDE.md` becomes `CLAUDE.old`, `AGENTS.md` becomes `AGENTS.old`, and
-never `CLAUDE.md.old` — and then you write the new instructions file at the name the key declares.
-Two things are bought, and both matter: the host stops loading the old one, because `.old` is not a
-file it reads; and the file you found survives **as it was**, which is the one thing a rewrite
-cannot give back. A parked copy already standing there is overwritten — it is the previous version
-of this same file, and two of them would be one file with two names.
+**You close it into a git stash, and then you write the new one.** You read it in full first, then you close it, then you write the instructions file at the name the key declares:
 
-**The parked file is the best source you have.** It carries true invariants, taken decisions and
-motivations no manifest declares. **Everything substantive is kept, and it is kept verbatim** —
-moved into the competent canonical section of the new file, never summarised: a rule rewritten
-tighter is a changed rule, and changing it is not your task. Only matters of form are discarded: a
-different section order, repetitions, and the indications the package now carries. Where the parked
-file states something the repository contradicts, that is not a licence to correct it: the line
-stays.
+```
+git stash push -u -m "daiku: instructions — <name> superseded by <name>" -- "<path>"
+```
+
+**The pathspec is not optional.** Never a bare `git stash`: without the pathspec it would take the whole working tree, and what else stands in it is not yours to move. You never `pop` it and never `drop` it — the stash is a place of deposit, not a working tool. Then **remove the file from the working tree**: nothing of it stands on disk, because the host must stop loading it and a file left beside the new one is a second file with the same job. Two things are bought, and both matter: the host stops loading the old one, and the file you found survives **as it was** — in the stash, which is the one thing a rewrite cannot give back. An older entry for the same file may still stand in the stack: a stash is a stack, two entries are two versions, and each stays readable.
+
+**The file you closed is the best source you have**, and you read it **before** closing it — after, it comes back with `git stash show -p stash@{n} -- "<path>"` (`git show stash@{n}^3:"<path>"` for a file that was untracked), `n` the entry you just made. It carries true invariants, taken decisions and motivations no manifest declares. **Everything substantive is kept, and it is kept verbatim** — moved into the competent canonical section of the new file, never summarised: a rule rewritten tighter is a changed rule, and changing it is not your task. Only matters of form are discarded: a different section order, repetitions, and the indications the package now carries. Where the closed file states something the repository contradicts, that is not a licence to correct it: the line stays.
 
 **The line ending is part of the line, not a matter of form.** A kept line keeps the ending it had,
 and the file keeps the one it always wrote: recomposing it — CRLF normalised to LF, or the reverse —
@@ -349,7 +339,7 @@ repository uses in majority.
 
 **The other host's file is not yours.** Where the project carries the instructions file of the host
 you are **not** running on — `AGENTS.md` while you are on Claude Code — you do not touch it and do
-not park it: its key of *Step 4* declares it as it stands, and the file itself is compiled by an
+not close it into the stash: its key of *Step 4* declares it as it stands, and the file itself is compiled by an
 `init` launched there. Read it if it says something about this project worth carrying over; it stays
 where it is either way.
 
@@ -400,7 +390,7 @@ If you do not know where to place a line, keep it. A section at the end with wha
 
 At the bottom of the skeleton there is a comment line declaring that file passed through here. You
 leave it in the file you write, and it is what the next run reads: **if you find it in the
-instructions file, that file was already structured — leave it alone**, parked copy included. Only a file without it is read, parked and rewritten.
+instructions file, that file was already structured — leave it alone**: you neither rewrite it nor close it into the stash. Only a file without it is read, closed and rewritten.
 
 It is what makes safe this exception to idempotence. A relaunch serves to pick up a skeleton previously missing, not to restructure a file the user meanwhile rewrote by hand — and it is likely it did, because of everything you write it is the file touched most often. Whoever wants restructuring removes that line, or asks you.
 
@@ -459,10 +449,10 @@ What the method needs versioned must be versioned, and what belongs to one machi
 
 The file you edit is the `.gitignore` at the repository root — the one *Input* resolved with `git rev-parse --show-toplevel`, not a folder's — with every path written relative to that root. If it does not exist, you create it. You edit by addition, and nothing you did not write is removed but for the one case below.
 
-1. **Must stay out**: `.daiku/environment.local.json` under the technical root, `{paths.review_state}`, and on Claude Code `.claude/settings.local.json` under the technical root. Every one of them the repository's ignore files do not cover gets its line, grouped at the bottom of the file under a `# Daiku` comment line.
+1. **Must stay out**: `.daiku/environment.local.json` under the technical root, `{paths.review_state}`, and on Claude Code `.claude/settings.local.json` under the technical root. So does **`{worktree.pool}` where it falls inside the repository** — it holds working copies of the repository itself, and versioning them would drag them into every clone; where the project declared it outside the repository there is nothing to ignore. Every one of them the repository's ignore files do not cover gets its line, grouped at the bottom of the file under a `# Daiku` comment line.
 2. **Must stay in**: `.daiku/` minus its local override, and `{memory.root}`. Where a line of the repository covers one of them, append its negation (`!<path>/`) under the same comment and check again: Git cannot re-include a path whose parent directory is excluded. Where the path is still covered and the covering line names exactly that path, remove that line — the project asked Daiku to version it by opening it, and the two cannot both hold. Where it is still covered by a broader line, leave the file as it is: that folder is a step that did not go through (*Step 10*).
 
-Keep the file's line ending (*If the file already exists* of *Step 6*), and finish with `git check-ignore -v` on every path of the two lists: a path still on the wrong side is a step that did not go through.
+Keep the file's line ending (*If the file already exists* of *Step 6*), and finish with `git check-ignore -v` on every path of the two lists: a path still on the wrong side is a step that did not go through. **A line ending with `/` does not match the bare path that check is given** while the folder does not exist yet, so a line for a folder the method has just proposed — `{paths.review_state}`, `{worktree.pool}` — carries no trailing slash.
 
 ### 9. Launch `sync-host` — only on Codex
 
@@ -481,8 +471,8 @@ language is the answer of *Step 0*; with no answer, the one the user wrote to yo
 `contracts/project-contract.md`). Nothing before it and nothing after it: no preamble, no line naming who it is written for, no list of what
 you wrote or read, no question, no offer to continue.
 
-Everything else stays out, because somebody already carries it: what you wrote and parked is in
-`git status` and `git diff`; what the repository does not declare, the skills handle on their own
+Everything else stays out, because somebody already carries it: what you wrote is in
+`git status` and `git diff`, and what you closed is in `git stash list`; what the repository does not declare, the skills handle on their own
 (§6 of `contracts/project-contract.md`); how you worked — what you read, a command a fence refused
 and the way you took instead — concerns nobody.
 
@@ -508,7 +498,7 @@ The exceptions are three, and none loosens the rule.
 
 The first is the **versioned script** of *Step 5-bis*: where its marker does not carry the version of this package, you rewrite the file whole. It is the only thing you deposit that stays the package's — an artefact the package updates itself through — and the marker is what keeps the rule readable: a script carrying the version of this package is a script you leave alone like any other.
 
-The second is the **instructions file**, which you write also where one exists — parking the one you found under `.old` — but only once, and what guarantees it is at *Step 6*: the comment line you leave inside the new one. Without that line it would not be an exception but a hole, because every relaunch would return to restructuring the file the user curates more than any other. It is the only file of the project's you are allowed to rewrite, and it is so because it is the one on many repositories already existing: leaving it as it was would mean, there, never writing it.
+The second is the **instructions file**, which you write also where one exists — closing the one you found into the git stash — but only once, and what guarantees it is at *Step 6*: the comment line you leave inside the new one. Without that line it would not be an exception but a hole, because every relaunch would return to restructuring the file the user curates more than any other. It is the only file of the project's you are allowed to rewrite, and it is so because it is the one on many repositories already existing: leaving it as it was would mean, there, never writing it.
 
 The third is the **explicit request** of the user on a precise file: then you rewrite it.
 

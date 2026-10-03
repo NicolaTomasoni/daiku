@@ -1,6 +1,10 @@
 # STACK
 
-> <one line: what the project is built with, and how it runs>
+> **What goes here.** What the system is built with: languages and versions, frameworks and
+> libraries, the build and test chain, the tooling, where it runs and how it is distributed. It is
+> the inventory a new machine is set up from and the list a dependency is judged against — no
+> structure or boundaries (those are `ARCHITECTURE.md`) and no offer (that is `PRODUCT.md`). Every
+> line is something the project declares somewhere.
 
 ## Contents
 

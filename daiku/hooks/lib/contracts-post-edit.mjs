@@ -554,7 +554,7 @@ function selfCheck() {
     })
   ).length === 1);
   check('a file that does not parse is judged by the syntax check alone', environmentFindings('{').length === 0);
-  check('no backends declared: nothing to say', environmentFindings('{"temp_dir": "/tmp"}').length === 0);
+  check('no backends declared: nothing to say', environmentFindings('{"default_host": "claude"}').length === 0);
   check('a backend the hosts do not declare native stays silent', environmentFindings(
     JSON.stringify({ hosts: { claude: { native_backend: 'anthropic' } }, backends: { other: { base_url: 'https://other' } } })
   ).length === 0);

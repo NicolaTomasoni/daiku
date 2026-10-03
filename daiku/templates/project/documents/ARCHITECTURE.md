@@ -1,6 +1,10 @@
 # ARCHITECTURE
 
-> <one line: the structure this document fixes and the decisions behind it>
+> **What goes here.** The structure and the key technical decisions, each with the reason it was
+> taken and what it costs if it turns out wrong: the layers and their boundaries, and what may know
+> what. It is what a change is measured against before it is made — the entities are in `DOMAIN.md`
+> and the tools in `STACK.md`. Read it when a decision looks obvious: the obvious one is usually
+> the one already taken or already refused here.
 
 ## Contents
 

@@ -43,7 +43,7 @@ Every delivery works on a pool worktree, never on the main tree. The pool lives 
 
 Two roots, two roles, passed to every phase already resolved:
 
-- **work root** — inside the worktree, the same relative position the technical root occupies in the main tree: code, diff, stage, commit, gate and fix run here, and from here `{code_root}` and the command cwds of `{areas}` resolve. Do not guess it: derive it from the comparison between `{repo_root}` and the root you are running from.
+- **work root** — inside the worktree, the same relative position the technical root occupies in the main tree: code, diff, stage, commit, gate and fix run here, and from here `{code_root}` and the command cwds of `{areas}` resolve. Do not guess it: `architect/pool.mjs` reads it out of Git — the position this tree's technical root holds inside the worktree, `git rev-parse --show-prefix` — and returns it in `worktree_root` (§ *0. Acquisition*).
 - **artefacts root** — the main tree: `2. blueprint.md`, `3. memory-report.md`, `4. review-notes.md` and `5. review-report.md`, plus the ledger in `{paths.review_state}/`, live here, so resumption and report do not depend on the worktree.
 
 **A worktree is not an inert copy of the project.** If the project declares constraints on its own local environment — dependencies installed in a shared tree, links or junctions between the two copies, tools rewriting files outside the checkout — those constraints hold here and `{hosts.<host>.instructions_file}` declares them: read it before running any environment command inside the worktree. They are not rewritten here, and not guessed: an install command launched in the wrong place is the typical way a delivery breaks the main tree while believing it works on its own.
@@ -172,7 +172,7 @@ node <package root>/architect/pool.mjs <package root>      # with this object on
 The **integration branch** is the one the main tree is currently positioned on: `pool.mjs` reads it itself. The program is the one that decides **reuse, creation or refusal** — the rule the prose used to carry by hand, with a second «free» condition (`HEAD == HEAD(<INT>)`) no slot ever met. It reuses the first slot that is clean and holds nothing the integration branch lacks — whatever its HEAD — creates the smallest free number when none is reusable, and returns `ok: false` when all `{worktree.max}` slots are registered and none is reusable, naming in `detail` each occupied slot with the delivery the registry attributes it to. The row it writes (`in-use`, with the delivery) is the attribution git cannot give.
 
 ```json
-{"ok": true, "worktree": "<name>", "branch": "<{worktree.branch_prefix}<name>>", "worktree_root": "<<pool>/<name> plus the technical root's position relative to {repo_root}>", "detail": "<if ok=false, why>"}
+{"ok": true, "worktree": "<name>", "branch": "<{worktree.branch_prefix}<name>>", "worktree_root": "<the pool worktree's path, with the technical root's position inside it as Git reports it>", "detail": "<if ok=false, why>"}
 ```
 
 `ok: false` stops the delivery (see *Early block*): `blocked` report, no stage, no commit. A dirty one is not your residue to clean: the registry names whoever left it. From here on every phase already receives resolved the `<name>`, the work root and the artefacts root.

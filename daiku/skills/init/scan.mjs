@@ -24,9 +24,10 @@
  *  - `{memory.root}` and its index;
  *  - on Claude Code, the two memory keys in `.claude/settings.local.json`, and no memory file
  *    left in the host's default folder under `~/.claude/projects/`;
- *  - the `.gitignore` lines: the machine's files and `{paths.review_state}` ignored by **the
- *    repository's own** `.gitignore` — a global excludes file or `.git/info/exclude` is one
- *    machine's, and a clone carries none of it — and `.daiku/` and the memory corpus not ignored.
+ *  - the `.gitignore` lines: the machine's files, `{paths.review_state}` and — where it stands
+ *    inside the repository — `{worktree.pool}`, ignored by **the repository's own** `.gitignore`
+ *    — a global excludes file or `.git/info/exclude` is one machine's, and a clone carries none of
+ *    it — and `.daiku/` and the memory corpus not ignored.
  *
  * What it does not check: the domain roles the project may answer in a file written after the
  * first run. Telling that needs reading the repository, and this program reads only what `init`
@@ -254,8 +255,10 @@ export function scan(rootIn, host, disk = REAL, packageRoot = PACKAGE) {
   const labelled = new RegExp(`"label"\\s*:\\s*"${TASK_LABEL}"`);
   if (tasks === null || !labelled.test(tasks)) miss('update-task', '5-bis', `.vscode/tasks.json — task "${TASK_LABEL}"`);
 
-  // The instructions file of this host, with the marker.
-  const env = readJson(disk, disk.exists(localEnv) ? localEnv : sharedEnv) || {};
+  // The instructions file of this host, with the marker. The environment pair of §8: the first file
+  // that exists **and parses** wins, taken whole — a local file that does not parse is skipped and the
+  // shared one is read, and the built-in default is only the fallback when neither names the key.
+  const env = readJson(disk, localEnv) || readJson(disk, sharedEnv) || {};
   const declared = env.hosts && env.hosts[host] && env.hosts[host].instructions_file;
   const instructionsName = typeof declared === 'string' && declared.trim() ? declared.trim() : DEFAULT_INSTRUCTIONS[host];
   const instructions = readText(disk, join(root, instructionsName));
@@ -288,6 +291,13 @@ export function scan(rootIn, host, disk = REAL, packageRoot = PACKAGE) {
     const out = [join(daiku, 'environment.local.json')];
     const review = fromRoot(root, project.paths && project.paths.review_state);
     if (review) out.push(review);
+    // The delivery-worktree pool holds working copies of the repository: inside the tree it must be
+    // ignored like the review state; declared outside it, there is nothing to ask of `.gitignore`.
+    const pool = fromRoot(root, project.worktree && project.worktree.pool);
+    if (pool) {
+      const rel = toRepo(top, pool);
+      if (rel && !rel.startsWith('..') && !isAbsolute(rel)) out.push(pool);
+    }
     if (host === 'claude') out.push(join(root, '.claude', 'settings.local.json'));
     const keep = [projectFile];
     if (memoryRoot) keep.push(join(memoryRoot, basename(String(memory.index || 'MEMORY.md'))));
@@ -418,6 +428,21 @@ function selfCheck() {
   const localEnv = { ...without(complete(), `${T}/.daiku/environment.json`), [`${T}/.daiku/environment.local.json`]: '{"contract":1}' };
   check('the machine environment file counts', !ids(scan(T, 'claude', fakeDisk(localEnv), PKG)).includes('environment'));
 
+  // The pair of §8: the first file that exists **and parses** wins, taken whole. A local file that
+  // does not parse is skipped and the shared one is read — its non-standard name is honoured, and the
+  // built-in default is never reached. `CLAUDE.md` is deliberately absent, so the only way `instructions`
+  // stays unlisted is that `GUIDE.md` was read.
+  const unreadableLocal = {
+    ...without(complete(), `${T}/CLAUDE.md`),
+    [`${T}/.daiku/environment.json`]: JSON.stringify({ contract: 1, hosts: { claude: { instructions_file: 'GUIDE.md' } } }),
+    [`${T}/.daiku/environment.local.json`]: '{ this is not json',
+    [`${T}/GUIDE.md`]: `# Project\n\n${MARKER} -->\n`,
+  };
+  check(
+    'a local file that does not parse is skipped, the shared one names the instructions file',
+    !ids(scan(T, 'claude', fakeDisk(unreadableLocal), PKG)).includes('instructions')
+  );
+
   const codex = scan(T, 'codex', fakeDisk({ ...without(complete(), `${T}/.claude/settings.local.json`), [`${T}/AGENTS.md`]: `${MARKER} -->` }), PKG);
   check('on Codex the host memory is not checked', !ids(codex).includes('host-memory'));
   check('on Codex the instructions file is AGENTS.md', !ids(codex).includes('instructions'));
@@ -435,6 +460,40 @@ function selfCheck() {
       fakeDisk({}).checkIgnore(top, paths) + '.gitignore:9:.daiku/\tsrc/.daiku/project.json\n',
   });
   check('an ignored .daiku/ is missing', ids(scan(T, 'claude', daikuIgnored, PKG)).includes('gitignore-in:src/.daiku/project.json'));
+
+  // The delivery-worktree pool: inside the repository it is ignored like the review state; declared
+  // outside it, `.gitignore` is not asked about it at all.
+  const withPool = (value, checkIgnore) =>
+    fakeDisk(
+      {
+        ...complete(),
+        [`${T}/.daiku/project.json`]: JSON.stringify({
+          contract: 1,
+          memory: { root: 'memory', index: 'memory/MEMORY.md' },
+          paths: { review_state: '.dev-runtime/review' },
+          worktree: { pool: value },
+        }),
+      },
+      { checkIgnore }
+    );
+  const pooled = withPool(
+    '.daiku-worktrees',
+    () => fakeDisk({}).checkIgnore() + '.gitignore:6:.daiku-worktrees\tsrc/.daiku-worktrees\n'
+  );
+  check('a pool inside the repository and ignored: nothing missing', scan(T, 'claude', pooled, PKG).missing.length === 0);
+
+  const poolUnignored = withPool('.daiku-worktrees', () => fakeDisk({}).checkIgnore());
+  const poolMissing = ids(scan(T, 'claude', poolUnignored, PKG));
+  check('a pool inside the repository and not ignored: listed', poolMissing.includes('gitignore-out:src/.daiku-worktrees'));
+  check('a pool inside the repository and not ignored: nothing else listed', poolMissing.length === 1);
+
+  const poolOutside = withPool('../../pool-outside', () => fakeDisk({}).checkIgnore());
+  const outsideMissing = ids(scan(T, 'claude', poolOutside, PKG));
+  check('a pool outside the repository: `.gitignore` is not asked about it', outsideMissing.length === 0);
+  check(
+    'a pool outside the repository: nothing is listed for it',
+    !outsideMissing.some((id) => id.includes('pool-outside'))
+  );
 
   const gitDown = fakeDisk(complete(), { checkIgnore: () => null });
   check('git that does not answer: fail-open, nothing listed', scan(T, 'claude', gitDown, PKG).missing.length === 0);

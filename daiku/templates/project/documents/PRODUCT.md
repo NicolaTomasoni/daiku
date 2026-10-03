@@ -1,6 +1,10 @@
 # PRODUCT
 
-> <one line: the offer this document states, in the project's own words>
+> **What goes here.** The offer: what the product does, for whom, why it exists, and what it is
+> deliberately not. It is written for someone who knows nothing about the project — no code names,
+> no implementation detail, no roadmap: those belong to `STACK.md` and `ARCHITECTURE.md`. Read it
+> when you need to decide whether a change belongs to this product at all. Every claim either
+> traces to something the project already declares or is named as a gap.
 
 ## Contents
 
