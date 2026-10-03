@@ -144,12 +144,13 @@ function chiaviCombaciano(a, b) {
 }
 
 /** Le chiavi citate in un testo, cioè i `{…}` dentro i code span. Una `${…}` (una variabile di
- *  shell, come `${CLAUDE_PLUGIN_ROOT}`) non è una citazione di chiave: si salta. */
+ *  shell, come `${CLAUDE_PLUGIN_ROOT}`) e un ref Git come `stash@{n}` non sono citazioni di chiave:
+ *  si saltano, guardando il carattere che precede la graffa. */
 function chiaviCitate(testo) {
   const out = [];
   for (const span of testo.matchAll(/`([^`\n]*)`/g)) {
     for (const m of span[1].matchAll(CITAZIONE_RE)) {
-      if (span[1][m.index - 1] === '$') continue;
+      if ('$@'.includes(span[1][m.index - 1])) continue;
       out.push(m[1]);
     }
   }
@@ -533,6 +534,8 @@ function runSelfCheck() {
     })));
     caso('variabile-shell-non-citazione', 'c2', false, (r) => scrivi(join(r, 'skills/sh/SKILL.md'),
       '---\nname: sh\ndescription: x\n---\n\nVedi `${CLAUDE_PLUGIN_ROOT}`.\n'));
+    caso('ref-git-non-citazione', 'c2', false, (r) => scrivi(join(r, 'skills/stash/SKILL.md'),
+      '---\nname: stash\ndescription: x\n---\n\nVedi `git stash show -p stash@{n}`.\n'));
 
     // 3 — path citati.
     caso('path-interno-verde', 'c3', false, (r) => scrivi(join(r, 'skills/tocca/SKILL.md'),
