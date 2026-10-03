@@ -83,11 +83,13 @@ of a file, the presence or absence of an area. Three prohibitions, in order of s
 | `worktree.prefix` | prefix of the pool worktrees' names, followed by the number (`1`..`worktree.max`) |
 | `worktree.max` | maximum number of pool worktrees: never one more, never an off-convention name |
 | `worktree.branch_prefix` | branch prefix of each worktree, followed by its name |
+| `channels.development` | name of the development branch, the one the work lives on; `init` writes it from its answer, and `release` and the merge of a delivery read it |
+| `channels.production` | name of the production branch, where the work does not commit and which advances only by a release; its presence is the switch of the branch guard (§4.1) |
 | `areas` | the set of declared areas; cited thus when a skill **enumerates** them instead of naming one (§5.3) |
 | `areas.<area>.paths` | the paths belonging to the area, each usable as a Git pathspec |
 | `areas.<area>.gate` | the area's gate command: lint, format, type-check, test and package build |
-| `areas.<area>.check_fast` | command checking the given files without writing anything and without running tests — compilation, type-check or lint in read-only mode — fast enough to run after every task and every applied fix |
-| `areas.<area>.lint_fix` | command applying only safe lint fixes to the given files |
+| `areas.<area>.check_fast` | command checking the given files without writing anything and without running tests — compilation, type-check or lint in read-only mode — fast enough to run after every task and every applied fix; forbidden to run tests, it may cover a **weaker class than the gate**, and the review cycle compensates with the targeted tests it runs at every round (§ *Applier* of `skills/review/SKILL.md`) |
+| `areas.<area>.lint_fix` | command applying the safe lint and format fixes to the given files |
 | `areas.<area>.test_targeted` | command running only the given tests |
 | `areas.<area>.coverage` | commands producing the area's coverage measure |
 
@@ -110,8 +112,13 @@ run before declaring a path covered or uncovered.
 
 ### 4.1 The key a hook reads
 
-The command guard reads one key, `worktree.pool`, which lights its worktree branch: a declared pool
-*is* the declaration that those directories belong to Daiku. The guard's other four branches
+The command guard reads two keys. `worktree.pool` lights its worktree branch: a declared pool
+*is* the declaration that those directories belong to Daiku. `channels.production` lights its
+branch branch: a declared production branch *is* the declaration that the project keeps its work
+on a development branch and lets production advance only by a release, so the guard denies `git
+commit` and `git merge` while production is active and `git checkout`/`git switch` towards it —
+and reads the current branch only on a line that names `git`. Without `channels.production` the
+guard never reads the branch and says nothing. The guard's other four branches
 (junction, `--no-verify`, push, agent attribution) deny on
 every project that opened Daiku, with no switch. `hooks/README.md` carries the full branch table.
 

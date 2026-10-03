@@ -1,5 +1,17 @@
 # Changelog
 
+### 1.1.1 — 2026-10-03
+
+- A new environment key `prompt_dump_chars` declares the size past which the prompt opening a run is called a raw dump: the notice that marks the run then names the size, the threshold and the seats that exist for a payload that large — the text in a file with its path passed, or `research` — while truncating nothing and blocking nothing, because moving a dump is the owner's gesture and not the hook's.
+- The finders of `/review` receive the diff shaped before it reaches them, and the same way in every round: one command per file with the four file headers filtered out, and the context width adapting to the payload — two lines below a hundred, three from there up.
+- The product gains the concept of a channel: a `channels` group in `.daiku/project.json` — `channels.development` and `channels.production` — asked by `/init` as a third question (the name of the development branch, `develop` proposed) and made true by a deterministic step that creates that branch and moves to it, idempotent, failing on a dirty tree at the creation alone. A new branch guard, switched on by `channels.production`, denies `git commit` and `git merge` while the production branch is active and `git checkout`/`git switch` towards it, reads the branch only on the lines naming `git`, and stays off where the key is not declared.
+- `/release` is the new entry point that promotes: it asks the version **once**, on the block of commits accumulated on the development branch, writes version and changelog as the last commit on that branch and moves production to its tip with a local fast-forward, never pushing. `commit` stays untouched: the `channels` key changes nothing of what it does.
+- The reconciliation of an obstructed merge composes whatever the working tree brought on top of it, not only a merge in progress: a working tree that is dirty on work the delivery did not write is never a reason to stop the delivery or to ask the owner. Two sides that add distinct lines — including two additions at the same boundary, which the measure used to read as an overlap — are both kept; the other session's work stays uncommitted. Only two sides that change the same lines still stop and ask.
+- `/init` also derives the formatter's writing line from the format check the gate declares, appending it to `lint_fix` after the lint fix, so a formatting-only failure is repairable before the gate — `lint_fix` now applies safe lint and format fixes.
+- `/review` and `/code-review` run the targeted tests of every touched area at every round, not only at the gate: a test the diff brings down — in a file the diff did not touch — becomes a `check` finding the applier repairs, naming the test files, instead of surviving every round green and dying at the gate where the cycle no longer reopens. The outcome is recorded in the round's `check_tests` field, and `/init` signals in one line beside the area where the `check_fast` it derived covers a weaker class than the gate.
+
+---
+
 ### 1.1.0 — 2026-10-03
 
 - `/init` closes the instructions file it finds at the project's root into a git stash instead of renaming it to `.old`: the original survives intact and the host stops loading it. It also ignores the delivery-worktree pool when that falls inside the repository.

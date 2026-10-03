@@ -114,8 +114,13 @@ const untrackedPaths = (cwd) =>
  * The line intervals a `git diff -U0` changes, in the frame of its **left** side, read from the
  * hunk headers: `@@ -a,b +c,d @@` is `[a, a+b-1]` when `b > 0`. A pure insertion (`b == 0`)
  * changes no line of the left side, and is anchored to its boundary point: `[a, a]`, or `[1, 1]`
- * when the insertion is a whole new file (`a == 0`). Conservative on purpose — a boundary and a
- * line that touches it count as adjacent, so the answer errs toward asking the owner.
+ * when the insertion is a whole new file (`a == 0`).
+ *
+ * An insertion carries a third element, `'insert'`, because it is not the same thing as a change
+ * of the line it is anchored to: two insertions at the same boundary both survive the union — they
+ * are two lines added, and keeping both loses nothing. The tag is what lets the evaluator tell the
+ * two apart; without it the boundary point of an insertion and a change of that same line look
+ * alike, and the answer errs toward asking the owner where there is nothing to decide.
  */
 function intervalsOf(diffText) {
   const out = [];
@@ -123,7 +128,7 @@ function intervalsOf(diffText) {
     const from = Number(found[1]);
     const count = found[2] === undefined ? 1 : Number(found[2]);
     if (count > 0) out.push([from, from + count - 1]);
-    else out.push(from > 0 ? [from, from] : [1, 1]);
+    else out.push(from > 0 ? [from, from, 'insert'] : [1, 1, 'insert']);
   }
   return out;
 }
@@ -222,35 +227,61 @@ function stageOf(cwd, spec) {
   return run.status === 0 ? run.stdout : '';
 }
 
+/** The paths git left unmerged in the index, whichever step left them. */
+const unmergedOf = (cwd) =>
+  lines(git(cwd, ['diff', '--name-only', '--diff-filter=U'])).map(localizer(cwd));
+
 /**
- * Resolve a merge in progress by composing each conflicted file as the **union** of the two
- * disjoint sides, then completing with `git commit --no-edit`. It re-asks the evaluator before
- * writing: a file whose two sides touch the same lines is a choice with tradeoff, and this
- * program never takes it — it fails loudly and leaves the decision to the owner.
+ * The two sides of an unmerged path, read from its index stages: `:1:` is the base, `:2:` the
+ * current side, `:3:` the side being brought in. The intervals are measured against the base file
+ * itself, which is the frame the evaluator's rule is written in — the same measurement whether the
+ * conflict came from a merge in progress or from an autostash reapplied on top of it.
  */
-function completeMerge(workRoot, branch, root) {
-  const base = git(workRoot, ['merge-base', 'HEAD', branch]).trim();
-  const local = localizer(workRoot);
-  const unmerged = lines(git(workRoot, ['diff', '--name-only', '--diff-filter=U'])).map(local);
-  const paths = unmerged.map((file) => ({
-    file,
-    ours: intervalsOf(git(workRoot, ['diff', '-U0', base, 'HEAD', '--', file])),
-    theirs: intervalsOf(git(workRoot, ['diff', '-U0', base, branch, '--', file])),
-  }));
-  const verdict = ask({ question: 'reconcile', paths }, root);
-  if (verdict.verdict !== 'reconcile') {
-    fail(
-      `the measure does not hold: ${verdict.blockers.join(', ') || 'a conflicted path'} is changed on the same lines ` +
-        'by both sides, and a union there would be a choice with tradeoff — this program stops and the owner decides'
-    );
-  }
+function writeStages(workRoot, file, dir) {
+  const at = (name) => join(dir, name);
+  writeFileSync(at('base'), stageOf(workRoot, `:1:./${file}`), 'utf-8');
+  writeFileSync(at('ours'), stageOf(workRoot, `:2:./${file}`), 'utf-8');
+  writeFileSync(at('theirs'), stageOf(workRoot, `:3:./${file}`), 'utf-8');
+  return at;
+}
+
+function sidesOf(workRoot, file, dir) {
+  const at = writeStages(workRoot, file, dir);
+  const between = (a, b) => {
+    const run = spawnSync('git', ['diff', '--no-index', '-U0', '--', a, b], { encoding: 'utf-8', maxBuffer: 512 * 1024 * 1024 });
+    return run.stdout || '';
+  };
+  return {
+    ours: intervalsOf(between(at('base'), at('ours'))),
+    theirs: intervalsOf(between(at('base'), at('theirs'))),
+  };
+}
+
+/**
+ * Resolve the unmerged paths by composing each as the **union** of its two disjoint sides, and
+ * `git commit --no-edit` when a merge is in progress. It re-asks the evaluator before writing: a
+ * file whose two sides touch the same lines is a choice with tradeoff, and this program never
+ * takes it — it fails loudly and leaves the decision to the owner.
+ *
+ * It composes whatever is unmerged, not only a merge in progress: a `--autostash` whose reapply
+ * conflicts leaves the merge committed and the working tree's work conflicted on top of it, with
+ * no `MERGE_HEAD` — and that is the ordinary case of two sides that add distinct lines, which both
+ * have to survive. Composing is the whole point: the delivery never stops on it, and reports it.
+ */
+function composeUnmerged(workRoot, root, commit) {
+  const unmerged = unmergedOf(workRoot);
   const dir = mkdtempSync(join(tmpdir(), 'daiku-reconcile-merge-'));
   try {
+    const paths = unmerged.map((file) => ({ file, ...sidesOf(workRoot, file, dir) }));
+    const verdict = ask({ question: 'reconcile', paths }, root);
+    if (verdict.verdict !== 'reconcile') {
+      fail(
+        `the measure does not hold: ${verdict.blockers.join(', ') || 'a conflicted path'} is changed on the same lines ` +
+          'by both sides, and a union there would be a choice with tradeoff — this program stops and the owner decides'
+      );
+    }
     for (const file of unmerged) {
-      const at = (name) => join(dir, name);
-      writeFileSync(at('base'), stageOf(workRoot, `:1:./${file}`), 'utf-8');
-      writeFileSync(at('ours'), stageOf(workRoot, `:2:./${file}`), 'utf-8');
-      writeFileSync(at('theirs'), stageOf(workRoot, `:3:./${file}`), 'utf-8');
+      const at = writeStages(workRoot, file, dir);
       const union = spawnSync('git', ['merge-file', '-p', '--union', at('ours'), at('base'), at('theirs')], {
         encoding: 'utf-8', maxBuffer: 512 * 1024 * 1024,
       });
@@ -265,9 +296,11 @@ function completeMerge(workRoot, branch, root) {
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
-  const commit = spawnSync('git', ['-c', 'core.quotePath=false', 'commit', '--no-edit'], { cwd: workRoot, encoding: 'utf-8' });
-  if (commit.error || commit.status !== 0) fail(`git commit --no-edit failed composing the merge: ${(commit.stderr || '').trim()}`);
-  return git(workRoot, ['rev-parse', 'HEAD']).trim();
+  if (commit) {
+    const done = spawnSync('git', ['-c', 'core.quotePath=false', 'commit', '--no-edit'], { cwd: workRoot, encoding: 'utf-8' });
+    if (done.error || done.status !== 0) fail(`git commit --no-edit failed composing the merge: ${(done.stderr || '').trim()}`);
+  }
+  return unmerged;
 }
 
 /** `merge` — § *What it does*: land the merge keeping both sides, on a dirty tree or a merge in progress. */
@@ -278,7 +311,8 @@ function actMerge(input, root) {
   git(workRoot, ['rev-parse', '--verify', `${branch}^{commit}`]);
 
   if (inMerge(workRoot)) {
-    const sha = completeMerge(workRoot, branch, root);
+    composeUnmerged(workRoot, root, true);
+    const sha = git(workRoot, ['rev-parse', 'HEAD']).trim();
     return { ok: true, merged: true, merge_sha: sha, detail: `the obstructed merge was reconciled keeping both sides: ${sha.slice(0, 7)}.` };
   }
 
@@ -288,14 +322,39 @@ function actMerge(input, root) {
   if (run.error) fail(`git cannot start (${run.error.message}): this tool reads the disk through git, which must be on the PATH`);
   if (run.status === 0) {
     const sha = git(workRoot, ['rev-parse', 'HEAD']).trim();
+    // `git merge` exits 0 even when the autostash came back conflicted: the merge landed and what is
+    // left unmerged is the working tree's own work, waiting to be kept. That is not a failure and not
+    // a stop — it is the ordinary case of two sides that added distinct lines, and it is composed here.
+    if (unmergedOf(workRoot).length) {
+      const composed = composeUnmerged(workRoot, root, false);
+      return {
+        ok: true, merged: true, merge_sha: sha,
+        detail: `merged with --no-ff --autostash: the branch is integrated (${sha.slice(0, 7)}) and the working tree's ` +
+          `work conflicted on top of it, then was composed keeping both sides and left uncommitted: ${composed.join(', ')}.`,
+      };
+    }
     return {
       ok: true, merged: true, merge_sha: sha,
       detail: `merged with --no-ff --autostash: the branch is integrated and the working tree's work is re-applied uncommitted (${sha.slice(0, 7)}).`,
     };
   }
   if (inMerge(workRoot)) {
-    const sha = completeMerge(workRoot, branch, root);
+    composeUnmerged(workRoot, root, true);
+    const sha = git(workRoot, ['rev-parse', 'HEAD']).trim();
     return { ok: true, merged: true, merge_sha: sha, detail: `the merge conflicted although the measure held, and was composed keeping both sides: ${sha.slice(0, 7)}.` };
+  }
+  // The merge landed and what is left unmerged is the working tree's own work, whose reapplication
+  // on top of it conflicted — the ordinary case of two sides that add distinct lines. It is composed
+  // and left in the tree uncommitted, exactly as it was: the merge is done, nothing of the other
+  // session's work is committed, and it is git's own autostash entry that still holds the copy.
+  if (unmergedOf(workRoot).length) {
+    const composed = composeUnmerged(workRoot, root, false);
+    const sha = git(workRoot, ['rev-parse', 'HEAD']).trim();
+    return {
+      ok: true, merged: true, merge_sha: sha,
+      detail: `merged with --no-ff --autostash: the branch is integrated (${sha.slice(0, 7)}) and the working tree's work ` +
+        `was composed keeping both sides, left uncommitted: ${composed.join(', ')}.`,
+    };
   }
   fail(`git merge of ${branch} failed and left no merge in progress: ${(run.stderr || '').trim()}`);
 }
