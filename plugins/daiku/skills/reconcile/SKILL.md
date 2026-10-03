@@ -43,13 +43,14 @@ Run `measure` and read its verdict; the rule it applies is the one below, writte
 
 - an interval of `ours` intersects an interval of `theirs` when `a <= d && c <= b` for `[a, b]` in `ours` and `[c, d]` in `theirs` — **touching on a shared line is overlap**;
 - **pure adjacency is not overlap**: `[1, 3]` and `[4, 5]` leave the two sides disjoint;
-- a side that changes nothing (`[]`) never overlaps.
+- a side that changes nothing (`[]`) never overlaps;
+- **two pure insertions never overlap**: an interval tagged `"insert"` — a line added where the base had none — against another `"insert"` is two added lines, and the union keeps both, so there is nothing for the owner to decide. An `"insert"` against a *change* of the line it is anchored to still overlaps, and still stops.
 
 The measure is per path and the answer is per path: one obstructed path in overlap is enough for `stop`, and `blockers` names each such path. A run that stops keeps the patch artefact and the two sides as they are — it writes no Git of substance.
 
 ## What it does
 
-- **On `reconcile`.** Call the disk side again, in the same invocation, with `{"action": "merge", "work_root": "<work_root>", "branch": "<branch>", "message": "merge: <folder>"}`. It lands the merge: on a dirty working tree with `git merge --no-ff --autostash`, on a merge in progress by composing each conflicted file as the **union** of the disjoint sides and completing with `git add` and `git commit --no-edit`. It fails loudly if the measure does not hold — a file it was asked to keep together and cannot. Then return the block with `merged: true` and the `merge_sha`.
+- **On `reconcile`.** Call the disk side again, in the same invocation, with `{"action": "merge", "work_root": "<work_root>", "branch": "<branch>", "message": "merge: <folder>"}`. It lands the merge and it **composes every file the merge left unmerged**, whichever step left it there: a merge in progress, composed as the **union** of the disjoint sides and completed with `git add` and `git commit --no-edit`; and a working tree whose work the `--autostash` reapplied on top of the just-landed merge into a conflict — no `MERGE_HEAD`, the merge already committed — composed the same way and left **uncommitted**, exactly as it was, because the merge is done and the other session's work is not the delivery's to commit. A dirty working tree is never a reason to stop: it is the ordinary case, and the delivery reports it. It fails loudly only if the measure does not hold — a file it was asked to keep together and cannot. Then return the block with `merged: true` and the `merge_sha`.
 - **On `stop`.** Do not merge. Return the block with `merged: false`, `overlap` naming the paths in overlap, `patch`, `dirty_paths`, and the structured `question` for the owner. `ship-feature` carries the question into the chat, the run stops, and it resumes in resolved mode with the answer.
 
 ## What it writes

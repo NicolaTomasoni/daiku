@@ -1294,10 +1294,13 @@ function askPool(input) {
  * intervals in the frame of the merge base, read from the hunk headers of `git diff -U0` by
  * `architect/reconcile.mjs`, the node's disk side: `ours` are the lines the working tree
  * changes, `theirs` those the branch changes, each a list of `[from, to]` closed intervals on
- * the base's line numbers. The path is obstructed where an interval of `ours` intersects one of
- * `theirs` — `a <= d && c <= b` for `[a, b]` and `[c, d]`: touching on a shared line is
- * overlap, pure adjacency is not. `stop` on any such path, because the choice is the owner's;
- * `reconcile` otherwise, and the node merges without asking.
+ * the base's line numbers. An interval may carry a third element, `'insert'`, marking a pure
+ * insertion — a line added where the base had none. The path is obstructed where an interval of
+ * `ours` intersects one of `theirs` — `a <= d && c <= b` for `[a, b]` and `[c, d]`: touching on a
+ * shared line is overlap, pure adjacency is not — **except between two insertions**, which both
+ * survive the union: two lines added at the same boundary are two lines kept, and there is nothing
+ * for the owner to decide. `stop` on any such path, because the choice is the owner's; `reconcile`
+ * otherwise, and the node merges without asking.
  *
  * This is not a merge algorithm: git already decided the working tree and the branch differ on
  * these paths — a conflict or an untracked file the merge would overwrite. The question is only
@@ -1319,9 +1322,14 @@ function askReconcile(input) {
         throw new BadInput(`paths[${at}].${side} must be an array of [from, to] intervals — [] when that side changes nothing`);
       }
       entry[side].forEach((interval, index) => {
-        const ok =
-          Array.isArray(interval) && interval.length === 2 && interval.every(Number.isInteger) && interval[0] <= interval[1];
-        if (!ok) throw new BadInput(`paths[${at}].${side}[${index}] must be an interval [from, to] of two integers, from <= to`);
+        const shaped = Array.isArray(interval) && (interval.length === 2 || (interval.length === 3 && interval[2] === 'insert'));
+        const ok = shaped && Number.isInteger(interval[0]) && Number.isInteger(interval[1]) && interval[0] <= interval[1];
+        if (!ok) {
+          throw new BadInput(
+            `paths[${at}].${side}[${index}] must be an interval [from, to] of two integers, from <= to, ` +
+              'optionally tagged "insert" for a pure insertion'
+          );
+        }
       });
     }
   });
@@ -1338,7 +1346,14 @@ function askReconcile(input) {
 
 /** Two interval lists share a line: `a <= d && c <= b` for `[a, b]` in `ours` and `[c, d]` in `theirs`. */
 function overlaps(ours, theirs) {
-  return ours.some(([a, b]) => theirs.some(([c, d]) => a <= d && c <= b));
+  return ours.some(([a, b, mine]) =>
+    theirs.some(([c, d, other]) => {
+      // Two pure insertions at the same boundary are two added lines, and the union keeps both:
+      // there is nothing to decide, so an overlap here would ask the owner for nothing.
+      if (mine === 'insert' && other === 'insert') return false;
+      return a <= d && c <= b;
+    })
+  );
 }
 
 const ASKS = {
@@ -1855,6 +1870,12 @@ const CASES = [
   { id: 'reconcile:one-side-changes-nothing', cites: { file: 'skills/reconcile/SKILL.md', section: 'How you verify' },
     input: { question: 'reconcile', paths: [{ file: 'a.txt', ours: [], theirs: [[1, 5]] }] },
     expect: { verdict: 'reconcile', blockers: [] } },
+  { id: 'reconcile:two-insertions-at-the-same-boundary', cites: { file: 'skills/reconcile/SKILL.md', section: 'How you verify' },
+    input: { question: 'reconcile', paths: [{ file: 'a.txt', ours: [[3, 3, 'insert']], theirs: [[3, 3, 'insert']] }] },
+    expect: { verdict: 'reconcile', blockers: [] } },
+  { id: 'reconcile:insertion-against-a-change-of-that-line', cites: { file: 'skills/reconcile/SKILL.md', section: 'How you verify' },
+    input: { question: 'reconcile', paths: [{ file: 'a.txt', ours: [[3, 3, 'insert']], theirs: [[3, 3]] }] },
+    expect: { verdict: 'stop', blockers_include: 'a.txt' } },
   { id: 'reconcile:only-the-overlapping-file-blocks', cites: { file: 'skills/reconcile/SKILL.md', section: 'How you verify' },
     input: { question: 'reconcile', paths: [{ file: 'a.txt', ours: [[1, 3]], theirs: [[4, 8]] }, { file: 'b.txt', ours: [[2, 2]], theirs: [[2, 2]] }] },
     expect: { verdict: 'stop', blockers_length_at_least: 1, blockers_include: 'b.txt' } },

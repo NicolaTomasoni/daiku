@@ -2,6 +2,7 @@
 
 ### Unreleased
 
+- The reconciliation of an obstructed merge composes whatever the working tree brought on top of it, not only a merge in progress: a working tree that is dirty on work the delivery did not write is never a reason to stop the delivery or to ask the owner. Two sides that add distinct lines — including two additions at the same boundary, which the measure used to read as an overlap — are both kept; the other session's work stays uncommitted. Only two sides that change the same lines still stop and ask.
 - `/init` also derives the formatter's writing line from the format check the gate declares, appending it to `lint_fix` after the lint fix, so a formatting-only failure is repairable before the gate — `lint_fix` now applies safe lint and format fixes.
 
 ---
