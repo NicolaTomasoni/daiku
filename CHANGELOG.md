@@ -1,5 +1,11 @@
 # Changelog
 
+### 1.1.2 — 2026-10-04
+
+- `/init` no longer asks only what is **missing** but also what is **behind**: it measures its own artefacts inside the project against the package — the copies of hooks and roles Codex keeps in the project, the seats Daiku wrote before it moved under `.daiku/`, the keys of a parameter file the contract no longer names — and corrects them in the same run, retiring into a `git stash` what an older Daiku left standing. Its scan answers with four lists instead of one, and the update task now closes by saying whether the project is aligned to the package it has just fetched or whether `/daiku:init` is due.
+
+---
+
 ### 1.1.1 — 2026-10-03
 
 - A new environment key `prompt_dump_chars` declares the size past which the prompt opening a run is called a raw dump: the notice that marks the run then names the size, the threshold and the seats that exist for a payload that large — the text in a file with its path passed, or `research` — while truncating nothing and blocking nothing, because moving a dump is the owner's gesture and not the hook's.

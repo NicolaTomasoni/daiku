@@ -31,11 +31,13 @@ Before reading, asking or writing anything, measure what is already there. Run e
 node "<package root>/skills/init/scan.mjs" "<technical root>" <host>
 ```
 
-— `<package root>` the folder two levels above this file, `<host>` `claude` or `codex` (*Step 1*). It prints one JSON object, `{fresh, missing}`, and its answer decides the run; you do not second-guess it:
+— `<package root>` the folder two levels above this file, `<host>` `claude` or `codex` (*Step 1*). It prints one JSON object, `{fresh, missing, stale, legacy, params}`, and its answer decides the run; you do not second-guess it:
 
 - **`fresh: true`** — the project has no `.daiku/project.json`: run the whole *Procedure*.
-- **`fresh: false` and `missing` empty** — Daiku is already open here and nothing is missing. Your whole answer is one line saying so, in the `language.chat` of `project.json` — `Daiku is already set up here.` in English, `Daiku è già pronto qui.` in Italian — and the run ends: no question, no reading, no write.
-- **`fresh: false` and `missing` not empty** — **completion** mode. Each entry names the step that writes it (`step`): run those steps and only those, for those pieces and only those. *Step 0* is skipped — the languages live in `project.json`, which already stands and is never rewritten — and so is *Step 2*, unless `instructions` is listed. Then run the scan again: what it still lists is a step that did not go through (*Step 10*).
+- **`fresh: false`, and all four lists empty** — Daiku is already open here and nothing is behind. Your whole answer is one line saying so, in the `language.chat` of `project.json` — `Daiku is already set up here.` in English, `Daiku è già pronto qui.` in Italian — and the run ends: no question, no reading, no write.
+- **`fresh: false`, and at least one list not empty** — **reconciliation** mode. Each entry names the step that handles it (`step`): run those steps and only those, for those pieces and only those. *Step 0* is skipped — the languages live in `project.json`, which already stands and is never rewritten — and so is *Step 2*, unless `instructions` is listed. Then run the scan again: what it still lists is a step that did not go through (*Step 10*).
+
+**A piece standing there since an older Daiku is as much behind as a piece that is not there at all**, and that is why the answer is four lists and not one. `missing` is what the project does not have; `stale` what it has in a version this package has left behind; `legacy` what an older Daiku deposited at a seat this one does not write any more; `params` the keys of a parameter file this contract no longer names. A relaunch reading only `missing` would call a project all set while five files of a layout nobody reads still stand inside it — and no eye tells an old file from a right one, which is why the comparison is the program's and not yours.
 
 The scan reads only what `init` writes. A domain role the project answered in a file written after the first run is not something it can see: whoever writes that file writes the pointer.
 
@@ -499,10 +501,49 @@ On **Claude Code this step does not exist**: the package carries its hooks and s
 
 On **Codex** the project has neither guardrails nor subagent roles until `sync-host` writes them under `.codex/`. Delegate it to a subagent on the **worker** role, with `skills/sync-host/SKILL.md` as the contract to read and the technical root as its argument, after every write of yours is done: it reads `.daiku/`, which must already stand. Of its report you keep only the gestures it hands to the user — approving the hooks, trusting the project, reopening the session — because Codex reserves them to a person and no agent can make them.
 
+### 9-bis. Correct what is behind
+
+`missing` and `stale` name pieces to **write**, and their steps are the ones above. `legacy` and
+`params` name things **already on disk** that this package has left behind, and both are corrected
+here, on either host.
+
+**A seat of the old layout** — `.claude/project.json`, `.claude/environment.json`,
+`.claude/orchestration.md`, `.claude/project-contract.md`, `.claude/hooks/contratti-post-edit.mjs` —
+is a file of Daiku's standing where nothing reads it any more: today's parameters are `.daiku/`, and
+today's contracts live in the package. Close it into the git stash exactly as *Step 6* does with an
+instructions file you find:
+
+```
+git stash push -u -m "daiku: retired — <path> at the seat Daiku no longer writes" -- "<path>"
+```
+
+**`-u` is not optional**, for the reason it is not optional at *Step 6*: without it a file Git does
+not track does not enter the stash, and the line after this one removes it from the working tree —
+a file that survives nowhere. **Never a bare `git stash`**, which would take the whole working tree.
+Then **remove the file from the working tree**. You never `pop` and never `drop` the stash.
+
+**An entry of a settings file pointing at one of them** — `retired-pointing:` — is a line of the
+project's, and removing the file without it would leave a hook configured against a path that no
+longer exists: fail-open it starts nothing and says nothing, and a guardrail that seems to exist
+denies nothing. Remove **that entry alone** from `.claude/settings.json` or `settings.local.json`,
+leaving every other key, comment and line ending as you found them; where removing it empties an
+event's list, remove the event with it. Never rewrite the file: edit it as text.
+
+**A key the contract no longer names** — `param:<file>:<key>` — is a value nothing consumes any
+more, because the reader that resolved it is gone. **Remove it.** The two parameter files are the
+project's and you never rewrite them, but removing a key the method withdrew is the same act as
+adding one, seen from the other side — and adding keys to files of the project's without rewriting
+them is something you already do (*Step 5-bis*, *Step 7*, *Step 8*). Edit the file as text so that
+every other key, its order and its indentation stay as they were.
+
+A seat an earlier run already retired is no longer on disk and the scan does not list it: nothing
+to do, nothing to say. What this step retired is in `git diff` and `git stash list` like everything
+else you write, and *Step 10* says why none of it is narrated.
+
 ### 10. Report
 
-Run the scan of *Scan first* once more before answering, on every run: an empty `missing` is what
-the closing line means, and each entry it still lists is a step that did not go through.
+Run the scan of *Scan first* once more before answering, on every run: **all four lists empty** is
+what the closing line means, and each entry it still lists is a step that did not go through.
 
 **When every step went through, your whole answer is one line saying the project is all set**, in
 `{language.chat}` — `You're all set.` in English, `Tutto pronto.` in Italian. On a `fresh` run the
@@ -530,6 +571,8 @@ Two things only are written, one line per item, in `{language.chat}`:
 
 This makes you relaunchable: when the package updates and carries a skeleton previously missing, you are relaunched and write only the missing piece. An already initialised project loses nothing.
 
+**Idempotence is not immobility, and *Step 9-bis* is where the two part company.** A relaunch does not only write what is missing: it **corrects what is behind** — the copies and the versioned script the package owns, which it realigns to the package, and the seats of the old layout and the keys the contract no longer names, which it retires. What the rule above protects is what the **project** owns, and that predicate is the whole of the difference: a value somebody chose stays exactly where it is, and a key the contract no longer names is not a value any more but the residue of one.
+
 **And it is what makes safe letting the domain defaults travel.** A skeleton like `commit-convention.md` arrives already written, but it arrives **only once**: if the user rewrote it, a relaunch sees it and leaves it alone. Without this rule the default would stop being a proposal and become a package rule returning at every update — which is exactly the thing the Domain level exists not to be.
 
 **Adding a key is not overwriting a file.** The `.vscode/tasks.json` of *Step 5-bis*, the `settings.local.json` of *Step 7* and the `.gitignore` of *Step 8* are the only files you touch without having written them yourself, and you touch them by addition: the keys and lines you find there stay as they were, including the ones concerning you if already there — the one line *Step 8* may remove is the one excluding, by name, a folder the method versions. A relaunch on a new machine writes the pointing missing there, and on a machine where it is there changes nothing — which is exactly the trade for which you are relaunched.
@@ -548,4 +591,4 @@ The third is the **explicit request** of the user on a precise file: then you re
 - **You do not touch the code**, ever, for any reason — dependency manifests included: a command whose tool no manifest declares stays out, it is not made to run by adding the tool.
 - **You do not create a Git repository**, you do not commit and do not stage what you wrote: whoever launched `init` watches what appeared before versioning it.
 - **You do not compose rules.** A domain answer or an area policy you write points at what the project already wrote (*Step 5*); where the project wrote nothing, nothing is written in its place.
-- **You install nothing** and do not modify the host configuration outside the two keys of *Step 7*, which are the entire licence you have on `.claude/`.
+- **You install nothing** and do not modify the host configuration outside the two keys of *Step 7* and the one entry *Step 9-bis* removes from a settings file: those two are the entire licence you have on `.claude/`.
