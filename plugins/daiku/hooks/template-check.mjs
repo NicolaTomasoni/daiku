@@ -19,11 +19,15 @@
  * and a `process` task has no terminal to ask it in — and `templates/project/update.mjs`
  * reads the two versions — the one in place from the host, the one arriving out of the
  * refreshed catalogue — draws the delta, asks before it runs the two update commands in
- * order, and stays silent where there is no terminal. It checks too the marker `init` fills on
+ * order, and stays silent where there is no terminal — and that it **parses**: the substrings
+ * above are searched in its text, and a text search says nothing of a file that no longer runs,
+ * so `node --check` reads it as well, without executing a line of it. It checks too the marker
+ * `init` fills on
  * every script it deposits — `daiku:script <version>` — which the skeleton must carry as a
  * placeholder: a literal there would be a second seat of the package version, and it is from
  * that line that a relaunched `init` recognises a script written by an older Daiku and
- * recreates it whole. And it checks the five founding-document skeletons under
+ * recreates it whole — and that the script reads back, to say whether the project itself is
+ * aligned to the package the update just fetched. And it checks the five founding-document skeletons under
  * `templates/project/documents/` — the file is there, the `H1` is the role in uppercase, the index
  * lists exactly the numbered sections in order, and the closing section is there: that frame is
  * what tells a document of this kind from a file of the project's standing at the same seat, which
@@ -40,7 +44,9 @@
  * into a project: it lives beside `self-check.mjs`, which `sync-host` does not copy.
  */
 
-import { readdirSync, readFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { invokedDirectly } from './lib/project-root.mjs';
@@ -78,6 +84,17 @@ const NOT_HOOKS = new Set(['project-root.mjs', 'daiku-config.mjs']);
 
 function readJson(rel) {
   return JSON.parse(readFileSync(join(ROOT, rel), 'utf-8'));
+}
+
+/**
+ * Does Node parse this file? `--check` reads and parses it without running a line: a skeleton is
+ * held to the same standard as the package's own modules, and the version placeholder of the
+ * marker line — a comment — costs nothing. A text search cannot answer this, and it is the whole
+ * reason the check is here: the substrings are all found in a file that no longer runs.
+ */
+function parses(absolute) {
+  const run = spawnSync(process.execPath, ['--check', absolute], { encoding: 'utf-8' });
+  return !run.error && run.status === 0;
 }
 
 /** The lib file a `command` points at, or `null` when the shape is unknown. */
@@ -249,6 +266,24 @@ function selfCheck() {
   check(
     'update script template carries one daiku:script marker line, and no more',
     (script.match(/^\/\/ daiku:script/gm) || []).length === 1
+  );
+  check(
+    'update script template parses: a skeleton that does not run ships broken',
+    parses(join(ROOT, 'templates', 'project', 'update.mjs'))
+  );
+  // The check above is worth something only if it can go red, and it is the one thing a text search
+  // cannot do: a file that does not parse, written for the occasion in the system temp folder.
+  const scratch = mkdtempSync(join(tmpdir(), 'daiku-parse-'));
+  const broken = join(scratch, 'broken.mjs');
+  writeFileSync(broken, 'const x = ;\n', 'utf-8');
+  check('the parse check goes red on a file that does not parse', !parses(broken));
+  check('the parse check goes red where the file is not there', !parses(join(scratch, 'absent.mjs')));
+  rmSync(scratch, { recursive: true, force: true });
+  // And the line closing the run, which is what tells the two cases apart after an update: the
+  // project aligned to the package, or the project left behind by it.
+  check(
+    'update script says whether the project is aligned to the package',
+    script.includes('function alignment(') && script.includes('/daiku:init')
   );
 
   // The five founding-document skeletons: the frame `new-project` keys on to tell a document of

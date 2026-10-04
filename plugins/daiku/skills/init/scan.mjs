@@ -24,17 +24,41 @@
  *  - `{memory.root}` and its index;
  *  - on Claude Code, the two memory keys in `.claude/settings.local.json`, and no memory file
  *    left in the host's default folder under `~/.claude/projects/`;
+ *  - on Codex, the host layer under `.codex/` — the folder itself, which an installation that
+ *    never ran `sync-host` does not have;
  *  - the `.gitignore` lines: the machine's files, `{paths.review_state}` and — where it stands
  *    inside the repository — `{worktree.pool}`, ignored by **the repository's own** `.gitignore`
  *    — a global excludes file or `.git/info/exclude` is one machine's, and a clone carries none of
  *    it — and `.daiku/` and the memory corpus not ignored.
+ *
+ * **And three lists beside `missing`, because a piece that has stood there since an older Daiku is
+ * as much an artefact behind as a piece that is not there at all** — and no eye tells an old file
+ * from a right one. This is what a relaunch after a package update reads to know what to correct,
+ * and it is the reason the answer is not a single list:
+ *
+ *  - `stale`: on Codex the host layer is a **copy** inside the project, since the package can carry
+ *    neither hooks nor roles there — and a copy that is not the file the package carries today is
+ *    behind. It stands at the **repository** root, where `sync-host` writes it. Byte comparison for
+ *    `hooks/lib/`, which are copies; for the rendered roles the `daiku:script` marker of the first
+ *    line, and — where nobody marked them — whether the package carries a role of that name, which
+ *    is what `sync-host` rewrites by. A `.toml` with neither is the project's own role and is not
+ *    listed: a report that never closes is worse than one that stays silent. Files the package no
+ *    longer carries at all are behind too.
+ *  - `legacy`: the seats Daiku wrote **before** `.daiku/` and does not write any more, plus the
+ *    entries of a settings file still pointing at one of them — removing the file without that
+ *    line would leave a hook that starts nothing.
+ *  - `params`: a key of `.daiku/project.json` or of an environment file that the contract no
+ *    longer names, read against the two lists the package keeps in `schemas/blocks.json`. Only
+ *    the **first** segment of each entry is compared: it is the only level a project file can be
+ *    asked about, and `areas.<area>.paths` asks about `areas`.
  *
  * What it does not check: the domain roles the project may answer in a file written after the
  * first run. Telling that needs reading the repository, and this program reads only what `init`
  * wrote.
  *
  *   node <package-root>/skills/init/scan.mjs <technical-root> <claude|codex>
- *       one JSON object on stdout — `{fresh, missing: [{id, step, detail}]}` — exit 0.
+ *       one JSON object on stdout — `{fresh, missing: [...], stale: [...], legacy: [...],
+ *       params: [...]}`, every entry `{id, step, detail}` — exit 0.
  *       Bad arguments: exit 2.
  *
  *   node <package-root>/skills/init/scan.mjs --self-check
@@ -57,11 +81,33 @@ const PACKAGE = join(HERE, '..', '..');
 
 /** The marker `templates/project/instructions.md` leaves at the bottom of the file. */
 const MARKER = '<!-- daiku:instructions';
-/** The marker `init` leaves at the top of every script it deposits, holding the package version
- * that wrote it. The skeletons carry it with `<version>`, which `init` fills on the copy. */
-const SCRIPT_MARKER = /^\/\/ daiku:script\s+(\S+)/m;
+/** The marker `init` leaves at the top of every script it deposits — and `sync-host` at the top of
+ * every role it renders — holding the package version that wrote it. The skeletons carry it with
+ * `<version>`, which `init` fills on the copy; the two comment forms are the two file langs the
+ * package deposits, a `.mjs` and a `.toml`. */
+const SCRIPT_MARKER = /^\s*(?:\/\/|#)\s*daiku:script\s+(\S+)/m;
 const TASK_LABEL = 'daiku: update';
 const DEFAULT_INSTRUCTIONS = { claude: 'CLAUDE.md', codex: 'AGENTS.md' };
+
+/** The seats Daiku wrote before it moved under `.daiku/`, and does not write any more. Each is a
+ * file of Daiku's — a copy of a contract, or a parameter pair — standing at a seat nothing reads:
+ * today's readers open `.daiku/` and never look here. `init` retires them, and the settings files
+ * below are read for the entries still pointing at one.
+ *
+ * The list is the whole of what Daiku ever deposited at the old seats. A seat is added here when
+ * the layout moves, never removed: what is retired stays retired, and a project opened by an older
+ * Daiku may still carry the oldest of them. */
+export const RETIRED = Object.freeze([
+  ['.claude/project.json', 'the parameters, at the seat Daiku used before `.daiku/`'],
+  ['.claude/environment.json', 'the environment, at the seat Daiku used before `.daiku/`'],
+  ['.claude/orchestration.md', 'a copy of `contracts/orchestration.md`'],
+  ['.claude/project-contract.md', 'a copy of `contracts/project-contract.md`'],
+  ['.claude/hooks/contratti-post-edit.mjs', 'a copy of `hooks/lib/contracts-post-edit.mjs`'],
+]);
+
+/** Where a pointer at a retired file can stand. `.claude/settings.json` is the project's and
+ * `settings.local.json` is the machine's: both are read, neither is a file `init` wrote. */
+const SETTINGS_FILES = ['.claude/settings.json', '.claude/settings.local.json'];
 
 /* ------------------------------------------------------------------------- *
  * The disk, behind a door the bench can replace
@@ -125,6 +171,24 @@ export function packageVersion(disk, packageRoot) {
     if (typeof version === 'string' && version.trim()) return version.trim();
   }
   return null;
+}
+
+/**
+ * The keys a parameter file may carry, out of the package's own `schemas/blocks.json` — the file
+ * that already keeps the two lists the contract's prose declares, read here instead of copied, so
+ * that a key withdrawn from the contract stops being admitted by this program in the same commit.
+ *
+ * Only the **first** segment of each entry is kept: `areas.<area>.paths` admits `areas`, and the
+ * levels below it are the ones no list can express — they are enforced where they belong, by
+ * `hooks/lib/contracts-post-edit.mjs` after every write to the file. `null` where the schema does
+ * not answer, and the caller then asks nothing: a package unable to say which keys exist cannot
+ * call a key obsolete.
+ */
+export function allowedKeys(disk, packageRoot, which) {
+  const schema = readJson(disk, join(packageRoot, 'schemas', 'blocks.json'));
+  const list = schema && schema.params && schema.params[which];
+  if (!Array.isArray(list)) return null;
+  return new Set(list.map((key) => String(key).split('.')[0]));
 }
 
 /** A path of `project.json`, resolved against the technical root. */
@@ -204,11 +268,16 @@ export function scan(rootIn, host, disk = REAL, packageRoot = PACKAGE) {
   const root = resolve(rootIn);
   const daiku = join(root, '.daiku');
   const projectFile = join(daiku, 'project.json');
-  if (!disk.exists(projectFile)) return { fresh: true, missing: [] };
+  if (!disk.exists(projectFile)) return { fresh: true, missing: [], stale: [], legacy: [], params: [] };
 
   const missing = [];
+  const stale = [];
+  const legacy = [];
+  const params = [];
   const miss = (id, step, detail) => missing.push({ id, step, detail });
+  const behind = (list, id, step, detail) => list.push({ id, step, detail });
   const project = readJson(disk, projectFile) || {};
+  const current = packageVersion(disk, packageRoot);
 
   // Environment: either seat of §8 counts.
   const localEnv = join(daiku, 'environment.local.json');
@@ -241,7 +310,6 @@ export function scan(rootIn, host, disk = REAL, packageRoot = PACKAGE) {
     miss('update-script', '5-bis', '.daiku/update.mjs');
   } else {
     const written = readText(disk, updateScript);
-    const current = packageVersion(disk, packageRoot);
     const stamped = markedVersion(written);
     if (written !== null && current && stamped !== current) {
       miss(
@@ -285,6 +353,110 @@ export function scan(rootIn, host, disk = REAL, packageRoot = PACKAGE) {
     if (leftover.length) miss('memory-move', '7', `${leftover.length} file(s) in the host's default memory folder`);
   }
 
+  // Codex only: the host layer is a copy inside the project, because the package can carry there
+  // neither hooks nor roles. It stands at the **repository** root and not at the technical one —
+  // `sync-host` writes it from `git rev-parse --show-toplevel`, because the hooks climb to the git
+  // root and in a monorepo that is an ancestor of the technical root. Where Git does not answer,
+  // the technical root is the fallback: a wrong guess there lists nothing, which is the safe side.
+  const codex = join(disk.toplevel(root) || root, '.codex');
+  if (host === 'codex' && !disk.exists(codex)) {
+    miss('host-layer', '9', '.codex/ — the hooks and the roles of this host, deposited by sync-host');
+  }
+
+  const relTo = (p) => relative(root, p).replace(/\\/g, '/');
+
+  // What Daiku no longer writes: the seats of the layout before `.daiku/`. A file standing there
+  // is not one the project chose to keep — it is one a Daiku older than `.daiku/` left behind, and
+  // nothing reads it today.
+  for (const [seat, was] of RETIRED) {
+    if (disk.exists(join(root, seat))) behind(legacy, `retired:${seat}`, '9-bis', `${seat} — ${was}`);
+  }
+  // And the entries still pointing at one. Removing the file without its line would leave a hook
+  // configured against a path that no longer exists: fail-open, it starts nothing and says nothing,
+  // and a guardrail that seems to exist denies nothing. Both files are read; neither is `init`'s,
+  // so of them only that entry goes.
+  for (const seat of SETTINGS_FILES) {
+    const text = readText(disk, join(root, seat));
+    if (text === null) continue;
+    for (const [retired] of RETIRED) {
+      if (text.includes(retired)) {
+        behind(legacy, `retired-pointing:${seat}:${retired}`, '9-bis', `${seat} — an entry pointing at ${retired}`);
+      }
+    }
+  }
+
+  // The copies of the host layer, on the host that has them: byte for byte for the hooks, which are
+  // copies of `hooks/lib/`; the marker of the first line for the roles, whose text is rendered from
+  // an `agents/*.md` and cannot be compared with it. A file the package no longer carries at all is
+  // behind too, and for the same reason — `sync-host` removes it.
+  if (host === 'codex') {
+    const carried = (folder) => {
+      try {
+        return disk.list(folder);
+      } catch {
+        return [];
+      }
+    };
+    const lib = join(packageRoot, 'hooks', 'lib');
+    const hooks = join(codex, 'hooks');
+    const named = new Set(carried(lib));
+    for (const name of named) {
+      const source = readText(disk, join(lib, name));
+      const copy = readText(disk, join(hooks, name));
+      if (copy === null || source === null) continue;
+      if (copy !== source) behind(stale, `host-copy:${name}`, '9', `.codex/hooks/${name} — not the file this package carries`);
+    }
+    for (const name of carried(hooks)) {
+      if (name.endsWith('.mjs') && !named.has(name)) {
+        behind(stale, `host-copy-left:${name}`, '9', `.codex/hooks/${name} — this package does not carry it any more`);
+      }
+    }
+    // A role is behind in two cases, and no third. **Its marker names another package** — it was
+    // rendered before this one. **It carries no marker and the package carries a role of that
+    // name** — it was rendered by a `sync-host` older than the marker, and that skill rewrites by
+    // name, so a step here converges. A `.toml` with neither is the user's own role, which
+    // `sync-host` leaves where it is: listing it would keep the project *not all set* for ever, and
+    // a reconciliation that never closes is worse than one that stays silent about a file nobody
+    // asked it to touch.
+    const roles = join(codex, 'agents');
+    const rendered = new Set(
+      carried(join(packageRoot, 'agents'))
+        .filter((name) => name.endsWith('.md'))
+        .map((name) => `${name.slice(0, -3)}.toml`)
+    );
+    for (const name of carried(roles)) {
+      if (!name.endsWith('.toml')) continue;
+      const stamped = markedVersion(readText(disk, join(roles, name)));
+      const byMarker = stamped !== null && current && stamped !== current;
+      const byAbsence = stamped === null && rendered.has(name);
+      if (byMarker || byAbsence) {
+        const why = stamped
+          ? `rendered by Daiku ${stamped}, this package is ${current}`
+          : 'rendered by a sync-host older than the marker';
+        behind(stale, `host-role:${name}`, '9', `.codex/agents/${name} — ${why}`);
+      }
+    }
+  }
+
+  // The parameters: a key the contract no longer names is an artefact behind like any other, and
+  // the two lists in `schemas/blocks.json` are what names them. Every existing file is read, the
+  // machine's included; they are the project's, and this program only measures them.
+  for (const [file, which] of [
+    [projectFile, 'project_json'],
+    [join(daiku, 'environment.json'), 'environment_json'],
+    [localEnv, 'environment_json'],
+  ]) {
+    const declared = readJson(disk, file);
+    if (!declared || typeof declared !== 'object') continue;
+    const allowed = allowedKeys(disk, packageRoot, which);
+    if (!allowed) continue;
+    for (const key of Object.keys(declared)) {
+      if (!allowed.has(key)) {
+        behind(params, `param:${relTo(file)}:${key}`, '9-bis', `${relTo(file)} — ${key}, which the contract no longer names`);
+      }
+    }
+  }
+
   // `.gitignore`: what must stay out, what must stay in.
   const top = disk.toplevel(root);
   if (top) {
@@ -314,7 +486,7 @@ export function scan(rootIn, host, disk = REAL, packageRoot = PACKAGE) {
     }
   }
 
-  return { fresh: false, missing };
+  return { fresh: false, missing, stale, legacy, params };
 }
 
 /* ------------------------------------------------------------------------- *
@@ -359,6 +531,20 @@ function fakeDisk(files, extra = {}) {
 function complete() {
   return {
     [`${PKG}/.claude-plugin/plugin.json`]: JSON.stringify({ name: 'daiku', version: VERSION }),
+    // The two key lists the params check reads. Small on purpose: what the bench exercises is the
+    // comparison against them, not the keys the real package happens to name today.
+    [`${PKG}/schemas/blocks.json`]: JSON.stringify({
+      params: {
+        project_json: ['contract', 'name', 'memory.root', 'memory.index', 'paths.review_state'],
+        environment_json: ['contract', 'hosts', 'hosts.<host>.instructions_file'],
+      },
+    }),
+    // The hooks the package carries: on Codex these are the source of the copies in the project.
+    [`${PKG}/hooks/lib/run-advice.mjs`]: '// the package hook\n',
+    [`${PKG}/hooks/lib/command-guard.mjs`]: '// the package hook\n',
+    // And the roles, which `sync-host` renders by name: the name is what tells a role of ours from
+    // a role of the project's when neither carries a marker.
+    [`${PKG}/agents/finder.md`]: '---\nname: finder\n---\n',
     [`${PKG}/templates/project/domain/README.md`]: '#',
     [`${PKG}/templates/project/domain/commit-convention.md`]: '#',
     [`${PKG}/templates/project/domain/memory-contract.md`]: '#',
@@ -403,6 +589,10 @@ function selfCheck() {
 
   const full = scan(T, 'claude', fakeDisk(complete()), PKG);
   check('a fully opened project: nothing missing', full.fresh === false && full.missing.length === 0);
+  check(
+    'a fully opened project: nothing behind either',
+    full.stale.length === 0 && full.legacy.length === 0 && full.params.length === 0
+  );
 
   const cases = [
     ['missing update script', without(complete(), `${T}/.daiku/update.mjs`), 'claude', 'update-script'],
@@ -501,8 +691,134 @@ function selfCheck() {
   const noManifest = scan(T, 'claude', fakeDisk(without(complete(), `${PKG}/.claude-plugin/plugin.json`)), PKG);
   check('a package that does not say which version it is: no script called old', noManifest.missing.length === 0);
 
+  // --- what is behind, and not only what is missing ---------------------------
+
+  const lists = (r) => ({
+    stale: r.stale.map((entry) => entry.id),
+    legacy: r.legacy.map((entry) => entry.id),
+    params: r.params.map((entry) => entry.id),
+  });
+
+  // The seats of the layout before `.daiku/`, and the entries still pointing at one.
+  const oldLayout = {
+    ...complete(),
+    [`${T}/.claude/project.json`]: '{}',
+    [`${T}/.claude/hooks/contratti-post-edit.mjs`]: '// an old copy\n',
+    [`${T}/.claude/settings.json`]:
+      '{ "hooks": { "PostToolUse": [ { "command": "node .claude/hooks/contratti-post-edit.mjs" } ] } }',
+  };
+  const retired = lists(scan(T, 'claude', fakeDisk(oldLayout), PKG));
+  check('a seat of the old layout is listed', retired.legacy.includes('retired:.claude/project.json'));
+  check('two seats are two entries', retired.legacy.includes('retired:.claude/hooks/contratti-post-edit.mjs'));
+  check(
+    'an entry pointing at a retired file is listed',
+    retired.legacy.includes('retired-pointing:.claude/settings.json:.claude/hooks/contratti-post-edit.mjs')
+  );
+  check('a seat of the old layout is not a missing piece', scan(T, 'claude', fakeDisk(oldLayout), PKG).missing.length === 0);
+  check('a project of the current layout lists no retired seat', lists(scan(T, 'claude', fakeDisk(complete()), PKG)).legacy.length === 0);
+
+  // A key the contract no longer names, and one it still does.
+  const withKey = (key) => ({
+    ...complete(),
+    [`${T}/.daiku/project.json`]: JSON.stringify({
+      contract: 1,
+      memory: { root: 'memory', index: 'memory/MEMORY.md' },
+      paths: { review_state: '.dev-runtime/review' },
+      [key]: 'x',
+    }),
+  });
+  check(
+    'a key the contract no longer names is listed',
+    lists(scan(T, 'claude', fakeDisk(withKey('tech_doc')), PKG)).params.includes('param:.daiku/project.json:tech_doc')
+  );
+  check('a key the contract still names is not', lists(scan(T, 'claude', fakeDisk(withKey('name')), PKG)).params.length === 0);
+  const envKey = {
+    ...complete(),
+    [`${T}/.daiku/environment.json`]: JSON.stringify({
+      contract: 1,
+      hosts: { claude: { instructions_file: 'CLAUDE.md' } },
+      temp_dir: 'C:/tmp',
+    }),
+  };
+  check(
+    'the environment is asked too',
+    lists(scan(T, 'claude', fakeDisk(envKey), PKG)).params.includes('param:.daiku/environment.json:temp_dir')
+  );
+
+  // The host layer of Codex: copies inside the project, compared with what the package carries.
+  const codexFiles = { ...without(complete(), `${T}/.claude/settings.local.json`), [`${T}/AGENTS.md`]: `${MARKER} -->` };
+  check('on Codex a host layer that is not there is missing', ids(scan(T, 'codex', fakeDisk(codexFiles), PKG)).includes('host-layer'));
+  check(
+    'on Claude Code there is no host layer to ask about',
+    !ids(scan(T, 'claude', fakeDisk(complete()), PKG)).includes('host-layer')
+  );
+  // The layer stands at the **repository** root, `TOP`, while the technical root is `T`: a fixture
+  // that put it under `T` would be a layer the scan does not see, and that is the point of the
+  // first two checks here.
+  const installed = {
+    ...codexFiles,
+    [`${TOP}/.codex/hooks.json`]: '{}',
+    [`${TOP}/.codex/hooks/run-advice.mjs`]: '// the package hook\n',
+    [`${TOP}/.codex/hooks/command-guard.mjs`]: '// the package hook\n',
+    [`${TOP}/.codex/hooks/old-guard.mjs`]: '// gone from the package\n',
+    [`${TOP}/.codex/agents/finder.toml`]: `# daiku:script ${VERSION} — generated by sync-host\n`,
+  };
+  check('on Codex a host layer at the repository root is seen', !ids(scan(T, 'codex', fakeDisk(installed), PKG)).includes('host-layer'));
+  check(
+    'a host layer at the technical root alone is not the layer',
+    ids(scan(T, 'codex', fakeDisk({ ...codexFiles, [`${T}/.codex/hooks.json`]: '{}' }), PKG)).includes('host-layer')
+  );
+  const copies = lists(scan(T, 'codex', fakeDisk(installed), PKG));
+  check('an identical copy is not behind', !copies.stale.includes('host-copy:run-advice.mjs'));
+  check(
+    'a copy that is not the package file is behind',
+    lists(scan(T, 'codex', fakeDisk({ ...installed, [`${TOP}/.codex/hooks/run-advice.mjs`]: '// changed\n' }), PKG)).stale.includes(
+      'host-copy:run-advice.mjs'
+    )
+  );
+  check('a copy the package no longer carries is behind', copies.stale.includes('host-copy-left:old-guard.mjs'));
+  check('a role rendered by this package is not behind', !copies.stale.includes('host-role:finder.toml'));
+  check(
+    'a role rendered by an older package is behind',
+    lists(
+      scan(T, 'codex', fakeDisk({ ...installed, [`${TOP}/.codex/agents/finder.toml`]: '# daiku:script 1.0.7 — generated\n' }), PKG)
+    ).stale.includes('host-role:finder.toml')
+  );
+  // The two halves of the rule for a role nobody marked, asserted in one case so it goes red if the
+  // condition goes back to flagging every unmarked role: the package carries a role of that name, or
+  // it is the project's own role and `sync-host` leaves it alone. Each half alone stays green either
+  // way, so it is the pair that guards the rule.
+  const s = lists(
+    scan(
+      T,
+      'codex',
+      fakeDisk({
+        ...installed,
+        [`${TOP}/.codex/agents/finder.toml`]: '# generated\n',
+        [`${TOP}/.codex/agents/mine.toml`]: '# my own role\n',
+      }),
+      PKG
+    )
+  ).stale;
+  check(
+    'a role nobody marked is behind only when this package carries it',
+    s.includes('host-role:finder.toml') && !s.includes('host-role:mine.toml')
+  );
+  check(
+    "a role of the project's own is not behind",
+    lists(scan(T, 'codex', fakeDisk({ ...installed, [`${TOP}/.codex/agents/mine.toml`]: '# my own role\n' }), PKG)).stale.includes(
+      'host-role:mine.toml'
+    ) === false
+  );
+
+  // The two helpers alone.
+  check('allowed keys: the first segment is what a file can be asked about', allowedKeys(fakeDisk(complete()), PKG, 'project_json').has('paths'));
+  check('allowed keys: a list the schema does not carry asks nothing', allowedKeys(fakeDisk(complete()), PKG, 'nope') === null);
+  check('allowed keys: a package without the schema asks nothing', allowedKeys(fakeDisk({}), PKG, 'project_json') === null);
+
   // The marker alone.
   check('marker: the version is read', markedVersion('// daiku:script 1.0.8 — note\n') === '1.0.8');
+  check('marker: the `#` form of a rendered role is read too', markedVersion('# daiku:script 1.0.8 — generated\n') === '1.0.8');
   check('marker: a file without it declares nothing', markedVersion('// hello\n') === null);
   // `init` filling the copy in badly — the placeholder left in — is caught as an old script.
   check('marker: the unfilled placeholder is not the package version', markedVersion('// daiku:script <version>\n') !== VERSION);
