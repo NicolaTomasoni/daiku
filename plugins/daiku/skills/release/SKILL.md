@@ -18,11 +18,16 @@ keeps its own life.
 
 ## The two sides
 
-**Development carries no version and no released changelog.** Not "no version commit on this run":
-none at all, ever. `{version.file}` stands there with whatever the project initialised it to and
-no release ever moves it, and `{changelog}` is not a file on development — a released section is
-born on production, at the release, and it is not written back. A development branch that starts
-carrying numbers again has broken the channel, and the next release will overwrite it silently.
+**Development carries a beta of the next release, and no changelog.** `{version.file}` stands there
+holding the number production carries now with its patch raised by one, marked as a beta with a
+counter — `1.1.4-b.7`. The counter goes **after a dot and is numeric**: `b.7`, never `b7`, which as
+an alphanumeric identifier semver orders `b10` before `b9`. The beta is not a release, and no
+release ever reads it: a release derives its number from production's own and writes it on
+production, overwriting this one there. It is there because a package installed from its own
+development tree must declare a version, and because that declaration is what moves the installed
+copy. It moves when the shape of the product moves — a commit `init` would carry into the projects
+that use it. `{changelog}` is not a file on development: a released section is born on production,
+at the release, and it is not written back.
 
 **Production is a line of releases.** It does not fast-forward onto development and it is not
 development's ancestor: each release is a commit of its own, carrying the development tree as it

@@ -5,7 +5,7 @@ the other four never stop anything and only say what they know.
 
 | Hook | Event | What it does |
 |---|---|---|
-| `lib/command-guard.mjs` | `PreToolUse` on `Bash`/`PowerShell` | denies six gestures: four always, two only where the project declares them |
+| `lib/command-guard.mjs` | `PreToolUse` on `Bash`/`PowerShell` | denies seven gestures: four always, three only where the project declares them |
 | `lib/ask-guard.mjs` | `PreToolUse` on `AskUserQuestion` and on the subagent launch, `PostToolUse` on `AskUserQuestion`, `UserPromptSubmit` | keeps the ask of a run whole: refuses a decision ask whose questions carry no place in the list, refuses a batch that does not continue its list, and refuses the launch of a subagent while the ask is open — a delegation and never a file |
 | `lib/contracts-post-edit.mjs` | `PostToolUse` on `Edit`/`Write` | after a write to the corpus — and to the sources a policy watches — reports faults that would not fail on their own |
 | `lib/run-advice.mjs` | `UserPromptSubmit`, and `PreToolUse` on the write tools | marks the session a run was opened in and states the run's rule once — adding the size of the prompt and the seats that exist for it where the prompt is over the `prompt_dump_chars` the project declares; at a write that conversation makes outside the seats the run owns it repeats the rule — and blocks nothing |
@@ -36,9 +36,9 @@ ones that never saw Daiku. So `command-guard`'s first question is not "is this
 command dangerous?" but "did this project ask for anything?".
 
 1. **Without `.daiku/project.json` it denies nothing**, ever, without even reading the line.
-2. **Two branches have their own switch**: `{worktree.pool}` and `channels.production`. The other
-   four deny always — an agent is never left free to push, to skip commit
-   hooks, to sign a commit as its author, or to work on production:
+2. **Three branches have their own switch**: `{worktree.pool}`, `channels.production` and
+   `{paths.review_state}`. The other four deny always — an agent is never left free to push, to
+   skip commit hooks, to sign a commit as its author, or to work on production:
    never trust an LLM.
 
 | Branch | Switched on by | What it denies |
@@ -46,6 +46,7 @@ command dangerous?" but "did this project ask for anything?".
 | Windows links | *no switch*: `.daiku/` is enough | a recursive removal crossing a junction and emptying the real directory on the other side |
 | worktree pool | `worktree.pool` | removals inside a pool worktree, and `pnpm install` run from one |
 | channels | `channels.production` | `git commit` and `git merge` while the production branch is active, and `git checkout`/`git switch` towards it — the work lives on `channels.development`, and production advances only by a release |
+| review state | `paths.review_state` | `git commit` while no review cycle is in flight — the commit is the closing step of `/daiku:review`, and a green-gated ledger holds it open only briefly; a seat that does not answer allows |
 | `--no-verify` | *no switch*: `.daiku/project.json` is enough | `git commit` with `-n` or `--no-verify`, wherever the flag stands |
 | push | *no switch*: `.daiku/project.json` is enough | `git push`, even inside a wrapper or queued after another command; `--dry-run` no |
 | agent attribution | *no switch*: `.daiku/project.json` is enough | `git commit` whose message credits Claude or Codex — a `Co-Authored-By` naming them or their makers, or a `Generated with` line — in `-m`, `--trailer`, a heredoc or here-string, or the file `-F` names |

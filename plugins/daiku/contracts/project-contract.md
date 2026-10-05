@@ -114,13 +114,16 @@ run before declaring a path covered or uncovered.
 
 ### 4.1 The key a hook reads
 
-The command guard reads two keys. `worktree.pool` lights its worktree branch: a declared pool
+The command guard reads three keys. `worktree.pool` lights its worktree branch: a declared pool
 *is* the declaration that those directories belong to Daiku. `channels.production` lights its
 branch branch: a declared production branch *is* the declaration that the project keeps its work
 on a development branch and lets production advance only by a release, so the guard denies `git
 commit` and `git merge` while production is active and `git checkout`/`git switch` towards it —
 and reads the current branch only on a line that names `git`. Without `channels.production` the
-guard never reads the branch and says nothing. The guard's other four branches
+guard never reads the branch and says nothing. `paths.review_state` lights its review branch: a
+declared seat *is* the declaration that `git commit` closes a review cycle, so the guard denies a
+commit outside one — reading the seat only on a `git commit`, and allowing where the seat does
+not answer. The guard's other four branches
 (junction, `--no-verify`, push, agent attribution) deny on
 every project that opened Daiku, with no switch. `hooks/README.md` carries the full branch table.
 

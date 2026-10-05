@@ -243,17 +243,25 @@ const REAL_ENV = {
 };
 
 /**
- * Ledgers left open: `outcome` still `null`, no `.abandoned` beside them, each with the work it
- * names, its blocking count and the instant it last moved.
+ * The ledgers in the state folder: every file carrying the ledger's own form, with the work it
+ * names, its blocking count, the instant it last moved, and the two fields saying where the cycle
+ * stood when it stopped — `outcome`, and the gate it reached.
+ *
+ * Exported because two readers ask different questions of the same files and must agree on what a
+ * ledger **is**: the Stop notice wants the ones still open, and the review guard of
+ * `command-guard.mjs` wants the ones a commit may close — which include a cycle that has just
+ * exited with a green gate, the exact state in which the review's own commit runs. `openLedgers`
+ * below is the first of the two questions, and nothing else.
+ *
+ * **A seat that does not answer is left to the caller.** Where the state folder cannot be read
+ * this **throws**, and each reader answers it in its own way: the Stop notice stays silent, its
+ * contract being fail-open *and* silent, and the review guard allows the commit. Folding the
+ * non-answer into the empty list would tell the guard that a seat it could not read holds no
+ * cycle — and a commit would be denied over a folder nobody could open.
  */
-export function openLedgers(reviewState, env) {
-  const open = [];
-  let names;
-  try {
-    names = env.list(reviewState);
-  } catch {
-    return open; // missing folder: stay silent
-  }
+export function ledgers(reviewState, env) {
+  const found = [];
+  const names = env.list(reviewState); // a seat that does not answer throws: see above
   const sorted = [...names].sort();
   for (const name of sorted) {
     if (!name.endsWith('.json')) continue;
@@ -265,32 +273,47 @@ export function openLedgers(reviewState, env) {
     }
     if (!ledger || typeof ledger !== 'object' || Array.isArray(ledger)) continue;
     if (!isLedger(ledger)) continue; // another tool's file, or a findings file: not a ledger
-    if (ledger.outcome !== null) continue;
     try {
-      if (env.exists(join(reviewState, name + ABANDONED))) continue; // set aside: no longer open
+      if (env.exists(join(reviewState, name + ABANDONED))) continue; // set aside: not a cycle
     } catch {
-      /* an unanswerable seat is not a declaration: the ledger stays open */
+      /* an unanswerable seat is not a declaration: the ledger stays */
     }
     const item = typeof ledger.item === 'string' && ledger.item.trim() ? ledger.item.trim() : null;
     const files = Array.isArray(ledger.scope_files)
       ? ledger.scope_files.filter((file) => typeof file === 'string' && file.trim())
       : [];
-    open.push({
+    found.push({
       file: name,
       base: typeof ledger.base === 'string' && ledger.base ? ledger.base : '?',
       item: item || '?',
       work: item,
       scope_files: files,
       blocking: blockingItems(ledger),
+      outcome: typeof ledger.outcome === 'string' ? ledger.outcome : null,
+      gate: typeof ledger.gate === 'string' ? ledger.gate : null,
       lastWrite: lastWrite(reviewState, name, sorted, env),
     });
   }
-  return open;
+  return found;
 }
 
-/** Is the cycle still at work? A write inside the quiet window — or no clock to say it is not. */
-function running(entry, now) {
-  return entry.lastWrite !== null && now - entry.lastWrite < QUIET_MS;
+/**
+ * Ledgers left open: `outcome` still `null`, no `.abandoned` beside them, each with the work it
+ * names, its blocking count and the instant it last moved.
+ */
+export function openLedgers(reviewState, env) {
+  return ledgers(reviewState, env).filter((entry) => entry.outcome === null);
+}
+
+/** Is the cycle still at work? A write inside the quiet window — or no clock to say it is not.
+ *
+ * Exported, and with the window as an argument, because the review guard of `command-guard.mjs`
+ * asks two questions of the same ledgers and they are not the same question: whether a cycle is
+ * **alive** (the quiet window, the Stop notice's question too) and whether a commit standing here
+ * is the one a cycle that has just exited decided on (a much shorter one). One function, two
+ * windows, and `QUIET_MS` stays the default. */
+export function running(entry, now, window = QUIET_MS) {
+  return entry.lastWrite !== null && now - entry.lastWrite < window;
 }
 
 /** Every `tool_use` block of one parsed trace line, wherever it sits in it. */
@@ -373,7 +396,12 @@ function instant(env) {
 export function announceable(root, env, ctx, site = {}) {
   if (!ctx || !ctx.present || !ctx.reviewState) return [];
   const now = instant(env);
-  const quiet = openLedgers(ctx.reviewState, env).filter((entry) => !running(entry, now));
+  let quiet;
+  try {
+    quiet = openLedgers(ctx.reviewState, env).filter((entry) => !running(entry, now));
+  } catch {
+    return []; // a seat that does not answer: silence, as for a folder that is not there
+  }
   if (!quiet.length) return [];
   const trace = typeof site.transcript === 'string' ? site.transcript.trim() : '';
   if (!trace) return []; // no trace: whose ledger this is would be a guess
