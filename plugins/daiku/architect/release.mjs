@@ -234,12 +234,13 @@ function changelogWith(text, section, version) {
   const lines = text.split(/\r?\n/);
   const title = lines.findIndex((l) => /^#\s/.test(l));
   if (title < 0) fail('the changelog on production has no `# ...` title line to insert below');
-  const block = `${section.trim()}${eol}${eol}`;
   const before = lines.slice(0, title + 1);
   let at = title + 1;
   while (at < lines.length && lines[at].trim() === '') at += 1;
   const after = lines.slice(at);
-  return [...before, '', ...block.split(eol), ...after].join(eol);
+  // One blank line on either side and no more: the section is written as its own paragraphs, and
+  // the caller's text is not trusted to end without one — the release's spacing is this program's.
+  return [...before, '', ...section.trim().split(eol), '', ...after].join(eol);
 }
 
 /** The `Development:` trailer, appended to the caller's message. */
@@ -582,6 +583,7 @@ function runBench(root) {
       check('release:the-number-lands-in-the-badge', fileAt(repo, 'main', 'README.md').includes('badge/version-1.1.3-'));
       const changelog = fileAt(repo, 'main', 'CHANGELOG.md');
       check('release:the-section-goes-under-the-title', changelog.indexOf('# Changelog') < changelog.indexOf('### 1.1.3'), changelog);
+      check('release:the-section-is-separated-by-exactly-one-blank-line', !/\n\n\n/.test(changelog), JSON.stringify(changelog.slice(0, 200)));
       check('release:the-section-keeps-the-old-ones-below', changelog.includes('### 1.1.2'), changelog);
       check('release:sits-on-the-previous-release', sh(repo, ['log', '-1', '--format=%s', 'main^']).out.startsWith('release 1.1.2'), sh(repo, ['log', '-1', '--format=%s', 'main^']).out);
       check('release:the-anchor-is-recorded', anchorOf(repo, 'main') === sh(repo, ['rev-parse', 'develop']).out);
