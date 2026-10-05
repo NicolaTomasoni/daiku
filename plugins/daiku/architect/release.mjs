@@ -249,6 +249,45 @@ function messageWith(message, developmentSha) {
   return `${body}\n\n${TRAILER}: ${developmentSha}\n`;
 }
 
+/**
+ * The method's own footprint, and it is not the project's to decide: these are the seats Daiku
+ * deposits in every project it opens, and **production is not their place**. A release that
+ * published them would ship the workshop — the parameters, the memory of the agent, the hooks and
+ * the roles — to whoever installs the product, and nothing downstream would ever notice.
+ *
+ * The file of instructions is the fourth, and it is not here because its name is a host parameter:
+ * the caller passes `instructions_file`. `never` carries what the project itself adds, which is
+ * the extension `new-project` asks it for.
+ */
+const METHOD_FOOTPRINT = ['.daiku', '.claude', '.codex'];
+
+/**
+ * The paths that never reach the published tree, as paths of the published tree — the `source`
+ * prefix taken off, and the entries standing outside it dropped, because nothing outside it is
+ * published anyway.
+ */
+function neverPublished(input, source) {
+  const dev = [...METHOD_FOOTPRINT];
+  if (has(input, 'instructions_file') && nonEmpty(input.instructions_file)) {
+    dev.push(cleanPath(input.instructions_file));
+  }
+  if (has(input, 'never')) {
+    if (!Array.isArray(input.never) || !input.never.every(nonEmpty)) {
+      fail('never must be a list of paths, the project\'s own exclusions');
+    }
+    for (const raw of input.never) dev.push(cleanPath(raw));
+  }
+  const out = new Set();
+  for (const path of dev) {
+    const mapped = prodPath(source, path);
+    if (mapped) out.add(mapped.replace(/\/+$/, ''));
+  }
+  return [...out];
+}
+
+/** Whether a file of the tree stands under one of the paths that never reach production. */
+const isNever = (file, never) => never.some((path) => file === path || file.startsWith(`${path}/`));
+
 /** The number production carries now, read from its own version file — the one being replaced. */
 function readVersion(cwd, production, path, field) {
   if (!path) return null;
@@ -305,6 +344,7 @@ function actStatus(input) {
     pending,
     anchor,
     tracking,
+    never: neverPublished(input, source),
     current_version: currentVersion,
     version_file: versionPath,
     checked_out: worktreesOn(cwd, production),
@@ -363,6 +403,17 @@ function actRelease(input, dry) {
     // The base: the development tree, re-rooted where `source` says so. `read-tree <tree>` on a
     // subtree puts its *content* at the root, which is exactly the marketplace repository's shape.
     git(cwd, ['read-tree', source ? `${devTree}:${cleanPath(source.replace(/\/$/, ''))}` : devTree], { env });
+
+    // The workshop comes off the tree before anything is written into it. Where the project declared
+    // a `source`, nothing outside it was read in the first place and this is belt and braces; where
+    // it did not — the ordinary project, whose product is the whole tree — this is the difference
+    // between publishing a product and publishing the method's own seats.
+    const never = neverPublished(input, source);
+    if (never.length) {
+      for (const file of git(cwd, ['ls-files', '-z'], { env }).split('\0')) {
+        if (file && isNever(file, never)) git(cwd, ['update-index', '--force-remove', '--', file], { env });
+      }
+    }
 
     const put = (path, content) => {
       const blob = git(cwd, ['hash-object', '-w', '--stdin'], { env, input: content }).trim();
@@ -665,14 +716,31 @@ function runBench(root) {
       sh(repo, ['commit', '-qm', 'release 2.0.0 — old']);
       sh(repo, ['branch', 'main']);
       write(join(repo, 'nuovo.js'), 'export const a = 1;\n');
+      // The method's seats, which every project has and a product must never ship — plus one path
+      // the project itself asked to keep back.
+      write(join(repo, '.daiku/project.json'), '{\n  "contract": 1\n}\n');
+      write(join(repo, '.daiku/features/x/0. problem.md'), '# x\n');
+      write(join(repo, 'CLAUDE.md'), '# instructions\n');
+      write(join(repo, '.claude/settings.json'), '{}\n');
+      write(join(repo, '.codex/hooks.json'), '{}\n');
+      write(join(repo, 'docs/interni.md'), '# internal\n');
       sh(repo, ['add', '-A']);
       sh(repo, ['commit', '-qm', 'feat: nuovo']);
       const got = call(repo, {
         action: 'release', work_root: repo, development: 'develop', production: 'main',
         version_file: 'package.json', version_field: 'version', changelog: 'CHANGELOG.md',
+        instructions_file: 'CLAUDE.md', never: ['docs/interni.md'],
         version: '2.0.1', section: '### 2.0.1 — 2026-10-05\n\n- Nuovo.\n\n---', message: 'release 2.0.1 — nuovo',
       });
       check('whole:without-source-the-tree-is-the-project', fileAt(repo, 'main', 'nuovo.js') === 'export const a = 1;\n', JSON.stringify(got));
+      check('whole:the-method-footprint-never-reaches-production', ['.daiku/project.json', '.daiku/features/x/0. problem.md', 'CLAUDE.md', '.claude/settings.json', '.codex/hooks.json'].every((p) => fileAt(repo, 'main', p) === null), sh(repo, ['ls-tree', '-r', '--name-only', 'main']).out);
+      check('whole:the-projects-own-exclusion-is-honoured', fileAt(repo, 'main', 'docs/interni.md') === null);
+      check('whole:the-instructions-file-is-excluded-by-its-declared-name', fileAt(repo, 'main', 'AGENTS.md') === null && fileAt(repo, 'develop', 'CLAUDE.md') === '# instructions\n');
+      check('whole:the-status-says-what-will-be-kept-back', call(repo, {
+        action: 'status', work_root: repo, development: 'develop', production: 'main',
+        version_file: 'package.json', version_field: 'version', changelog: 'CHANGELOG.md',
+        instructions_file: 'CLAUDE.md', never: ['docs/interni.md'],
+      }).never.join(' ') === '.daiku .claude .codex CLAUDE.md docs/interni.md');
       check('whole:a-branch-tracking-nothing-is-declared-so', call(repo, {
         action: 'status', work_root: repo, development: 'develop', production: 'main',
         version_file: 'package.json', version_field: 'version', changelog: 'CHANGELOG.md',

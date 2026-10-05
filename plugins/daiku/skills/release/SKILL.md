@@ -29,6 +29,16 @@ development's ancestor: each release is a commit of its own, carrying the develo
 stood at that moment plus the version and the changelog. What makes a release true is therefore not
 a merge but the fact that it was built here, and nothing of it reaches development.
 
+**Production is the product, and the workshop is not the product.** What reaches it is the product
+of the project, never the seats the method deposited there: `.daiku/`, the instructions file, the
+folders `sync-host` writes, the memory root. That is not the project's to decide and this node does
+not decide it either — the program holds the list and takes the paths off the tree — but the
+project **can extend it**, and `{release.never}` is where its own answer lives, the one
+`new-project` asked it for. Where the project declared a `{release.source}` the question is mostly
+moot, because nothing outside that folder is read; where it did not — the ordinary project, whose
+product is the whole tree — the footprint is the whole difference between publishing a product and
+publishing the workshop. Read `never` in the status before releasing: it is what stays behind.
+
 ## When to use it
 
 You run it by hand, on the main tree, when you decide to release. It is not part of any chain and
@@ -61,9 +71,11 @@ saying so, and stop — §6 of `contracts/project-contract.md`, no fallback and 
 
 2. **Measure.** Run `architect/release.mjs` with `action: "status"`, passing the root, the two
    branches and the release's own keys — `{release.source}`, `{version.file}`,
-   `{version.field}`, `{version.replicated_in}`, `{changelog}`. It answers with the development tip,
-   where production stands, `current_version` — the number production carries now — and the three
-   things you need:
+   `{version.field}`, `{version.replicated_in}`, `{changelog}`, `{hosts.<host>.instructions_file}`
+   and the paths that never reach production: `{release.never}` where declared, plus
+   `{memory.root}`. It answers with the development tip,
+   where production stands, `current_version` — the number production carries now — `never`, the
+   paths it will keep back, and the three things you need:
    - **`anchor`** — the development sha the last *published* release carried, or `null` where there
      is none. It is where the block starts.
    - **`pending`** — production's tip is a release nothing has pushed: a **draft**.

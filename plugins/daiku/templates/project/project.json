@@ -43,7 +43,8 @@
     "production": "<name of the production branch, a line of releases: the work does not commit there and it advances only by a release; drop this key and the branch guard stays off>"
   },
   "release": {
-    "source": "<folder of the development branch whose content becomes the production tree, where the two sides do not have the same shape — e.g. plugins; drop this key where they do>"
+    "source": "<folder of the development branch whose content becomes the production tree, where the two sides do not have the same shape — e.g. plugins; drop this key where they do>",
+    "never": ["<paths that never reach production, on top of the method's own footprint — drop this key where there are none>"]
   },
   "areas": {
     "<area name>": {
