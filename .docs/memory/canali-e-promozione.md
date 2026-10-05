@@ -52,5 +52,5 @@ hook di pacchetto giri davvero a runtime (`.daiku/studies/codex-hooks.md`). E va
 `init` e i suoi rilanci lascino sempre la copia principale sul ramo di sviluppo, così che la
 fusione della fase 6b non venga negata dalla guardia accesa.
 
-Vedi [[punti-ingresso-prodotto]] per l'undicesimo entry point, [[guardrail-nascono-spenti]] per i
+Vedi [[punti-ingresso-prodotto]] per il decimo entry point, [[guardrail-nascono-spenti]] per i
 rami accesi e spenti, e [[tre-livelli-di-parametro]] per la sede del valore.

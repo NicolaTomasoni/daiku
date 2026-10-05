@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 43bcfac4-1cc3-4310-acf9-530699fcf261
-  modified: 2026-10-03T17:38:03.540Z
+  modified: 2026-10-05T07:27:54.347Z
 ---
 
 **Dal 23 settembre 2026 il prodotto ha un valutatore deterministico.** È
@@ -54,9 +54,10 @@ resto del pacchetto discendono da qui, e sono la parte che conta:
   merito della regola 3 resta dell'agente, che lo passa come `merit` e il programma lo traduce
   nell'uscita.
 - **Il pool dei worktree ha il suo lato disco.** `architect/pool.mjs` misura Git — quali slot sono
-  registrati, quali hanno l'albero pulito — scrive il registro del pool, l'unico a scriverlo,
-  validandolo contro `schemas/blocks.json` § *pool*, e chiede al valutatore la domanda `pool`:
-  riuso dello slot pulito, creazione del numero libero più basso, o rifiuto a tetto raggiunto.
+  registrati, quali hanno l'albero pulito — legge il registro del pool sotto un lock esclusivo, ne è
+  l'unico a scriverlo, validandolo contro `schemas/blocks.json` § *pool*, e chiede al valutatore la
+  domanda `pool`: riuso dello slot pulito che nessuna consegna tiene, presa in carico del proprio,
+  creazione del numero libero più basso, o rifiuto a tetto raggiunto.
   Prima era prosa scritta a mano, e portava una condizione di «libero» — `HEAD == HEAD(<INT>)` —
   che nessuno slot soddisfaceva mai, così il pool non riciclava e si saturava. Vedi [[pool-worktree]].
 - **La riconciliazione di un merge ostruito ha il suo lato disco.** `architect/reconcile.mjs` misura Git — il merge-base, i percorsi ostruiti, le righe che ciascuna parte cambia — scrive in un patch il lavoro non committato dell'albero di lavoro, e chiede al valutatore la domanda `reconcile`: `reconcile` quando le due parti sono disgiunte a riga, `stop` quando toccano le stesse righe, perché una fusione lì è una scelta con tradeoff e la prende l'owner.
