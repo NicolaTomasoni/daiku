@@ -36,11 +36,12 @@ in corso: è il delta che un `update-memory` chiuderà al commit, non una correz
 li cercano lì, non perché appartengano a un prodotto.
 
 **In radice non entra nessun file di prodotto.** Ci stanno solo le sedi di sviluppo e una
-cartella, che è **per intero** la radice del repository pubblico del prodotto: si copia tutta e sola, così com'è.
+cartella, il cui **contenuto** è per intero la radice di `main`: il rilascio lo porta lì così com'è,
+e nient'altro esce.
 
 | Sede | Cos'è |
 |---|---|
-| `plugins/` | **Daiku** — la radice del suo repository pubblico, che è un marketplace |
+| `plugins/` | **Daiku** — il cui contenuto è la radice di `main`, il ramo di produzione, che è un marketplace |
 | `plugins/.claude-plugin/marketplace.json` | vetrina Claude Code, punta a `./daiku` |
 | `plugins/.agents/plugins/marketplace.json` | vetrina Codex, stessa destinazione |
 | `plugins/daiku/` | il pacchetto Daiku — ciò che gli host installano |
@@ -63,8 +64,8 @@ Un file che il repository pubblico deve avere in
 radice — il README, il `.gitattributes`, le vetrine — sta nella radice della cartella del
 prodotto, mai in quella di questo repository.
 
-**Qui Daiku è installato dal marketplace online**, `NicolaTomasoni/daiku`, sul canale **beta**: lo
-strumento con cui Daiku si sviluppa è l'ultima beta pubblicata, e resta indietro di un rilascio
+**Qui Daiku è installato dal marketplace online**, `NicolaTomasoni/daiku`, sul ramo di produzione
+`main`: lo strumento con cui Daiku si sviluppa è l'ultimo rilascio pubblicato, e resta indietro
 rispetto a `plugins/`. È una scelta, non una trascuratezza.
 
 ## Prodotto e cantiere
@@ -72,41 +73,48 @@ rispetto a `plugins/`. È una scelta, non una trascuratezza.
 **Con cui Daiku si sviluppa sono le skill di Daiku stesso**: aprire una feature, consegnarla, il
 ciclo di review, il commit e l'allineamento della memoria si lanciano come `daiku:*`, dal pacchetto
 installato dal marketplace. Sotto `.claude/commands/` restano **solo i comandi che il prodotto non
-ha** — `collauda-init`, `rilascia-daiku`, `studia-repository`, `studia-repository-lotto`,
-`translate-skill`.
+ha** — `studia-repository`, `translate-skill`. Il rilascio non è fra loro: lo fa `release`, che è
+una skill del pacchetto come le altre.
 
 **Le skill del metodo si modificano solo in `plugins/daiku/skills/`.** Una modifica che valga per
 il prodotto si scrive **solo** lì, che è l'unico albero pubblicato; riportarla in un comando del
 cantiere è una decisione a parte, che chiedi invece di prendere. Vale allo stesso modo per
 `.claude/orchestration.md`.
 
-## Due repository: qui si sviluppa, altrove si pubblica
+## Un repository, due rami: `develop` e `main`
 
-Questo repository è lo **sviluppo**: `tomasoni.nicola/daiku-dev` su GitLab, privato, e con
-dentro tutto — il prodotto, ricognizione, punti aperti, memoria, esempi, istruzioni. Non
-diventa mai pubblico, e la sua storia non si ripulisce: porta `CLAUDE.md` nel commit iniziale.
+Il repository è **uno solo**: `NicolaTomasoni/daiku` su GitHub, privato finché Daiku non è pronto per
+il pubblico. Il cantiere e il prodotto sono i suoi due rami, e la copia di lavoro è
+`C:\dev\daiku-workspace\daiku-dev`, che li tiene entrambi.
 
-La **pubblicazione** è il repository `NicolaTomasoni/daiku` su GitHub, che non è un branch
-di questo né un fork: è un albero generato, inglese sempre e tutto — riceve il contenuto di
-`plugins/`, che è inglese per intero, e non gli si aggiunge niente in pubblicazione. A ogni rilascio lo script
-`.docs/tools/pubblica-dist.ps1`, chiamato dal comando `/rilascia-daiku`, copia lì il contenuto di
-`plugins/` e committa sul ramo **beta**; la produzione è `main`, e ci arriva per promozione con
-`promuovi-dist.ps1`. Là dentro non si lavora mai; il suo checkout
-di servizio sta in `C:\dev\daiku-workspace\daiku`.
+**`develop` è il cantiere.** Porta tutto — il prodotto sotto `plugins/`, la ricognizione, i punti
+aperti, la memoria, gli esempi, queste istruzioni — ed è il ramo su cui si lavora. **Non porta numeri
+di versione**: i due manifest restano al segnaposto `0.0.0`, che Codex esige perché la chiave non può
+mancare, e `plugins/CHANGELOG.md` qui non esiste.
 
-| Prodotto | Repository di pubblicazione | Cosa si copia |
-|---|---|---|
-| Daiku | `NicolaTomasoni/daiku`, privato finché Daiku non è pronto per il pubblico | il contenuto di `plugins/`, portato in radice |
+**`main` è la produzione, ed è una linea di rilasci.** Ogni rilascio è un commit che porta il
+contenuto di `plugins/` alla radice del repository — le due vetrine, `daiku/`, il README, il
+`.gitattributes` — con la versione nei tre punti e la voce di changelog costruita dai messaggi del
+blocco. `main` **non è antenata di `develop`**, e niente di un rilascio torna indietro: un numero o
+una sezione di changelog che ricompaiano su `develop` sono un guasto, non un allineamento.
 
-Serve perché chi aggiunge il marketplace riceve un clone dell'**intero** repository, non
-solo di `plugins/daiku/` — lo schema di Claude Code lo dice alla voce `sparsePaths`, «If omitted,
-the full repository is cloned». Il repo *è* l'artefatto consegnato: non c'è un passo di
+**I rilasci li fa Daiku stesso**, con la skill `release` del pacchetto — non un comando del cantiere e
+due script, che non esistono più. Legge `develop`, costruisce il commit di produzione con la plumbing
+di git e muove il ref **senza mettersi mai su `main`**: la guardia del ramo resta intera, e il
+rilascio non può scriverci lavoro per costruzione. Finché un rilascio non è pushato è una **bozza**, e
+i commit che arrivano nel frattempo si aggiungono a lui invece di aprire una versione nuova. Un
+rilascio si chiude col push, che resta il gesto manuale dell'owner.
+
+Il confine fra cantiere e prodotto è il ramo, e dentro `plugins/` è inglese tutto: il prodotto parla
+inglese, il cantiere italiano.
+
+Perché due rami e non un `.gitignore`: chi aggiunge il marketplace riceve un clone dell'**intero**
+repository, non solo di `plugins/daiku/` — lo schema di Claude Code lo dice alla voce `sparsePaths`,
+«If omitted, the full repository is cloned». Il repo *è* l'artefatto consegnato: non c'è un passo di
 impacchettamento dove mettere il filtro, come farebbe il campo `files` di un `package.json`.
 
-Il confine non sta nel `.gitignore`, che in radice esclude solo `.claude/settings.local.json`. Sta
-nel perimetro della cartella di prodotto: lo script copia quella cartella e nient'altro, mai
-«tutto il repository tranne». Un file nuovo nato fuori da `plugins/` resta
-fuori dai pacchetti pubblicati; uno nato dentro, esce.
+Il confine non guarda *dentro* i file: ciò che sta sotto `plugins/` esce com'è. Prima di un rilascio,
+controlla che non porti con sé valori di un progetto ospite o path di questa macchina.
 
 E il confine non guarda *dentro* i file: ciò che sta sotto `plugins/` viene
 pubblicato com'è. Prima di un rilascio, controlla che non porti con sé valori di un progetto
@@ -215,7 +223,7 @@ segnalare le skill che si caricherebbero con i metadati vuoti.
 
 Nessuno dei due però guarda dentro il codice eseguibile del pacchetto: gli hook, tutti
 **fail-open** — davanti a un guasto tacciono ed escono `0`, quindi rotti e silenziosi si
-assomigliano — i quattro programmi di `plugins/daiku/architect/` e la scansione di `init`,
+assomigliano — i cinque programmi di `plugins/daiku/architect/` e la scansione di `init`,
 `plugins/daiku/skills/init/scan.mjs`. La terza verifica è la loro, e vale come le altre due:
 
 ```bash
@@ -223,10 +231,11 @@ node plugins/daiku/hooks/self-check.mjs
 ```
 
 Lancia insieme i banchi di prova di tutto ciò che il pacchetto esegue — i moduli di
-`plugins/daiku/hooks/lib/`, il banco dei manifest degli host, i quattro programmi di
+`plugins/daiku/hooks/lib/`, il banco dei manifest degli host, i cinque programmi di
 `plugins/daiku/architect/` e `skills/init/scan.mjs` — stampa il totale contato ed esce `1` al primo caso rosso: quanti
-banchi e quanti controlli siano lo dice la sua uscita, non questa riga. Il banco del ledger lavora
-con Git vero su repository usa e getta nella cartella temporanea di sistema: vuole `git` nel `PATH`.
+banchi e quanti controlli siano lo dice la sua uscita, non questa riga. I banchi del ledger e del
+rilascio lavorano con Git vero su repository usa e getta nella cartella temporanea di sistema: vogliono
+`git` nel `PATH`.
 
 ```bash
 node .docs/tools/check-topology.mjs plugins/daiku
@@ -236,16 +245,14 @@ Verifica la topologia del corpus (nodi su disco = righe di tabella, handoff fra 
 rimandi di sezione), con totale contato ed uscita `1` al primo caso rosso. Si lancia a mano
 prima di un rilascio, accanto al self-check.
 
-```bash
-node .docs/tools/check-corpus.mjs plugins/daiku
-```
-
-Verifica le sette invarianti che i contratti dichiarano in prosa ma nessun altro controllo impone —
-nessun carattere di controllo in una riga, ogni chiave `{…}` citata esistente con lo specchio
-`schemas/blocks.json` concorde con la prosa, ogni path interno che risolve, ogni blocco json
-parsabile, nessuna skill che nomina un modello, la riga d'apertura §5.1 dove serve, l'agente dal
-toolset ristretto — con totale contato, il banco in `--self-check` ed uscita `1` al primo caso
-rosso. Si lancia a mano prima di un rilascio, accanto agli altri.
+Il corpus è verificato dal **gate dell'area `daiku`** (`.daiku/project.json`): la fase *Gate* della
+skill `review` — che `ship-feature` esegue — lancia `check-corpus.mjs` da sé su ogni consegna che
+tocca `plugins/daiku/`, e un rosso blocca il commit. Copre le sette invarianti che i contratti
+dichiarano in prosa ma nessun altro controllo impone — nessun carattere di controllo in una riga,
+ogni chiave `{…}` citata esistente con lo specchio `schemas/blocks.json` concorde con la prosa, ogni
+path interno che risolve, ogni blocco json parsabile, nessuna skill che nomina un modello, la riga
+d'apertura §5.1 dove serve, l'agente dal toolset ristretto — con totale contato ed uscita `1` al
+primo caso rosso. Il banco del controllo si lancia con `node .docs/tools/check-corpus.mjs --self-check`.
 
 Nessuno di questi guarda le **due vetrine** del repository pubblicato — la sola parte che il
 repository studiato ha rotto senza accorgersene, e l'unica il cui errore non si vede in locale ma
@@ -265,13 +272,11 @@ pacchetto — e ha il suo banco, da lanciare accanto al controllo:
 node .docs/tools/check-marketplace.mjs --self-check
 ```
 
-Due verifiche riguardano il **cantiere**, non il pacchetto: che nessuno script invochi un push —
-una riga dentro un file non passa da nessuna guardia — e che i due script di canale si comportino
-come dichiarato su repository usa e getta:
+Una verifica riguarda il **cantiere**, non il pacchetto: che nessuno script invochi un push — una
+riga dentro un file non passa da nessuna guardia:
 
 ```bash
 node .docs/tools/check-no-push.mjs --self-check
-node .docs/tools/check-channel.mjs
 ```
 
 <!-- daiku:instructions — this file was structured by Daiku's init skill. It is yours now: rewrite

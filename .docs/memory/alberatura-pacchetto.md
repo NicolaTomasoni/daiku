@@ -8,10 +8,11 @@ metadata:
   modified: 2026-10-03
 ---
 
-Il repo ospita il prodotto Daiku. Questo repository sta in `C:\dev\daiku-workspace\daiku-dev`,
-affiancato al checkout `daiku` della pubblicazione. **In radice non entra
+Il repo ospita il prodotto Daiku. Il repository è **uno solo** — `NicolaTomasoni/daiku` su GitHub,
+con `develop` cantiere e `main` produzione — e la copia di lavoro sta in
+`C:\dev\daiku-workspace\daiku-dev`. **In radice non entra
 nessun file di prodotto**: ci sono le sedi di sviluppo e una cartella,
-che è per intero la radice del suo repository pubblico — `plugins/`.
+il cui **contenuto** è per intero la radice di `main` — `plugins/`.
 
 `plugins/` è **insieme marketplace e pacchetto**: una sola alberatura serve Claude Code e Codex,
 perché i due host cercano file con nomi diversi e ignorano quelli dell'altro.
@@ -26,7 +27,7 @@ perché i due host cercano file con nomi diversi e ignorano quelli dell'altro.
 | `contracts/` | `orchestration.md`, `project-contract.md` | le skill li aprono per path; non sono skill loro stessi |
 | `agents/` | `finder` — l'unico subagent a toolset ristretto | solo Claude Code: Codex lo rifiuta |
 | `hooks/` | il wiring `hooks.json`, i **sei hook** in `lib/` e i **due moduli** che importano (`project-root.mjs`, `daiku-config.mjs`); accanto, fuori da `lib/`, `self-check.mjs`, `template-check.mjs` e `README.md`, che sono di chi sviluppa il pacchetto e non si trasportano | solo Claude Code: su Codex `plugin_hooks` è rimossa |
-| `architect/` | `architect.mjs`: il **valutatore deterministico** — risponde a undici domande meccaniche e tiene l'ordine della catena; `ledger.mjs`: lo **strumento lato disco della review** — legge Git, scrive il ledger e chiede i verdetti al valutatore; `pool.mjs`: il **lato disco del pool dei worktree** — legge Git, scrive il registro del pool e chiede al valutatore lo slot da prendere; `reconcile.mjs`: il **lato disco della riconciliazione del merge** — legge Git, misura se le due parti di un merge ostruito toccano le stesse righe e chiede al valutatore il verdetto, atterrando il merge quando sono disgiunte. Ciascuno col suo banco, che `hooks/self-check.mjs` lancia (vedi [[valutatore-deterministico]] e [[pool-worktree]]) | l'agente, che li invoca: non sono hook, nessun `hooks.json` li nomina, e non si installano in un progetto |
+| `architect/` | `architect.mjs`: il **valutatore deterministico** — risponde a undici domande meccaniche e tiene l'ordine della catena; `ledger.mjs`: lo **strumento lato disco della review** — legge Git, scrive il ledger e chiede i verdetti al valutatore; `pool.mjs`: il **lato disco del pool dei worktree**; `reconcile.mjs`: il **lato disco della riconciliazione del merge**; `release.mjs`: il **lato disco del rilascio** — costruisce l'albero di production dallo sviluppo su un indice usa-e-getta e muove il ref, senza mettersi mai su production. Ciascuno col suo banco, che `hooks/self-check.mjs` lancia (vedi [[valutatore-deterministico]], [[pool-worktree]], [[canali-e-promozione]]) | l'agente, che li invoca: non sono hook, nessun `hooks.json` li nomina, e non si installano in un progetto |
 | `schemas/` | `blocks.json`: lo specchio controllabile dei blocchi di ritorno — la prosa del nodo resta normativa | i controlli scritti a mano e gli umani che scrivono i nodi |
 | `templates/` | gli scheletri che finiscono nel progetto ospite: `init` copia `project/` sotto `.daiku/` e nel file di istruzioni, e `vscode/tasks.json`, che porta il task `daiku: update`; `sync-host` copia `codex/hooks.json`. I cinque scheletri `project/documents/` (PRODUCT, BRAND, DOMAIN, STACK, ARCHITECTURE) fanno eccezione: `new-project` li legge in place e scrive i documenti ai path dichiarati in `documents.*` | per lo più nessuno: vengono copiati, non letti in place — tranne i cinque `project/documents/`, che `new-project` legge in place |
 | `.claude-plugin/`, `.codex-plugin/` | i due manifest, uno per host | gli host, all'installazione |
@@ -48,11 +49,11 @@ solo `.gitignore` e `.gitattributes` del repository di sviluppo.
 
 - **`CLAUDE.md`** — le istruzioni per chi sviluppa Daiku. Non è Daiku.
 - **`.claude/`** — come si lavora *su* Daiku, non come Daiku funziona. Dentro c'è:
-  - `orchestration.md` + `commands/` (tre comandi: `rilascia-daiku`,
-    `studia-repository`, `translate-skill`) — i soli
+  - `orchestration.md` + `commands/` (due comandi: `studia-repository`,
+    `translate-skill`) — i soli
     contratti di sviluppo che il prodotto non ha, coi valori scritti per esteso e senza worktree.
-    Il resto del metodo sono le skill di Daiku installate dal marketplace. Vedi
-    [[corpus-di-sviluppo]].
+    Il resto del metodo sono le skill di Daiku installate dal marketplace, **rilascio compreso**.
+    Vedi [[corpus-di-sviluppo]].
   - `settings.local.json` — punta `autoMemoryDirectory` (vedi [[memoria-nel-repo]]).
 - **`.vscode/`** — `tasks.json` con gli switch fra backend LLM: tooling personale dell'owner, con
   path della sua home. Non c'entra niente con Daiku.
@@ -88,12 +89,11 @@ solo `.gitignore` e `.gitattributes` del repository di sviluppo.
 - `tools/studia-repository/corsa.mjs` — l'attrezzo deterministico del comando
   `studia-repository`: legge l'elenco, apre la cartella della corsa e ne chiude il gate, col suo
   banco (`--self-check`)
-- `tools/` — accanto, la pubblicazione
-  (`pubblica-dist.ps1` che committa sul canale beta e `promuovi-dist.ps1` che prepara la
-  produzione: **non** pushano — vedi [[push-solo-manuale]] e [[pubblicazione-su-github]]) col loro
-  banco (`check-channel.mjs`), il controllo che nessuno script del cantiere invochi un push
-  (`check-no-push.mjs`) e `macchina/`,
-  i sorgenti delle guardie di macchina (vedi [[guardie-di-macchina]])
+- `tools/` — il controllo che nessuno script del cantiere invochi un push (`check-no-push.mjs`),
+  accanto ai controlli del corpus e delle vetrine, e `macchina/`,
+  i sorgenti delle guardie di macchina (vedi [[guardie-di-macchina]]). **Non c'è più niente che
+  pubblichi**: il rilascio lo fa `daiku:release`, e il push resta dell'owner —
+  [[push-solo-manuale]] e [[pubblicazione-su-github]]
 
 ## I nomi che si somigliano e non c'entrano niente
 
@@ -127,7 +127,7 @@ rifiuta `agents`, `commands` e `hooks`, e `plugin_hooks` è una feature rimossa.
 livelli li scrive `sync-host` dentro il progetto, in `.codex/hooks/` e `.codex/agents/` — non
 `init`, che scrive `.daiku/` e poi lo lancia come ultimo passo.
 
-Cosa esce e cosa resta **non** lo decide più il `.gitignore`, che qui esclude solo
-`.claude/settings.local.json`: lo decide la lista di copia dello script di pubblicazione. Vedi
-[[si-pubblica-solo-il-prodotto]] e [[pubblicazione-su-github]]. Per il difetto che la migrazione a
-`skills/` ha fatto emergere, vedi [[frontmatter-skill-va-quotato]].
+Cosa esce e cosa resta **non** lo decide il `.gitignore`, che qui esclude solo
+`.claude/settings.local.json`: lo decide il ramo. Il rilascio prende il contenuto di `plugins/` e
+nient'altro. Vedi [[si-pubblica-solo-il-prodotto]] e [[pubblicazione-su-github]]. Per il difetto che
+la migrazione a `skills/` ha fatto emergere, vedi [[frontmatter-skill-va-quotato]].

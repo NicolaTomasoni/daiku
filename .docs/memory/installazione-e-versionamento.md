@@ -63,24 +63,25 @@ Claude Code legge `~/.claude/skills/`. Il prezzo è dichiarato: si perdono versi
 aggiornamento comandato e tutto ciò che non è una skill. Se la macchina del pacchetto diventasse
 troppo cara da mantenere su due host, è lì che si ripiega.
 
-**Il canale beta si installa con una ref, e il default branch resta chi era.** Verificato il
+**Un ramo diverso dal default si installa con una ref, e il default resta chi era.** Verificato il
 1° ottobre 2026 su `NicolaTomasoni/daiku` puntando a un branch inesistente, così il fallimento
-non registra niente: `claude plugin marketplace add "https://github.com/<owner>/<repo>.git#beta"`
-risponde «Remote branch beta not found in upstream origin», e
-`codex plugin marketplace add <owner>/<repo>@beta` → `git checkout beta failed`. Cioè la ref la
+non registra niente: `claude plugin marketplace add "https://github.com/<owner>/<repo>.git#<ref>"`
+risponde «Remote branch <ref> not found in upstream origin», e
+`codex plugin marketplace add <owner>/<repo>@<ref>` → `git checkout <ref> failed`. Cioè la ref la
 capiscono entrambi e il trasporto è sano: manca solo il branch. La forma breve
-`<owner>/<repo>#beta` su Claude Code **non** va su questa macchina — passa da SSH e muore su
+`<owner>/<repo>#<ref>` su Claude Code **non** va su questa macchina — passa da SSH e muore su
 `No ED25519 host key is known for github.com` — mentre il marketplace già registrato si aggiorna
-senza problemi (`claude plugin marketplace update daiku`). Chi installa senza ref prende `main`:
-il comando di installazione della produzione non cambia.
+senza problemi (`claude plugin marketplace update daiku`). Chi installa senza ref prende il default
+branch: il comando di installazione non cambia, e **oggi quel default è `main`**, l'unico ramo da
+cui si installa — vedi [[pubblicazione-su-github]].
 
-**Cambiare canale su una macchina e' remove + add + install, in quest'ordine.** Verificato il
-1° ottobre 2026 su `claude`: `marketplace add "https://github.com/<owner>/<repo>.git#beta"` clona
+**Cambiare ref su una macchina e' remove + add + install, in quest'ordine.** Verificato il
+1° ottobre 2026 su `claude`: `marketplace add "https://github.com/<owner>/<repo>.git#<ref>"` clona
 e valida («Successfully added marketplace: daiku (declared in user settings)»), ma **togliere un
 marketplace porta via il plugin che da li' era installato** — `plugin update daiku` risponde
 «Plugin "daiku" is not installed». Quindi il giro e' `marketplace remove`, `marketplace add` con
 la ref, e `plugin install daiku@daiku`. Il marketplace sta nelle impostazioni dell'utente, quindi
-il canale vale per tutta la macchina, non per un progetto.
+la scelta vale per tutta la macchina, non per un progetto.
 
 **Why:** la forma breve `owner/repo` la accettano entrambi gli host solo per GitHub, ed è ciò che
 tiene le istruzioni di installazione corte — vedi [[pubblicazione-su-github]].

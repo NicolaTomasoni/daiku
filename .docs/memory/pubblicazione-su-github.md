@@ -1,72 +1,58 @@
 ---
 name: pubblicazione-su-github
-description: "daiku-workspace tiene affiancati lo sviluppo (daiku-dev su GitLab, «dev») e il checkout della pubblicazione (NicolaTomasoni/daiku su GitHub, «prod», privato finché il prodotto non è pronto) — i due canali beta e main con la regola di promozione, gli script e cosa ricontrollare prima di aprire"
+description: "Il repository è uno solo — `NicolaTomasoni/daiku` su GitHub, con `develop` cantiere e `main` linea di rilasci: i rilasci li fa `daiku:release`, una bozza si accumula finché non è pushata, e il push resta dell'owner"
 metadata:
   node_type: memory
   type: project
   originSessionId: 69438169-0316-47c8-a4e8-3365650ee2cf
-  modified: 2026-09-29T19:55:46.000Z
+  modified: 2026-10-05T00:00:00.000Z
 ---
 
-Su questa macchina sviluppo e pubblicazione stanno affiancati in `C:\dev\daiku-workspace\`,
-che non è un repository git: `daiku-dev` è questo repository, `daiku` è il checkout di
-servizio della pubblicazione (vedi [[si-pubblica-solo-il-prodotto]]).
+**Dal 5 ottobre 2026 il repository è uno solo.** `NicolaTomasoni/daiku` su GitHub, privato finché
+Daiku non è pronto per il pubblico, con **due rami**: `develop` è il cantiere, `main` è la
+produzione. Non ci sono più due repository — `tomasoni.nicola/daiku-dev` su GitLab è **congelato**
+dal giorno della migrazione, non riceve più push, e la sua storia è stata importata in `develop`.
 
-**«dev» è questo repository, «prod» è `NicolaTomasoni/daiku` su GitHub.** Quando l'utente
-dice prod non parla di un ambiente di produzione: parla del repository pubblicato.
+La copia di lavoro è `C:\dev\daiku-workspace\daiku-dev`, che tiene entrambi i rami. Il vecchio
+checkout di servizio `C:\dev\daiku-workspace\daiku` è stato **ritirato**: il rilascio non ne ha
+bisogno, perché non si mette mai su production.
 
-- Lo **sviluppo** è `tomasoni.nicola/daiku-dev` su GitLab, privato per sempre.
-La storia di **prod** comincia da un **commit radice vuoto** — nessun file, nessun genitore.
-Non c'è niente prima, e `main` è l'unico ref: niente tag, niente release, niente PR.
+`develop` **non porta numeri di versione**: i due manifest restano al segnaposto `0.0.0` — Codex
+esige strict semver, quindi la chiave non può mancare — e `plugins/CHANGELOG.md` non esiste lì.
+`main` porta versione e changelog, ed è **una linea di rilasci**: non è antenata di `develop`, e
+niente di un rilascio torna indietro.
 
-- La **pubblicazione** è `NicolaTomasoni/daiku` su GitHub, privato
-  finché Daiku non è pronto per il pubblico. La alimenta
-  `.docs/tools/pubblica-dist.ps1`, chiamato dal comando `/rilascia-daiku`, sul ramo **beta**.
-  Un collega si invita lì come collaborator, mai sullo sviluppo.
+**I rilasci li fa Daiku stesso**, con la skill `release` del pacchetto e il programma
+`plugins/daiku/architect/release.mjs`. Il comando `/rilascia-daiku` e i due script PowerShell non
+esistono più: erano il macchinario scritto perché Daiku non sapeva fare il rilascio da sé. Il
+programma legge `develop`, ri-radica il contenuto di `plugins/` alla radice dell'albero di
+production, ci scrive versione e changelog, e **muove il ref senza mettersi mai su `main`** — indice
+usa-e-getta, `write-tree`, `commit-tree`, `update-ref`. La guardia del ramo resta intera: `git
+commit` su production non gira mai.
 
-**Due canali, un repository.** Il checkout di dist lavora stabilmente sul ramo **beta**: ogni
-rilascio atterra lì. La produzione è **main**, e ci arriva solo per promozione, con
-`.docs/tools/promuovi-dist.ps1`, che sposta `main` su un commit di beta dopo aver verificato che
-sia un fast-forward — portandosi dietro tutte le patch arretrate, perché la storia è lineare.
+**Una bozza si accumula.** Finché il commit in testa a `main` non è pushato è una **bozza**: il
+rilascio successivo lo **sostituisce** invece di aprire una versione nuova, e i commit arrivati nel
+frattempo si aggiungono a lui. La cosa si giudica dall'upstream: senza upstream un ramo non risponde
+alla domanda «è pushato?» e nessun rilascio si accumula, quindi `release` lo dichiara nel `status`.
+L'ancora del blocco è il trailer `Development:` che il programma scrive in ogni rilascio: la prima
+1.1.3 ne è priva — l'ha scritta il macchinario vecchio — quindi il primo rilascio col macchinario
+nuovo copre tutta la storia finché non ne nasce uno con il trailer.
 
-| Bump | Dove va il rilascio |
-|---|---|
-| `patch` | solo beta, salvo l'ordine esplicito `--with-main` |
-| `minor`, `major` | beta e main |
+**Il push non è della macchina.** `release` scrive il ref locale e si ferma; il push è il gesto
+manuale dell'owner — vedi [[push-solo-manuale]]. Un rilascio si chiude col push, non col nodo.
 
-Il default branch resta `main`, verificato il 1° ottobre 2026: chi installa da `owner/repo` senza
-ref prende la produzione, e il comando di installazione non cambia. L'installazione del canale
-beta è in [[installazione-e-versionamento]].
+**Why:** la forma breve `owner/repo` è quella che entrambi gli host accettano per un marketplace —
+`/plugin marketplace add owner/repo` su Claude Code, `codex plugin marketplace add owner/repo` su
+Codex — e vale solo per GitHub. Tenere due repository costringeva a copiare il prodotto da uno
+all'altro a ogni rilascio, e la copia non è mai stata il problema: il problema era che Daiku non
+sapeva fare il rilascio da sé. Ora lo sa, e il cantiere è la sua prima prova.
 
-**Why:** per Daiku conta la forma breve `owner/repo`, che entrambi gli host accettano solo per
-GitHub — `/plugin marketplace add owner/repo` su Claude Code, `codex plugin marketplace add
-owner/repo` su Codex. Un GitLab richiederebbe l'URL git completo su tutti e due, e allungherebbe
-le istruzioni di installazione senza dare nulla in cambio. La pubblicazione sta su GitHub
-per questo; lo sviluppo sta su GitLab, dove la forma breve non serve.
+**How to apply:** il rilascio si lancia come `daiku:release`. Prima del push, `release` può girare
+in `action: "dry"`: fa tutto tranne muovere il ref, e riporta il commit che scriverebbe. Il gate
+largo resta **prima** dell'apertura al pubblico, perché da quel momento ciò che sta sotto `plugins/`
+esce com'è scritto: `grep -rin "reforgia\|<username>\|c:/dev/" plugins/daiku/` e ogni occorrenza va
+guardata.
 
-**How to apply:** il rilascio ha un percorso solo, `.claude/commands/rilascia-daiku.md`. Prima il
-ciclo di **code review** sul diff del rilascio — `daiku:code-review`, in loop finché il codice
-smette di cambiare — e il **commit in dev** di quello che lascia: è il default, e il comando non
-chiede se committare prima. Poi le verifiche verdi — le due vetrine comprese, perché il loro guasto
-si vede solo in chi installa —, la versione scritta nei due manifest e nel badge del README con la
-verifica di rilettura, la prosa AI (voce di changelog e messaggio `release X.Y.Z`), l'ultimo commit
-in dev con versione e changelog, e solo dopo la pubblicazione con `pubblica-dist.ps1`, che scrive
-su beta in UN commit e si ferma se il checkout non sta su beta.
-**Dev è la fonte, la dist è la copia:** pubblicare prima di committare lascia in dev una versione
-che non esiste in nessun commit, e il rilascio successivo calcolerebbe il perimetro da un albero
-sbagliato.
-**Il push non è della macchina:** `pubblica-dist.ps1` committa e `promuovi-dist.ps1` prepara
-`main`, e si fermano — pushava da sé fino al 30 settembre 2026, quando un rilascio uscì prima che
-l'owner lo decidesse. Restano due gesti manuali: `beta` a ogni rilascio, `main` quando c'è una
-promozione. In questo repository `.claude/settings.json` nega il push.
-È l'unico percorso di rilascio: la versione la scrive la sessione nei tre punti.
-`pubblica-dist.ps1` esegue a ogni pubblicazione il gate stretto (path di questa macchina,
-nome utente, segnaposto non sostituiti, nome del repo di sviluppo). Il gate largo resta
-**prima** dell'apertura al pubblico, perché da quel momento ciò che sta sotto `plugins/` esce
-com'è scritto: `grep -rin "reforgia\|<username>\|c:/dev/" plugins/daiku/`
-e ogni occorrenza va guardata — un path di questa macchina finito in un template, in un banco
-di prova o in una fixture è esattamente ciò che il gate esiste per fermare.
-
-Nota pratica: installare Daiku da un repository privato richiede credenziali git sulla macchina
-di chi installa. Per provare il pacchetto in locale conviene un marketplace da path, che non
-passa da git.
+Nota pratica: installare Daiku da un repository privato richiede credenziali git sulla macchina di
+chi installa. Per provare il pacchetto in locale conviene un marketplace da path, che non passa da
+git.
