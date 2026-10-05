@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 48eaa498-ed6e-4a36-847d-3f8fa95f7f21
-  modified: 2026-10-03
+  modified: 2026-10-05T15:38:15.856Z
 ---
 
 Il repo ospita il prodotto Daiku. Il repository è **uno solo** — `NicolaTomasoni/daiku` su GitHub,
@@ -39,7 +39,7 @@ che lo indica:
 - `plugins/.agents/plugins/marketplace.json` — per Codex
 
 Due file separati perché i due host cercano nomi diversi. Entrambi dicono la stessa cosa: «qui
-c'è un pacchetto che si chiama daiku, sta in `./daiku`». Con loro stanno il `.gitattributes` del prodotto e il README pubblico. Il marketplace locale si registra su
+c'è un pacchetto che si chiama daiku, sta in `./daiku`». Con loro stanno il `.gitattributes` del prodotto, il suo `.gitignore` e il README pubblico. Il marketplace locale si registra su
 `<repo>/plugins`, non sulla radice del repo.
 
 ## 2. Lo sviluppo *obbligato* a stare in radice
@@ -127,7 +127,8 @@ rifiuta `agents`, `commands` e `hooks`, e `plugin_hooks` è una feature rimossa.
 livelli li scrive `sync-host` dentro il progetto, in `.codex/hooks/` e `.codex/agents/` — non
 `init`, che scrive `.daiku/` e poi lo lancia come ultimo passo.
 
-Cosa esce e cosa resta **non** lo decide il `.gitignore`, che qui esclude solo
-`.claude/settings.local.json`: lo decide il ramo. Il rilascio prende il contenuto di `plugins/` e
-nient'altro. Vedi [[si-pubblica-solo-il-prodotto]] e [[pubblicazione-su-github]]. Per il difetto che
+Cosa esce e cosa resta **non** lo decide il `.gitignore` — né quello di radice, che esclude i file
+di macchina dello sviluppo, né quello che la cartella di prodotto porta per la radice di `main`: lo
+decide il ramo. Il rilascio prende il contenuto di `plugins/` e nient'altro. Vedi
+[[si-pubblica-solo-il-prodotto]] e [[pubblicazione-su-github]]. Per il difetto che
 la migrazione a `skills/` ha fatto emergere, vedi [[frontmatter-skill-va-quotato]].

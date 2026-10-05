@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 69438169-0316-47c8-a4e8-3365650ee2cf
-  modified: 2026-10-05T00:00:00.000Z
+  modified: 2026-10-05T15:38:17.173Z
 ---
 
 **Il confine fra cantiere e prodotto è il ramo, non un secondo repository** (dal 5 ottobre 2026,
@@ -30,7 +30,8 @@ nato fuori da `plugins/` resta fuori dal pacchetto; uno nato dentro, esce. E il 
 dentro i file**: ciò che sta sotto `plugins/` esce com'è scritto — vedi
 [[pubblicazione-su-github]] per cosa ricontrollare prima dell'apertura al pubblico.
 
-Nota sul `.gitattributes`: la cartella di prodotto porta il suo, accanto a quello di radice che vale
-per lo sviluppo.
+Nota sui file di radice: la cartella di prodotto porta i suoi — `.gitattributes` e `.gitignore` —
+accanto a quelli di radice che valgono per lo sviluppo. Il `.gitignore` è per `main`: è un
+repository che un host apre in locale, e deve tenere fuori i file di macchina che vi nascono.
 
 Vedi [[alberatura-pacchetto]] per le sedi, e [[corpus-di-sviluppo]] per cosa resta in `.claude/`.

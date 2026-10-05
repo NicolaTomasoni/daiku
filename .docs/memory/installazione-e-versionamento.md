@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 74fa8bc9-dbb1-4c77-bf91-e6ec34544097
-  modified: 2026-10-01T11:25:21.000Z
+  modified: 2026-10-05T17:03:30.616Z
 ---
 
 **I comandi, verificati il 18 settembre 2026.** Su Claude Code `/plugin marketplace add
@@ -26,8 +26,17 @@ opzionale e `plugins[]`, il cui **ordine è l'ordine di resa** nella UI di Codex
 relativo alla radice del marketplace, che sta **due livelli sopra** il `marketplace.json`.
 
 **Cosa governa l'aggiornamento: il campo `version` del manifest, in semver stretto.** Si bumpa
-quello e i due host tirano la versione nuova; finché non si bumpa, nessuno aggiorna. Claude Code
+quello e i due host tirano la versione nuova; finché non si bumpa, nessuno aggiorna. Una versione
+**cambiata** basta a far ricopiare il plugin all'host: verificato il 5 ottobre 2026, non serve un
+incremento ordinato né un numero più alto, basta che differisca da quella installata. Claude Code
 tiene ogni versione in una cartella propria e conserva le orfane per 14 giorni.
+
+**Un marketplace può vivere in una cartella locale, non solo in un repository git.** Verificato il
+5 ottobre 2026 su questa macchina: in `extraKnownMarketplaces` di Claude Code la voce `daiku` ha
+`source: { "source": "directory", "path": "C:\\dev\\daiku\\plugins" }`, e ciò che l'host installa è
+l'albero di `develop` stesso. Nessun clone e nessun ref: è la via per provare il pacchetto in
+sviluppo senza passare da git, ed è perché `develop` dichiara una versione — vedi
+[[pubblicazione-su-github]].
 
 **Su Claude Code l'aggiornamento da riga di comando è in due tempi**, verificato il 30 settembre
 2026 su `claude` 2.1.276 con `--help`: `claude plugin marketplace update [name]` («Update

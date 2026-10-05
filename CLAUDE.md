@@ -76,6 +76,16 @@ installato dal marketplace. Sotto `.claude/commands/` restano **solo i comandi c
 ha** — `studia-repository`, `translate-skill`. Il rilascio non è fra loro: lo fa `release`, che è
 una skill del pacchetto come le altre.
 
+**Nessun commit fuori dal ciclo di review.** `commit` non si lancia da solo: il commit è l'ultimo
+passo di `review` — o della fase Review di `ship-feature`, che è lo stesso ciclo — ed è il ciclo a
+trovare quello che un controllo non vede. Che il pacchetto passi i suoi banchi dice che compila, non
+che è giusto: fra i due c'è di mezzo il codice appena scritto, che nessun finder ha ancora letto. Un
+commit diretto non accorcia la strada, la copre: mette in storia un diff che nessuno rileggerà. Vale
+anche per un file solo, e vale coi banchi verdi. **La seconda sede del divieto è la guardia**: in
+`plugins/daiku/hooks/lib/command-guard.mjs` il ramo `reviewGuard` nega `git commit` quando nella
+sede dei ledger non c'è nessun ciclo in volo né un ciclo appena uscito con gate verde — il testo
+dice cosa fare, il controllo lo impone.
+
 **Le skill del metodo si modificano solo in `plugins/daiku/skills/`.** Una modifica che valga per
 il prodotto si scrive **solo** lì, che è l'unico albero pubblicato; riportarla in un comando del
 cantiere è una decisione a parte, che chiedi invece di prendere. Vale allo stesso modo per
@@ -88,9 +98,14 @@ il pubblico. Il cantiere e il prodotto sono i suoi due rami, e la copia di lavor
 `C:\dev\daiku`, che li tiene entrambi.
 
 **`develop` è il cantiere.** Porta tutto — il prodotto sotto `plugins/`, la ricognizione, i punti
-aperti, la memoria, gli esempi, queste istruzioni — ed è il ramo su cui si lavora. **Non porta numeri
-di versione**: i due manifest restano al segnaposto `0.0.0`, che Codex esige perché la chiave non può
-mancare, e `plugins/CHANGELOG.md` qui non esiste.
+aperti, la memoria, gli esempi, queste istruzioni — ed è il ramo su cui si lavora. **Porta una
+versione, ed è una beta**: i due manifest dichiarano la versione di `main` col patch alzato di uno
+più un contatore — `1.1.4-b.1` — scritto dopo un punto, perché `b10` verrebbe prima di `b9`. Non è
+un rilascio e nessun rilascio la legge: il numero di un rilascio si deriva da `main` e si scrive su
+`main`, dove questa viene sovrascritta. Serve perché il pacchetto si installa anche dall'albero di
+sviluppo, e perché è quella dichiarazione a far muovere la copia installata; sale quando sale la
+**forma** del pacchetto, cioè quando `init` avrebbe qualcosa da riportare nei progetti ospiti.
+`plugins/CHANGELOG.md` qui non esiste.
 
 **`main` è la produzione, ed è una linea di rilasci.** Ogni rilascio è un commit che porta il
 contenuto di `plugins/` alla radice del repository — le due vetrine, `daiku/`, il README, il

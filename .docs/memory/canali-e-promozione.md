@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: f135a876-1ccd-4db0-99e7-6c7abee5c262
-  modified: 2026-10-05T00:00:00.000Z
+  modified: 2026-10-05T17:03:25.685Z
 ---
 
 **Il prodotto ha il concetto di canale** (dal 3 ottobre 2026, ridisegnato il 5). Un progetto che lo
@@ -45,9 +45,10 @@ quella versione invece di aprirne una. `action: "dry"` fa tutto tranne muovere i
 mai: [[push-solo-manuale]].
 
 **`commit` non scrive più versione né changelog dove i canali sono dichiarati.** Non è una
-conseguenza automatica della chiave: è che su `develop` non esistono — i manifest stanno al
-segnaposto `0.0.0` e `{changelog}` non è un file di sviluppo, perché una sezione nasce al rilascio e
-non torna indietro. Dove `channels.production` non è dichiarato non c'è rilascio, e `commit` resta
+conseguenza automatica della chiave: su `develop` la versione è una **beta** che si muove quando
+muove la forma del pacchetto — non a ogni commit — e `{changelog}` non è un file di sviluppo,
+perché una sezione nasce al rilascio e non torna indietro. Vedi [[pubblicazione-su-github]] per la
+forma della beta. Dove `channels.production` non è dichiarato non c'è rilascio, e `commit` resta
 l'unico che possa muovere il numero: continua a fare com'era.
 
 **Punti non provati.** Su **Codex** la guardia del ramo è una promessa: resta `[to verify]` se un

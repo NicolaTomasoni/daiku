@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 69438169-0316-47c8-a4e8-3365650ee2cf
-  modified: 2026-10-05T00:00:00.000Z
+  modified: 2026-10-05T17:03:24.401Z
 ---
 
 **Dal 5 ottobre 2026 il repository è uno solo.** `NicolaTomasoni/daiku` su GitHub, privato finché
@@ -18,10 +18,16 @@ servizio — che esisteva perché il macchinario di pubblicazione ci copiava i f
 **ritirato**, e quel macchinario con lui. Il rilascio non ne ha bisogno: non si mette mai su
 production.
 
-`develop` **non porta numeri di versione**: i due manifest restano al segnaposto `0.0.0` — Codex
-esige strict semver, quindi la chiave non può mancare — e `plugins/CHANGELOG.md` non esiste lì.
-`main` porta versione e changelog, ed è **una linea di rilasci**: non è antenata di `develop`, e
-niente di un rilascio torna indietro.
+`develop` **porta una beta della prossima versione**: i due manifest dichiarano la versione di
+`main` col patch alzato di uno più un contatore — `1.1.4-b.1` — scritto dopo un punto, perché
+`b10` verrebbe prima di `b9` in semver. Non è un rilascio e nessun rilascio la legge: il numero di
+un rilascio si deriva da `main` e si scrive su `main`, dove questa viene sovrascritta. Serve perché
+il pacchetto si installa anche dall'albero di sviluppo — il marketplace di questa macchina punta
+alla cartella di prodotto — ed è quella dichiarazione a far muovere la copia installata; sale quando
+sale la **forma** del pacchetto, cioè quando `init` avrebbe qualcosa da riportare nei progetti
+ospiti. Codex esige strict semver, quindi la chiave non può mancare, e `plugins/CHANGELOG.md` non
+esiste su `develop`. `main` porta versione e changelog, ed è **una linea di rilasci**: non è antenata
+di `develop`, e niente di un rilascio torna indietro.
 
 **I rilasci li fa Daiku stesso**, con la skill `release` del pacchetto e il programma
 `plugins/daiku/architect/release.mjs`. Il comando `/rilascia-daiku` e i due script PowerShell non
