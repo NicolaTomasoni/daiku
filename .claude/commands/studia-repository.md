@@ -179,18 +179,24 @@ Scrive `sintesi.md` al path della corsa, **un file per ogni feature** in
    parlano dello stesso problema si mettono una accanto all'altra. È il confronto che vale, ed è la
    ragione dello studio comparato.
 2. **divide in due, e non confonde le due cose.** Un **intervento** è ciò che si può fare subito:
-   una correzione o un'adozione piccola, che non apre una decisione e non contraddice nessuno dei
-   tre principi — e lo dichiara in `Perché subito`, e resta nella sintesi. Una **feature** è una
-   capacità che Daiku non ha: si costruisce, costa, e ha un come — ma non entra nella sintesi, vive
-   in un file suo. Ciò che richiede una decisione dell'owner **non è un intervento**: o è una
-   feature, o va in `## Cosa resta aperto`.
+   una correzione o un'adozione piccola, che non apre una decisione, non contraddice nessuno dei
+   tre principi, **non ha tradeoff** e porta un **guadagno immediato e sicuro** — e lo dichiara in
+   `Perché subito` e in `Senza tradeoff`, e resta nella sintesi. Una **feature** è una capacità che
+   Daiku non ha: si costruisce, costa, e ha un come — ma non entra nella sintesi, vive in un file
+   suo. Ciò che richiede una decisione dell'owner **non è un intervento**: o è una feature, o va in
+   `## Cosa resta aperto`. **E ciò che costa qualcosa non è un intervento**: un gesto che scambia
+   una cosa con un'altra — meno contesto a chi giudica, una soglia da indovinare, un avviso in più
+   che può smettere di essere letto, una convenzione che nessun meccanismo impone, un campo che
+   nessuno consuma ancora — è una feature o resta aperto, e `Senza tradeoff` è il campo dove la
+   corsa dice cosa ha pesato.
 
    **E ogni intervento approvato si raccoglie anche fuori dalla sintesi**, per intero e coi suoi
-   quattro campi, nel documento della cartella di lavoro `.daiku/features/0. interventi-rapidi/` —
-   il file `0. problem.md` — sotto una sezione intestata alla corsa e alla sua data. Quella cartella
-   è la sede dei lavori brevi in attesa: una corsa vi **aggiunge** la sua sezione in coda, senza mai
-   riscrivere quelle delle corse di prima, e un intervento applicato si toglie. La sintesi li porta
-   comunque — è lì che si legge il giudizio — ma è la cartella la sede su cui si lavora.
+   **cinque campi** — gli stessi che la voce porta nella sintesi — nel documento della cartella di
+   lavoro `.daiku/features/0. interventi-rapidi/` — il file `0. problem.md` — sotto una sezione
+   intestata alla corsa e alla sua data. Quella cartella è la sede dei lavori brevi in attesa: una
+   corsa vi **aggiunge** la sua sezione in coda, senza mai riscrivere quelle delle corse di prima,
+   e un intervento applicato si toglie. La sintesi li porta comunque — è lì che si legge il
+   giudizio — ma è la cartella la sede su cui si lavora.
 3. **decreta il vincitore o l'ibrido.** Dove i target divergono, non si limitano a elencarli: si
    sceglie. Uno vince — e si dice perché, col criterio — oppure la soluzione è **ibrida**, e si
    dice cosa si prende da chi. Se la divergenza è una decisione che non è tua, va in `## Cosa resta
@@ -319,6 +325,7 @@ Anche questa si verifica alla lettera.
 - **Cosa cambia:** <la riga, o il file, e in che modo>
 - **Dove atterra:** <path esatto>
 - **Perché subito:** <perché non apre una decisione e non contraddice i tre principi>
+- **Senza tradeoff:** <cosa il gesto costa, e perché il guadagno è immediato>
 - **Da quale target:** <owner/repo>
 
 ## Dove i target divergono, e chi vince
@@ -381,8 +388,8 @@ l'harness non lo impone al posto tuo (`.claude/orchestration.md` §3).
 
 E la cartella `.daiku/features/0. interventi-rapidi/`, che l'orchestratore scrive, **non è
 verificata da nessun controllo**: il gate guarda solo la cartella della corsa e la sottocartella
-delle feature che essa crea. Una corsa che dimenticasse di raccogliervi i suoi interventi chiude
-verde.
+delle feature che essa crea. Una corsa che dimenticasse di raccogliervi i suoi interventi — o di
+pesare il tradeoff di ciascuno — chiude verde.
 
 ## Passo fallito
 

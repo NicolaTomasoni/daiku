@@ -22,7 +22,7 @@ Verificati tutti via API GitHub (esistenza reale). Esclusi i già studiati.
 ## Loop autonomi a metrica — modifica, misura, tieni o scarta
 
 - [karpathy/autoresearch](https://github.com/karpathy/autoresearch) — il riferimento: l'agente modifica `train.py`, addestra 5 minuti fissi, legge **una sola metrica meccanica** (`val_bpb`), tiene o scarta, ripete; l'umano riscrive `program.md`, cioè le istruzioni
-- [uditgoenka/autoresearch](https://github.com/uditgoenka/autoresearch) — lo stesso loop portato a skill su Claude Code, Codex e OpenCode, con gli hook di guardia solo su Claude: la forma multi-host di ciò che Daiku fa a mano in `collauda-init`
+- [uditgoenka/autoresearch](https://github.com/uditgoenka/autoresearch) — lo stesso loop portato a skill su Claude Code, Codex e OpenCode, con gli hook di guardia solo su Claude
 - [leo-lilinxiao/codex-autoresearch](https://github.com/leo-lilinxiao/codex-autoresearch) — la variante per **Codex** del medesimo ciclo
 - [webfuse-com/awesome-autoresearch](https://github.com/webfuse-com/awesome-autoresearch) — indice dei loop autonomi e dei research agent ispirati a questo schema
 
@@ -38,7 +38,8 @@ Verificati tutti via API GitHub (esistenza reale). Esclusi i già studiati.
 - [anthropics/skills](https://github.com/anthropics/skills) — il repository ufficiale Agent Skills
 - [vercel-labs/agent-skills](https://github.com/vercel-labs/agent-skills) — corpus ufficiale Vercel
 - [obra/superpowers-marketplace](https://github.com/obra/superpowers-marketplace) — marketplace curato: forma di vetrina
-- [mattpocock/skills](https://github.com/mattpocock/skills) — skill opinionate TS/Node dal suo `.agents/`
+- [mattpocock/skills](https://github.com/mattpocock/skills) — le skill di Matt Pocock dal suo `.agents/`: 27 in tutto, divise per **chi le può invocare** (le user-invoked orchestrano, le model-invoked le raggiunge l'agente da solo; una user-invoked può chiamarne una model-invoked, mai un'altra user-invoked); nascono per correggere quattro guasti ricorrenti — disallineamento (la sessione di *grilling*), verbosità (un linguaggio condiviso), codice che non funziona (red-green-refactor) e «ball of mud» (cura del design); MIT, ~275k stelle
+- [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills) — l'altro corpus di metodo, di Addy Osmani: 25 skill mappate sul ciclo di vita (Define→Plan→Build→Verify→Review→Ship), 9 comandi slash, quattro persona di subagent (code-reviewer, test-engineer, security-auditor, web-performance-auditor) e un **meccanismo anti-razionalizzazione** — ogni skill elenca le scuse con cui l'agente salta i passaggi e le ribatte, e chiude con requisiti di evidenza («seems right» non basta); ~70 agenti via `npx skills`, MIT, ~100k stelle
 - [VoltAgent/awesome-agent-skills](https://github.com/VoltAgent/awesome-agent-skills) — 1000+ skill multi-host
 - [ComposioHQ/awesome-claude-skills](https://github.com/ComposioHQ/awesome-claude-skills) — lista curata per categoria
 - [hesreallyhim/awesome-claude-code](https://github.com/hesreallyhim/awesome-claude-code) — mappa dell'ecosistema per livelli (skill, hook, workflow, CLAUDE.md)
@@ -48,6 +49,11 @@ Verificati tutti via API GitHub (esistenza reale). Esclusi i già studiati.
 - [alirezarezvani/claude-skills](https://github.com/alirezarezvani/claude-skills)
 - [steipete/agent-rules](https://github.com/steipete/agent-rules) — regole e conoscenza per agenti
 - [centminmod/my-claude-code-setup](https://github.com/centminmod/my-claude-code-setup) — memory bank in CLAUDE.md
+
+### Skill che cambiano l'output — come l'agente parla
+
+- [ayghri/i-have-adhd](https://github.com/ayghri/i-have-adhd) — ribalta la forma della risposta: prima l'azione, passi numerati, una sola azione concreta in chiusura, stime in minuti, liste sotto le cinque voci, niente preamboli né riepiloghi («A skill to stop your coding agent from burying the answer», e non serve alcuna diagnosi); dieci regole più un controllo pre-invio; plugin su Claude Code, Codex, Cursor, OpenCode, Gemini, Qwen e Kimi; MIT, ~53k stelle
+- [blader/humanizer](https://github.com/blader/humanizer) — toglie dall'output i segni del testo generato: 26 pattern numerati per forza e frequenza, presi dalla pagina di Wikipedia «Signs of AI writing» (il «non X ma Y», le chiusure a effetto, i preamboli teatrali, le massime che suonano profonde), con **voice calibration** da due o tre paragrafi dell'autore; non promette di battere i rilevatori — i detector continuano a segnalarlo — e avverte che rende il testo meno preciso, quindi vale sulla prosa, mai su codice o dati; MIT, ~54k stelle
 
 ## Lettura dell'host
 
@@ -70,24 +76,25 @@ Verificati tutti via API GitHub (esistenza reale). Esclusi i già studiati.
 
 ## Contesto e token
 
-### Compaction e finestra di contesto
+### Compaction giudicata da un modello — Jev / System One
 
-- [alexgreensh/token-optimizer](https://github.com/alexgreensh/token-optimizer) — token fantasma, sopravvivenza alla compaction, degrado della qualità del contesto
-- [tamaratran/fast-jev-compaction](https://github.com/tamaratran/fast-jev-compaction) — plugin Claude Code che sostituisce il riassunto di compaction con decisioni Jev: ogni tool call viene valutata, la stale scartata, il resto resta verbatim
-- [leonaaardob/fast-dev-compaction](https://github.com/leonaaardob/fast-dev-compaction) — la stessa idea portata sugli hook di **Codex**: il precedente per un meccanismo unico su due host
-- [philipppohlmann/compaction](https://github.com/philipppohlmann/compaction) — compaction locale su Claude Code, **Codex** e Cursor, con risparmi misurati e recupero byte-exact: il terzo host nello stesso meccanismo
+Non riassume: un modello di decisione — `jev-latest`, il «System One» di TypeSafe — riceve lo stato della conversazione e risponde a domande tipizzate (Choice, Score, Noul) su ogni chiamata di tool; ciò che resta è verbatim, ciò che non serve più viene scartato o troncato. È la forma che Daiku non ha: la compaction non è una riscrittura lossy ma una selezione.
 
-### Prima che arrivi al modello — output dei tool e serializzazione
+- [tamaratran/fast-jev-compaction](https://github.com/tamaratran/fast-jev-compaction) — il riferimento, e il motore di quasi tutti gli altri: accoppia ogni `tool_use` al suo `tool_result`, fissa i messaggi recenti, chiede a Jev due cose per chiamata (tenere la chiamata? tenere il risultato verbatim?) e ricostruisce la lista senza risultati orfani; MIT, 7,3k stelle, è anche libreria npm oltre che plugin Claude Code, ma vuole `TYPESAFE_API_KEY` e la feature early-access dei function hook (`CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1`)
+- [0x7067/claude-jev](https://github.com/0x7067/claude-jev) — la variante con gli eval, e l'unica che usa Jev anche fuori dalla compaction (controllo regole, routing dei prompt, tier del subagent): aggancia `session.compact` su `/compact`, auto-compact e riavvolgimenti, con cinque domande sì/no per riga e le ultime 150 righe valutate; negli eval un vincolo piantato sopravvive al 100% e la compaction scende da ~117s a ~1s, ma senza `TYPESAFE_API_KEY` o `OPENROUTER_API_KEY` gli hook tacciono; MIT, 21 stelle
+- [duketopceo/jev-compact](https://github.com/duketopceo/jev-compact) — l'unico con uno scorer **euristico keyless**, quindi l'unico che gira davvero senza rete: segmenta il transcript in span, segue un «moving highlight» dell'intento corrente, li punteggia su `relevance_to_current` e `load_bearing` e sotto un budget sceglie cosa tenere verbatim, cosa mettere in tombstone con una ricevuta e cosa scartare; il transcript integrale resta su disco e si richiama col server MCP `context-restore`; Claude Code pronto, Codex e OpenCode annunciati; MIT, ma 0 stelle e 9 commit — acerbo
+- [zaycruz/fast-jev-compaction-pi](https://github.com/zaycruz/fast-jev-compaction-pi) — il port su **pi**: conserva il transcript potato dentro `details.fastJev.messages`, così la compaction successiva ri-decide sul transcript già potato invece di riassumere un riassunto; core vendored da tamaratran, MIT, 0.6.0 del 19 settembre 2026
+- [kunchenguid/compact-adviser](https://github.com/kunchenguid/compact-adviser) — la decisione complementare: non *cosa* tenere ma *quando* compattare, con due domande a Jev (unità finita? lavoro pratico o coordinamento?) prima di suggerire `/compact`; estensione pi, MIT, 0.1.12 del 2 ottobre 2026
+- [leonaaardob/fast-dev-compaction](https://github.com/leonaaardob/fast-dev-compaction) — il port su **Codex**, dove gli hook non possono sostituire la storia e allora la avvolgono: `PreCompact` pota, `SessionStart` reinserisce ciò che Jev ha trattenuto come `additionalContext`; l'autore stesso scrive «I do not recommend using this», è il write-up di un'idea — vale come precedente multi-host, non come strumento; MIT, 9 stelle
 
-- [rtk-ai/rtk](https://github.com/rtk-ai/rtk) — proxy CLI che taglia il consumo di token sui comandi di sviluppo
-- [headroomlabs-ai/headroom](https://github.com/headroomlabs-ai/headroom) — comprime output dei tool, log, file e chunk RAG **prima** che arrivino al modello: libreria, proxy, server MCP
-- [claudioemmanuel/squeez](https://github.com/claudioemmanuel/squeez) — compressore a hook su **sette host** (Claude Code, Copilot CLI, OpenCode, Gemini CLI, Codex CLI, Pi, Hermes): quattro stadi — rimozione di ANSI, dedup in `[×N]`, raggruppamento, troncamento — e riscrittura `PreToolUse` dei comandi sicuri
-- [Mibayy/token-savior](https://github.com/Mibayy/token-savior) — server MCP che naviga il codice per simboli e riscrive i comandi Bash nel `PreToolUse`; i numeri che dichiara vanno letti con la sua stessa avvertenza
-- [mksglu/context-mode](https://github.com/mksglu/context-mode) — sandbox dell'output dei tool (‑98%), memoria di sessione persistente e routing via MCP + hook su 17 piattaforme
-- [Madhan230205/token-reducer](https://github.com/Madhan230205/token-reducer) — compressione di contesto locale e senza API: RAG ibrido BM25 + vettori, chunking AST, reranking
-- [CoderDayton/semantic-cache-mcp](https://github.com/CoderDayton/semantic-cache-mcp) — server MCP di caching semantico dei file: diff semantici e chunking content-defined
-- [toon-format/toon](https://github.com/toon-format/toon) — Token-Oriented Object Notation: serializzazione compatta e leggibile di JSON per i prompt, con SDK e benchmark
-- [microsoft/LLMLingua](https://github.com/microsoft/LLMLingua) — ricerca Microsoft sulla compressione di prompt e KV-cache: fino a 20× con perdita minima
+### Il modello di decisione in casa — i sostituti locali di Jev
+
+Jev è chiuso e hosted, senza pesi né modalità offline: questi sono i tentativi aperti di averlo lo stesso, o di sostituirne il mestiere, **da far girare in locale**.
+
+- [Mushroom-Systems/lichen](https://github.com/Mushroom-Systems/lichen) — sostituto **API-compatibile**: serve lo stesso endpoint `/v1/systemone` e le stesse risposte tipizzate, così i client Jev funzionano senza modifiche; legge la probabilità del token-etichetta da modelli aperti (gemma-4-26B-A4B, Qwen) via vLLM o llama.cpp, con tecniche di prompt (stato e domanda ripetuti, opzioni in ordine ruotato, temperatura sulle due letture); su 231 item di JevBench v1.4 risponde a 204–207 contro i 200 di Jev 1.13, al costo di una GPU da 24 GB; MIT, 58 stelle
+- [local-context-compiler](https://pypi.org/project/local-context-compiler/) — l'unico che lascia scegliere in un solo strumento: `lcc compact` con tre backend di scoring — `mechanical` (regole lessicali, 0 chiamate di rete, riduzione 26–70% ma nessuna garanzia semantica), `laya` (motore non autoregressivo **on-device**, 0 chiamate, conserva quasi tutto) e `jev` (il giudice remoto, il più preciso ma con chiave e contesto limitato a ~32k); MIT, 0.5.0 del 21 settembre 2026, con server MCP e plugin per Claude Code
+- [kyegomez/open-jev](https://github.com/kyegomez/open-jev) — la ricostruzione **da primi principi** in PyTorch delle tre primitive (Noul, Choice, Score, loss `RLCDLoss`): serve a capire l'architettura, ma i pesi sono **casuali**, il tokenizer è un hash e non c'è addestramento — ricerca, non uno strumento; Apache 2.0, 72 stelle
+- [paritok](https://pypi.org/project/paritok/) — la strada diversa: non un modello di decisione ma un **modello di compressione locale** (Paritok-4B-v1, LoRA su Qwen3-4B, code-native ed estrattivo, ogni segmento ridotto al ~26% dell'originale), che sta fra l'agente e l'API come proxy su Claude Code, Codex e Cursor; i segmenti compressi restano recuperabili byte-esatti con `read_original`; Apache 2.0, gira in locale via Ollama o vLLM
 
 ### Esplorazione delegata e budget del contesto
 

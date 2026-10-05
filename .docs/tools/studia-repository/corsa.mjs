@@ -57,7 +57,9 @@ const SEZIONI_SINTESI = [
 ]
 
 const CAMPI_SINTESI = ['- **Corsa:**', '- **Data:**', '- **Target studiati:**', '- **Esito:**']
-const CAMPI_INTERVENTO = ['- **Cosa cambia:**', '- **Dove atterra:**', '- **Perché subito:**', '- **Da quale target:**']
+const CAMPI_INTERVENTO = ['- **Cosa cambia:**', '- **Dove atterra:**', '- **Perché subito:**', '- **Senza tradeoff:**', '- **Da quale target:**']
+// Le voci di "## Dove i target divergono, e chi vince": i tre campi che il documento dichiara.
+const CAMPI_DIVERGENZA = ['- **Le soluzioni:**', '- **Chi vince:**', '- **Perché:**']
 
 // Le feature non vivono nella sintesi: ognuna è un file, chiamato come il suo slug,
 // in una sottocartella di `paths.features` col nome della corsa. Questi sono i suoi campi.
@@ -388,7 +390,7 @@ function controllaSintesi(file, target, assenti, rossi, nFeature) {
   if (divergono) {
     const voci = sottoblocchi(divergono.corpo)
     if (!voci.length) { if (!/^Nessuno\.$/m.test(divergono.corpo)) rossi.push('sintesi: "Dove i target divergono" non ha voci e non dice "Nessuno."') }
-    else voci.forEach((v, k) => { if (!campo(v.corpo, '- **Chi vince:**')) rossi.push(`sintesi: divergenza ${k + 1}: manca o è vuoto il campo - **Chi vince:**`) })
+    else voci.forEach((v, k) => campoIn(v.corpo, CAMPI_DIVERGENZA, rossi, `sintesi: divergenza ${k + 1}`))
   }
 
   const esito = (testo.match(/^-\s*\*\*Esito:\*\*\s*(\S+)/m) || [])[1]
@@ -626,13 +628,13 @@ function featureBuona(slug) {
   return `# La memoria\n\n- **Slug:** ${slug}\n- **Cosa fa:** un indice delle memorie\n- **Dove atterra:** plugins/daiku/skills/memoria/SKILL.md\n- **Come si costruisce:** una skill nuova\n- **Prompt per new-feature:** /daiku:new-feature apri la feature memoria\n`
 }
 
-function sintesiBuona(nome, target, { interventi = true, feature = false, esito = null, senzaTarget = false, segnaposto = false, senzaSezione = null } = {}) {
-  const int = interventi ? `### I1 — Stringere il gate\n\n- **Cosa cambia:** la riga del gate\n- **Dove atterra:** plugins/daiku/hooks/hooks.json\n- **Perché subito:** non decide niente, allinea una riga\n- **Da quale target:** ${target[0]}` : 'Nessuno.'
+function sintesiBuona(nome, target, { interventi = true, feature = false, esito = null, senzaTarget = false, segnaposto = false, senzaSezione = null, divergenze = null } = {}) {
+  const int = interventi ? `### I1 — Stringere il gate\n\n- **Cosa cambia:** la riga del gate\n- **Dove atterra:** plugins/daiku/hooks/hooks.json\n- **Perché subito:** non decide niente, allinea una riga\n- **Senza tradeoff:** non costa niente, allinea una riga\n- **Da quale target:** ${target[0]}` : 'Nessuno.'
   const e = esito || (interventi && feature ? 'entrambi' : interventi ? 'interventi' : feature ? 'feature' : 'niente')
   const elenco = senzaTarget ? '' : target.map(t => `- ${t} — un gate più stretto.`).join('\n')
   const sez = {
     portati: `## Cosa hanno portato i target\n\n${elenco || 'Nessuno.'}\n`,
-    divergono: '## Dove i target divergono, e chi vince\n\nNessuno.\n',
+    divergono: `## Dove i target divergono, e chi vince\n\n${divergenze || 'Nessuno.'}\n`,
     aperti: '## Cosa resta aperto\n\nNessuna.\n',
     limiti: '## Limiti\n\nNessuna.\n',
   }
@@ -810,6 +812,16 @@ function banco() {
   })
   caso('sintesi che non nomina un target → rosso', () => {
     const dir = corsaFinta('sintesitarget', [A, B], { [A]: appuntoBuono(A), [B]: appuntoBuono(B) }, sintesiBuona('banco', [A, B], { senzaTarget: true }))
+    rosso(dir, 'sintesi')
+  })
+  caso('divergenza con i tre campi → verde', () => {
+    const d = '### D1 — Il gate\n\n- **Le soluzioni:** uno stringe il gate, l\'altro lo lascia\n- **Chi vince:** ibrido\n- **Perché:** tiene il meglio dei due'
+    const dir = corsaFinta('divergenzabuona', [A], { [A]: appuntoBuono(A) }, sintesiBuona('banco', [A], { divergenze: d }))
+    verde(dir, 'sintesi')
+  })
+  caso('divergenza senza il criterio → rosso', () => {
+    const d = '### D1 — Il gate\n\n- **Le soluzioni:** uno stringe il gate\n- **Chi vince:** ibrido'
+    const dir = corsaFinta('divergenzacampo', [A], { [A]: appuntoBuono(A) }, sintesiBuona('banco', [A], { divergenze: d }))
     rosso(dir, 'sintesi')
   })
   caso('esito incoerente con le sezioni → rosso', () => {
