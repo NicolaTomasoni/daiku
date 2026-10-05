@@ -40,7 +40,10 @@
   },
   "channels": {
     "development": "<name of the development branch the work lives on, asked at init — e.g. develop>",
-    "production": "<name of the production branch, where the work does not commit and which advances only by a release; drop this key and the branch guard stays off>"
+    "production": "<name of the production branch, a line of releases: the work does not commit there and it advances only by a release; drop this key and the branch guard stays off>"
+  },
+  "release": {
+    "source": "<folder of the development branch whose content becomes the production tree, where the two sides do not have the same shape — e.g. plugins; drop this key where they do>"
   },
   "areas": {
     "<area name>": {

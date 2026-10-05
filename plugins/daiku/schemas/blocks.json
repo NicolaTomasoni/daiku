@@ -172,10 +172,10 @@
     },
     "release": {
       "producer": "skills/release/SKILL.md § What you return",
-      "required": ["ok", "released", "version", "development_sha", "production_sha", "changelog", "detail"],
+      "required": ["ok", "released", "version", "development_sha", "production_sha", "amended", "changelog", "detail"],
       "optional": [],
       "enums": {},
-      "note": "The block of the promotion node. `released` is false when nothing was promoted — no channels declared, the copy not standing on the development branch, production carrying commits development lacks, or a dirty tree — and `detail` says which. When it is true, `version` is the number the release wrote, `development_sha` the tip of the development branch after the version commit and `production_sha` where production now stands (the same tip: the promotion is a fast-forward), `changelog` the path whose section was written. `ok` is false only when the node could not proceed. It never pushes: `production_sha` is a local ref."
+      "note": "The block of the release node. `released` is false when nothing was released — no channels declared, the copy not standing on the development branch, a working copy holding production, a dirty tree, or nothing to release — and `detail` says which. When it is true, `version` is the number the release wrote (or null where the project declares none), `development_sha` the development tip the release carried, `production_sha` where production now stands, `amended` whether it replaced a draft on production instead of opening a release on top, and `changelog` the path whose section was written (or null). `ok` is false only when the node could not proceed. It never pushes: `production_sha` is a local ref, and a release is closed by the push, not by the node."
     }
   },
   "ledger": {
@@ -201,7 +201,7 @@
   },
   "params": {
     "producer": "contracts/project-contract.md §4 and contracts/orchestration.md §7",
-    "project_json": ["contract", "name", "repo_root", "code_root", "language.chat", "language.commit", "documents", "documents.product", "documents.brand", "documents.domain", "documents.stack", "documents.architecture", "changelog", "version.file", "version.field", "version.replicated_in", "paths.studies", "paths.features", "paths.review_state", "memory.root", "memory.index", "commit.memory_prefix", "review.disciplines", "worktree.pool", "worktree.prefix", "worktree.max", "worktree.branch_prefix", "channels.development", "channels.production", "areas", "areas.<area>.paths", "areas.<area>.gate", "areas.<area>.check_fast", "areas.<area>.lint_fix", "areas.<area>.test_targeted", "areas.<area>.coverage"],
+    "project_json": ["contract", "name", "repo_root", "code_root", "language.chat", "language.commit", "documents", "documents.product", "documents.brand", "documents.domain", "documents.stack", "documents.architecture", "changelog", "version.file", "version.field", "version.replicated_in", "paths.studies", "paths.features", "paths.review_state", "memory.root", "memory.index", "commit.memory_prefix", "review.disciplines", "worktree.pool", "worktree.prefix", "worktree.max", "worktree.branch_prefix", "channels.development", "channels.production", "release.source", "areas", "areas.<area>.paths", "areas.<area>.gate", "areas.<area>.check_fast", "areas.<area>.lint_fix", "areas.<area>.test_targeted", "areas.<area>.coverage"],
     "environment_json": ["contract", "default_host", "hosts", "backends", "hosts.<host>.models", "hosts.<host>.models.<role>", "hosts.<host>.models.judge", "hosts.<host>.models.worker", "hosts.<host>.instructions_file", "hosts.<host>.skill_pointers", "hosts.<host>.enforcement", "hosts.<host>.settings_file", "hosts.<host>.base_url_env", "hosts.<host>.native_backend", "backends.<backend>", "backends.<backend>.base_url", "backends.<backend>.sequential_fanout", "backends.<backend>.caveats", "write_roots", "prompt_dump_chars"],
     "contract_expected": {
       "project_json": 1,

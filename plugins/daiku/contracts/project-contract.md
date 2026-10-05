@@ -84,7 +84,8 @@ of a file, the presence or absence of an area. Three prohibitions, in order of s
 | `worktree.max` | maximum number of pool worktrees: never one more, never an off-convention name |
 | `worktree.branch_prefix` | branch prefix of each worktree, followed by its name |
 | `channels.development` | name of the development branch, the one the work lives on; `init` writes it from its answer, and `release` and the merge of a delivery read it |
-| `channels.production` | name of the production branch, where the work does not commit and which advances only by a release; its presence is the switch of the branch guard (§4.1) |
+| `channels.production` | name of the production branch, where the work does not commit and which advances only by a release. It is a **line of releases**: each one is a commit of its own carrying the development tree as it stood, the version and the changelog, so production is not development's ancestor and nothing of a release travels back — its presence is the switch of the branch guard (§4.1) |
+| `release.source` | folder of development whose **content** becomes production's tree, where the two sides do not have the same shape; absent where they do, and then production's tree is development's plus the version and the changelog. A release resolves `version.*` and `changelog` on production by taking this prefix off the front, which is what lets the keys be written once, in the shape of the project |
 | `areas` | the set of declared areas; cited thus when a skill **enumerates** them instead of naming one (§5.3) |
 | `areas.<area>.paths` | the paths belonging to the area, each usable as a Git pathspec |
 | `areas.<area>.gate` | the area's gate command: lint, format, type-check, test and package build |
@@ -121,6 +122,12 @@ and reads the current branch only on a line that names `git`. Without `channels.
 guard never reads the branch and says nothing. The guard's other four branches
 (junction, `--no-verify`, push, agent attribution) deny on
 every project that opened Daiku, with no switch. `hooks/README.md` carries the full branch table.
+
+**A release does not need the guard relaxed, and does not get it.** Production advancing by a
+release means the release writes there, and the denial above would make that impossible if writing
+meant standing: it does not. `architect/release.mjs` builds the commit on a throwaway index and
+moves the ref, so `git commit` never runs on production and the branch is never checked out — the
+denial stays whole and the release is a write the guard has nothing to say about.
 
 ### 4.2 The key the host reads
 

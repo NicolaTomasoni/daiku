@@ -74,7 +74,7 @@ forever. The ten fall into two groups, which are not used at the same moments.
 | `code-review` | the bug-only review cycle on the scope you tell it: rounds, fixes, fast check and gate like `/review`, stopping at the report — no coverage, no commit |
 | `commit` | it closes a review launched with `--no-commit`, or a diff written outside a review |
 | `ship-feature` | you already have the folder, with or without the brief, and want the whole delivery to the commit in a single run, without reopening the study |
-| `release` | the promotion of a project that declared its channels: it asks the version once on the block of commits accumulated on the development branch and moves production onto it, without pushing. On a project that declared no channels it has nothing to promote and says so |
+| `release` | the release of a project that declared its channels: it asks the version once on the block of commits accumulated since the last published release and writes it on production with its changelog section, replacing the release standing there for as long as nothing has pushed it. It never pushes, and on a project that declared no channels it has nothing to release and says so |
 
 **Installation — three commands that are launched once per project**, and that no chain
 can reach because they run at the project's opening, outside a feature:
