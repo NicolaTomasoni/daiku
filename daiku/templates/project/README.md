@@ -35,7 +35,6 @@ direction this project chose**. Three promises, each with a mechanism behind it.
 | `/code-review` | the bug-only review cycle on the scope you name: rounds, fixes and the gate, stopping at the report with no commit |
 | `/research` | notes on a library or a technology, gathered from the real sources and tidied into a file |
 | `/commit` | closes a diff written outside a review: it aligns memory and documentation, then commits in separate groups |
-| `/blueprint` | turns an already resolved decision document into the execution brief, and stops there |
 | `/ship-feature` | carries an already studied folder through delivery to the commit, without reopening the study |
 | `/release` | for a project that declared its two channels: it asks the version once on the block of commits accumulated on the development branch and moves production onto it, without pushing |
 | `/init` | opens Daiku on a project: it writes this folder and the instructions file. Once per project, and again when the package carries a new skeleton |

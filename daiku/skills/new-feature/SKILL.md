@@ -1,18 +1,20 @@
 ---
 name: 'new-feature'
-description: 'Opens a feature from a natural-language description — or resumes a folder already opened, reading what it carries and picking the chain up where its documents stop — and carries it to the commit in a single run: code investigation, study of the technologies you do not know well enough, decision document, decisions asked in chat, and from there the whole delivery delegated to ship-feature'
-argument-hint: '<feature or problem description, or a folder already opened> [--stop-at-brief] [--no-ask]'
+description: 'Opens a feature from a natural-language description — or resumes a folder already opened, reading what it carries and picking the chain up where its documents stop — and carries it to the commit in a single run: code investigation, study of the technologies you do not know well enough, decision document, decisions asked in chat, and from there the whole delivery delegated to ship-feature. With `--chat` it opens nothing and decides nothing: it discusses the feature with the owner and enters the chain only when they say the development starts, taking the conversation up from there'
+argument-hint: '<feature or problem description, or a folder already opened> [--stop-at-brief] [--no-ask] [--chat]'
 ---
 
 You are the node **opening** a work and not leaving it halfway. You receive a natural-language description, you investigate the code, you procure the missing knowledge, you have the decisions studied, you bring them to the owner in chat — and with their answers in hand you continue to the commit without them having to relaunch anything.
 
-**The owner intervenes only once**, when answering the decisions. Before that you ask them nothing, because there is still nothing to ask; after that you ask them nothing, because they already decided, and one more confirmation is a step that costs them effort and adds no information. With `--no-ask` they do not intervene at all: the run never asks, takes the recommended option for every decision, produces the document of the stage it reached, and stops there — without delivering.
+**The owner intervenes only once**, when answering the decisions. Before that you ask them nothing, because there is still nothing to ask; after that you ask them nothing, because they already decided, and one more confirmation is a step that costs them effort and adds no information. With `--no-ask` they do not intervene at all: the run never asks, takes the recommended option for every decision, produces the document of the stage it reached, and stops there — without delivering. With `--chat` they intervene from the first turn and nothing else happens: the node discusses the feature with them, opens no work and decides nothing, and enters the sequence only when they say the development starts — taking the whole conversation as its input (§ *Chat mode*).
 
 > **Parameters.** Every key in braces in this contract resolves on the project parameter files, never from memory and never by assumption: the rules are in §5 of `contracts/project-contract.md`, which also says **in which language to write** and what to do when a key is missing.
 
 ## When to use it
 
 Use it when you start from an idea or a problem and there is nothing on disk yet — or when the folder is already there and the work has to be **resumed**: given a folder under `{paths.features}/` instead of a description, the run reads what that folder carries and starts where its documents stop, asking no confirmation of its own (point 1). It is the only entry point that starts from the **code** instead of a document, and the only one that opens the folder; `decision-doc` is its internal phase, never launched on its own, while `ship-feature` is its delivery and can also be launched by hand on the folder.
+
+It is also the place to **think a feature through before there is anything to open**: with `--chat` the node is a conversation and nothing more — no folder, no investigation, no document, no decision — and the chain starts only when the owner says so (§ *Chat mode*).
 
 ## Before starting
 
@@ -26,7 +28,23 @@ Arguments: `$ARGUMENTS` — the work description in natural language. It can be 
 
 A trailing `--no-ask` stops the run at the **document** instead: the decisions are never asked — the run takes the recommended option (`A`) for every card, which on a resume are the cards the document left open — and the folder is left with the document of the stage the run reached (`0.5. strategic-study.md` or `1. decision-doc.md`), for someone to implement later. It never reaches the brief or the delivery, so it does not compose with `--stop-at-brief`: there is no brief for that flag to stop at.
 
-If `$ARGUMENTS` is empty, **ask** what is worked on and wait until it arrives. It is the only question admitted before the decisions. With `--no-ask` there is nobody to answer: report that the description is missing and stop, opening nothing.
+A trailing `--chat` opens no work at all: the node **discusses** the feature with the owner, writes nothing and decides nothing, and enters the sequence only when they say the development starts (§ *Chat mode*). It composes with the other flags exactly as any run does: once the sequence enters, `--stop-at-brief` stops it at the brief and `--no-ask` suppresses the ask.
+
+If `$ARGUMENTS` is empty, **ask** what is worked on and wait until it arrives. It is the only question admitted before the decisions. With `--no-ask` there is nobody to answer: report that the description is missing and stop, opening nothing. With `--chat` that question is simply the first turn of the conversation: ask it and discuss.
+
+## Chat mode — `--chat`
+
+**With `--chat` this node opens no work: it discusses one.** Nothing is created and nothing is written — the folder of point 1 is not created, `0. problem.md` is not drafted, the investigations and the study are not launched, no decision document is produced and no card is asked. What stands is a conversation with the owner, and its subject is the feature: what problem it answers, which roads are open, what each of them entails and rules out, what is still unknown.
+
+**The mode is the whole run, and it resumes nothing.** A description arriving with `--chat` is discussed, not opened. A folder arriving with it is **not** resumed: pointing at it names the subject of the conversation, and point 1 reads nothing, derives no slug and asks the evaluator nothing. To resume a folder, launch the node without the flag.
+
+**The discussion leaves no trace on disk, and that is the point.** `{paths.features}/` and `{paths.studies}/` stay untouched, no subagent is launched, and no phase of the sequence runs — not even the ones that only read, because there is no folder yet for what they would produce. The conversation may run over several turns, be interrupted and taken up again: nothing of it is on disk, and nothing needs to be.
+
+**It ends when the owner says the development starts.** No other turn ends it: a question of theirs is answered inside the conversation, a preference they voice is discussed there like any other, and the mode does not close on its own, on a hint, or because the direction looks clear to you. When they say to begin, the run leaves the mode and enters the sequence at point 1, carrying **the whole conversation up to that moment** as its input.
+
+**What it carries over is the decisions already taken together with the owner**, each with their words and its why — and nothing else. Read the conversation back and extract them: a road the owner ruled out ("not that one, it breaks X"), a constraint they set, an option they chose over another. What you extract is the owner's **direction**, not material to interrogate: point 6 studies around it instead of reopening it, and the cards it already answers are not asked again at point 7 — the document carries them with their answer, and the answer is theirs.
+
+**What is not a decision stays open.** A preference you inferred, an option you proposed and nobody answered, the one you find best: none of those is a decision, and they go to point 6 as open questions like any other card. Reading the conversation as a mandate is the defect this mode exists to prevent — the same inference point 7 forbids, where a general word is not a permission to decide on a card nobody has laid out.
 
 ## The sequence
 
@@ -234,8 +252,9 @@ In chat, a few lines:
 - the produced or reused notes, with version and date, and what the recomparison changed in the problem (or that it changed nothing);
 - the crossed stages, the decisions asked and the answer received for each;
 - the delivery outcome: `status`, commit and merge SHA, and the report path — the detail is already inside there, **do not repeat it**. With `--stop-at-brief` there is no delivery outcome: report the brief path instead, and that carrying the folder on is the owner's manual act. With `--no-ask` there is no delivery outcome: report the stage reached and the document the folder carries — produced with the recommended option for every card — and that the run stops there without asking and without delivering, with the command that resumes the chain — the same one point 7 declares for a run stopped at the ask.
+- with `--chat`, while the run stays a conversation none of the above applies: report in one line that it stayed a conversation and left nothing on disk — no folder, no document, no notes. When the mode then ended, the bullets above apply as usual — the folder and its documents, the crossed stages and the delivery outcome — plus the decisions extracted together with the owner, in their words.
 
-If the chain stopped before delivery, say so with the point where it stopped and the command the owner resumes it with — **this node, naming the folder** — and with what the resume will find there: the card left open, or the phase its documents reach.
+If the chain stopped before delivery, say so with the point where it stopped and the command the owner resumes it with — **this node, naming the folder** — and with what the resume will find there: the card left open, or the phase its documents reach. With `--chat` there is nothing on disk to resume from: a conversation left before the owner said to start leaves no document, and what the next launch finds is the problem described to it again — the conversation lives in the chat, not in `{paths.features}/`.
 
 ## Self-deceptions (stop them before they stop you)
 
@@ -257,6 +276,8 @@ If the chain stopped before delivery, say so with the point where it stopped and
 | "The decision-doc I write here, it is faster" | The document is written by the node hosting it. Written here, it originates inside the context that just investigated — that is already convinced. |
 | "The stage is still strategic but the direction is clear to me: I proceed" | If it were clear, the `judge` step would not have stopped it there. Two rounds, and then one stops. |
 | "I use the biggest model, this step looks hard to me" | The model comes from the role declared by the step, resolved with §2 of `contracts/orchestration.md`. |
+| "A card looks decided to me, so I record it as taken" | A decision is what the owner said: a preference you inferred, an option nobody answered, the one you find best are open questions. Reading the conversation as a mandate is the inference `--chat` exists to forbid. |
+| "The direction is clear, so I open the folder and start" | The chat mode ends when the owner says the development starts, not when it looks ready. Until then nothing is written — no folder, no document, no notes. |
 
 ## Cut rule
 

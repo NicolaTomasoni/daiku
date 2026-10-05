@@ -93,7 +93,7 @@ const GRAPH = {
   'decision-doc': ['new-feature'],
   research: ['owner', 'new-feature'],
   study: ['research'],
-  blueprint: ['owner', 'ship-feature', 'new-feature'],
+  blueprint: ['ship-feature', 'new-feature'],
   execute: ['ship-feature'],
   reconcile: ['ship-feature'],
   'ship-feature': ['owner', 'new-feature'],
@@ -1241,30 +1241,45 @@ function askBlock(input, root) {
  * ------------------------------------------------------------------------- */
 
 /**
- * Which pool worktree a delivery takes: the first reusable one in number order, else the
- * smallest free number under the cap, else nothing. The disk facts — which slots are
- * registered, which of them carry a clean tree and which hold nothing the integration
- * branch lacks — are measured by `architect/pool.mjs`, the pool's disk side; here the
+ * Which pool worktree a delivery takes: the slot this very delivery already holds, else the
+ * first reusable one in number order, else the smallest free number under the cap, else
+ * nothing. The disk facts — which slots are registered, which of them carry a clean tree,
+ * which hold nothing the integration branch lacks, and which the registry attributes to a
+ * delivery — are measured by `architect/pool.mjs`, the pool's disk side; here the
  * classification alone is made, and it is the rule the prose used to carry with a second
  * condition that no slot ever met (`HEAD == HEAD(<INT>)`), so a delivery never recycled a
  * slot and the pool filled up.
  *
- * A slot is reusable when **its tree is clean and its branch holds nothing the integration
- * branch does not already have**. The HEAD equality is gone: the acquisition resets the
- * slot to the integration branch, so a slot standing a commit behind is reusable all the
- * same. What replaces it is the containment — a slot whose branch carries commits the
- * integration branch lacks, with a clean tree because the delivery committed them, is the
- * merge that went into conflict: reusing it would `reset --hard` those commits away. A
- * dirty slot is never taken either — it is another delivery's work.
+ * A slot is reusable when **its tree is clean, its branch holds nothing the integration
+ * branch does not already have, and no delivery holds it**. The HEAD equality is gone: the
+ * acquisition resets the slot to the integration branch, so a slot standing a commit behind
+ * is reusable all the same. What replaces it is the containment — a slot whose branch carries
+ * commits the integration branch lacks, with a clean tree because the delivery committed
+ * them, is the merge that went into conflict: reusing it would `reset --hard` those commits
+ * away. A dirty slot is never taken either — it is another delivery's work.
+ *
+ * **The hold is the lock.** `held` is the slot the registry marks `in-use`: a delivery is
+ * working in it, and it is never offered to another one. Without it the rule is satisfied by
+ * a slot that has just been taken — its tree is clean because nothing was written yet, and
+ * its branch holds nothing because the work has not started — so the next acquisition resets
+ * it and sits on the first delivery's tree. That is not a rare interleaving: it is what
+ * happens whenever two deliveries are launched together, and it is why three of them came to
+ * write on one worktree. A slot held by the delivery **asking** is taken back as it stands,
+ * with no reset: re-entering a delivery whose slot is still marked `in-use` must neither open
+ * a second slot nor throw away what the first one left in the slot it holds.
  */
 function askPool(input) {
+  const booleans = ['clean', 'merged', 'held', 'mine'];
   if (!Array.isArray(input.slots)) {
-    throw new BadInput('slots is required: the registered pool worktrees, each as {"n", "clean", "merged"}');
+    throw new BadInput('slots is required: the registered pool worktrees, each as {"n", "clean", "merged", "held", "mine"}');
   }
   const seen = new Set();
   input.slots.forEach((slot, at) => {
-    if (!slot || !Number.isInteger(slot.n) || slot.n < 1 || typeof slot.clean !== 'boolean' || typeof slot.merged !== 'boolean') {
-      throw new BadInput(`slots[${at}] must be {"n": <integer >= 1>, "clean": <boolean>, "merged": <boolean>}`);
+    if (!slot || !Number.isInteger(slot.n) || slot.n < 1 || booleans.some((key) => typeof slot[key] !== 'boolean')) {
+      throw new BadInput(
+        `slots[${at}] must be {"n": <integer >= 1>, "clean": <boolean>, "merged": <boolean>, ` +
+          '"held": <boolean>, "mine": <boolean>}'
+      );
     }
     if (seen.has(slot.n)) throw new BadInput(`slots[${at}].n is ${slot.n}, declared twice: a slot number is one worktree`);
     seen.add(slot.n);
@@ -1275,12 +1290,21 @@ function askPool(input) {
   // A slot numbered above the cap is off convention — `N` runs from 1 to `max` — and is not
   // reused: lowering the cap is allowed, and it takes those slots out of the pool without
   // touching what stands on them.
-  const reusable = [...input.slots].filter((slot) => slot.clean && slot.merged && slot.n <= input.max).sort((a, b) => a.n - b.n);
+  const inPool = input.slots.filter((slot) => slot.n <= input.max);
+  const mine = [...inPool].filter((slot) => slot.mine).sort((a, b) => a.n - b.n);
+  if (rule('pool.mine', mine.length > 0)) {
+    return block({
+      verdict: 'held',
+      slot: mine[0].n,
+      detail: `slot ${mine[0].n} is the one this delivery already holds: it is taken back as it stands, with no reset and no second slot, so what the delivery left in it survives.`,
+    });
+  }
+  const reusable = [...inPool].filter((slot) => slot.clean && slot.merged && !slot.held).sort((a, b) => a.n - b.n);
   if (rule('pool.reuse', reusable.length > 0)) {
     return block({
       verdict: 'reuse',
       slot: reusable[0].n,
-      detail: `slot ${reusable[0].n} carries a clean tree and nothing the integration branch lacks: it is reset to the integration branch and reused, whatever its HEAD, and no slot is created.`,
+      detail: `slot ${reusable[0].n} carries a clean tree, nothing the integration branch lacks and no delivery holding it: it is reset to the integration branch and reused, whatever its HEAD, and no slot is created.`,
     });
   }
   const free = [];
@@ -1294,11 +1318,11 @@ function askPool(input) {
   }
   const occupied = [...input.slots]
     .sort((a, b) => a.n - b.n)
-    .map((slot) => `${slot.n}${slot.clean ? '' : ' dirty'}${slot.merged ? '' : ' unmerged'}`)
+    .map((slot) => `${slot.n}${slot.held ? ' held' : ''}${slot.clean ? '' : ' dirty'}${slot.merged ? '' : ' unmerged'}`)
     .join(', ');
   return block({
     verdict: 'blocked',
-    detail: `all ${input.max} slots are registered and none is reusable (${occupied}): a slot is reusable only with a clean tree and no commit the integration branch lacks. The delivery stops, and no slot is created — the cap is not a suggestion.`,
+    detail: `all ${input.max} slots are registered and none is reusable (${occupied}): a slot is reusable only with a clean tree, no commit the integration branch lacks and no delivery holding it. The delivery stops, and no slot is created — the cap is not a suggestion.`,
   });
 }
 
@@ -1554,6 +1578,10 @@ const LEDGER = (rounds) => ({
 const LAYER = (extra = {}) => ({
   policy: '.daiku/policies/server.md', name: 'api', folders: ['src/server/api/**'], deny_imports: ['src/server/db/**'], ...extra,
 });
+/** A pool slot nobody holds: clean, holding nothing the integration branch lacks. */
+const FREE = (extra = {}) => ({ n: 1, clean: true, merged: true, held: false, mine: false, ...extra });
+/** A pool slot the registry marks `in-use`: a delivery is working in it. */
+const HELD = (extra = {}) => FREE({ held: true, ...extra });
 const DOC = (extra = {}, decision = {}) => ({
   stage: 'technical', stage_why: 'x', crossed_stages: false,
   direction: { kind: 'owner-request', where: 'the request that opened the work' },
@@ -1860,26 +1888,44 @@ const CASES = [
 
   /* --- question: pool — skills/ship-feature/SKILL.md § Worktree pool, § 0. Acquisition --- */
   { id: 'pool:reuse-the-first-reusable-slot', cites: { file: 'skills/ship-feature/SKILL.md', section: '0. Acquisition' },
-    input: { question: 'pool', slots: [{ n: 1, clean: false, merged: true }, { n: 3, clean: true, merged: true }, { n: 4, clean: true, merged: true }], max: 5 },
+    input: { question: 'pool', slots: [FREE({ n: 1, clean: false }), FREE({ n: 3 }), FREE({ n: 4 })], max: 5 },
     expect: { verdict: 'reuse', slot: 3 } },
   { id: 'pool:a-clean-slot-behind-the-integration-is-reused-anyway', cites: { file: 'skills/ship-feature/SKILL.md', section: '0. Acquisition' },
-    input: { question: 'pool', slots: [{ n: 2, clean: true, merged: true }], max: 5 },
+    input: { question: 'pool', slots: [FREE({ n: 2 })], max: 5 },
     expect: { verdict: 'reuse', slot: 2, detail_include: 'whatever its HEAD' } },
   { id: 'pool:a-clean-slot-holding-unmerged-commits-is-not-reused', cites: { file: 'skills/ship-feature/SKILL.md', section: '0. Acquisition' },
-    input: { question: 'pool', slots: [{ n: 1, clean: true, merged: false }], max: 5 },
+    input: { question: 'pool', slots: [FREE({ n: 1, merged: false })], max: 5 },
     expect: { verdict: 'create', slot: 2, detail_include: 'no slot is reusable' } },
+  { id: 'pool:a-held-slot-is-not-reused-although-its-tree-is-clean', cites: { file: 'skills/ship-feature/SKILL.md', section: '0. Acquisition' },
+    input: { question: 'pool', slots: [HELD({ n: 1 })], max: 5 },
+    expect: { verdict: 'create', slot: 2, detail_include: 'no slot is reusable' } },
+  { id: 'pool:a-held-slot-is-passed-over-for-a-free-one', cites: { file: 'skills/ship-feature/SKILL.md', section: '0. Acquisition' },
+    input: { question: 'pool', slots: [HELD({ n: 1 }), FREE({ n: 2 })], max: 5 },
+    expect: { verdict: 'reuse', slot: 2 } },
+  { id: 'pool:a-slot-held-by-this-delivery-is-taken-back-as-it-stands', cites: { file: 'skills/ship-feature/SKILL.md', section: '0. Acquisition' },
+    input: { question: 'pool', slots: [HELD({ n: 1, merged: false, mine: true })], max: 5 },
+    expect: { verdict: 'held', slot: 1, detail_include: 'with no reset' } },
+  { id: 'pool:the-slot-this-delivery-holds-wins-over-a-free-one', cites: { file: 'skills/ship-feature/SKILL.md', section: '0. Acquisition' },
+    input: { question: 'pool', slots: [FREE({ n: 1 }), HELD({ n: 3, mine: true })], max: 5 },
+    expect: { verdict: 'held', slot: 3 } },
+  { id: 'pool:a-slot-held-by-this-delivery-above-the-cap-is-out-of-the-pool', cites: { file: 'skills/ship-feature/SKILL.md', section: '0. Acquisition' },
+    input: { question: 'pool', slots: [HELD({ n: 1, mine: true }), HELD({ n: 2, mine: true })], max: 1 },
+    expect: { verdict: 'held', slot: 1 } },
   { id: 'pool:create-the-smallest-free-number', cites: { file: 'skills/ship-feature/SKILL.md', section: '0. Acquisition' },
-    input: { question: 'pool', slots: [{ n: 1, clean: false, merged: true }, { n: 3, clean: false, merged: true }], max: 5 },
+    input: { question: 'pool', slots: [HELD({ n: 1, clean: false }), HELD({ n: 3, clean: false })], max: 5 },
     expect: { verdict: 'create', slot: 2 } },
   { id: 'pool:create-the-first-when-none-is-registered', cites: { file: 'skills/ship-feature/SKILL.md', section: '0. Acquisition' },
     input: { question: 'pool', slots: [], max: 5 },
     expect: { verdict: 'create', slot: 1 } },
   { id: 'pool:a-slot-numbered-above-the-cap-is-not-reused', cites: { file: 'skills/ship-feature/SKILL.md', section: '0. Acquisition' },
-    input: { question: 'pool', slots: [{ n: 1, clean: false, merged: true }, { n: 2, clean: true, merged: true }], max: 1 },
+    input: { question: 'pool', slots: [FREE({ n: 1, clean: false }), FREE({ n: 2 })], max: 1 },
     expect: { verdict: 'blocked', detail_include: 'the cap is not a suggestion' } },
   { id: 'pool:blocked-when-all-the-slots-are-taken-and-none-is-reusable', cites: { file: 'skills/ship-feature/SKILL.md', section: '0. Acquisition' },
-    input: { question: 'pool', slots: [{ n: 1, clean: false, merged: true }, { n: 2, clean: true, merged: false }, { n: 3, clean: false, merged: false }], max: 3 },
+    input: { question: 'pool', slots: [HELD({ n: 1, clean: false }), FREE({ n: 2, merged: false }), HELD({ n: 3, clean: false, merged: false })], max: 3 },
     expect: { verdict: 'blocked', detail_include: 'the cap is not a suggestion' } },
+  { id: 'pool:the-blocked-detail-says-which-slots-are-held', cites: { file: 'skills/ship-feature/SKILL.md', section: '0. Acquisition' },
+    input: { question: 'pool', slots: [HELD({ n: 1 }), HELD({ n: 2 })], max: 2 },
+    expect: { verdict: 'blocked', detail_include: '1 held, 2 held' } },
 
   /* --- question: reconcile — skills/reconcile/SKILL.md § How you verify --- */
   { id: 'reconcile:disjoint-far-apart', cites: { file: 'skills/reconcile/SKILL.md', section: 'How you verify' },
@@ -2191,8 +2237,10 @@ const REJECTED = [
   { id: 'reject:pool-slots-not-a-list', input: { question: 'pool', slots: 'x', max: 5 } },
   { id: 'reject:pool-slot-without-its-number', input: { question: 'pool', slots: [{ clean: true }], max: 5 } },
   { id: 'reject:pool-slot-without-its-cleanliness', input: { question: 'pool', slots: [{ n: 1, merged: true }], max: 5 } },
-  { id: 'reject:pool-slot-without-its-containment', input: { question: 'pool', slots: [{ n: 1, clean: true }], max: 5 } },
-  { id: 'reject:pool-slot-number-declared-twice', input: { question: 'pool', slots: [{ n: 1, clean: true, merged: true }, { n: 1, clean: false, merged: true }], max: 5 } },
+  { id: 'reject:pool-slot-without-its-containment', input: { question: 'pool', slots: [{ n: 1, clean: true, held: false, mine: false }], max: 5 } },
+  { id: 'reject:pool-slot-without-its-hold', input: { question: 'pool', slots: [{ n: 1, clean: true, merged: true, mine: false }], max: 5 } },
+  { id: 'reject:pool-slot-without-its-attribution', input: { question: 'pool', slots: [{ n: 1, clean: true, merged: true, held: false }], max: 5 } },
+  { id: 'reject:pool-slot-number-declared-twice', input: { question: 'pool', slots: [FREE({ n: 1 }), FREE({ n: 1, clean: false })], max: 5 } },
   { id: 'reject:pool-cap-not-positive', input: { question: 'pool', slots: [], max: 0 } },
   { id: 'reject:reconcile-paths-absent', input: { question: 'reconcile' } },
   { id: 'reject:reconcile-paths-not-a-list', input: { question: 'reconcile', paths: 'x' } },

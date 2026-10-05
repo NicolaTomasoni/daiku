@@ -58,11 +58,11 @@ file but the invocation: the same contract is an **entry point** when you launch
 **internal contract** when a chain delegates to it. `research` is the collection that
 `new-feature` procures for itself when it needs it, with reordering delegated to `study`, and at the same time the command with which you request the notes yourself.
 
-**There are eleven entry points, and it is not a number that grows on its own.** A contract is launched by
+**There are ten entry points, and it is not a number that grows on its own.** A contract is launched by
 hand only if it is the **entry point of a chain**, never because it is handy to have it around:
 what sits in the middle of a chain is reached by whoever opened it, and adding it here means
 opening a second way to get there, with different scope and permissions to keep aligned
-forever. The eleven fall into two groups, which are not used at the same moments.
+forever. The ten fall into two groups, which are not used at the same moments.
 
 **The method — the everyday work:**
 
@@ -73,7 +73,6 @@ forever. The eleven fall into two groups, which are not used at the same moments
 | `review` | the review also lives on its own, on a hand-written diff |
 | `code-review` | the bug-only review cycle on the scope you tell it: rounds, fixes, fast check and gate like `/review`, stopping at the report — no coverage, no commit |
 | `commit` | it closes a review launched with `--no-commit`, or a diff written outside a review |
-| `blueprint` | you already have a resolved decision-doc and stop at the brief: from the chosen solution it produces `2. blueprint.md` and stops there — the hand-off that travels to where the execution runs |
 | `ship-feature` | you already have the folder, with or without the brief, and want the whole delivery to the commit in a single run, without reopening the study |
 | `release` | the promotion of a project that declared its channels: it asks the version once on the block of commits accumulated on the development branch and moves production onto it, without pushing. On a project that declared no channels it has nothing to promote and says so |
 
@@ -86,7 +85,7 @@ can reach because they run at the project's opening, outside a feature:
 | `sync-host` | it carries guardrails and subagent roles into the host layer that cannot receive them from the package; `init` launches it on Codex as its last step, and it is re-launched on every update |
 | `new-project` | after `init` has assigned the seats, it writes the project's five founding documents from the package skeletons — the offer, the identity, the domain, the stack, the architecture — and is re-launched to realign them |
 
-Everything else — `decision-doc`, `update-memory`, `execute`,
+Everything else — `decision-doc`, `blueprint`, `update-memory`, `execute`, `reconcile`,
 `finder-prompt`, `applier`, `arch-check`, `perf`, `dead-code`, `test-coverage`, `study` — is an **internal contract**: a
 subagent receives it as a *path to read*, not as a skill to invoke. `decision-doc`
 is opened by `new-feature`, `update-memory` by `commit` on every invocation, and
@@ -135,7 +134,7 @@ rebuilding the graph from the caller's prose.
 | `decision-doc` | `new-feature` § *The study of decisions* and § *Incorporation* | problem folder, optional subset to analyse, the already written document, the material the request came with, the paths of the `research` notes and of the relevant memories, and on receiving the owner's answers by number | `0.5. strategic-study.md` or `1. decision-doc.md` on disk, with `0. problem.md` refined, and the block of § *The block you return* of its file | no |
 | `research` | owner, `new-feature` § *The missing knowledge* | name of the technology; from `new-feature` also the version in use in the project and the questions the notes must answer | path of the file in `{paths.studies}/`, in both modes, nothing else | yes — fan-out per thematic block (leaves) + `study` as leaf child |
 | `study` | `research` § *Step 2* only | path of the dirty file, studied technology, studied and latest versions with dates | reordered file in `{paths.studies}/` + the block of § *The block you return* of its file | no — leaf |
-| `blueprint` | `owner`, `ship-feature` phase 1, `new-feature` § *Delivery* (brief stop) | folder with `1. decision-doc.md`, chosen solution verbatim, relevant memories | § *What you return* of its file | no |
+| `blueprint` | `ship-feature` phase 1, `new-feature` § *Delivery* (brief stop) | folder with `1. decision-doc.md`, chosen solution verbatim, relevant memories | § *What you return* of its file | no |
 | `execute` | `ship-feature` phase 2 | folder with `2. blueprint.md`, relevant memories; on a relaunch, the `handoff` blockers or the round-0 findings | § *What you return* of its file | no |
 | `reconcile` | `ship-feature` § *6b-bis. Reconcile* | the work root, the branch of the delivery, the patch path, and the block of 6b with its `dirty_paths` or `conflicts`, already resolved | § *The block you return* of its file | no |
 | `ship-feature` | `owner`, `new-feature` § *Delivery* | folder and chosen solution | § *Outcome* of its file | yes — its phases, and `review` as orchestrating child |

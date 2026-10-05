@@ -1,5 +1,13 @@
 # Changelog
 
+### 1.1.3 — 2026-10-05
+
+- Two deliveries launched together no longer land on the same worktree: the pool now reads the **hold** as part of reusability, so a slot a delivery is working in is never offered to another one, and a slot the asking delivery already holds is taken back **as it stands**, without a reset — a resumption finds again what it left there. Every read and every write of the registry runs under an exclusive lock, so two acquisitions never choose on the same reading; a lock left behind by a process that is gone is stolen, and one whose process is alive stops the acquisition loudly instead of writing.
+- `/blueprint` is no longer a command: the execution brief is produced by `/ship-feature` and `/new-feature` alone, and reaching it by hand is no longer a second way into the chain.
+- `/new-feature --chat` discusses a feature with the owner before anything exists: no folder, no investigation, no decision document, nothing written to disk. The run stays a conversation until the owner says the development starts, and only then does the chain begin at point 1, carrying the whole conversation as its input — the decisions actually taken together, while a preference nobody answered stays an open question.
+
+---
+
 ### 1.1.2 — 2026-10-04
 
 - `/init` no longer asks only what is **missing** but also what is **behind**: it measures its own artefacts inside the project against the package — the copies of hooks and roles Codex keeps in the project, the seats Daiku wrote before it moved under `.daiku/`, the keys of a parameter file the contract no longer names — and corrects them in the same run, retiring into a `git stash` what an older Daiku left standing. Its scan answers with four lists instead of one, and the update task now closes by saying whether the project is aligned to the package it has just fetched or whether `/daiku:init` is due.
