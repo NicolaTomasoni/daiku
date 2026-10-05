@@ -21,8 +21,8 @@ da quelli di Daiku.
 
 **How to apply:**
 
-- In questo repo non resta traccia di Kaji. In `C:\dev` il workspace `daiku-workspace`
-  tiene solo `daiku-dev` e `daiku`; Kaji resta fuori, in `C:/dev/Kaji`.
+- In questo repo non resta traccia di Kaji. In `C:\dev` il repository di Daiku è `C:\dev\daiku`;
+  Kaji resta fuori, in `C:/dev/Kaji`.
 - Il remote di `C:/dev/Kaji` punta ancora al vecchio progetto GitLab
   `claude-code-router-extension`: la sede GitHub di Kaji non è decisa.
 - Ciò che i due prodotti condividono resta un contratto versionato per copia, non un file letto

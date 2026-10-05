@@ -1,7 +1,7 @@
 {
   "contract": 1,
   "name": "daiku-dev",
-  "repo_root": "C:/dev/daiku-workspace/daiku-dev",
+  "repo_root": "C:/dev/daiku",
   "code_root": "plugins/",
   "language": {
     "chat": "it",

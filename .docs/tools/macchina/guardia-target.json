@@ -2,7 +2,7 @@
   "_cosa": "Configurazione del presidio del target. Questa e' la copia sorgente: quella che vale sta in C:\\Program Files\\ClaudeCode\\guardia-target.json, e ci arriva solo dallo strumento gestisci-guardie, dopo il diff e la conferma dell'owner. L'interruttore 'enabled' della copia installata lo cambia lo strumento, e un aggiornamento non lo tocca.",
   "enabled": true,
   "progetti": [
-    "C:/dev/daiku-workspace/daiku-dev"
+    "C:/dev/daiku"
   ],
   "radici_non_eseguibili": [
     "C:/Users/tomas/AppData/Local/Temp/repo-intelligence"

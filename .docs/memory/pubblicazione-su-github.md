@@ -13,9 +13,10 @@ Daiku non è pronto per il pubblico, con **due rami**: `develop` è il cantiere,
 produzione. Non ci sono più due repository — `tomasoni.nicola/daiku-dev` su GitLab è **congelato**
 dal giorno della migrazione, non riceve più push, e la sua storia è stata importata in `develop`.
 
-La copia di lavoro è `C:\dev\daiku-workspace\daiku-dev`, che tiene entrambi i rami. Il vecchio
-checkout di servizio `C:\dev\daiku-workspace\daiku` è stato **ritirato**: il rilascio non ne ha
-bisogno, perché non si mette mai su production.
+La copia di lavoro è `C:\dev\daiku`, che tiene entrambi i rami, ed è la sola: il vecchio checkout di
+servizio — che esisteva perché il macchinario di pubblicazione ci copiava i file dentro — è stato
+**ritirato**, e quel macchinario con lui. Il rilascio non ne ha bisogno: non si mette mai su
+production.
 
 `develop` **non porta numeri di versione**: i due manifest restano al segnaposto `0.0.0` — Codex
 esige strict semver, quindi la chiave non può mancare — e `plugins/CHANGELOG.md` non esiste lì.

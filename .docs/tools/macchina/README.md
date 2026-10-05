@@ -85,7 +85,7 @@ Una volta sola, da un PowerShell qualunque, con il percorso completo (una finest
 in `C:\Windows\system32`, e un percorso relativo lì non si trova):
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File "C:\dev\daiku-workspace\daiku-dev\.docs\tools\macchina\gestisci-guardie.ps1"
+powershell -ExecutionPolicy Bypass -File "C:\dev\daiku\.docs\tools\macchina\gestisci-guardie.ps1"
 ```
 
 Chiede l'elevazione, mostra i file che installerà e aspetta la conferma. Rileggili prima: da lì in

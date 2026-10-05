@@ -278,7 +278,7 @@ export function valuta(evento, config, progetto) {
 // ---------------------------------------------------------------------------
 
 const RADICE = 'C:/Users/tomas/AppData/Local/Temp/repo-intelligence';
-const PROGETTO = 'C:/dev/daiku-workspace/daiku-dev';
+const PROGETTO = 'C:/dev/daiku';
 const ALTROVE = 'C:/dev/Kaji';
 const CONFIG_PROVA = {
   enabled: true,

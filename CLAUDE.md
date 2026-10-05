@@ -85,7 +85,7 @@ cantiere è una decisione a parte, che chiedi invece di prendere. Vale allo stes
 
 Il repository è **uno solo**: `NicolaTomasoni/daiku` su GitHub, privato finché Daiku non è pronto per
 il pubblico. Il cantiere e il prodotto sono i suoi due rami, e la copia di lavoro è
-`C:\dev\daiku-workspace\daiku-dev`, che li tiene entrambi.
+`C:\dev\daiku`, che li tiene entrambi.
 
 **`develop` è il cantiere.** Porta tutto — il prodotto sotto `plugins/`, la ricognizione, i punti
 aperti, la memoria, gli esempi, queste istruzioni — ed è il ramo su cui si lavora. **Non porta numeri
