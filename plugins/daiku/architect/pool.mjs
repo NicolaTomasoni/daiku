@@ -17,6 +17,17 @@
  * the same rule every run; the registry it writes is the attribution the agent cannot re-derive
  * from Git — who took which slot, and whether that work ended.
  *
+ * **The registry is also the lock.** A row `in-use` is a delivery working in that slot, and it
+ * is why the row is not merely attribution: a slot just taken is clean and holds nothing the
+ * integration branch lacks, which is exactly the shape of a reusable one, so a choice reading
+ * only the tree offers it to the next delivery. That is not an unlikely interleaving — it is
+ * what happens whenever two deliveries are launched together, and it is how three of them came
+ * to write on one worktree. The choice now weighs the hold too, and the hold alone would still
+ * be enough only if the readings were not simultaneous: two acquisitions that read the registry
+ * before either writes choose the same slot. So both actions run their whole
+ * read-measure-choose-write under an **exclusive lock file** beside the registry, and a second
+ * acquisition waits for it instead of choosing on a stale reading.
+ *
  * Like the evaluator it **fails loudly**: a missing or malformed input is an error and exit 2,
  * never a silent success, and it never writes a registry `schemas/blocks.json` § *pool* refuses.
  *
@@ -29,16 +40,18 @@
  *       launches it.
  *
  * What it writes, and nothing else: the registry, in the file the caller names (`{paths.review_state}/worktree-pool.json`
- * by the skill's convention), the pool worktree Git creates or resets, and Git objects.
+ * by the skill's convention), the lock file beside it, removed before the action ends, the pool worktree Git
+ * creates or resets, and Git objects.
  *
  * The prose of its actions — when each is called, what it takes and what it returns — lives in
  * the skill hosting it, `skills/ship-feature/SKILL.md` § *Worktree pool*.
  */
 
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
+import { closeSync, existsSync, mkdirSync, mkdtempSync, openSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { BadInput, dispatch as ask } from './architect.mjs';
 
 /* ------------------------------------------------------------------------- *
@@ -226,15 +239,113 @@ function writeRegistry(path, registry) {
   renameSync(temporary, path);
 }
 
-/** The row a slot carries, or a fresh one when it was never taken by this registry. */
-function rowOf(registry, n, name, branch) {
-  return registry.slots.find((slot) => slot.name === name) || { n, name, branch, state: 'free', delivery: null, updated: iso() };
-}
-
 function putRow(registry, row) {
   registry.slots = registry.slots.filter((slot) => slot.name !== row.name);
   registry.slots.push(row);
   registry.slots.sort((a, b) => a.n - b.n);
+}
+
+/* ------------------------------------------------------------------------- *
+ * The lock — one acquisition at a time over the registry
+ * ------------------------------------------------------------------------- */
+
+/** How long a second acquisition waits for the registry before it gives up loudly. */
+const LOCK_WAIT_MS = 60000;
+const LOCK_POLL_MS = 50;
+/**
+ * How long a lock file that names no pid is given before it counts as abandoned. The creator
+ * holds it empty between `openSync` and the write that follows, and a waiter reading it in that
+ * window must not call it stale: it is a lock taken a moment ago, and stealing it puts two
+ * acquisitions in the critical section at once — which is the whole failure this lock removes.
+ * The grace is far longer than the write and far shorter than a delivery.
+ */
+const LOCK_UNREADABLE_MS = 2000;
+
+/** A synchronous pause, so waiting for the lock is not a busy loop. */
+function sleepSync(ms) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
+/**
+ * Whether the lock file's writer is gone: the process it names is not running any more. A stale
+ * lock is stolen rather than waited on forever — a process killed mid-acquisition would
+ * otherwise stop the pool for good — and this is the one case in which a lock file is removed
+ * by someone who did not write it.
+ */
+function lockIsStale(lockPath) {
+  let pid = null;
+  try {
+    const info = JSON.parse(readFileSync(lockPath, 'utf-8'));
+    if (Number.isInteger(info.pid)) pid = info.pid;
+  } catch {
+    pid = null;
+  }
+  if (pid !== null) {
+    try {
+      process.kill(pid, 0);
+      return false;
+    } catch (error) {
+      return error.code !== 'EPERM';
+    }
+  }
+  // No pid to ask about: only age can tell an abandoned file from one being written right now.
+  try {
+    return Date.now() - statSync(lockPath).mtimeMs > LOCK_UNREADABLE_MS;
+  } catch {
+    return true;
+  }
+}
+
+/**
+ * Runs `fn` holding the registry's exclusive lock: the file `${registry}.lock`, created with
+ * `wx` — one creator and the others refused, which is the whole mutual exclusion — and removed
+ * when `fn` returns or throws. A second acquisition waits for it and re-reads the registry
+ * afterwards, so it chooses on what the first one wrote instead of on a stale reading.
+ * `options.waitMs` exists for the bench, which cannot wait a minute to prove a refusal.
+ */
+function withLock(registryPath, fn, options = {}) {
+  const waitMs = Number.isInteger(options.waitMs) ? options.waitMs : LOCK_WAIT_MS;
+  const lockPath = `${registryPath}.lock`;
+  mkdirSync(dirname(lockPath), { recursive: true });
+  const deadline = Date.now() + waitMs;
+  let fd = null;
+  while (fd === null) {
+    try {
+      fd = openSync(lockPath, 'wx');
+    } catch (error) {
+      if (error.code !== 'EEXIST') fail(`the lock ${slashed(lockPath)} cannot be created: ${error.message}`);
+      if (lockIsStale(lockPath)) {
+        // Renaming it away first is what makes exactly one waiter the stealer: `rename` is
+        // atomic, so a second one fails with ENOENT and goes back to waiting.
+        const stash = `${lockPath}.stale-${process.pid}`;
+        try {
+          renameSync(lockPath, stash);
+          rmSync(stash, { force: true });
+        } catch {
+          // Someone else took it away already: the loop retries the creation.
+        }
+        continue;
+      }
+      if (Date.now() >= deadline) {
+        fail(
+          `another acquisition holds ${slashed(lockPath)} and did not release it within ${waitMs}ms: ` +
+            'nothing was read and nothing was written. If no delivery is running, that file is stale and can be removed.'
+        );
+      }
+      sleepSync(LOCK_POLL_MS);
+    }
+  }
+  try {
+    writeFileSync(fd, `${JSON.stringify({ pid: process.pid, at: iso() })}\n`, 'utf-8');
+    return fn();
+  } finally {
+    try {
+      closeSync(fd);
+    } catch {
+      // Already closed: the answer is on its way out either way.
+    }
+    rmSync(lockPath, { force: true });
+  }
 }
 
 /* ------------------------------------------------------------------------- *
@@ -264,60 +375,81 @@ function actAcquire(input, root) {
   const registryPath = registryPathOf(input, workRoot);
   const slotRe = new RegExp(`^${escapeRe(prefix)}(\\d+)$`);
 
-  const head = git(workRoot, ['rev-parse', 'HEAD']).trim();
-  let registered = slotsOf(poolAbs, slotRe, worktreesOf(workRoot));
-  if (registered.some((slot) => !slot.present)) {
-    // A slot whose directory is gone is a registration git keeps until it is pruned: it holds
-    // its number and nothing can be measured in it. The prune frees the name — git drops only
-    // the administrative entry of a worktree that no longer exists — and the list is read again.
-    git(workRoot, ['worktree', 'prune']);
-    registered = slotsOf(poolAbs, slotRe, worktreesOf(workRoot));
-  }
-  const measured = registered.filter((slot) => slot.present).map((slot) => ({
-    ...slot,
-    clean: cleanOf(slot.dir),
-    merged: isAncestor(workRoot, git(slot.dir, ['rev-parse', 'HEAD']).trim(), head),
-  }));
-  const registry = readRegistry(registryPath, schemas);
-  const verdict = ask({ question: 'pool', slots: measured.map((slot) => ({ n: slot.n, clean: slot.clean, merged: slot.merged })), max: input.max }, root);
-
-  if (verdict.verdict === 'blocked') {
-    const who = measured
-      .map((slot) => {
-        const row = rowOf(registry, slot.n, slot.name, slot.branch);
-        return `${slot.name} (${row.state}${row.delivery ? `, ${row.delivery}` : ''})`;
-      })
-      .join(', ');
-    return answer({
-      ok: false,
-      worktree_root: null,
-      detail: `${verdict.detail}${who ? ` Occupied slots: ${who}.` : ''} A dirty slot is not this delivery's residue to clean: the registry names the delivery that left it, and the owner decides.`,
+  return withLock(registryPath, () => {
+    const head = git(workRoot, ['rev-parse', 'HEAD']).trim();
+    let registered = slotsOf(poolAbs, slotRe, worktreesOf(workRoot));
+    if (registered.some((slot) => !slot.present)) {
+      // A slot whose directory is gone is a registration git keeps until it is pruned: it holds
+      // its number and nothing can be measured in it. The prune frees the name — git drops only
+      // the administrative entry of a worktree that no longer exists — and the list is read again.
+      git(workRoot, ['worktree', 'prune']);
+      registered = slotsOf(poolAbs, slotRe, worktreesOf(workRoot));
+    }
+    const measured = registered.filter((slot) => slot.present).map((slot) => ({
+      ...slot,
+      clean: cleanOf(slot.dir),
+      merged: isAncestor(workRoot, git(slot.dir, ['rev-parse', 'HEAD']).trim(), head),
+    }));
+    const registry = readRegistry(registryPath, schemas);
+    const rowFor = (name) => registry.slots.find((slot) => slot.name === name);
+    // The two facts the tree cannot tell: a slot whose row is `in-use` is a delivery's, and if
+    // the row names this very delivery the slot is its own to take back. Without them the
+    // evaluator sees a slot just taken as clean and reusable, which is how deliveries came to
+    // share a tree.
+    const slots = measured.map((slot) => {
+      const row = rowFor(slot.name);
+      const held = !!row && row.state === 'in-use';
+      return { n: slot.n, clean: slot.clean, merged: slot.merged, held, mine: held && row.delivery === delivery };
     });
-  }
+    const verdict = ask({ question: 'pool', slots, max: input.max }, root);
 
-  const name = `${prefix}${verdict.slot}`;
-  const dir = join(poolAbs, name);
-  mkdirSync(poolAbs, { recursive: true });
-  if (verdict.verdict === 'reuse') {
-    git(dir, ['reset', '--hard', head]);
-  } else {
-    // `-B` and not `-b`: a branch left behind by a worktree removed by hand still carries the
-    // name this slot wants, and `-b` would refuse it. `-B` creates it, or resets it to the
-    // integration branch when it is there.
-    git(workRoot, ['worktree', 'add', '-B', `${branchPrefix}${name}`, slashed(dir), head]);
-  }
+    if (verdict.verdict === 'blocked') {
+      const who = measured
+        .map((slot) => {
+          const row = rowFor(slot.name);
+          return `${slot.name} (${row ? row.state : 'unregistered'}${row && row.delivery ? `, ${row.delivery}` : ''})`;
+        })
+        .join(', ');
+      return answer({
+        ok: false,
+        worktree_root: null,
+        detail: `${verdict.detail}${who ? ` Occupied slots: ${who}.` : ''} A dirty or held slot is not this delivery's residue to take: the registry names the delivery that holds it, and the owner decides.`,
+      });
+    }
 
-  const branch = `${branchPrefix}${name}`;
-  putRow(registry, { n: verdict.slot, name, branch, state: 'in-use', delivery, updated: iso() });
-  writeRegistry(registryPath, validateRegistry(registry, schemas));
+    const name = `${prefix}${verdict.slot}`;
+    const dir = join(poolAbs, name);
+    const taken = measured.find((slot) => slot.n === verdict.slot);
+    const branch = taken ? taken.branch : `${branchPrefix}${name}`;
+    if (verdict.verdict === 'reuse') {
+      mkdirSync(poolAbs, { recursive: true });
+      git(dir, ['reset', '--hard', head]);
+    } else if (verdict.verdict === 'create') {
+      mkdirSync(poolAbs, { recursive: true });
+      // `-B` and not `-b`: a branch left behind by a worktree removed by hand still carries the
+      // name this slot wants, and `-b` would refuse it. `-B` creates it, or resets it to the
+      // integration branch when it is there.
+      git(workRoot, ['worktree', 'add', '-B', `${branchPrefix}${name}`, slashed(dir), head]);
+    }
+    // On `held` no Git command runs at all: the slot is already this delivery's, and resetting
+    // it would throw away what the delivery left in it.
 
-  const prefixInRepo = git(workRoot, ['rev-parse', '--show-prefix']).trim();
-  const worktreeRoot = prefixInRepo ? resolve(dir, prefixInRepo) : dir;
-  return answer({
-    worktree: name,
-    branch,
-    worktree_root: slashed(worktreeRoot),
-    detail: `${verdict.verdict === 'reuse' ? 'reused' : 'created'} slot ${name} at ${head.slice(0, 7)}; its row is ${slashed(registryPath)}.`,
+    // Read before `putRow`: it rewrites the row with a fresh `updated`, and the `held` message
+    // must carry the moment the delivery first took the slot, not the one this call stamped.
+    const heldSince = (rowFor(name) || {}).updated;
+    putRow(registry, { n: verdict.slot, name, branch, state: 'in-use', delivery, updated: iso() });
+    writeRegistry(registryPath, validateRegistry(registry, schemas));
+
+    const prefixInRepo = git(workRoot, ['rev-parse', '--show-prefix']).trim();
+    const worktreeRoot = prefixInRepo ? resolve(dir, prefixInRepo) : dir;
+    return answer({
+      worktree: name,
+      branch,
+      worktree_root: slashed(worktreeRoot),
+      detail: verdict.verdict === 'held'
+        ? `slot ${name} is the one this delivery already holds, marked in-use since ${heldSince}: it is taken back as it stands, with nothing reset and no second slot, so what the delivery left in it survives.`
+        : `${verdict.verdict === 'reuse' ? 'reused' : 'created'} slot ${name} at ${head.slice(0, 7)}; its row is ${slashed(registryPath)}.`,
+    });
   });
 }
 
@@ -331,28 +463,32 @@ function actRelease(input, root) {
     fail(`state is required: "free" (the merge landed and the slot is cleaned) or "blocked" (the delivery stopped with the tree dirty), got ${JSON.stringify(input.state)}`);
   }
   const registryPath = registryPathOf(input, workRoot);
-  const registry = readRegistry(registryPath, schemas);
-  const row = registry.slots.find((slot) => slot.name === name);
-  if (!row) fail(`slot ${JSON.stringify(name)} is not in the registry ${slashed(registryPath)}: acquire writes the row, release updates it`);
-  const dir = join(poolAbs, name);
-  if (!existsSync(dir)) fail(`the worktree ${slashed(dir)} does not exist`);
+  // Under the same lock as `acquire`: releasing reads the registry and writes it back, and a
+  // release interleaved with an acquisition would let one of the two overwrite the other's row.
+  return withLock(registryPath, () => {
+    const registry = readRegistry(registryPath, schemas);
+    const row = registry.slots.find((slot) => slot.name === name);
+    if (!row) fail(`slot ${JSON.stringify(name)} is not in the registry ${slashed(registryPath)}: acquire writes the row, release updates it`);
+    const dir = join(poolAbs, name);
+    if (!existsSync(dir)) fail(`the worktree ${slashed(dir)} does not exist`);
 
-  if (input.state === 'free') {
-    if (!nonEmpty(input.ref)) fail('ref is required when state is "free": the merge SHA the slot is reset to');
-    git(dir, ['reset', '--hard', input.ref]);
-    git(dir, ['clean', '-fd']);
-    if (!cleanOf(dir)) fail(`the slot ${name} is not clean after reset --hard and clean -fd: ${slashed(dir)} still carries modifications`);
-  }
+    if (input.state === 'free') {
+      if (!nonEmpty(input.ref)) fail('ref is required when state is "free": the merge SHA the slot is reset to');
+      git(dir, ['reset', '--hard', input.ref]);
+      git(dir, ['clean', '-fd']);
+      if (!cleanOf(dir)) fail(`the slot ${name} is not clean after reset --hard and clean -fd: ${slashed(dir)} still carries modifications`);
+    }
 
-  const delivery = nonEmpty(input.delivery) ? input.delivery : row.delivery;
-  putRow(registry, { n: row.n, name, branch: row.branch, state: input.state, delivery, updated: iso() });
-  writeRegistry(registryPath, validateRegistry(registry, schemas));
-  return answer({
-    worktree: name,
-    state: input.state,
-    detail: input.state === 'free'
-      ? `slot ${name} is clean and free again: it is reusable by the next delivery whatever the integration branch does.`
-      : `slot ${name} is declared blocked: its tree stays dirty on purpose, and the registry names ${delivery || 'the delivery'} so the owner knows whose it is.`,
+    const delivery = nonEmpty(input.delivery) ? input.delivery : row.delivery;
+    putRow(registry, { n: row.n, name, branch: row.branch, state: input.state, delivery, updated: iso() });
+    writeRegistry(registryPath, validateRegistry(registry, schemas));
+    return answer({
+      worktree: name,
+      state: input.state,
+      detail: input.state === 'free'
+        ? `slot ${name} is clean and free again: it is reusable by the next delivery whatever the integration branch does.`
+        : `slot ${name} is declared blocked: its tree stays dirty on purpose, and the registry names ${delivery || 'the delivery'} so the owner knows whose it is.`,
+    });
   });
 }
 
@@ -372,6 +508,32 @@ function dispatch(input, root) {
 /* ------------------------------------------------------------------------- *
  * The bench — throwaway repositories, real Git, one proof per rule
  * ------------------------------------------------------------------------- */
+
+/**
+ * The driver the concurrency case runs: it launches one acquisition per delivery at once and
+ * prints their answers. It is a file of its own because the bench below is synchronous and
+ * three acquisitions in flight are not — `spawnSync` would run them one after the other, which
+ * is the case that already works.
+ */
+const CONCURRENT_DRIVER = `
+import { spawn } from 'node:child_process';
+const [program, root, workRoot, pool, registry] = process.argv.slice(2);
+const deliveries = ['feature/a', 'feature/b', 'feature/c'];
+const acquire = (delivery) => new Promise((done) => {
+  const child = spawn(process.execPath, [program, root], { stdio: ['pipe', 'pipe', 'pipe'] });
+  let out = '';
+  let err = '';
+  child.stdout.on('data', (chunk) => { out += chunk; });
+  child.stderr.on('data', (chunk) => { err += chunk; });
+  child.on('close', (code) => done({ delivery, code, out: out.trim(), err: err.trim() }));
+  child.stdin.end(JSON.stringify({
+    action: 'acquire', work_root: workRoot, pool, prefix: 'agent-tree-', branch_prefix: 'worktree-',
+    max: 5, delivery, registry,
+  }));
+});
+const answers = await Promise.all(deliveries.map(acquire));
+process.stdout.write(JSON.stringify(answers));
+`;
 
 function runBench(root) {
   const checks = [];
@@ -464,7 +626,7 @@ function runBench(root) {
       // which is exactly the state the old «free» criterion read as occupied forever.
       fx.release({ state: 'free', ref: fx.head() });
       fx.advance();
-      const again = fx.acquire();
+      const again = fx.acquire({ delivery: 'feature/y' });
       check('reuse:a-clean-slot-is-reused-although-its-head-is-behind', again.ok === true && again.worktree === 'agent-tree-1', JSON.stringify(again));
       check('reuse:no-second-slot-is-created', !existsSync(fx.slot(2)), 'a slot was created while a clean one stood free');
       check('reuse:the-slot-sits-on-the-moved-integration-branch', sh(fx.slot(1), ['rev-parse', 'HEAD']).trim() === fx.head(), 'the reused slot was not reset to the integration branch');
@@ -474,8 +636,67 @@ function runBench(root) {
       const fx = fixture('dirty');
       fx.acquire();
       fx.dirty(1);
-      const next = fx.acquire();
+      const next = fx.acquire({ delivery: 'feature/y' });
       check('dirty:a-dirty-slot-is-never-reused', next.ok === true && next.worktree === 'agent-tree-2', JSON.stringify(next));
+    });
+
+    /* --- the hold: one slot, one delivery, and the lock that makes the choice atomic --- */
+    attempt('hold', () => {
+      const fx = fixture('hold');
+      const first = fx.acquire();
+      // One acquisition that has not released: its slot is clean — nothing was written yet — and
+      // holds nothing the integration branch lacks, which is precisely the shape of a reusable
+      // one. Before the hold, the second acquisition read it as free and reset it under the
+      // first delivery's feet; this is the whole reported failure, in one fixture.
+      const second = fx.acquire({ delivery: 'feature/y' });
+      check('hold:a-slot-a-delivery-holds-is-not-reused-although-it-is-clean', second.ok === true && second.worktree === 'agent-tree-2', `${first.worktree} then ${second.worktree}`);
+      check('hold:the-second-delivery-lands-in-its-own-tree', second.worktree_root === slashed(join(fx.slot(2), 'tech')), second.worktree_root);
+      check('hold:the-registry-names-both-deliveries', readJson(fx.registry).slots.map((slot) => slot.delivery).join(',') === 'feature/x,feature/y', JSON.stringify(readJson(fx.registry)));
+    });
+
+    attempt('reentrant', () => {
+      const fx = fixture('reentrant');
+      fx.acquire();
+      fx.dirty(1, 'wip.txt');
+      // The same delivery asking again — a resumption — finds its own slot held and takes it back
+      // as it stands: no second slot, and nothing the delivery left in it is reset away.
+      const again = fx.acquire();
+      check('reentrant:the-delivery-takes-back-its-own-slot', again.ok === true && again.worktree === 'agent-tree-1', JSON.stringify(again));
+      check('reentrant:no-second-slot-is-opened', !existsSync(fx.slot(2)), 'a second slot was created for the same delivery');
+      check('reentrant:what-the-delivery-left-in-its-slot-survives', existsSync(join(fx.slot(1), 'wip.txt')), 'the slot was reset under the delivery that held it');
+    });
+
+    attempt('lock', () => {
+      const fx = fixture('lock');
+      const lockPath = `${fx.registry}.lock`;
+      mkdirSync(dirname(fx.registry), { recursive: true });
+
+      // A lock whose writer is gone is stale: the pool steals it instead of stopping for good.
+      writeFileSync(lockPath, `${JSON.stringify({ pid: 2147483646, at: 'x' })}\n`, 'utf-8');
+      const stolen = fx.acquire();
+      check('lock:a-lock-left-by-a-dead-process-is-stolen', stolen.ok === true && stolen.worktree === 'agent-tree-1', JSON.stringify(stolen));
+      check('lock:the-stolen-lock-does-not-stay-behind', !existsSync(lockPath), 'the lock file survived the acquisition');
+
+      // A lock whose writer is alive stops the acquisition: the body must not run at all.
+      writeFileSync(lockPath, `${JSON.stringify({ pid: process.pid, at: 'x' })}\n`, 'utf-8');
+      let entered = false;
+      let message = '';
+      try {
+        withLock(fx.registry, () => { entered = true; }, { waitMs: 200 });
+      } catch (error) {
+        message = String(error.message);
+      }
+      check('lock:a-lock-held-by-a-live-process-stops-the-acquisition', entered === false && message.includes('holds'), `entered=${entered} message=${message}`);
+      check('lock:the-lock-of-a-live-process-is-not-removed', existsSync(lockPath), 'a live lock was taken away');
+      rmSync(lockPath, { force: true });
+
+      // And the lock is released whatever the body does, including throwing.
+      try {
+        withLock(fx.registry, () => { throw new Error('the body broke'); });
+      } catch {
+        // The bench wants the lock's state after a failure, not the failure.
+      }
+      check('lock:the-lock-is-released-when-the-body-throws', !existsSync(lockPath), 'the lock stayed behind after a throw');
     });
 
     attempt('unmerged', () => {
@@ -487,7 +708,7 @@ function runBench(root) {
       put(join(fx.slot(1), 'tech', 'src', 'c.js'), 'export const c = 1;\n');
       sh(fx.slot(1), ['add', '-A']);
       sh(fx.slot(1), ['commit', '-q', '-m', 'the delivery, unmerged']);
-      const next = fx.acquire();
+      const next = fx.acquire({ delivery: 'feature/y' });
       check('unmerged:a-clean-slot-with-unmerged-commits-is-not-reused', next.ok === true && next.worktree === 'agent-tree-2', JSON.stringify(next));
     });
 
@@ -518,10 +739,40 @@ function runBench(root) {
       const fx = fixture('full');
       fx.acquire({ max: 1 });
       fx.dirty(1);
-      const blocked = fx.acquire({ max: 1 });
+      const blocked = fx.acquire({ max: 1, delivery: 'feature/y' });
       check('full:a-pool-all-dirty-stops-the-delivery', blocked.ok === false && blocked.worktree === null, JSON.stringify(blocked));
       check('full:the-blocked-detail-names-who-left-the-slot', blocked.detail.includes('agent-tree-1') && blocked.detail.includes('in-use'), blocked.detail);
       check('full:no-slot-beyond-the-cap-is-created', !existsSync(fx.slot(2)), 'the cap was crossed');
+    });
+
+    /* --- three deliveries launched together: the case the hold and the lock exist for --- */
+    attempt('concurrent', () => {
+      const fx = fixture('concurrent');
+      const driver = join(home, 'concurrent-driver.mjs');
+      writeFileSync(driver, CONCURRENT_DRIVER, 'utf-8');
+      // Three acquisitions in flight at once, each a process of its own, which is what three
+      // features launched together are. Any interleaving is allowed here: the three must land on
+      // three distinct slots and the registry must carry three rows, and no schedule makes that
+      // false. Without the lock the three read the same empty registry and choose the first slot.
+      const ran = spawnSync(process.execPath, [driver, fileURLToPath(import.meta.url), root, fx.cwd, fx.pool, fx.registry], { encoding: 'utf-8' });
+      const answers = (ran.stdout || '[]').trim();
+      let parsed = [];
+      try {
+        parsed = JSON.parse(answers);
+      } catch (error) {
+        check('concurrent:the-driver-answers', false, `the driver printed ${JSON.stringify(ran.stdout)} ${JSON.stringify(ran.stderr)} (${error.message})`);
+        return;
+      }
+      const decoded = parsed.map((answer) => {
+        try {
+          return JSON.parse(answer.out);
+        } catch {
+          return null;
+        }
+      });
+      check('concurrent:every-acquisition-answers', decoded.length === 3 && decoded.every((answer) => answer && answer.ok === true), JSON.stringify(parsed));
+      check('concurrent:no-two-deliveries-share-a-worktree', new Set(decoded.map((answer) => answer && answer.worktree)).size === 3, JSON.stringify(decoded));
+      check('concurrent:the-registry-carries-three-rows', readJson(fx.registry).slots.length === 3, JSON.stringify(readJson(fx.registry)));
     });
 
     /* --- release: the two outcomes one records --- */
