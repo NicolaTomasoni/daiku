@@ -31,6 +31,13 @@
   "review": {
     "disciplines": ["bug"]
   },
+  "channels": {
+    "development": "develop",
+    "production": "main"
+  },
+  "release": {
+    "source": "plugins"
+  },
   "worktree": {
     "pool": ".claude/worktrees",
     "prefix": "agent-tree-",

@@ -173,9 +173,7 @@ rende un passo ripetibile.
 
 **Chi può ri-delegare.** Un passo delegato **esegue**: non delega a sua volta. L'unico nodo
 orchestrante di questo corpus è `studia-repository`, ed è **entry point**: lo lanci tu, e nessuno
-lo invoca come figlio. Ogni altro passo delegato è una **foglia**. `rilascia-daiku` invoca due
-skill **del prodotto** (`daiku:code-review` e `daiku:commit`), e la delega di quelle la dichiarano
-i contratti del prodotto, non questo file.
+lo invoca come figlio. Ogni altro passo delegato è una **foglia**.
 
 Un nodo che si accorge di voler delegare, e non è fra questi, sta eseguendo il lavoro di qualcun
 altro: torna a contratto e lascia decidere a chi l'ha chiamato.
@@ -189,9 +187,11 @@ contenuto vive nel file del nodo, che resta l'unico posto in cui si modifica.
 
 | Nodo | Chi lo invoca | Riceve già risolto | Restituisce | Ri-delega |
 |---|---|---|---|---|
-| `rilascia-daiku` | owner | le opzioni del rilascio | § *Esito* del suo file | sì — `daiku:code-review` e `daiku:commit`, skill del prodotto |
 | `studia-repository` | owner | l'elenco dei target (`--lista`, `--sezione`, `--nome`, o i target sulla riga di comando) | la cartella `.daiku/studies/<corsa>/` con i suoi appunti e la sintesi, le feature in `.daiku/features/<corsa>/`, i target rientrati in fondo a *Inspirations* del README di prodotto e tolti dall'elenco, e § *Esito in chat* del suo file | sì — un appunto per target e la sintesi: i primi foglie, la seconda giudice, mai un terzo livello |
 | `translate-skill` | owner | il path del file di Daiku da tradurre | il file riscritto in inglese | no |
+
+Il **rilascio** non è un nodo di questo corpus: lo fa `daiku:release`, una skill del prodotto come
+le altre, e la sua delega la dichiara il contratto del prodotto.
 
 **Un arco nuovo si dichiara qui.** Collegare un nodo a un chiamante che non lo aveva significa
 aggiornare la sua riga — i chiamanti, l'input che ora riceve risolto, il permesso che
@@ -209,7 +209,7 @@ sono **sempre** sequenziali: non sono serializzabili altrimenti, e qui la workin
 ## 7. Il gate di questo progetto
 
 È l'unico posto in cui il gate di questo repository è scritto, e lo esegue **chi sta per committare
-una modifica alla forma del pacchetto** — sempre `rilascia-daiku`, a ogni rilascio, e a mano prima
+una modifica alla forma del pacchetto** — sempre `daiku:release`, a ogni rilascio, e a mano prima
 di una consegna che tocca manifest, contratti o hook. Il ciclo di `daiku:review` ha
 il proprio gate, che è il valutatore deterministico del prodotto (`plugins/daiku/architect/`), e
 non questo.
@@ -225,7 +225,6 @@ node plugins/daiku/hooks/self-check.mjs
 node .docs/tools/check-topology.mjs plugins/daiku
 node .docs/tools/check-marketplace.mjs plugins
 node .docs/tools/check-no-push.mjs --self-check
-node .docs/tools/check-channel.mjs
 ```
 
 Il corpus non è in questo elenco perché nessuno lo lancia a mano: lo impone il **gate dell'area

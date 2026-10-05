@@ -7,9 +7,9 @@
  * Perche' esiste. Il push e' un gesto manuale dell'owner, e le due sedi che lo impongono —
  * la regola `permissions.deny` in `.claude/settings.json` e il command-guard del pacchetto,
  * acceso qui dal `.daiku/project.json` — giudicano la **riga di comando** che l'agente
- * digita. Uno script che pusha al posto suo non passa da nessuna delle due: la riga e'
- * `.\pubblica-dist.ps1`, e il push sta dentro il file. Il 30 settembre 2026 e' andata
- * esattamente cosi', e un rilascio e' uscito prima che l'owner lo decidesse.
+ * digita. Uno script che pusha al posto suo non passa da nessuna delle due: la riga e' lo
+ * script, e il push sta dentro il file. Il 30 settembre 2026 e' andata esattamente cosi', e
+ * un rilascio e' uscito prima che l'owner lo decidesse.
  *
  * Da allora la regola vive anche qui: nessun file eseguibile del cantiere nomina un push.
  * Il controllo legge il **codice**, non i commenti — parlare del push e' cio' che questo
