@@ -32,7 +32,7 @@ Before freezing the code in a commit, the non-code artefacts must be realigned *
 
 **Never ask the user.** Neither before, as confirmation, nor after, as a reminder to run by hand. An alignment postponed to the owner is an alignment that does not happen: the commit leaves, the diff disappears into history, and the line remembering it stays in a closed chat.
 
-**How to delegate.** A **subagent** in a fresh context, **judge** role according to `contracts/orchestration.md` — read it and resolve the model from there, never from here. Never run the step inline. The prompt must be self-sufficient, because the subagent starts from zero:
+**How to delegate.** A **subagent** in a fresh context, **worker** role according to `contracts/orchestration.md` — read it and resolve the model from there, never from here. Never run the step inline. The prompt must be self-sufficient, because the subagent starts from zero:
 
 - the **contract to read**: `skills/update-memory/SKILL.md`, in full, before acting;
 - the **resolved input**: the diff **in index** under `{code_root}` (`git diff --cached --stat -- {code_root}` and `git diff --cached -- {code_root}`), which at this moment is already in stage. No arguments to pass: it is the "inside a commit" case foreseen by its own contract;

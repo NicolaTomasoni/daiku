@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Verificatore delle sette invarianti del corpus di Daiku.
+ * Verificatore delle otto invarianti del corpus di Daiku.
  *
  * Attrezzo di sviluppo, non codice ospite: vive fuori da `plugins/`, non si pubblica, non si
  * installa in nessun progetto e non gira mai da un hook. Si lancia a mano prima di un rilascio,
@@ -13,7 +13,7 @@
  * **mai** un file: l'unica scrittura avviene dentro `--self-check`, che crea le proprie fixture in
  * `os.tmpdir()` e le cancella alla fine. Non contiene, né lancia, nessun comando d'installazione.
  *
- * Imporre le sette invarianti che i contratti dichiarano in prosa ma nessun controllo verifica
+ * Imporre le otto invarianti che i contratti dichiarano in prosa ma nessun controllo verifica
  * (`CLAUDE.md`: «dove possiamo aggiungere un controllo deterministico, lo aggiungiamo sempre»):
  *
  * 1. nessuna riga di un file di testo porta un carattere di controllo C0 diverso da `\n` (0x0A);
@@ -27,10 +27,13 @@
  * 6. ogni skill che cita una chiave porta la riga d'apertura §5.1, `init` esentata;
  * 7. ogni `agents/*.md` ha `name`, `description` e `tools`, il `tools` è ristretto, e il `name`
  *    compare fra i `subagent_type` di §4 di `orchestration.md`.
+ * 8. la parola in grassetto con cui una skill dichiara il ruolo di un passo è uno dei ruoli che §1 di
+ *    `orchestration.md` dichiara nella sua tabella — il vocabolario si legge da lì, non si ricopia:
+ *    una regola documentata dentro un code span o un fence non è una dichiarazione.
  *
  * Il totale è contato, non cablato, e ogni controllo ha accanto la sua regex o la sua costante —
  * la definizione è parte del controllo, non un dettaglio interno. Il banco `--self-check` porta
- * casi verdi e rossi per ciascuno dei sette e, accanto a `{checks, passed, failed}`, l'elenco
+ * casi verdi e rossi per ciascuno degli otto e, accanto a `{checks, passed, failed}`, l'elenco
  * `never_red` — le regole che nessuna fixture ha mai reso rosse — perché una regola sempre verde
  * non si distingue da una che non può fallire (`hooks/self-check.mjs:130-136`).
  */
@@ -43,8 +46,8 @@ import { fileURLToPath } from 'node:url';
 
 /* ---------------------------------------------------------------- definizioni */
 
-/** I sette controlli, per identificatore: sono le «regole» del banco, quelle che `never_red` conta. */
-const CONTROLLI = ['c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7'];
+/** Gli otto controlli, per identificatore: sono le «regole» del banco, quelle che `never_red` conta. */
+const CONTROLLI = ['c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8'];
 
 /** La riga d'apertura §5.1, verbatim da `contracts/project-contract.md` §5.1, a spazi normalizzati. */
 const RIGA_51 = '**Parameters.** Every key in braces in this contract resolves on the project '
@@ -62,6 +65,14 @@ const CITAZIONE_RE = /\{([A-Za-z_][A-Za-z0-9_]*(?:\.(?:[A-Za-z0-9_*]+|<[^>]*>))*
 
 /** I nomi di modello di cui l'invariante 5 vieta la citazione in una skill. */
 const MODELLO_RE = /\b(opus|sonnet|haiku)\b/i;
+
+/** Le tre forme con cui una skill dichiara il ruolo di un passo — `— **worker** role`, il lead-in in
+ *  grassetto `**5a. Stage — worker role.**`, il bullet del chiamante `the **step role**: **worker**`.
+ *  La convenzione è una sola: **la parola in grassetto davanti a `role` nomina il ruolo**, e se non è
+ *  un ruolo non va in grassetto. Le tre alternative catturano quella parola, l'una o l'altra
+ *  valorizzata; il lookbehind esclude la `**` che chiude uno span precedente. Una forma nuova che il
+ *  corpus adotti va aggiunta qui, altrimenti il ruolo sfugge — la definizione è parte del controllo. */
+const RUOLO_RE = /(?<![\w*])\*\*([A-Za-z]+)\*\*\s+roles?\b|(?<![\w*])\*\*[^*]*?[—,]\s*(?:as\s+)?(?:an?\s+)?([A-Za-z]+)\s+roles?\b[.,]?\*\*|\broles?\*\*:\s*\*\*([A-Za-z]+)\*\*/g;
 
 /** La forma di una citazione di path con radice interna: la regex è la definizione del controllo 3. */
 const PATH_RE = new RegExp('`((?:' + RADICI_INTERNE.join('|') + ')\\/[^`\\s]+)`', 'g');
@@ -127,6 +138,24 @@ function chiaviTabella(righe, intestazioneRe) {
   return chiavi;
 }
 
+/** I ruoli che §1 di `orchestration.md` dichiara nella sua tabella, dove la prima cella è il nome in
+ *  grassetto. È la sede del vocabolario — §1 si dichiara punto unico di modifica — e si legge, non si
+ *  ricopia: l'invariante 8 chiude su quello che §1 dichiara, non su una copia che invecchia. */
+function ruoliDichiarati(righe, intestazioneRe) {
+  let inTabella = false;
+  const ruoli = [];
+  for (const riga of righe) {
+    if (intestazioneRe.test(riga)) { inTabella = true; continue; }
+    if (!inTabella) continue;
+    if (/^#{1,6}\s/.test(riga)) break;
+    if (!riga.trim()) { if (ruoli.length) break; continue; }
+    if (!riga.startsWith('|')) { if (ruoli.length) break; continue; }
+    const m = riga.split('|')[1].trim().match(/^\*\*([A-Za-z][A-Za-z0-9_-]*)\*\*$/);
+    if (m) ruoli.push(m[1]);
+  }
+  return ruoli;
+}
+
 function segmenti(chiave) {
   return chiave.split('.').map((s) => s.trim());
 }
@@ -141,6 +170,16 @@ function chiaviCombaciano(a, b) {
   const B = segmenti(b);
   if (A.length !== B.length) return false;
   return A.every((s, i) => s === B[i] || jolly(s) || jolly(B[i]));
+}
+
+/** Il testo di un markdown senza i fence e i code span: una regola documentata dentro un esempio non è
+ *  una dichiarazione. I fence si svuotano tenendone i ritorni a capo, così i numeri di riga restano —
+ *  e si accoppiano a due a due: un fence spaiato resta in chiaro invece di accecare il resto del file,
+ *  che è il modo in cui un controllo smette di vedere senza dirlo. */
+function senzaCodice(testo) {
+  return testo
+    .replace(/```[\s\S]*?```/g, (blocco) => blocco.replace(/[^\n]/g, ''))
+    .replace(/`[^`\n]*`/g, '');
 }
 
 /** Le chiavi citate in un testo, cioè i `{…}` dentro i code span. Una `${…}` (una variabile di
@@ -271,8 +310,8 @@ function subagentType(testo) {
 /* ---------------------------------------------------------------- verifica */
 
 /**
- * Esegue i sette controlli su una radice di pacchetto già su disco. Non ha opzioni: le fixture del
- * banco sono radici temporanee costruite da `costruisciRadice`, non scorciatoie.
+ * Esegue gli otto controlli su una radice di pacchetto già su disco. Non ha opzioni: le fixture del
+ * banco sono radici temporanee costruite da `radiceBase`, non scorciatoie.
  */
 function verifica(root) {
   const checks = [];
@@ -411,6 +450,25 @@ function verifica(root) {
     check('c7', problemi.length === 0, problemi.join('; '));
   }
 
+  /* 8 — la parola in grassetto che dichiara il ruolo di un passo è uno dei ruoli di §1. */
+  {
+    const problemi = [];
+    let ruoli = [];
+    try {
+      ruoli = ruoliDichiarati(leggiTesto(join(root, 'contracts/orchestration.md')).split(/\r?\n/), /^##\s+1\.\s/);
+    } catch { problemi.push('contracts/orchestration.md illeggibile'); }
+    if (!ruoli.length) problemi.push('§1 di contracts/orchestration.md non dichiara nessun ruolo');
+    for (const f of skillFiles) {
+      senzaCodice(leggiTesto(f)).split(/\r?\n/).forEach((riga, i) => {
+        for (const m of riga.matchAll(RUOLO_RE)) {
+          const parola = m[1] || m[2] || m[3];
+          if (!ruoli.includes(parola)) problemi.push(`${f}:${i + 1}: '${parola}' in grassetto davanti a 'role' non è uno dei ruoli di §1`);
+        }
+      });
+    }
+    check('c8', problemi.length === 0, problemi.join('; '));
+  }
+
   return { checks, failed };
 }
 
@@ -446,6 +504,13 @@ function radiceBase(base) {
   ].join('\n'));
   scrivi(join(root, 'contracts/orchestration.md'), [
     '# Orchestration',
+    '',
+    '## 1. Roles',
+    '',
+    '| Role | When to use |',
+    '|---|---|',
+    '| **judge** | the step decides |',
+    '| **worker** | the step executes |',
     '',
     '## 4. Delegation',
     '',
@@ -584,6 +649,28 @@ function runSelfCheck() {
       '---\ndescription: x\ntools: Read\n---\n\nBody.\n'));
     caso('name-estraneo-rosso', 'c7', true, (r) => scrivi(join(r, 'agents/finder.md'),
       '---\nname: estraneo\ndescription: x\ntools: Read\n---\n\nBody.\n'));
+
+    // 8 — vocabolario dei ruoli.
+    caso('ruolo-dei-due-verde', 'c8', false, (r) => scrivi(join(r, 'skills/ruoli/SKILL.md'),
+      '---\nname: ruoli\ndescription: x\n---\n\n### Scope — **worker** role\n'));
+    caso('terzo-ruolo-rosso', 'c8', true, (r) => scrivi(join(r, 'skills/terzo/SKILL.md'),
+      '---\nname: terzo\ndescription: x\n---\n\n### Scope — **manager** role\n'));
+    caso('ruolo-in-forma-colon-verde', 'c8', false, (r) => scrivi(join(r, 'skills/colong/SKILL.md'),
+      '---\nname: colong\ndescription: x\n---\n\nthe **step role**: **worker**, model resolved\n'));
+    caso('ruolo-in-forma-colon-rosso', 'c8', true, (r) => scrivi(join(r, 'skills/colon/SKILL.md'),
+      '---\nname: colon\ndescription: x\n---\n\nthe **step role**: **supervisor**\n'));
+    caso('ruolo-in-lead-in-verde', 'c8', false, (r) => scrivi(join(r, 'skills/leadin/SKILL.md'),
+      '---\nname: leadin\ndescription: x\n---\n\n**5a. Stage — worker role.** In the prompt:\n'));
+    caso('ruolo-in-lead-in-rosso', 'c8', true, (r) => scrivi(join(r, 'skills/leadinr/SKILL.md'),
+      '---\nname: leadinr\ndescription: x\n---\n\n**5a. Stage — supervisor role.** In the prompt:\n'));
+    caso('grassetto-che-non-e-ruolo-rosso', 'c8', true, (r) => scrivi(join(r, 'skills/grass/SKILL.md'),
+      '---\nname: grass\ndescription: x\n---\n\nEach phase declares its **own** role below.\n'));
+    caso('regola-in-code-span-verde', 'c8', false, (r) => scrivi(join(r, 'skills/span/SKILL.md'),
+      '---\nname: span\ndescription: x\n---\n\nNever write `**manager** role`: the two are judge and worker.\n'));
+    caso('regola-in-fence-verde', 'c8', false, (r) => scrivi(join(r, 'skills/fence/SKILL.md'),
+      '---\nname: fence\ndescription: x\n---\n\nEsempio:\n\n```\n**manager** role\n```\n'));
+    caso('fence-spaiato-non-acceca-rosso', 'c8', true, (r) => scrivi(join(r, 'skills/spaiato/SKILL.md'),
+      '---\nname: spaiato\ndescription: x\n---\n\n```\nesempio\n\n### Scope — **manager** role\n'));
   } finally {
     rmSync(base, { recursive: true, force: true });
   }

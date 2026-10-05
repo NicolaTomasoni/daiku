@@ -23,8 +23,8 @@ Two roles only, anonymous by construction. A skill declares a step's role, never
 
 | Role | When to use | Step examples |
 |---|---|---|
-| **judge** | the step *decides* or *synthesises*: it produces new work from heterogeneous inputs, or reconciles findings from several sources where getting it wrong is costly | execution brief, memory/documentation update, reconciliation of a corpus review |
-| **worker** | the step *executes* or *inspects* an already delimited perimeter: it applies a plan, hunts for findings in a diff, runs known commands and reports the outcome | brief execution, review finder, scope, gate, inventory, Git commands, logs and reports |
+| **judge** | the step *decides* or *synthesises*: it produces new work from heterogeneous inputs, or reconciles findings from several sources where getting it wrong is costly | execution brief, reconciliation of a corpus review |
+| **worker** | the step *executes* or *inspects* an already delimited perimeter: it applies a plan, hunts for findings in a diff, runs known commands and reports the outcome | brief execution, review finder, scope, gate, memory/documentation update, inventory, Git commands, logs and reports |
 
 A purely mechanical step (a log line, a `git add` of already listed files, appending a
 report) stays a **worker**: it does not deserve a third role.

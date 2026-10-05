@@ -275,7 +275,7 @@ Two subagents in sequence, **both before the commit**.
 
 If `staged` is `false`, there is nothing to deliver: skip 5b and 6, go to the report.
 
-**5b. Memory/documentation update — judge role.** In the prompt:
+**5b. Memory/documentation update — worker role.** In the prompt:
 
 - read in full `skills/update-memory/SKILL.md` and follow that contract to the letter;
 - the diff to inspect is the one **in index** under `{code_root}` in the **work root** of the worktree: `git -C <worktree_root> diff --cached --stat -- {code_root}` and `git -C <worktree_root> diff --cached -- {code_root}`; it is the full diff of the feature, the same the commit will produce;
