@@ -2,11 +2,14 @@
 /**
  * Stop notice — Stop.
  *
- * It says at session end the one thing whoever stops **cannot see from the
- * transcript tail**: a review cycle that died with its ledger open. A cycle
+ * It says at session end the two things whoever stops **cannot see from the
+ * transcript tail**: a review cycle that died with its ledger open, and a session that changed
+ * code and left the memory corpus untouched.
+ *
+ * **The first — a cycle left open.** A cycle
  * interrupted with `outcome` still `null` restarts from zero unless the ledger is
  * handed over — and with the anchors of the applied gone, `on_previous_fix` and
- * `oscillation` run against another feature's history. The notice lists those
+ * `oscillation` run against another feature's history. This notice lists those
  * ledgers with their `base` and `item`, so the session resumes from there instead
  * of reopening the diff blind.
  *
@@ -53,6 +56,28 @@
  * throws away the anchors the next review would have read; the marker keeps them and stops
  * the notice.
  *
+ * **The second — a corpus left behind.** It speaks when the session **changed code and never
+ * touched the memory**: at least one write under `{code_root}`, none under `{memory.root}`, and no
+ * `git commit` run in the session. The memory is written by the session that changes something,
+ * not only by the commit that closes it, and a modification that ends before the corpus has been
+ * realigned is a modification not finished — so an omission nobody can see from the tail is
+ * exactly what a stop has to say.
+ *
+ * It is a **state report and not an accusation**: it says the pass has not run here, not that the
+ * corpus is wrong, and it carries how it is answered — where nothing the corpus holds has become
+ * false, there is nothing to write and the pass is a look that confirms it.
+ *
+ * A commit silences it, and that is no loophole: in a project that declared `{paths.review_state}`
+ * the guard admits `git commit` only inside a review cycle, and the cycle delegates
+ * `update-memory` on the same diff — where it writes, the corpus moves and this notice is silent
+ * by its own reading. Two perimeters keep it honest, and both are declarations of the project:
+ * **writes under `.daiku/` are not code** — the working folders, the studies, the policies and the
+ * domain files are the method's seats, and a session that wrote them has changed no product — and
+ * **only a write counts, never a read**: the four tools that change a file are `Edit`, `Write`,
+ * `MultiEdit` and `NotebookEdit`, and a path quoted inside a document the session read is not a
+ * path it touched. Undeclared `{code_root}` or `{memory.root}`: no notice, as everywhere else —
+ * §6 of `contracts/project-contract.md`.
+ *
  * The ledgers live where the project says, via `{paths.review_state}` in
  * `.daiku/project.json`: the same key the review writes them under. When it is
  * not declared, this notice does not exist — §6 of `contracts/project-contract.md`,
@@ -73,13 +98,14 @@
  *  - **`stop_hook_active`**, read from the input: `true` when the stop being handled is
  *    already the continuation an earlier notice caused. The hook goes silent there — it is
  *    the remedy the harness itself names when it overrides a looping hook.
- *  - **the mark of the session**: the set of ledgers announced, reduced to a comparison and
- *    written where the host keeps the session's own scratch files (`scratchpad_dir` of the
- *    event, or the OS temporary directory keyed by `session_id` where the host has none). The
- *    same set is never announced twice, so the notice arrives **once per session** instead of
- *    once per stop — and a host reporting `stop_hook_active` wrongly does not send it in a
- *    loop. The mark is the **set**, never the text: the text carries how long ago the ledger
- *    was last written, and a mark carrying it would call every passing hour a piece of news.
+ *  - **the mark of the session**: the set announced — the ledgers, and whether the corpus notice
+ *    went out — reduced to a comparison and written where the host keeps the session's own scratch
+ *    files (`scratchpad_dir` of the event, or the OS temporary directory keyed by `session_id`
+ *    where the host has none). The same set is never announced twice, so a notice arrives **once
+ *    per session** instead of once per stop — and a host reporting `stop_hook_active` wrongly does
+ *    not send it in a loop. The mark is the **set**, never the text: the text carries how long ago
+ *    the ledger was last written, and a mark carrying it would call every passing hour a piece of
+ *    news.
  *
  * The mark is the only thing this hook writes, and it is written **outside the
  * project**: a state folder of Daiku's inside the repository would be one more seat to keep.
@@ -102,7 +128,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { invokedDirectly, projectRoot } from './project-root.mjs';
-import { REAL_READS, loadContext, fakeContext } from './daiku-config.mjs';
+import { REAL_READS, loadContext, fakeContext, isInside } from './daiku-config.mjs';
 
 const ROOT = projectRoot();
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -378,6 +404,125 @@ function touched(entry, transcript) {
   return false;
 }
 
+// --- the corpus, and what this session did to it -------------------------------
+
+/**
+ * The four tools that change a file. A read is not a modification, and neither is a shell line
+ * that only names a path: the trace carries both, and this notice watches the first alone.
+ */
+const WRITE_TOOLS = new Set(['Edit', 'Write', 'MultiEdit', 'NotebookEdit']);
+
+/** The path a write call names: `file_path` for the three, `notebook_path` for a notebook. */
+function writtenPath(call) {
+  for (const key of ['file_path', 'notebook_path']) {
+    const value = call.input[key];
+    if (typeof value === 'string' && value.trim()) return value.trim();
+  }
+  return null;
+}
+
+/**
+ * What the trace shows the session **modifying**: the code paths it wrote, the memory paths it
+ * wrote, and whether a commit ran.
+ *
+ * `seats` carries the three seats resolved from `.daiku/project.json`: `codeRoot`, `memoryRoot`,
+ * and `ownSeat`, the `.daiku/` folder. A write under the last one is no code: the working folders,
+ * the studies, the policies and the domain files are the method's own seats, and a session that
+ * wrote them has changed no product. A write under the memory is its own list, and both lists are
+ * read the same way — by `isInside`, which folds the Windows separators and the case.
+ */
+export function modifications(transcript, seats) {
+  const code = [];
+  const memory = [];
+  let committed = false;
+  for (const line of String(transcript).split('\n')) {
+    if (!line.includes('"tool_use"')) continue; // the trace's own acts, not what it quotes
+    let entry;
+    try {
+      entry = JSON.parse(line);
+    } catch {
+      continue;
+    }
+    for (const call of callsIn(entry)) {
+      const name = typeof call.name === 'string' ? call.name : '';
+      if (WRITE_TOOLS.has(name)) {
+        const path = writtenPath(call);
+        if (!path) continue;
+        if (seats.memoryRoot && isInside(path, seats.memoryRoot)) memory.push(path);
+        else if (
+          seats.codeRoot &&
+          isInside(path, seats.codeRoot) &&
+          !(seats.ownSeat && isInside(path, seats.ownSeat))
+        )
+          code.push(path);
+        continue;
+      }
+      const command = call.input.command;
+      if (typeof command === 'string' && /\bgit\s+commit\b/.test(command)) committed = true;
+    }
+  }
+  return { code, memory, committed };
+}
+
+/**
+ * Did this session change code and leave the memory untouched? `null` when it did not — nothing
+ * was written, the memory moved, or a commit ran, which in a project declaring
+ * `{paths.review_state}` means the cycle delegated `update-memory` on the same diff. Otherwise the
+ * number of code paths it wrote, which is what the notice's own sentence says.
+ */
+export function corpusBehind(transcript, seats) {
+  const seen = modifications(transcript, seats);
+  if (seen.committed || !seen.code.length || seen.memory.length) return null;
+  return seen.code.length;
+}
+
+/** A path as the notice prints it: the separators of the JSON, in every shell. */
+function slashy(path) {
+  return String(path).replace(/\\/g, '/');
+}
+
+/** The corpus notice: what was seen, the rule, and how it is answered. */
+function renderCorpus(count, seats) {
+  const files = `${count} file${count === 1 ? '' : 's'}`;
+  return (
+    `The memory corpus was not touched in this session, and code was: ${files} written under ` +
+    `\`${slashy(seats.codeRoot)}\`, none under \`${slashy(seats.memoryRoot)}\`.\n\n` +
+    `The corpus is aligned by the work that changes something, not only by the commit that closes ` +
+    `it: a memory, a policy, the instructions file or a reference that a modification has made ` +
+    `false is corrected in the same work, and the alignment is not a judgement on whether the diff ` +
+    `deserves it. Nothing here says the corpus is wrong — it says the pass that would know has not ` +
+    `run in this session. Where nothing it holds has become false, there is nothing to write and ` +
+    `this notice is already answered.\n\n` +
+    `*Daiku status notice, written at the end of the turn — not a message from the user, and ` +
+    `nothing being worked on has to change. It is delivered once per session, and returns in a ` +
+    `later one that goes back to the same work.*`
+  );
+}
+
+/**
+ * The corpus notice for this stop, or `null`. Undeclared `{code_root}` or `{memory.root}`: nothing
+ * to compare, and silence — §6 of `contracts/project-contract.md`. No trace, or an unreadable one:
+ * silence too, as for the ledgers, because what the session did would be a guess.
+ */
+function corpusNotice(root, env, ctx, site) {
+  if (!ctx || !ctx.present || !ctx.codeRoot || !ctx.memoryRoot) return null;
+  const trace = site && typeof site.transcript === 'string' ? site.transcript : '';
+  if (!trace) return null;
+  let transcript;
+  try {
+    transcript = env.read(trace);
+  } catch {
+    return null;
+  }
+  const seats = {
+    codeRoot: ctx.codeRoot,
+    memoryRoot: ctx.memoryRoot,
+    ownSeat: join(root, '.daiku'),
+  };
+  const count = corpusBehind(transcript, seats);
+  return count ? renderCorpus(count, seats) : null;
+}
+
 /** The instant the notice is written at: the environment's clock, or the machine's. */
 function instant(env) {
   try {
@@ -453,10 +598,29 @@ function render(entries, now) {
   );
 }
 
-export function advice(root, env, ctx, site) {
+/**
+ * Both notices of this stop: the text as the reader sees it, and the set it speaks about reduced
+ * to the comparison the mark keeps. The two are built together because they are two views of the
+ * same reading — what this session did, and what it left behind.
+ */
+function notices(root, env, ctx, site) {
   const entries = announceable(root, env, ctx, site);
-  if (!entries.length) return null;
-  return render(entries, instant(env));
+  const corpus = corpusNotice(root, env, ctx, site);
+  const parts = [];
+  if (entries.length) parts.push(render(entries, instant(env)));
+  if (corpus) parts.push(corpus);
+  return {
+    text: parts.length ? parts.join('\n\n---\n\n') : null,
+    // The set, never the text: the ledger notice carries how long ago its ledger moved, so a mark
+    // over the text would call each passing hour a piece of news.
+    fingerprint: digest(
+      [entries.length ? announcedSet(entries) : '', corpus ? 'corpus' : ''].filter(Boolean).join('\n')
+    ),
+  };
+}
+
+export function advice(root, env, ctx, site) {
+  return notices(root, env, ctx, site).text;
 }
 
 // --- the mark of the session ---------------------------------------------------
@@ -535,13 +699,12 @@ export function notice(event, root, env, ctx) {
   if (event && event.stop_hook_active === true) return null; // already a continuation: silence
   const trace = event && typeof event.transcript_path === 'string' ? event.transcript_path.trim() : '';
   const site = { transcript: trace || null };
-  const entries = announceable(root, env, ctx, site);
-  if (!entries.length) return null;
+  const { text, fingerprint } = notices(root, env, ctx, site);
+  if (!text) return null;
   const path = markPath(event || {}, env);
-  const fingerprint = announcedSet(entries);
   if (announced(env, path) === fingerprint) return null; // this session already heard this set
   markAnnounced(env, path, fingerprint);
-  return render(entries, instant(env));
+  return text;
 }
 
 // --- test bench -----------------------------------------------------------
@@ -691,6 +854,10 @@ const call = (name, input) =>
   });
 
 const read = (path) => call('Read', { file_path: `${R}/${path}` });
+
+/** A trace line for a call that changes a file, and one for a shell line. */
+const write = (path) => call('Write', { file_path: `${R}/${path}`, content: 'x' });
+const shell = (command) => call('Bash', { command });
 
 /**
  * The session's trace by default: one that worked on the three work folders the fixtures below
@@ -999,6 +1166,126 @@ function selfCheck() {
   // A ledger of another session is not announced, so nothing is remembered about it either.
   const elsewhere = env(open, { transcript: read('docs/other/1. decision-doc.md') });
   check('another session\'s cycle: no notice', notice(stop(), R, elsewhere, CTX()) === null);
+
+  // --- the corpus notice -------------------------------------------------------
+  // The second thing a stop cannot see: a session that changed code and never touched the memory.
+  // The trace is the only witness, and it is read the same way as for the ledgers.
+  const CORPUS = () => fakeContext({ codeRoot: `${R}/src`, memoryRoot: `${R}/memory` });
+  const codeWrite = write('src/a.ts');
+
+  const textCorpus = advice(R, env({}, { transcript: codeWrite }), CORPUS(), SITE);
+  check(
+    'code written, memory untouched: the corpus notice speaks',
+    !!textCorpus && textCorpus.includes('memory corpus was not touched')
+  );
+  check(
+    'the notice names the two seats as the project declared them',
+    !!textCorpus && textCorpus.includes(`${R}/src`) && textCorpus.includes(`${R}/memory`)
+  );
+  check('the notice counts the files it saw', !!textCorpus && textCorpus.includes('1 file written'));
+  check(
+    'the notice says the corpus is aligned by the work, not only by the commit',
+    !!textCorpus && textCorpus.includes('not only by the commit')
+  );
+  check('the notice says how it is answered', !!textCorpus && textCorpus.includes('already answered'));
+  check(
+    'the corpus notice says it is not a message from the user',
+    !!textCorpus && textCorpus.includes('not a message from the user')
+  );
+  check(
+    'the corpus notice says it comes once per session',
+    !!textCorpus && textCorpus.includes('once per session')
+  );
+
+  const twoWrites = [codeWrite, write('src/b.ts')].join('\n');
+  check(
+    'two files agree in the plural',
+    (advice(R, env({}, { transcript: twoWrites }), CORPUS(), SITE) || '').includes('2 files written')
+  );
+
+  check(
+    'a write to the memory alone: silence',
+    advice(R, env({}, { transcript: write('memory/note.md') }), CORPUS(), SITE) === null
+  );
+  check(
+    'a write to the memory beside the code: silence',
+    advice(R, env({}, { transcript: [codeWrite, write('memory/note.md')].join('\n') }), CORPUS(), SITE) === null
+  );
+  // The method's own seats live under `.daiku/`, which may well sit inside the code root: a
+  // session that wrote a blueprint has changed no product. The code root here is the repository
+  // root itself, so `.daiku/` does sit inside it and this write reaches the `ownSeat` exclusion:
+  // were that exclusion to vanish, the write would be counted as code and the assertion would go
+  // red. It has its own context because the shared `CORPUS` keeps the code root at `${R}/src`,
+  // where a `.daiku/` write is discarded by the code-root test, not by the exclusion.
+  check(
+    'a write under `.daiku/`: silence',
+    advice(
+      R,
+      env({}, { transcript: write('.daiku/features/x/2. blueprint.md') }),
+      fakeContext({ codeRoot: R, memoryRoot: `${R}/memory` }),
+      SITE
+    ) === null
+  );
+  check(
+    'a write outside the code root: silence',
+    advice(R, env({}, { transcript: write('docs/notes.md') }), CORPUS(), SITE) === null
+  );
+  // Only the four writing tools count: a read is not a modification, and neither is a path quoted
+  // inside a command.
+  check(
+    'a read is not a modification: silence',
+    advice(R, env({}, { transcript: read('src/a.ts') }), CORPUS(), SITE) === null
+  );
+  // A commit means the cycle ran, and the cycle delegates `update-memory` on the same diff.
+  check(
+    'a commit silences it: the cycle aligned the memory',
+    advice(
+      R,
+      env({}, { transcript: [codeWrite, shell('git commit -m "x"')].join('\n') }),
+      CORPUS(),
+      SITE
+    ) === null
+  );
+  check(
+    'no `{code_root}` declared: silence',
+    advice(R, env({}, { transcript: codeWrite }), fakeContext({ memoryRoot: `${R}/memory` }), SITE) === null
+  );
+  check(
+    'no `{memory.root}` declared: silence',
+    advice(R, env({}, { transcript: codeWrite }), fakeContext({ codeRoot: `${R}/src` }), SITE) === null
+  );
+  check('a corpus stop with no trace: silence', advice(R, env({}, { transcript: null }), CORPUS(), {}) === null);
+
+  // The two notices are independent: an open ledger and an untouched corpus stand together, and
+  // each is silent where the other speaks.
+  const both = advice(
+    R,
+    env(
+      { [`${STATE}/review-ledger-abc1234-120000.json`]: OPEN_LEDGER },
+      { transcript: [read('docs/new-developments/gamma/1. decision-doc.md'), codeWrite].join('\n') }
+    ),
+    fakeContext({ reviewState: STATE, codeRoot: `${R}/src`, memoryRoot: `${R}/memory` }),
+    SITE
+  );
+  check(
+    'a ledger and a corpus: both notices in one text',
+    !!both && both.includes('gamma') && both.includes('memory corpus was not touched')
+  );
+
+  const corpusSession = env({}, { transcript: codeWrite });
+  check('the corpus notice reaches a stop', !!notice(stop(), R, corpusSession, CORPUS()));
+  check(
+    'and the same session does not hear it twice',
+    notice(stop(), R, corpusSession, CORPUS()) === null
+  );
+  check(
+    'another session hears it again',
+    !!notice(stop({ session_id: 'sess-2' }), R, corpusSession, CORPUS())
+  );
+  check(
+    'a stop the hook itself caused says nothing about the corpus either',
+    notice(stop({ stop_hook_active: true }), R, env({}, { transcript: codeWrite }), CORPUS()) === null
+  );
 
   // --- the form the hook recognises mirrors the schema -------------------------
   // The one read this bench makes on disk: `schemas/blocks.json` is the seat declaring the

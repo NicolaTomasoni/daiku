@@ -10,7 +10,7 @@ the other four never stop anything and only say what they know.
 | `lib/contracts-post-edit.mjs` | `PostToolUse` on `Edit`/`Write` | after a write to the corpus — and to the sources a policy watches — reports faults that would not fail on their own |
 | `lib/run-advice.mjs` | `UserPromptSubmit`, and `PreToolUse` on the write tools | marks the session a run was opened in and states the run's rule once — adding the size of the prompt and the seats that exist for it where the prompt is over the `prompt_dump_chars` the project declares; at a write that conversation makes outside the seats the run owns it repeats the rule — and blocks nothing |
 | `lib/session-advice.mjs` | `SessionStart` | at startup, says whether Daiku is halfway opened and whether work was left in flight |
-| `lib/stop-advice.mjs` | `Stop` | at session end, names the review ledgers **this session** worked in and left standing — nothing written for hours, no `.abandoned` beside them — so it resumes from them or sets them aside; once per session, never on a stop it caused itself |
+| `lib/stop-advice.mjs` | `Stop` | at session end, names the review ledgers **this session** worked in and left standing — nothing written for hours, no `.abandoned` beside them — so it resumes from them or sets them aside; and where the session wrote under `{code_root}` and touched nothing under `{memory.root}`, says that the corpus was left behind, which the commit path alone does not repair. Once per session, never on a stop it caused itself |
 
 Next to them stand two modules that are not hooks: `lib/project-root.mjs` finds the project
 root on both hosts, `lib/daiku-config.mjs` reads `.daiku/project.json`. `project-root` carries a
@@ -83,6 +83,19 @@ writing a second one) and only where `.daiku/project.json` exists. The rule it h
 question is the form that section fixes for it — the option labels opening with their ids and the
 label of `A` closing with `(recommended)` — so `init`'s two languages and `new-project`'s interview
 pass through untouched.
+
+**`stop-advice` gives two notices, and neither denies anything.** The first is the ledger of a
+cycle that died open, and it belongs to the session that worked in it. The second speaks when the
+trace shows the session **writing under `{code_root}` and nothing under `{memory.root}`**, with no
+`git commit` run: the corpus is aligned by the work that changes something, not only by the commit
+that closes it, and a session ending there hands the next reader a corpus nobody realigned. It is
+a state report and not an accusation — it says the pass has not run here, and that where nothing
+the corpus holds has become false the pass is a look that answers it. Two perimeters keep it
+honest, and both are declarations of the project: a write under `.daiku/` is not code — those are
+the method's own seats — and only the four writing tools count, never a read, because a trace
+quotes far more than what the session did. A commit silences it, and that is the contract rather
+than a loophole: the review guard admits `git commit` only inside a cycle, and the cycle delegates
+`update-memory` on the same diff.
 
 The first branch has no switch because it is not a policy: `rm -rf` entering a junction and
 destroying what sits on the other side is an operating-system fact, true in every

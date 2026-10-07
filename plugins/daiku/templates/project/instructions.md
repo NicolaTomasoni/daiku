@@ -53,7 +53,10 @@ precision, but use judgement on trivial tasks.
 - If different readings lead to materially different work, stop and ask; for minor choices pick a
   sensible option and move on.
 - Aligning what this file, a policy, the memory or a reference states to a change you just made is
-  not a choice: when what they say is no longer true, correct them in the same work and move on.
+  not a choice, and not something the commit will do later: the pass runs **on every
+  modification**, in the same work, before you declare the work done. It is a pass and not a
+  judgement — what it has to correct may be nothing, and "nothing to update" is the verdict of a
+  pass that ran, never a reason to skip it.
 - A reference that resolves to nothing — a path, a section, a `[[name]]` link — is corrected in the
   same work, not listed for later, and the correction is reported as done. Where you cannot tell
   where it should point now, ask for the destination, never for permission to repair it.
@@ -86,6 +89,14 @@ what portable skills cite, because numbering differs from project to project.
    sized for today: propose the solution that is sound at that scale, saying plainly that it is
    over-engineering against today's need. Building it once costs less than building it twice.
    Where the future scale is not known, the minimalism of *Behaviour* stands.
+5. `[corpus-never-behind]` No modification ends with the corpus left behind. This file,
+   `.daiku/policies/`, the memory corpus and the founding documents are realigned in the same work
+   to whatever the change made false — never deferred to a commit that may not come, never skipped
+   because the diff looks like pure implementation, never handed back to the owner as a question.
+   Where the change is a delivery or a commit, the step is the one the flow declares
+   (`update-memory`); anywhere else it is the work itself, and the memory corpus is written by the
+   session as much as by that step. The pass runs whatever the diff: where nothing has become
+   false there is nothing to write, and that is its verdict, not an exemption from running it.
 
 <additional invariants observed in this repository, each with its own stable slug, and numbered on
 from the project's last one where the project already numbers them>
