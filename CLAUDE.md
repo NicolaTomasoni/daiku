@@ -27,7 +27,9 @@ L'owner lo sa già, non è il tuo lavoro, e una diagnosi che nessuno ha chiesto 
 di rumore. L'unica eccezione è il caso grave — una modifica altrui che contraddice ciò che stai
 facendo, che ti fa perdere un aggiornamento o che rompe il pacchetto — e anche lì basta una riga,
 senza indagare. Vale anche per una memoria o un documento che trovi invecchiato rispetto al lavoro
-in corso: è il delta che un `update-memory` chiuderà al commit, non una correzione da fare adesso.
+in corso di **un'altra sessione**: è il delta che un `update-memory` chiuderà al commit, non una
+correzione da fare adesso. Non vale per ciò che ha reso falso **una tua modifica**: quello si
+corregge nella stessa tornata, come dice *La memoria si aggiorna nella stessa tornata*.
 
 ## Questo file non fa parte dei prodotti
 
@@ -166,6 +168,34 @@ sue liste di copia.
 lo dichiara `autoMemoryDirectory` in `.claude/settings.local.json`, che **non** si versiona
 perché Claude Code ignora quella chiave quando arriva da un file committato. Su una macchina
 nuova va riscritto, altrimenti la memoria torna silenziosamente sotto `~/.claude/projects/`.
+
+## La memoria si aggiorna nella stessa tornata
+
+**Nessuna modifica finisce con la memoria lasciata indietro.** Ciò che una modifica ha reso falso —
+una memoria, una policy, il file di istruzioni, un rimando, una riga dell'indice — si corregge
+nella stessa tornata, non al commit. Il passo che lo cerca gira **a ogni modifica** e non è un
+giudizio su quanto il diff lo meriti: che non ci sia niente da scrivere è il verdetto di un passo
+che ha guardato, mai il motivo per non guardare. Una modifica senza quel passo non è finita, e non
+si dichiara finita.
+
+Il commit non è un'altra sede della stessa regola: è l'ultima. `update-memory` ripassa l'intero
+perimetro sul diff che sta per essere congelato, e il ciclo di review è ciò che lo impone — la
+guardia nega `git commit` fuori da lì. Fuori dal ciclo, in una chat che modifica e non committa,
+l'allineamento lo fa la sessione stessa, che ha la modifica in mano.
+
+Non si chiede all'owner e non gli si rimanda: «vuoi che aggiorni la memoria?» è la domanda che
+questa regola esiste per rendere impossibile. E «non ho toccato la memoria» non è una conclusione
+da mettere nel resoconto come se chiudesse il discorso: se il passo ha guardato e non c'era niente
+da scrivere, si dice quello.
+
+**Le due sedi.** Il testo sta qui, nella regola `[corpus-never-behind]` del file di istruzioni che
+`init` deposita nei progetti ospiti, nel contratto della memoria e in
+`plugins/daiku/skills/update-memory/SKILL.md`. Il controllo sta in
+`plugins/daiku/hooks/lib/stop-advice.mjs` — il suo banco è dentro
+`node plugins/daiku/hooks/self-check.mjs`: alla fine del turno dice quando la sessione ha scritto
+sotto il codice e non ha toccato la memoria. Non nega niente, e non deve: al commit la guardia
+della review fa già il suo; questo è l'avviso che il fondo del transcript non dà a nessuno. Vale la
+legge di *Mai fidarsi di un LLM*: la regola e il controllo, sempre insieme.
 
 ## Dopo un refactor, la memoria va riletta
 

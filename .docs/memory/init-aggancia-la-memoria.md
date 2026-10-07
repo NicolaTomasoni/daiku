@@ -18,7 +18,9 @@ entrambi gli host**, anche dove l'host non ci punta la propria memoria: il corpu
 coordinano: l'host di sua iniziativa e `update-memory` a ogni commit. È la scelta dell'owner fra
 le due che erano sul tavolo, contro due cartelle separate nello stesso repo. Per la stessa ragione
 i file si **spostano** e non si copiano: due corpus che divergono senza che nessuno dei due
-dichiari di essere quello buono sono peggio del problema che risolvevano.
+dichiari di essere quello buono sono peggio del problema che risolvevano. Dal 7 ottobre 2026 la
+scrittura dell'host non è più solo d'iniziativa: l'allineamento è dovuto a ogni modifica, e il
+commit è l'ultima delle sue sedi invece dell'unica ([[allineamento-a-ogni-modifica]]).
 
 **How to apply:** tre conseguenze che stanno in piedi solo insieme.
 
