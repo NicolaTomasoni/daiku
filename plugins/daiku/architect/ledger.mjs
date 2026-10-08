@@ -374,16 +374,25 @@ function validateLedger(ledger, schemas) {
 }
 
 /**
- * Is this parsed file one of **our** ledgers? The same judgement the two hooks make — `isLedger`
- * and `LEDGER_FIELDS` in `hooks/lib/stop-advice.mjs`: the form is the whole key set, exactly the
- * fields `schemas.ledger.required` declares and no other. A `review-log.json`, a
- * `<ledger>.round-N.findings.json` and a file of another tool all carry another key set and are
- * left alone. The seats must agree: what this reads as a ledger is what the hooks read as one.
+ * The fields **every** form of our ledger carries: the ones the review has written since the
+ * ledger took this shape. `isLedger` in `hooks/lib/stop-advice.mjs` tests the same core, and the
+ * two seats must agree on what a ledger is, or this log drops a ledger the Stop notice lists.
  */
-function isLedgerShape(value, spec) {
+const LEDGER_CORE = ['base', 'item', 'scope_tree', 'scope_files', 'rounds', 'outcome', 'coverage', 'gate', 'gate_detail'];
+
+/**
+ * Is this parsed file one of **our** ledgers? The same judgement the two hooks make — `isLedger`
+ * in `hooks/lib/stop-advice.mjs`: not the whole key set, which is the form of **this** build
+ * alone, but the fields every form of ours carries (`LEDGER_CORE`), with a superset admitted.
+ * `schemas.ledger.required` grows over time — `gate_origin` is the latest field added — and a
+ * folder keeps the ledgers of earlier builds for good: demanded at the newest list, an older
+ * ledger would drop out of the log exactly as a newer one would. A `review-log.json`, a
+ * `<ledger>.round-N.findings.json` and a file of another tool carry other keys — not these — and
+ * are left alone. The seats must agree: what this reads as a ledger is what the hooks read as one.
+ */
+function isLedgerShape(value) {
   if (!isObject(value)) return false;
-  const keys = Object.keys(value);
-  return keys.length === spec.required.length && spec.required.every((field) => has(value, field));
+  return LEDGER_CORE.every((field) => has(value, field));
 }
 
 const CONFIDENCE_LEVELS = ['high', 'medium', 'low'];
@@ -598,7 +607,7 @@ function actScope(input, root) {
     mkdirSync(dir, { recursive: true });
     path = join(dir, `review-ledger-${base.slice(0, 7)}-${stamp(new Date())}.json`);
     if (existsSync(path)) fail(`${slashed(path)} already exists: a ledger is never overwritten — ask again in a second`);
-    ledger = { base, item: input.item, scope_tree: tree, scope_files: files, rounds: [], outcome: null, coverage: null, gate: null, gate_detail: null };
+    ledger = { base, item: input.item, scope_tree: tree, scope_files: files, rounds: [], outcome: null, coverage: null, gate: null, gate_detail: null, gate_origin: null };
   }
   writeJson(path, validateLedger(ledger, schemas));
   return answer({
@@ -897,12 +906,29 @@ function actRound(input, root) {
 
 const TAIL_DISCIPLINES = ['bug', 'arch', 'perf', 'dead', 'test-coverage'];
 
+/**
+ * The engine of the measure: the origin of a red gate. A path the gate named is **foreign** to
+ * the diff when it matches no changed file — equal, or one ending with `/` + the other, after the
+ * separators are slashed, the case folded and a leading `./` dropped: the gate prints from its own
+ * `cwd`, the changed list stands under `{code_root}`. Every named path foreign means the defect is
+ * pre-existing; one named file among the changed means the diff carries it.
+ */
+function originOf(named, changed) {
+  const normalize = (path) => slashed(String(path)).replace(/^\.\//, '').toLowerCase();
+  const files = changed.map(normalize);
+  const matchesAChanged = (path) => {
+    const name = normalize(path);
+    return files.some((file) => file === name || file.endsWith(`/${name}`) || name.endsWith(`/${file}`));
+  };
+  return named.every((path) => !matchesAChanged(path)) ? 'pre-existing' : 'diff';
+}
+
 /** tail — § *The ledger also keeps what blocks*: coverage, gate and what the tail adds to the last round. */
 function actTail(input, root) {
   const schemas = schemasOf(root);
   const { path, ledger } = ledgerAt(input, schemas);
-  const keys = ['coverage', 'gate', 'gate_detail', 'missing', 'to_confirm'].filter((key) => has(input, key));
-  if (!keys.length) fail('tail writes at least one of coverage, gate, gate_detail, missing, to_confirm');
+  const keys = ['coverage', 'gate', 'gate_detail', 'gate_files', 'missing', 'to_confirm'].filter((key) => has(input, key));
+  if (!keys.length) fail('tail writes at least one of coverage, gate, gate_detail, gate_files, missing, to_confirm');
   if (ledger.outcome === null) fail('the cycle has not exited: coverage, gate and what they add come after it');
   const last = ledger.rounds[ledger.rounds.length - 1];
   if (has(input, 'coverage')) {
@@ -918,6 +944,23 @@ function actTail(input, root) {
   }
   if (has(input, 'gate')) ledger.gate = input.gate;
   if (has(input, 'gate_detail')) ledger.gate_detail = input.gate_detail;
+  if (has(input, 'gate_files') && !(Array.isArray(input.gate_files) && input.gate_files.every(nonEmpty))) {
+    fail('gate_files must be a list of the paths the failure named, or []');
+  }
+  // The origin is measured only on a red gate that names files; a green gate and a red naming
+  // nothing leave it null. The named paths are measured against the changed files read fresh
+  // from Git, never the frozen `scope_files`: the gate runs last and the fixes have moved on.
+  // The measure runs on disk, so it needs the three keys the other disk actions need.
+  if (has(input, 'gate') || has(input, 'gate_files')) {
+    if (ledger.gate === 'red' && has(input, 'gate_files') && input.gate_files.length) {
+      const cwd = workRootOf(input);
+      const codeRoot = codeRootOf(input);
+      text(input, 'project');
+      ledger.gate_origin = originOf(input.gate_files, changedFiles(cwd, ledger.base, snapshot(cwd, codeRoot), codeRoot));
+    } else {
+      ledger.gate_origin = null;
+    }
+  }
   if (has(input, 'missing')) {
     if (!Array.isArray(input.missing) || !input.missing.every((name) => TAIL_DISCIPLINES.includes(name))) {
       fail(`missing must be a list of ${TAIL_DISCIPLINES.join('|')}`);
@@ -931,7 +974,7 @@ function actTail(input, root) {
     last.to_confirm.push(...input.to_confirm);
   }
   writeJson(path, validateLedger(ledger, schemas));
-  return answer({ action: 'tail', ledger: slashed(path), verdict: 'written', detail: `written: ${keys.join(', ')}.` });
+  return answer({ action: 'tail', ledger: slashed(path), verdict: 'written', gate_origin: ledger.gate_origin, detail: `written: ${keys.join(', ')}.` });
 }
 
 /** layers — `skills/arch-check/SKILL.md` § *How you verify*: the added lines computed, the check asked. */
@@ -1007,7 +1050,7 @@ function actLog(input, root) {
   for (const name of names) {
     const path = join(dir, name);
     const value = readJson(path, 'a file of the state folder');
-    if (!isLedgerShape(value, schemas.ledger)) continue;
+    if (!isLedgerShape(value)) continue;
     if (!Array.isArray(value.rounds)) fail(`${slashed(path)} carries ${JSON.stringify(value.rounds)} where the ledger's rounds must be an array`);
     for (const round of value.rounds) if (!isObject(round)) fail(`${slashed(path)}: every round must be an object`);
     ledgers.push(name);
@@ -1377,7 +1420,7 @@ function runBench(root) {
       );
       const verdict = call({
         action: 'ask', ledger,
-        question: { question: 'closing', review_outcome: { gate: 'green', gate_detail: 'ok', outcome: 'fixed-point', missing_disciplines: ['arch'], to_confirm: [], oscillation: 0 } },
+        question: { question: 'closing', review_outcome: { gate: 'green', gate_detail: 'ok', gate_origin: null, outcome: 'fixed-point', missing_disciplines: ['arch'], to_confirm: [], oscillation: 0 } },
       });
       check('ask:closing-reads-the-ledger-from-disk', verdict.verdict === 'stop' && verdict.answer.blockers.includes('missing disciplines') && !verdict.answer.blockers.includes('a ledger the commit can read'), JSON.stringify(verdict));
     });
@@ -1567,6 +1610,39 @@ function runBench(root) {
       check('layers:a-scope-with-no-denied-line-is-clean', clean.verdict === 'clean', JSON.stringify(clean));
     });
 
+    /* --- tail: the origin of a red gate, measured against the fresh changed files --- */
+    attempt('gate-origin', () => {
+      const fx = fixture('gate-origin');
+      // Only `src/a.js` differs from the base: `src/b.js` and `docs/x.md` stand as committed.
+      put(join(fx.cwd, 'src', 'a.js'), 'function f() {\n\treturn  9;\n}\n\nfunction g() {\n  return 2;\n}\n');
+      const scope = scopeOf(fx);
+      const ledger = scope.ledger;
+      check('gate-origin:a-scope-opens-with-a-null-origin', readJson(ledger, 'ledger').gate_origin === null, JSON.stringify(readJson(ledger, 'ledger')));
+      call({ action: 'findings', ledger, blocks: { bug: { findings: [] } } });
+      call({ action: 'round', ledger, ...fx.base(), project: fx.project, rounds_cap: null });
+      const tail = (extra) => call({ action: 'tail', ledger, ...fx.base(), project: fx.project, gate: 'red', gate_detail: 'tsc: 2 errors', ...extra });
+      // Red gate, every named path outside the diff: the defect is pre-existing.
+      const pre = tail({ gate_files: ['src/b.js', 'docs/x.md'] });
+      check('gate-origin:a-red-naming-only-foreign-paths-is-pre-existing', pre.gate_origin === 'pre-existing' && readJson(ledger, 'ledger').gate_origin === 'pre-existing', JSON.stringify(pre));
+      // Red gate naming a changed file: the diff carries it.
+      const diff = tail({ gate_files: ['src/a.js'] });
+      check('gate-origin:a-red-naming-a-changed-file-is-diff', diff.gate_origin === 'diff', JSON.stringify(diff));
+      // A name printed from the gate's own cwd matches a changed file by segment suffix.
+      const suffix = tail({ gate_files: ['a.js'] });
+      check('gate-origin:a-name-matches-a-changed-file-by-segment-suffix', suffix.gate_origin === 'diff', JSON.stringify(suffix));
+      // Red gate naming nothing: the fallback is null, which blocks.
+      const empty = tail({ gate_files: [] });
+      check('gate-origin:a-red-naming-no-file-falls-back-to-null', empty.gate_origin === null, JSON.stringify(empty));
+      const absent = tail({});
+      check('gate-origin:a-red-with-no-gate-files-key-falls-back-to-null', absent.gate_origin === null, JSON.stringify(absent));
+      // A green gate: the origin is null whatever it named before.
+      const green = call({ action: 'tail', ledger, ...fx.base(), project: fx.project, gate: 'green', gate_detail: 'ok', gate_files: [] });
+      check('gate-origin:a-green-gate-leaves-it-null', green.gate_origin === null, JSON.stringify(green));
+      // The measure runs on disk: the three keys are required, and their absence is loud.
+      refused('gate-origin:a-red-naming-files-without-work-root-is-refused', { action: 'tail', ledger, gate: 'red', gate_detail: 'x', gate_files: ['src/a.js'] }, 'work_root');
+      refused('gate-origin:gate-files-that-are-not-a-list-of-strings-is-refused', { action: 'tail', ledger, ...fx.base(), project: fx.project, gate: 'red', gate_files: [1, 2] }, 'gate_files must be a list');
+    });
+
     /* --- the snapshot sees an edit git can only see by content: same size, same stamp --- */
     attempt('racy', () => {
       const fx = fixture('racy');
@@ -1608,7 +1684,7 @@ function runBench(root) {
       });
       const ledger = (extra = {}) => ({
         base: sha, item: 'features/x', scope_tree: 't', scope_files: ['src/a.js'], rounds: [],
-        outcome: null, coverage: null, gate: null, gate_detail: null, ...extra,
+        outcome: null, coverage: null, gate: null, gate_detail: null, gate_origin: null, ...extra,
       });
       const container = (name) => {
         const state = join(home, 'log', name);
@@ -1712,6 +1788,20 @@ function runBench(root) {
       c7.write('review-ledger-ccccccc-000000.json', { base: sha, item: null, gate: null, gate_detail: null, giri: [], uscita: null });
       const r7 = c7.run();
       check('log:a-file-in-another-form-is-skipped', JSON.stringify(r7.ledgers) === JSON.stringify([l7]), JSON.stringify(r7));
+
+      /* a ledger written by an earlier build, before `gate_origin` was added: ours all the same */
+      const c9 = container('legacy');
+      const l9 = 'review-ledger-aaaaaaa-000000.json';
+      const legacyLedger = ledger({ rounds: [round(1)] });
+      delete legacyLedger.gate_origin;
+      c9.write(l9, legacyLedger);
+      c9.write('review-ledger-aaaaaaa-000000.round-1.findings.json', findings({ bug: key('bug', true, []) }));
+      const r9 = c9.run();
+      check(
+        'log:a-ledger-of-an-earlier-build-is-still-ours',
+        JSON.stringify(r9.ledgers) === JSON.stringify([l9]),
+        JSON.stringify(r9)
+      );
 
       refused('log:state-dir-is-required', { action: 'log' }, 'state_dir is required');
       refused('log:an-unreadable-folder-is-refused', { action: 'log', state_dir: join(home, 'log', 'absent') }, 'absent');

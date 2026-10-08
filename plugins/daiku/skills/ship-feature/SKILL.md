@@ -233,14 +233,16 @@ Describe each open item as `<file>[:<line>] [<class>] <scenario>`, then:
 
 | Condition | Outcome |
 |---|---|
-| `gate` ≠ `green` | `BLOCKED_NO_COMMIT` — blocker: `gate red: <gate_detail>` plus all blocking items |
+| the gate is red for a cause the diff carries (`gate_origin` `diff` or `null`) | `BLOCKED_NO_COMMIT` — blocker: `gate red: <gate_detail>` plus all blocking items |
 | `outcome` is `oscillation` or `rounds-exhausted` | `BLOCKED_NO_COMMIT` — blocker: the cycle did not converge, with the exit and the severe findings of the last round |
 | `missing_disciplines` is not empty | `BLOCKED_NO_COMMIT` — blocker: the disciplines that did not run on this diff |
-| gate green, at least one `blocking: true` item | `BLOCKED_NO_COMMIT` — blocker: those items |
-| gate green, no blocking, non-blocking items remain | `GREEN_WITH_POST_DECISIONS` |
-| gate green, no open item | `GREEN_COMMITTED` |
+| the gate does not block (green, or red only for a cause outside the diff), at least one `blocking: true` item | `BLOCKED_NO_COMMIT` — blocker: those items |
+| the gate does not block, no blocking item and non-blocking items remain | `GREEN_WITH_POST_DECISIONS` |
+| the gate does not block, no open item | `GREEN_COMMITTED` |
 
 The blocking conditions are **all** evaluated: an outcome satisfying more than one reports them all as blockers, and the first occurring does not close the evaluation.
+
+A red standing only outside the diff is not a blocker and does not enter `to_confirm`: `gate_origin` says so (`pre-existing`), it is a fact to declare — the report names it and `gate_detail` with it — never a fork to put to the owner.
 
 The three lines at the top are the same with which `/review` stops alone before committing (§ *Closing* of its file), and they hold here for the same reason: `rounds-exhausted` is an exit by exhaustion, not by convergence — the cycle was still correcting defects when it ran out of room; `oscillation` means two rounds bouncing the same line; a missed discipline did not run on this diff and **will never run again**, because `arch` and `perf` are done only once on the complete diff. Without these lines the same identical review outcome would block the commit if launched by hand and let it pass inside the delivery — while this skill declares it runs "the same discipline".
 
@@ -250,7 +252,7 @@ The **non**-blocking items are `post_commit_decisions`: they do not stop the com
 
 ### Mechanical unblock — when the only blocker is the red gate
 
-**Whether the block is only the red gate is asked, not judged here.** Call the evaluator with `question: "unblock"` and the same `review_outcome` block: `unblock` or `blocked`, and on `blocked` the reasons. It unblocks only when the cycle already said everything it knew how to say — converged exit (`fixed-point`), empty `missing_disciplines`, no `blocking: true` item and empty `to_confirm` — and **on `blocked` the three consequences below hold unchanged**: they are ours, not a classification.
+**Whether the block is only the red gate is asked, not judged here.** Call the evaluator with `question: "unblock"` and the same `review_outcome` block: `unblock` or `blocked`, and on `blocked` the reasons. It unblocks only when the cycle already said everything it knew how to say — converged exit (`fixed-point`), empty `missing_disciplines`, no `blocking: true` item and empty `to_confirm` — and **on `blocked` the three consequences below hold unchanged**: they are ours, not a classification. A red standing only outside the diff (`gate_origin: "pre-existing"`) is **not** the block this road exists for — the diff carries nothing to correct there — so the verdict is `blocked` as with a green gate, and the red is declared, never corrected.
 
 If the verdict is `unblock`, delegate **one** worker subagent which, in the work root, corrects only the gate findings on the diff lines with an obvious single-solution fix (mechanical lint, format, types), relaunches the gate of the touched area and returns `gate`/`gate_detail`/`needs_tradeoff`. Constraints: no behaviour change, no file outside the reported ones, never stage/commit, and if even a single fix admits two defensible options the subagent leaves it alone and declares it in `needs_tradeoff` instead of guessing.
 
@@ -352,7 +354,7 @@ It is the only phase having to report fields produced by **seven others**, and a
 - the path to append on, `<folder>/5. review-report.md`, and the tail-append constraint;
 - `<folder>` and the **delivered solution**, verbatim: it is the one distilling it, not you;
 - from **phase 2**: the path of `<folder>/4. review-notes.md`, whose *Considerations* section is material for the open-items paragraph where a point is still open — its *Handoff* section is evidence for a program, not for the report;
-- from the **phase 3** block: `gate` and `gate_detail`, `outcome`, `missing_disciplines` and `independence`;
+- from the **phase 3** block: `gate` and `gate_detail` and `gate_origin`, `outcome`, `missing_disciplines` and `independence`;
 - from **phase 4**: the classified `status` and the remaining `to_confirm` items, with their `scenario`;
 - from the **phase 5b** block: `updated` and the `confirm_with_owner` items;
 - from the **phase 6** block: `committed` and the three SHAs — `commit_sha`, `memory_commit_sha`, `version_commit_sha` — plus the dirty paths declared by phase 4 (no parking: the worktree stays dirty and declared);

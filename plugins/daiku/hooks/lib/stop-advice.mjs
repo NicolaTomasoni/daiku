@@ -136,7 +136,7 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 /**
  * The ledger's own fields: `schemas/blocks.json` § *ledger*, `required`. `architect/ledger.mjs`
  * validates every ledger against that entry before writing it, and refuses a key the form does
- * not declare — so each file the review leaves carries **exactly** these nine, the empty ones
+ * not declare — so each file the review leaves carries **exactly** these ten, the empty ones
  * included, from the scope on: only the values change between the first round and the exit.
  *
  * They are copied here rather than read from the schema at run time because on Codex this file
@@ -145,6 +145,29 @@ const HERE = dirname(fileURLToPath(import.meta.url));
  * bench ties the copy back to the schema it mirrors.
  */
 const LEDGER_FIELDS = [
+  'base',
+  'item',
+  'scope_tree',
+  'scope_files',
+  'rounds',
+  'outcome',
+  'coverage',
+  'gate',
+  'gate_detail',
+  'gate_origin',
+];
+
+/**
+ * The fields **every** form of our ledger carries: the ones the review has written since the
+ * ledger took this shape, and which no build may drop. `isLedger` tests these and never the list
+ * above in full, because a guard outlives the build carrying it in **both** directions. A ledger
+ * written by an **older** build lacks the field a later one added — `gate_origin` is the latest —
+ * and one written by a **newer** build carries keys this build does not know; demanded at the
+ * newest list, the older ledger reads as another tool's file, and its open cycle disappears from
+ * the notice and stops holding `git commit` open. The core is named here, beside the form it sits
+ * inside, so both directions are answered by the same line.
+ */
+const LEDGER_CORE = [
   'base',
   'item',
   'scope_tree',
@@ -185,18 +208,24 @@ const TOUCHED_KEYS = ['file_path', 'notebook_path', 'path', 'command'];
  * folder is shared ground: a project that reviewed before Daiku leaves its own ledgers there
  * (`base`, `item`, `gate`, `gate_detail`, and keys of its own language), and a review of ours
  * leaves the findings file of every round in the same folder, under the same extension —
- * `review-ledger-<base>-<HHMMSS>.round-1.findings.json`. Neither carries an `outcome`, and both
- * would be listed as interrupted cycles.
+ * `review-ledger-<base>-<HHMMSS>.round-1.findings.json`. Neither carries the fields every form
+ * of ours shares, and both would be listed as interrupted cycles.
  *
- * The form is the whole key set, not the presence of `outcome`: the tool writes nothing the
- * schema refuses and omits nothing it requires, so a file carrying every field and no other is
- * a ledger, and one carrying another tool's keys is that tool's business. It is the judgement
- * the tool itself makes of a handed ledger (`architect/ledger.mjs`, `ledgerAt`), and the two
- * must agree: what the review would refuse to resume is not a ledger this notice may list.
+ * **The core, not the whole key set, and never only the one build.** `LEDGER_FIELDS` above is a
+ * copy of the schema of the build carrying it, and the guard is not that build forever: the ledger
+ * standing in the seat may have been written by an older one or by a newer one. Demanded at the
+ * newest list, a ledger written before `gate_origin` existed reads as another tool's file — the
+ * interrupted cycle it holds disappears from this notice and stops holding `git commit` open;
+ * demanded at the exact key count, a ledger of a newer build reads the same way. Both are the
+ * bootstrap of every change that grows the ledger. So the test is `LEDGER_CORE` — the fields every
+ * form of ours carries — and a file carrying them **and more** is still ours: the extra key belongs
+ * to a ledger of another build. The judgement the tool makes of a handed ledger
+ * (`architect/ledger.mjs`, `ledgerAt`) stays strict and answers another question — whether the
+ * ledger **it resumes** matches the schema of the build in place — and `isLedgerShape` (the `log`
+ * action) tests this same core, so the seats keep agreeing on what a ledger is.
  */
 function isLedger(value) {
-  const keys = Object.keys(value);
-  return keys.length === LEDGER_FIELDS.length && LEDGER_FIELDS.every((field) => field in value);
+  return LEDGER_CORE.every((field) => field in value);
 }
 
 /**
@@ -270,14 +299,16 @@ const REAL_ENV = {
 
 /**
  * The ledgers in the state folder: every file carrying the ledger's own form, with the work it
- * names, its blocking count, the instant it last moved, and the two fields saying where the cycle
- * stood when it stopped — `outcome`, and the gate it reached.
+ * names, its blocking count, the instant it last moved, and the fields saying where the cycle
+ * stood when it stopped — `outcome`, the gate it reached, and the origin of a red one
+ * (`gate_origin`).
  *
  * Exported because two readers ask different questions of the same files and must agree on what a
  * ledger **is**: the Stop notice wants the ones still open, and the review guard of
  * `command-guard.mjs` wants the ones a commit may close — which include a cycle that has just
- * exited with a green gate, the exact state in which the review's own commit runs. `openLedgers`
- * below is the first of the two questions, and nothing else.
+ * exited with a gate a commit may close: green, or red only for a cause the diff does not carry
+ * (`gate_origin` `pre-existing`), the exact state in which the review's own commit runs.
+ * `openLedgers` below is the first of the two questions, and nothing else.
  *
  * **A seat that does not answer is left to the caller.** Where the state folder cannot be read
  * this **throws**, and each reader answers it in its own way: the Stop notice stays silent, its
@@ -317,6 +348,7 @@ export function ledgers(reviewState, env) {
       blocking: blockingItems(ledger),
       outcome: typeof ledger.outcome === 'string' ? ledger.outcome : null,
       gate: typeof ledger.gate === 'string' ? ledger.gate : null,
+      gate_origin: typeof ledger.gate_origin === 'string' ? ledger.gate_origin : null,
       lastWrite: lastWrite(reviewState, name, sorted, env),
     });
   }
@@ -793,9 +825,10 @@ const ledger = (item, outcome, toConfirm = []) =>
     coverage: outcome === null ? null : 'tests-written',
     gate: outcome === null ? null : 'green',
     gate_detail: outcome === null ? null : 'ok',
+    gate_origin: null,
   });
 
-/** A ledger the scope just opened: no round yet, the four tail fields still empty. */
+/** A ledger the scope just opened: no round yet, the five tail fields still empty. */
 const FRESH_LEDGER = JSON.stringify({
   base: 'abc1234',
   item: 'docs/new-developments/beta',
@@ -806,6 +839,7 @@ const FRESH_LEDGER = JSON.stringify({
   coverage: null,
   gate: null,
   gate_detail: null,
+  gate_origin: null,
 });
 
 const OPEN_LEDGER = ledger('docs/new-developments/gamma', null, [
@@ -825,6 +859,7 @@ const HAND_LEDGER = JSON.stringify({
   coverage: null,
   gate: null,
   gate_detail: null,
+  gate_origin: null,
 });
 
 /**
@@ -951,6 +986,32 @@ function selfCheck() {
 
   const findings = { [`${STATE}/review-ledger-abc1234-120000.round-1.findings.json`]: FINDINGS };
   check('a findings file is not a ledger', advice(R, env(findings), CTX(), SITE) === null);
+
+  // The form is a copy of the schema of the build carrying it, and the guard outlives that
+  // build: the ledger standing in the seat may have been written by a newer one. Every field
+  // this list knows, **and more**, is still ours — the extra key is a newer ledger's — where the
+  // exact key count would read it as another tool's file and deny every commit on it.
+  const newerLedger = JSON.parse(OPEN_LEDGER);
+  newerLedger.gate_files = ['src/other.ts'];
+  const newer = { [`${STATE}/review-ledger-abc1234-120000.json`]: JSON.stringify(newerLedger) };
+  const textNewer = advice(R, env(newer), CTX(), SITE);
+  check(
+    'a ledger of a newer build, carrying an extra field, is still ours',
+    !!textNewer && textNewer.includes('gamma')
+  );
+
+  // And the copy seen the other way: the build **before** this one wrote no `gate_origin`, and its
+  // ledger is ours all the same. Demanded at the newest list, it would read as another tool's file
+  // — and an interrupted cycle left under that build would vanish from this notice and stop holding
+  // `git commit` open.
+  const olderLedger = JSON.parse(OPEN_LEDGER);
+  delete olderLedger.gate_origin;
+  const legacy = { [`${STATE}/review-ledger-abc1234-120000.json`]: JSON.stringify(olderLedger) };
+  const textLegacy = advice(R, env(legacy), CTX(), SITE);
+  check(
+    'a ledger of an older build, before a field was added, is still ours',
+    !!textLegacy && textLegacy.includes('gamma')
+  );
 
   // A closed review leaves its ledger *and* its findings files behind for good: neither may
   // reopen the notice.
@@ -1301,6 +1362,13 @@ function selfCheck() {
   check(
     'the ledger form is the one schemas/blocks.json § ledger declares (unrunnable where the schema is not beside this file)',
     Array.isArray(mirrored) && mirrored.length === LEDGER_FIELDS.length && LEDGER_FIELDS.every((field) => mirrored.includes(field))
+  );
+  // The core `isLedger` really tests is a subset of that form: a core field the schema no longer
+  // requires would make the guard recognise a file the tool would not write, and this is where it
+  // is caught.
+  check(
+    'the core `isLedger` tests is a subset of the form the schema declares',
+    Array.isArray(mirrored) && LEDGER_CORE.every((field) => mirrored.includes(field))
   );
 
   process.stdout.write(

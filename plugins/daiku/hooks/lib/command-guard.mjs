@@ -58,8 +58,9 @@
  *     here: no declared production branch, no branch read and no check.
  *  7. **The review state** (`{paths.review_state}`). `git commit` is the closing step of a review
  *     cycle and never a gesture of its own: the ledger is read only on a `git commit`, and the
- *     commit passes while a cycle is in flight or a green-gated one has just exited; otherwise
- *     it is denied. A seat that does not answer allows. No declared review state, no check.
+ *     commit passes while a cycle is in flight or one whose gate a commit may close has just
+ *     exited; otherwise it is denied. A seat that does not answer allows. No declared review state,
+ *     no check.
  *
  * Where the host has a system `deny`, that stays the real door for 2 and 3: absolute, and
  * no source below can remove it. The two branches here close the shapes prefix
@@ -763,18 +764,20 @@ const COMMIT_DUE_MS = 15 * 60 * 1000;
  *
  * **The only signal is the review's own state**, because there is no other that whoever commits
  * cannot fake: a ledger in `{paths.review_state}`. What holds the gate open is a cycle **in
- * flight** — `outcome` still `null` — or one that has just **exited with a green gate**, which is
- * the state the review's own commit runs in: the cycle writes `outcome` at its exit and commits
- * afterwards, past coverage and the gate. Both are read through the same code the Stop notice
- * reads (`ledgers`), so what a ledger **is** is decided once, and the two readers agree. Both
- * stop holding once the ledger has been quiet longer than a cycle can be, once it has been set
- * aside, or once the file is another tool's.
+ * flight** — `outcome` still `null` — or one that has just **exited with a gate a commit may
+ * close**: green, or red only for a cause the diff does not carry (`gate_origin` `pre-existing`,
+ * the same reading `askDecision`/`askClosing` make) — which is the state the review's own commit
+ * runs in: the cycle writes `outcome` at its exit and commits afterwards, past coverage and the
+ * gate. Both are read through the same code the Stop notice reads (`ledgers`), so what a ledger
+ * **is** is decided once, and the two readers agree. Both stop holding once the ledger has been
+ * quiet longer than a cycle can be, once it has been set aside, or once the file is another
+ * tool's.
  *
  * **What it does not do, said plainly**: it reads no diff, and it cannot tell the commit closing a
- * review from one made beside it. For as long as a green-gated ledger sits inside
- * `COMMIT_DUE_MS`, a direct commit passes. It stops the casual commit — the one made because the
- * benches were green and the hour was late — and it holds the gate's own condition, since a red
- * one opens nothing.
+ * review from one made beside it. For as long as a ledger whose gate a commit may close sits
+ * inside `COMMIT_DUE_MS`, a direct commit passes. It stops the casual commit — the one made
+ * because the benches were green and the hour was late — and it holds the gate's own condition,
+ * since a red the diff carries opens nothing.
  *
  * A project that declares no `{paths.review_state}` has no cycle to be inside of: §6, and the
  * guard does not exist. The seat is asked of `env`, like every other reading of the world, so the
@@ -795,7 +798,8 @@ function reviewGuard(line, env, ctx) {
     return null; // the seat did not answer: allow
   }
   const inFlight = (entry) => entry.outcome === null;
-  const justExited = (entry) => entry.outcome !== null && entry.gate === 'green';
+  const justExited = (entry) =>
+    entry.outcome !== null && (entry.gate === 'green' || entry.gate_origin === 'pre-existing');
   if (
     found.some(
       (entry) =>
@@ -986,11 +990,12 @@ const HOUR = 60 * MINUTE;
 /** The last segment of a path: how a fixture names the files it holds. */
 const lastSegment = (path) => String(path).replace(/\\/g, '/').split('/').pop();
 
-/** A ledger as `architect/ledger.mjs` writes one: the whole form, with `outcome` and `gate` where
- * the case says. `outcome` null is a cycle in flight; a written `outcome` with a green gate is one
- * that has just exited, which is the state the review's own commit runs in. A file lacking a field
- * is another tool's, exactly as `isLedger` decides it for the Stop notice. */
-const ledgerText = (outcome = null, gate = null) =>
+/** A ledger as `architect/ledger.mjs` writes one: the whole form, with `outcome`, `gate` and
+ * `gate_origin` where the case says. `outcome` null is a cycle in flight; a written `outcome` with a
+ * green gate — or a red one whose `gate_origin` is `pre-existing` — is one that has just exited,
+ * which is the state the review's own commit runs in. A file lacking one of the ledger's core
+ * fields is another tool's, exactly as `isLedger` decides it for the Stop notice. */
+const ledgerText = (outcome = null, gate = null, origin = null) =>
   JSON.stringify({
     base: 'aaaaaaa',
     item: null,
@@ -1001,6 +1006,7 @@ const ledgerText = (outcome = null, gate = null) =>
     coverage: null,
     gate,
     gate_detail: null,
+    gate_origin: origin,
   });
 
 /** A ledger file the review guard reads as open, written `ago` milliseconds back. */
@@ -1154,15 +1160,19 @@ const CASES = [
   // --- the review guard: no commit outside a cycle --------------------------
   // The commit is the closing step of `/daiku:review`. The only signal is the review's own
   // state, read through the same code the Stop notice reads: a ledger with the cycle still in
-  // flight, or one that has just exited with a green gate — which is where the review's own
-  // commit stands, since the cycle writes `outcome` at its exit and commits afterwards. The two
-  // questions are asked with two different windows, and both are cases. The ways a ledger stops
-  // holding the gate open are each a case, and so are the two ways the guard stays off.
+  // flight, or one that has just exited with a gate a commit may close — green, or red only for
+  // a cause the diff does not carry (`gate_origin` `pre-existing`) — which is where the review's
+  // own commit stands, since the cycle writes `outcome` at its exit and commits afterwards. The
+  // two questions are asked with two different windows, and both are cases. The ways a ledger
+  // stops holding the gate open are each a case, and so are the two ways the guard stays off.
   ['a commit with no review in flight is denied', 'git commit -m "x"', ROOT_CWD, 'deny', 'outside a review cycle', CTX_REVIEW, 'develop', {}],
   ['a commit while a review is running passes', 'git commit -m "x"', ROOT_CWD, 'allow', '', CTX_REVIEW, 'develop', { 'review-ledger-aaaaaaa-101010.json': ledgerAt(MINUTE) }],
   ['the review\'s own commit passes: the cycle exited with a green gate', 'git commit -m "x"', ROOT_CWD, 'allow', '', CTX_REVIEW, 'develop', { 'review-ledger-aaaaaaa-101010.json': { text: ledgerText('fixed-point', 'green'), at: NOW - MINUTE } }],
+  ['the review\'s own commit passes: the cycle exited with a red gate only outside the diff', 'git commit -m "x"', ROOT_CWD, 'allow', '', CTX_REVIEW, 'develop', { 'review-ledger-aaaaaaa-101010.json': { text: ledgerText('fixed-point', 'red', 'pre-existing'), at: NOW - MINUTE } }],
   ['a green gate older than the commit it was closing holds nothing open', 'git commit -m "x"', ROOT_CWD, 'deny', 'outside a review cycle', CTX_REVIEW, 'develop', { 'review-ledger-aaaaaaa-101010.json': { text: ledgerText('fixed-point', 'green'), at: NOW - 30 * MINUTE } }],
   ['a cycle that exited with a red gate holds nothing open', 'git commit -m "x"', ROOT_CWD, 'deny', 'outside a review cycle', CTX_REVIEW, 'develop', { 'review-ledger-aaaaaaa-101010.json': { text: ledgerText('fixed-point', 'red'), at: NOW - MINUTE } }],
+  ['a red gate the diff carries holds nothing open', 'git commit -m "x"', ROOT_CWD, 'deny', 'outside a review cycle', CTX_REVIEW, 'develop', { 'review-ledger-aaaaaaa-101010.json': { text: ledgerText('fixed-point', 'red', 'diff'), at: NOW - MINUTE } }],
+  ['a red gate outside the diff, older than the commit it was closing, holds nothing open', 'git commit -m "x"', ROOT_CWD, 'deny', 'outside a review cycle', CTX_REVIEW, 'develop', { 'review-ledger-aaaaaaa-101010.json': { text: ledgerText('fixed-point', 'red', 'pre-existing'), at: NOW - 30 * MINUTE } }],
   ['a cycle that exited with no gate recorded holds nothing open', 'git commit -m "x"', ROOT_CWD, 'deny', 'outside a review cycle', CTX_REVIEW, 'develop', { 'review-ledger-aaaaaaa-101010.json': { text: ledgerText('fixed-point'), at: NOW - MINUTE } }],
   ['a review quiet for two hours is not in flight', 'git commit -m "x"', ROOT_CWD, 'deny', 'outside a review cycle', CTX_REVIEW, 'develop', { 'review-ledger-aaaaaaa-101010.json': ledgerAt(3 * HOUR) }],
   ['a ledger set aside does not hold the gate open', 'git commit -m "x"', ROOT_CWD, 'deny', 'outside a review cycle', CTX_REVIEW, 'develop', { 'review-ledger-aaaaaaa-101010.json': ledgerAt(MINUTE), 'review-ledger-aaaaaaa-101010.json.abandoned': { text: '', at: NOW - MINUTE } }],
