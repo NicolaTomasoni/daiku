@@ -1,6 +1,6 @@
 ---
 name: 'release'
-description: 'Promotes the development branch onto production, once per release: the version lives on production and never on development, the release writes it there with the changelog section built from the block of commits accumulated since the last published release, and replaces the release standing on production for as long as nothing has pushed it. It never pushes — the push stays a manual gesture of the owner. On a project that declared no channels it has nothing to promote and says so.'
+description: 'Promotes the development branch onto production, once per release: the version lives on production and never on development, the release writes it there with the changelog section built from the block of commits accumulated since the last published release, and replaces the release standing on production for as long as nothing has pushed it. A working tree that is not empty is flushed first, through the review cycle and its closing commit, because a release carries the development tree as its commits hold it. It never pushes — the push stays a manual gesture of the owner. On a project that declared no channels it has nothing to promote and says so.'
 argument-hint: '[technical root, optional — default: current directory]'
 ---
 
@@ -49,6 +49,8 @@ publishing the workshop. Read `never` in the status before releasing: it is what
 You run it by hand, on the main tree, when you decide to release. It is not part of any chain and
 no other node launches it: `ship-feature` ends by merging the delivery **onto the development
 branch** — the branch the main tree stands on — and the release is a separate, deliberate gesture.
+It is the one node that launches the review cycle from outside a delivery, and only for this:
+taking an unclean working tree to a clean one before anything is written.
 A project that did not declare `channels.production` has no release at all, and this node says so
 and stops.
 
@@ -70,9 +72,14 @@ saying so, and stop — §6 of `contracts/project-contract.md`, no fallback and 
 
 1. **Read the ground.** `git -C "<root>" rev-parse --abbrev-ref HEAD` must be
    `{channels.development}`; otherwise the main tree is not standing where the work lives and
-   nothing is released: return `released: false` with that in `detail`. `git status --porcelain`
-   must be empty: a dirty tree is not a release state, and you do not commit somebody else's
-   uncommitted work.
+   nothing is released: return `released: false` with that in `detail`.
+
+   `git status --porcelain` must then be empty, and a release never starts from a tree that is not:
+   it carries the development tree **as its commits hold it**, so work standing in the tree and in
+   no commit would be left out of the release without anybody noticing. Where it is not empty you do
+   not stop and you do not discard it — you **flush it** (§ *Flushing the working tree*) — and only
+   then read the ground again. A tree still not empty there is `released: false`, with the paths
+   left standing named in `detail`.
 
 2. **Measure.** Run `architect/release.mjs` with `action: "status"`, passing the root, the two
    branches and the release's own keys — `{release.source}`, `{version.file}`,
@@ -136,6 +143,32 @@ saying so, and stop — §6 of `contracts/project-contract.md`, no fallback and 
    Never `git push`, in none of these steps: the release stops at the local ref, and the push stays
    the manual gesture of the owner. **A release is closed by the push, not by this node.**
 
+## Flushing the working tree — **worker** role
+
+**The tree is made clean before anything is measured, and this is the only way it is made clean.**
+The work is not discarded and not stashed: it enters history through the cycle that reads it, which
+is the only door a commit has here — the command guard denies `git commit` outside a review cycle.
+And the release does not trust this step to have happened: `architect/release.mjs` refuses a working
+tree that is not clean, so a release that arrived here without flushing writes nothing at all.
+
+- **the work the cycle reads.** Delegate it to a subagent fully running `skills/review/SKILL.md` —
+  scope, rounds, gate, and the commit that closes it green — on what stands under `{code_root}`,
+  which is the whole perimeter its finders read. That commit is the one the cycle would make anyway:
+  do not pass `--no-commit`.
+- **the work it does not reach.** The cycle does not close at `{code_root}`: its closing commit runs
+  `skills/commit/SKILL.md`, which always delegates `skills/update-memory/SKILL.md`, authorised to
+  stage and commit the memory and the workshop's own documents the diff made stale — `{memory.root}`,
+  `{hosts.<host>.instructions_file}`, the founding documents (`documents.*`) and `.daiku/policies/`.
+  What neither the cycle nor its closing commit reaches is delegated to a second subagent fully
+  running `skills/commit/SKILL.md`, with those paths named one by one. It commits in the window the
+  first has just opened — the guard leaves the commit open for fifteen minutes after a cycle closes
+  green, and the two run one after the other. Where the cycle opened no ledger — nothing under
+  `{code_root}` differs from the base — there is no window at all, and this work stays where it is:
+  it is then the tree that decides, and the release stops.
+
+Read `git status --porcelain` again once both have returned. A path still standing there is one
+neither the cycle nor `commit` could take: it is said in `detail`, and nothing is released.
+
 ## What you return
 
 One JSON block, in chat, at the end — and it is the block `schemas/blocks.json` § *release*
@@ -154,4 +187,4 @@ mirrors, where this file stays normative on divergence:
   (or `null`);
 - `detail` always says what happened, and on `released: false` says which of the cases it was:
   no channels declared, the copy not on the development branch, a working copy holding production,
-  a dirty tree, or nothing to release.
+  uncommitted work the cycle could not flush, or nothing to release.

@@ -97,7 +97,7 @@ const GRAPH = {
   execute: ['ship-feature'],
   reconcile: ['ship-feature'],
   'ship-feature': ['owner', 'new-feature'],
-  review: ['owner', 'ship-feature'],
+  review: ['owner', 'ship-feature', 'release'],
   'finder-prompt': ['review', 'code-review'],
   'code-review': ['owner', 'review'],
   'arch-check': ['review'],
@@ -105,7 +105,7 @@ const GRAPH = {
   perf: ['review'],
   'test-coverage': ['review'],
   applier: ['review', 'code-review'],
-  commit: ['owner', 'review'],
+  commit: ['owner', 'review', 'release'],
   'update-memory': ['ship-feature', 'commit'],
   release: ['owner'],
 };
@@ -170,7 +170,7 @@ const ENTRIES = {
  */
 const ATOMIC = {
   study: 'study launched alone is atomic: it reorders its notes and stops, it opens no chain and calls the evaluator on none. There is no sequence to order, so the chain stops here.',
-  release: 'release writes the release on production and stops: it opens no chain and calls the evaluator on none. There is no sequence to order, so the chain stops here.',
+  release: 'release writes the release on production and stops: it opens no delivery chain and calls the evaluator on none. Where the working tree is not empty it flushes it first — the review cycle and its closing commit — and that is not a sequence to order. The chain stops here.',
 };
 
 /** Artefacts that exclude each other: a folder cannot be both before and after delivery. */

@@ -178,6 +178,24 @@ function pushed(cwd, ref) {
   return spawnSync('git', ['merge-base', '--is-ancestor', ref, upstream], { cwd }).status === 0;
 }
 
+/**
+ * The paths the working tree carries and no commit does. A release carries the development tree
+ * **as its commits hold it**, so these are the work it would leave behind — and leave behind
+ * silently, because nothing else in the tree says they were ever meant to be in it. The skill
+ * flushes them through the review cycle and its closing commit, and through `commit` for what that
+ * cycle does not reach, before arriving here; this is the same rule where nothing can talk its way
+ * around it.
+ */
+function dirtyPaths(cwd) {
+  // The two status letters and their space come off first, and only then the whitespace: trimming
+  // first would eat the leading space of an unstaged modification and take a letter of the path
+  // with it — ` M plugins/x` reads `lugins/x`.
+  return git(cwd, ['status', '--porcelain'])
+    .split('\n')
+    .map((line) => line.slice(3).trim())
+    .filter(Boolean);
+}
+
 /** Every worktree where `<branch>` is the checked-out branch. */
 function worktreesOn(cwd, branch) {
   const out = git(cwd, ['worktree', 'list', '--porcelain']);
@@ -360,6 +378,22 @@ function actStatus(input) {
 
 function actRelease(input, dry) {
   const { cwd, development, production, source } = settings(input);
+
+  // The tree the release carries is the one the commits hold, so work standing in the working
+  // tree and in no commit is work the release would leave out without anybody noticing. The skill
+  // does not stop on it and does not discard it: it flushes it through the review cycle and its
+  // closing commit — and through `commit` for the paths that cycle does not reach — and arrives
+  // here with a clean tree. This is where that rule stops being an instruction and becomes one.
+  const dirty = dirtyPaths(cwd);
+  if (dirty.length) {
+    const shown = dirty.slice(0, 5).join(', ');
+    fail(
+      `the working tree is not clean (${shown}${dirty.length > 5 ? `, and ${dirty.length - 5} more` : ''}): ` +
+        'a release carries the development tree as its commits hold it, and uncommitted work is part of no commit. ' +
+        'Take it through the review cycle and its closing commit — and through `commit` for the paths the cycle does not reach — then release.'
+    );
+  }
+
   const version = text(input, 'version');
   if (!/^\d+\.\d+\.\d+$/.test(version)) fail(`version must be a semantic version, got ${JSON.stringify(version)}`);
   const message = text(input, 'message');
@@ -701,6 +735,23 @@ function runBench(root) {
       check('refuse:an-unknown-action', unknown.ok === false && /unknown action/.test(unknown.error), JSON.stringify(unknown));
       const empty = spawnSync(process.execPath, [join(root, 'architect', 'release.mjs'), root], { cwd: repo, encoding: 'utf-8', input: '' });
       check('refuse:an-empty-stdin', empty.status === 2 && /stdin is empty/.test(empty.stderr), empty.stderr);
+    }
+
+    /* --- uncommitted work ----------------------------------------------- */
+    {
+      const repo = fixture('dirty');
+      const mainBefore = sh(repo, ['rev-parse', 'main']).out;
+      const loose = join(repo, 'plugins/daiku/skills/release/nota.md');
+      write(loose, '# nota\n');
+      const got = call(repo, base(repo, { action: 'release', version: '1.1.3', section: '### 1.1.3\n\n- x.\n\n---', message: 'release 1.1.3 — x' }));
+      check('dirty:a-tree-carrying-uncommitted-work-blocks-the-release', got.ok === false && /not clean/.test(got.error), JSON.stringify(got));
+      check('dirty:the-blocking-path-is-named-whole', /\(plugins\/daiku\/skills\/release\/nota\.md\)/.test(got.error), got.error);
+      check('dirty:nothing-is-moved', sh(repo, ['rev-parse', 'main']).out === mainBefore, sh(repo, ['rev-parse', 'main']).out);
+      const dry = call(repo, base(repo, { action: 'dry', version: '1.1.3', section: '### 1.1.3\n\n- x.\n\n---', message: 'release 1.1.3 — x' }));
+      check('dirty:a-dry-run-refuses-it-too', dry.ok === false && /not clean/.test(dry.error), JSON.stringify(dry));
+      rmSync(loose, { force: true });
+      const clean = call(repo, base(repo, { action: 'release', version: '1.1.3', section: '### 1.1.3\n\n- x.\n\n---', message: 'release 1.1.3 — x' }));
+      check('dirty:the-release-goes-through-once-the-tree-is-clean-again', clean.released === true, JSON.stringify(clean));
     }
 
     /* --- a whole tree, no `source` -------------------------------------- */
