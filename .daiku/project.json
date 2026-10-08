@@ -19,6 +19,7 @@
   "paths": {
     "studies": ".daiku/studies",
     "features": ".daiku/features",
+    "handoffs": ".daiku/handoffs",
     "review_state": ".docs/runtime/review"
   },
   "memory": {
