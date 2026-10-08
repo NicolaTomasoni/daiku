@@ -12,9 +12,11 @@ You are the node **opening** a work and not leaving it halfway. You receive a na
 
 ## When to use it
 
-Use it when you start from an idea or a problem and there is nothing on disk yet — or when the folder is already there and the work has to be **resumed**: given a folder under `{paths.features}/` instead of a description, the run reads what that folder carries and starts where its documents stop, asking no confirmation of its own (point 1). It is the only entry point that starts from the **code** instead of a document, and the only one that opens the folder; `decision-doc` is its internal phase, never launched on its own, while `ship-feature` is its delivery and can also be launched by hand on the folder.
+Use it when you start from an idea or a problem and there is nothing on disk yet — or when the folder is already there and the work has to be **resumed**: given a folder under `{paths.features}/` instead of a description, the run reads what that folder carries and starts where its documents stop, asking no confirmation of its own (point 1). It is the only entry point that starts from the **code** instead of a document, and the only one that opens the folder; `decision-doc` is its internal phase and `ship-feature` its delivery, both reached only through this run, never launched on their own.
 
 It is also the place to **think a feature through before there is anything to open**: with `--chat` the node is a conversation and nothing more — no folder, no investigation, no document, no decision — and the chain starts only when the owner says so (§ *Chat mode*).
+
+**It is opened by the owner, on their request, and by nobody else.** A change an agent judges worth a feature is a line saying so, never a run started in their place: opening the work is the gesture this whole method leaves to the owner (§6 of `contracts/orchestration.md`).
 
 ## Before starting
 
@@ -56,12 +58,21 @@ Progress and findings go **in chat**, as you go: one line when a phase starts an
 
 From the description derive a kebab-case **slug** saying the *problem*, not the solution — you have not chosen the solution yet, and a slug naming it orients everything coming after. The folder is `{paths.features}/<slug>/`: create it. If it already exists, ask confirmation before working inside it — it is the only other question admitted before the decisions. With `--no-ask` that confirmation is not asked either: the run works inside the folder, where the study updates in place what it finds still valid.
 
-**When the argument names a folder already there, the run resumes — and it starts from what it finds, not from the code.** The folder is that one: no slug is derived from prose, and **no confirmation is asked**, because pointing at it is the confirmation. Two things are read, and nothing is judged by feel:
+**When the argument names a folder already there, the run resumes — and it starts from what it finds, not from the code.** The folder is that one: no slug is derived from prose, and **no confirmation is asked**, because pointing at it is the confirmation. Three things are read, and nothing is judged by feel:
 
-- **The verdict.** Call `architect/architect.mjs` with `question: "order"`, `entry: "new-feature"`, `present` (the documents the folder carries) and `ledger` (this folder's review ledger in `{paths.review_state}/`, or `null`) — the input § *The evaluator* of `skills/ship-feature/SKILL.md` declares. It binds: `stop` stops the run here, reported; `remaining` names the phases left, and **the phases before them are not re-run** — a phase whose document is already there is not written again, so `0. problem.md` present means no investigation fan-out and no new first draft, only the surgical corrections point 5 justifies.
+- **The verdict.** Call `architect/architect.mjs` with `question: "order"`, `entry: "new-feature"`, `present` (the documents the folder carries) and `ledger` (this folder's review ledger in `{paths.review_state}/`, or `null`) — the input § *The evaluator* of `skills/ship-feature/SKILL.md` declares. It binds: `stop` stops the run here, reported; `remaining` names the phases left, **its first element is the phase to run**, and **the phases before it are not re-run** — a phase whose document is already there is not written again, so `0. problem.md` present means no investigation fan-out and no new first draft, only the surgical corrections point 5 justifies.
 - **The ask first, whatever phase the verdict names.** `1. decision-doc.md` present proves the decisions **studied**, not answered: before anything else, read the folder's decision documents (`0.5. strategic-study.md`, `1. decision-doc.md`) and, if any card lacks its `Choice:` line, the phase is **point 7** — the cards left open, and point 6 does not run. A brief or a review report standing above an unanswered document is the one exception, and it is not a reading to pick: it is an incoherence to **report**, because answering those cards under it would leave a plan written on decisions that have changed.
+- **The re-examination, which the verdict cannot see.** Point 5 leaves its only trace on disk in `0. problem.md`, the *What it rests on* tail, and the verdict counts artefacts: this phase has none to give it. So a `0. problem.md` without that tail is a problem written before the notes were consulted, and the resume runs **point 5** before the decisions. Without this reading a run interrupted after `research` walks into the decision study with a problem the notes were never measured against, and nothing says so.
 
-Then the phase the verdict names: no decision document at all, **point 6** (nothing was studied yet); a document with every card answered and the technical stage not on disk, **point 8** (incorporation: the answers are already in the document); `acquisition` or later, **point 10**, the delivery. A folder carrying a decision document under a name this chain does not know is a fault to **report**, not a document to ignore: the numbers and the answers live in the declared names, and the run stops there rather than studying the same problem a second time.
+Then the phase the verdict names — the first of `remaining`, each of its values being one of the points below:
+
+- **`problem`** → points 2 and 3: the folder carries no first draft yet, so the investigation fan-out and `0. problem.md` are still to be done;
+- **`decisions`** → **point 5** first, when the third reading above says it did not run, and then point 6;
+- **`acquisition`** or later → **point 10**, the delivery, which resumes on its own verdict.
+
+A document with every card answered and the technical stage not on disk is **point 8** (incorporation: the answers are already in the document), and it is read before that list, because the ask comes first. A folder carrying a decision document under a name this chain does not know is a fault to **report**, not a document to ignore: the numbers and the answers live in the declared names, and the run stops there rather than studying the same problem a second time.
+
+**An interruption between the ask and the incorporation re-asks those cards, and that is declared.** The owner's answers live in the chat that carried them and nowhere on disk — the `Choice:` line is written by the incorporation, not by the ask — so a card without it is, as far as the disk knows, a card nobody answered. It is the case this file's § *If a step fails* already names for a failed incorporation, and the resume does the same thing: the answers go in the outcome verbatim, and the card is asked again rather than surrendering a decision the owner took.
 
 Open `{memory.index}` and the memories the problem area touches: it is the channel of §4.1 of `contracts/orchestration.md`. A gap a memory already closed is not a gap, and a trade-off the owner already decided is not reopened here. The paths you choose now you will pass to every step deciding or writing.
 
@@ -137,7 +148,7 @@ One subagent per technology, all in the same tool-call block. In the prompt:
 - the **resolved input** of that invocation: the `technology` and the `in_use_version` in the project, as the investigation read it from the manifest, and the `questions` the notes must answer — three to six, concrete, derived from the gaps and doubts you just wrote. They are what distinguishes a targeted study from an encyclopedia nobody rereads;
 - the **return format**: what the invocation declares (only the file path in `{paths.studies}/`). The notes are read by opening that file, not by reading fields.
 
-If no technology deserves it, say so in one line in chat and move to point 6: point 5 has nothing to re-examine.
+If no technology deserves it, say so in one line and go to point 5 with nothing to re-examine: it writes its tail all the same, because that tail is the only thing proving the re-examination ran, and a resume reads it there.
 
 ### 5. Re-examine, and rewrite the problem
 
@@ -151,6 +162,8 @@ The notes came back, and `0. problem.md` is written on what you knew **before**.
 Corrections are **surgical**: you touch the lines the notes contradict, you do not rewrite the document. Every statement now resting on the notes cites the file and section it comes from.
 
 Add at the tail a **What it rests on** section: the consulted notes with version and date, and the remaining `[to verify]` markers. Those markers are the points where not even the sources answered, and whoever decides must know they are there instead of discovering them while choosing.
+
+**That tail is written every time, and it is not a summary of the notes: it is the proof this phase ran.** It carries the notes consulted with their date, or the one line saying none was consulted — the case in which point 4 found nothing worth studying. Nothing else on disk distinguishes a problem re-examined on the sources from one written before them, and point 1 reads the tail for exactly that.
 
 **If the notes contradict nothing, write it in one line** and move on: a re-examination finding nothing is a successful re-examination, not a skipped one.
 
@@ -278,6 +291,8 @@ If the chain stopped before delivery, say so with the point where it stopped and
 | "I use the biggest model, this step looks hard to me" | The model comes from the role declared by the step, resolved with §2 of `contracts/orchestration.md`. |
 | "A card looks decided to me, so I record it as taken" | A decision is what the owner said: a preference you inferred, an option nobody answered, the one you find best are open questions. Reading the conversation as a mandate is the inference `--chat` exists to forbid. |
 | "The direction is clear, so I open the folder and start" | The chat mode ends when the owner says the development starts, not when it looks ready. Until then nothing is written — no folder, no document, no notes. |
+| "This change deserves a feature, so I open it" | The folder is opened by the owner's request and by nobody else: what an agent judges worth the chain is a line saying so, not a run started in their place. |
+| "`0. problem.md` is there, so the notes were already measured against it" | The *What it rests on* tail is what says so. Without it the problem was written before the sources, and point 5 runs before the decisions. |
 
 ## Cut rule
 

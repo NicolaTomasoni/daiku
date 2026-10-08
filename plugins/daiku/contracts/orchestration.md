@@ -59,8 +59,9 @@ file but the invocation: the same contract is an **entry point** when you launch
 `new-feature` procures for itself when it needs it, with reordering delegated to `study`, and at the same time the command with which you request the notes yourself.
 
 **There are ten entry points, and it is not a number that grows on its own.** A contract is launched by
-hand only if it is the **entry point of a chain**, never because it is handy to have it around:
-what sits in the middle of a chain is reached by whoever opened it, and adding it here means
+hand only if it is the **entry point of a chain** — or, like `research` and `handoff`, the node that
+deposits a file and stops, which is a place a run legitimately begins — never because it is handy to
+have it around: what sits in the middle of a chain is reached by whoever opened it, and adding it here means
 opening a second way to get there, with different scope and permissions to keep aligned
 forever. The ten fall into two groups, which are not used at the same moments.
 
@@ -73,7 +74,7 @@ forever. The ten fall into two groups, which are not used at the same moments.
 | `review` | the review also lives on its own, on a hand-written diff |
 | `code-review` | the bug-only review cycle on the scope you tell it: rounds, fixes, fast check and gate like `/review`, stopping at the report — no coverage, no commit |
 | `commit` | it closes a review launched with `--no-commit`, or a diff written outside a review |
-| `ship-feature` | you already have the folder, with or without the brief, and want the whole delivery to the commit in a single run, without reopening the study |
+| `handoff` | you are in the middle of a job and want to leave it to another agent: from the conversation you are in it writes the document carrying the problem, what was done, what is missing and the evidence — logs, reproduction, excerpts — **inlined**, because the reader reaches neither that conversation nor the project where the behaviour was observed. It **deposits the file and stops**: it opens no chain, resolves nothing and hands no work on |
 | `release` | the release of a project that declared its channels: it asks the version once on the block of commits accumulated since the last published release and writes it on production with its changelog section, replacing the release standing there for as long as nothing has pushed it. It never pushes; a working tree that is not empty is flushed first through the review cycle and its closing commit — and through `commit` for what that does not reach — and on a project that declared no channels it has nothing to release and says so |
 
 **Installation — three commands that are launched once per project**, and that no chain
@@ -85,10 +86,12 @@ can reach because they run at the project's opening, outside a feature:
 | `sync-host` | it carries guardrails and subagent roles into the host layer that cannot receive them from the package; `init` launches it on Codex as its last step, and it is re-launched on every update |
 | `new-project` | after `init` has assigned the seats, it writes the project's five founding documents from the package skeletons — the offer, the identity, the domain, the stack, the architecture — and is re-launched to realign them |
 
-Everything else — `decision-doc`, `blueprint`, `update-memory`, `execute`, `reconcile`,
+Everything else — `decision-doc`, `blueprint`, `ship-feature`, `update-memory`, `execute`, `reconcile`,
 `finder-prompt`, `applier`, `arch-check`, `perf`, `dead-code`, `test-coverage`, `study` — is an **internal contract**: a
 subagent receives it as a *path to read*, not as a skill to invoke. `decision-doc`
-is opened by `new-feature`, `update-memory` by `commit` on every invocation, and
+is opened by `new-feature`, `ship-feature` by `new-feature` § *Delivery* — it is the delivery, and
+with the whole run now reachable on a folder it is never launched on its own — `update-memory` by
+`commit` on every invocation, and
 `study` by `research` on every invocation, for reordering. An internal contract
 **asks the owner nothing** and has no `argument-hint`: it returns a genuine choice in its own
 block, and whoever called it carries it into the chat (§ *Ask the owner*).
@@ -137,7 +140,7 @@ rebuilding the graph from the caller's prose.
 | `blueprint` | `ship-feature` phase 1, `new-feature` § *Delivery* (brief stop) | folder with `1. decision-doc.md`, chosen solution verbatim, relevant memories | § *What you return* of its file | no |
 | `execute` | `ship-feature` phase 2 | folder with `2. blueprint.md`, relevant memories; on a relaunch, the `handoff` blockers or the round-0 findings | § *What you return* of its file | no |
 | `reconcile` | `ship-feature` § *6b-bis. Reconcile* | the work root, the branch of the delivery, the patch path, and the block of 6b with its `dirty_paths` or `conflicts`, already resolved | § *The block you return* of its file | no |
-| `ship-feature` | `owner`, `new-feature` § *Delivery* | folder and chosen solution | § *Outcome* of its file | yes — its phases, and `review` as orchestrating child |
+| `ship-feature` | `new-feature` § *Delivery* | folder and chosen solution | § *Outcome* of its file | yes — its phases, and `review` as orchestrating child |
 | `review` | owner, `ship-feature` phase 3, `release` § *Flushing the working tree* | base-ref, the commit under review, or path of `4. review-notes.md`, ledger to reopen (chosen on `base` **and** `item`), `--no-commit` from whoever commits on their own, effort, `--backend` when the session runs there, work roots and artefacts when running on a worktree | § *Outcome* of its file | yes — finder, applier, coverage, gate, `commit` |
 | a round's finder (`finder-prompt`) | `review` § *Finder*, `code-review` § *The round* | discipline and contract, the round range (`from`, `to`, files), effort, the ledger path, the resolved parameters | § *The block you return* of its file | no |
 | `code-review` | owner, `review` as `bug` finder | hand-told scope, **or** round scope in finder mode | block of § *Outcome* **or** § *The block you return* of `finder-prompt`, with the `confidence` scale its file declares | **yes** — the `bug` finder (`finder-prompt`), `applier`, the gate |
@@ -147,6 +150,7 @@ rebuilding the graph from the caller's prose.
 | `test-coverage` | `review` § *Coverage* with `--auto` | macro-category **or** final cycle diff and relevant memories | § *Automatic mode* of its file | no |
 | `applier` | `review` § *Applier*, `code-review` § *The round* | the path of the round's numbered findings file, the ledger path, the round range, relevant memories, the resolved parameters, and the **mode** when it is the closing round on tests | § *The block you return* of its file | no |
 | `commit` | owner, `review` § *Closing* (always, except `--no-commit`), `release` § *Flushing the working tree* | code-group perimeter; it partitions memory/docs and version/changelog itself (§ *Procedure* 3 of its file) | § *Procedure* 8 of its file, in chat | yes — `update-memory`, **always and without exceptions** |
+| `handoff` | owner | an optional short name of the job, or nothing and the slug comes from the problem; the conversation it runs in is its material, and it is read there | path of the file in `{paths.handoffs}/`, nothing else | yes — the harvesting workers (leaves) |
 | `release` | owner | the technical root, or nothing and the current directory applies | § *What you return* of its file: what was promoted — the version written, the development branch and where production now stands — or why nothing was | yes — `review` and `commit`, when the working tree is not empty |
 | `update-memory` | `ship-feature` phase 5b, `commit` § *Alignment* (**always**, on every `commit` invocation) | diff in index, feature folder where to deposit its own artefact (from `ship-feature`), **commit permission for its own group** | § *Procedure* 7 of its file | no |
 
@@ -304,13 +308,14 @@ Rules valid on every host:
 ### Depth and degradation
 
 **Who may re-delegate.** A delegated step **executes**: it does not delegate in turn. The only exceptions
-are the orchestrating nodes that §3 declares also reachable as children — `ship-feature`
-(which orchestrates its own phases), `review` (finder, applier, gate, commit) and `commit` (which
-delegates alignment to `update-memory`) — **plus `research`, which as a child of `new-feature`
+are the orchestrating nodes — `ship-feature`, which as `new-feature`'s delivery orchestrates its
+own phases, `review` (finder, applier, gate, commit), `commit` (which
+delegates alignment to `update-memory`), and `handoff`, which launches its harvesting workers —
+**plus `research`, which as a child of `new-feature`
 orchestrates its own collection fan-out and delegates reordering to `study`, a leaf**. Every other
 delegated step is a **leaf**, and the longest path in the graph stays four levels,
 `new-feature → ship-feature → review → finder`, with the collection chain at three levels
-`new-feature → research → study`. A node that realises it wants to delegate, and is not one of the four, is doing
+`new-feature → research → study`. A node that realises it wants to delegate, and is not one of these, is doing
 someone else's work: return to contract and let whoever called it decide.
 
 **Degradation has two rungs, not one.** A step whose yield depends on the children's **independence**
@@ -413,6 +418,11 @@ Steps touching the same working tree (build, test, commit, computing a base-ref)
 - No skill duplicates this contract, nor the values it reads from
   `environment.json`, not even "for convenience".
 - No skill introduces a third role or a model profile of its own.
+- **No node launches `new-feature`, and neither does the agent on the owner's behalf.** The graph
+  declares `owner` as its only caller, and `owner` is the human asking, not the session judging a
+  change worth a feature: a job that deserves the chain is a line saying so, never a run started
+  for them. Opening the work is the owner's gesture, and it is the one act of this method that
+  nobody performs in their place.
 - The `Workflow` tool is no skill's engine: orchestration belongs to the agent, which delegates
   to subagents per this file. Do not invoke it.
 

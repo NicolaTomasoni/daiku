@@ -97,6 +97,11 @@ what portable skills cite, because numbering differs from project to project.
    (`update-memory`); anywhere else it is the work itself, and the memory corpus is written by the
    session as much as by that step. The pass runs whatever the diff: where nothing has become
    false there is nothing to write, and that is its verdict, not an exemption from running it.
+6. `[feature-opened-by-the-owner]` No agent opens a feature on its own initiative. The chain that
+   opens a problem folder — `/new-feature`, and with it the study, the decisions and the delivery —
+   starts only when the owner asks for it in so many words. A change an agent judges worth that
+   chain is a line proposing it, never a run started in their place: opening the work is the one
+   gesture of this method that is not delegated.
 
 <additional invariants observed in this repository, each with its own stable slug, and numbered on
 from the project's last one where the project already numbers them>

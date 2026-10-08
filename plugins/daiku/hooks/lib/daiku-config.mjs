@@ -29,6 +29,7 @@ const ABSENT = Object.freeze({
   present: false,
   pool: null,
   studies: [],
+  handoffs: null,
   guardrails: Object.freeze({}),
   libNotes: null,
   reviewState: null,
@@ -52,8 +53,8 @@ function resolvePath(value, root) {
  *
  * The context carries what the hooks read and nothing else: the switch and the pool of the
  * command guard, `paths.features` — the working folders, the seat the run works in — and
- * `paths.studies` — the notes on a technology — for the two hooks that speak about the run's
- * seats, with the machine's `write_roots` for the reminder,
+ * `paths.studies` — the notes on a technology — and `paths.handoffs` — the handoff documents —
+ * for the two hooks that speak about the run's seats, with the machine's `write_roots` for the reminder,
  * `paths.review_state` for the ledger notice of `stop-advice`, `code_root` and `memory.root` for
  * the notice it gives when a session changed code and left the corpus untouched, and the
  * environment file for the two keys of `run-advice`: `write_roots`, the folders this machine
@@ -93,6 +94,7 @@ export function loadContext(root, reads = REAL_READS) {
       pool: resolvePath(json.worktree && json.worktree.pool, root),
       features,
       studies: resolvePath(json.paths && json.paths.studies, root),
+      handoffs: resolvePath(json.paths && json.paths.handoffs, root),
       guardrails: declared && typeof declared === 'object' ? declared : {},
       reviewState: resolvePath(json.paths && json.paths.review_state, root),
       // The two seats of the corpus notice of `stop-advice`: the code the session changed, and
@@ -187,6 +189,7 @@ export function fakeContext(fields = {}) {
     pool: fields.pool ? resolve(fields.pool) : null,
     features: fields.features || [],
     studies: seat(fields.studies),
+    handoffs: seat(fields.handoffs),
     guardrails: fields.guardrails || {},
     reviewState: seat(fields.reviewState),
     codeRoot: seat(fields.codeRoot),

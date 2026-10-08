@@ -96,7 +96,7 @@ const GRAPH = {
   blueprint: ['ship-feature', 'new-feature'],
   execute: ['ship-feature'],
   reconcile: ['ship-feature'],
-  'ship-feature': ['owner', 'new-feature'],
+  'ship-feature': ['new-feature'],
   review: ['owner', 'ship-feature', 'release'],
   'finder-prompt': ['review', 'code-review'],
   'code-review': ['owner', 'review'],
@@ -107,6 +107,7 @@ const GRAPH = {
   applier: ['review', 'code-review'],
   commit: ['owner', 'review', 'release'],
   'update-memory': ['ship-feature', 'commit'],
+  handoff: ['owner'],
   release: ['owner'],
 };
 
@@ -165,11 +166,13 @@ const ENTRIES = {
 
 /**
  * Entries launched alone that open **no chain**: asked with `order`, they answer `stop` with the
- * reason. `study` reorders its notes and stops; `release` writes the release on production and
- * stops — neither runs the delivery chain, so there is no sequence to order.
+ * reason. `study` reorders its notes and stops; `handoff` writes the handoff document and stops;
+ * `release` writes the release on production and stops — none of them runs the delivery chain, so
+ * there is no sequence to order.
  */
 const ATOMIC = {
   study: 'study launched alone is atomic: it reorders its notes and stops, it opens no chain and calls the evaluator on none. There is no sequence to order, so the chain stops here.',
+  handoff: 'handoff launched alone is atomic: it writes the handoff document of the job the conversation is in and stops. It opens no chain, resolves no task and calls the evaluator on none, so there is no sequence to order and the chain stops here.',
   release: 'release writes the release on production and stops: it opens no delivery chain and calls the evaluator on none. Where the working tree is not empty it flushes it first — the review cycle and its closing commit — and that is not a sequence to order. The chain stops here.',
 };
 
@@ -1814,6 +1817,9 @@ const CASES = [
     expect: { verdict: 'proceed', remaining_starts_with: 'scope' } },
   { id: 'entry:study', cites: { file: 'contracts/orchestration.md', section: '3. Invocable skills and internal contracts' },
     input: { question: 'order', entry: 'study', present: [], ledger: null },
+    expect: { verdict: 'stop' } },
+  { id: 'entry:handoff', cites: { file: 'contracts/orchestration.md', section: '3. Invocable skills and internal contracts' },
+    input: { question: 'order', entry: 'handoff', present: [], ledger: null },
     expect: { verdict: 'stop' } },
 
   /* --- ambiguity: two incoherences and one legitimate fork --- */

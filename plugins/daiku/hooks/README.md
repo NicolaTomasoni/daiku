@@ -56,7 +56,7 @@ session whose opening prompt was `new-feature` — a switch **per session and no
 only one a hook writes itself — and then has two things to say. At that prompt it states the run's
 rule once: a turn of the owner asking for something to be made is carried out by a subagent, not in
 the window that asked the questions. At a write the conversation makes outside the seats the run owns
-(`{paths.features}`, `{paths.studies}`, `{write_roots}`) it repeats the rule, and **lets the write
+(`{paths.features}`, `{paths.studies}`, `{paths.handoffs}`, `{write_roots}`) it repeats the rule, and **lets the write
 through**: the rule is a default of a run, not a prohibition on a gesture, and the same conversation
 does other jobs — `/commit` updates the changelog and the version by hand, by contract — where a flat
 denial would stop the node that was asked for. What tells the conversation's write from a subagent's

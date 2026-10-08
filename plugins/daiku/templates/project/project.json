@@ -23,6 +23,7 @@
   "paths": {
     "studies": "<folder of the notes on a technology, one file per technology>",
     "features": "<folder holding the working folders, one per problem>",
+    "handoffs": "<folder of the handoff documents, one per job left to another agent>",
     "review_state": "<folder of the run's state outside version control: the review ledger and the worktree pool's registry>"
   },
   "memory": {

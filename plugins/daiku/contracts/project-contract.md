@@ -74,6 +74,7 @@ of a file, the presence or absence of an area. Three prohibitions, in order of s
 | `version.replicated_in` | other files carrying the same version and updated together; empty or absent list if there are none |
 | `paths.studies` | folder of the notes on a studied technology, one file per technology; it stands **under `.daiku/`**, like the key below it |
 | `paths.features` | folder hosting the working folders, one per problem, with the method's numbered files inside — and, beside them, the feature catalogue: one folder per feature, one file per study contributing to it; under `.daiku/` |
+| `paths.handoffs` | folder of the handoff documents, one file per job left to another agent, each carrying the problem, what was done, what is missing and the evidence inlined; under `.daiku/`, like the two keys above it |
 | `paths.review_state` | folder of the run's out-of-version-control state: a review's ledger, and the worktree pool's registry (`worktree-pool.json`, written by `architect/pool.mjs`); it stands **inside the repository tree**, under the technical root, but **outside version control** — a `.gitignore` line excludes it — and it is **never under `.daiku/`**, which is versioned (§8); stable, not session-scoped |
 | `memory.root` | root of the persistent memory corpus, inside the repository (§8); on Claude Code it is also the folder where the host writes its own memory (§4.2) |
 | `memory.index` | index file of the corpus, the one read first |
@@ -97,13 +98,13 @@ of a file, the presence or absence of an area. Three prohibitions, in order of s
 
 No key is mandatory besides `contract`: everything else is subject to §6.
 
-**The two keys of the method's own documents — `paths.studies` and `paths.features` — stand under
-`.daiku/`.** What they host is Daiku's corpus and not the project's documentation: `0. problem.md`,
-`1. decision-doc.md`, the notes and the catalogue are written by the method, read by the method, and
-seated among the project's own files they would be a second documentation tree that nobody chose and
-that the project is expected to keep. `.daiku/` is versioned (§8), so they enter the history like any
-other source file, and `init` **assigns** those two seats rather than adopting a folder the project
-already keeps.
+**The three keys of the method's own documents — `paths.studies`, `paths.features` and
+`paths.handoffs` — stand under `.daiku/`.** What they host is Daiku's corpus and not the project's
+documentation: `0. problem.md`, `1. decision-doc.md`, the notes, the catalogue and the handoffs are
+written by the method, read by the method, and seated among the project's own files they would be a
+second documentation tree that nobody chose and that the project is expected to keep. `.daiku/` is
+versioned (§8), so they enter the history like any other source file, and `init` **assigns** those
+three seats rather than adopting a folder the project already keeps.
 
 **Which file covers a path that stays out of version control.** `paths.review_state`
 stands outside what Git versions, and "is this path ignored?" is answered by the repository's own
@@ -291,7 +292,7 @@ the one it is written in**: it is the one the project declares. There are two ke
 different audiences, and on many projects they do not coincide.
 
 - **`{language.chat}`** — everything a person reads: the chat reply, the end-of-skill summary, the report, and the documents the method produces (`0. problem.md`,
-  `1. decision-doc.md`, `2. blueprint.md`, the review notes, the delivery report).
+  `1. decision-doc.md`, `2. blueprint.md`, the review notes, the delivery report, the handoff).
 - **`{language.commit}`** — everything staying in the repository's shared history: the
   commit message and the changelog entry. It is separate because a project with an interface in
   one language often has a Git history in another, and whoever reads `git log` in two years is not who

@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <img alt="version 1.1.4-b.3" src="https://img.shields.io/badge/version-1.1.4--b.3-3b82f6?style=flat" /> <br>
+  <img alt="version 1.1.4-b.4" src="https://img.shields.io/badge/version-1.1.4--b.4-3b82f6?style=flat" /> <br>
   <a href="https://code.claude.com"><img alt="Claude Code" src="https://img.shields.io/badge/Claude_Code-D97757?style=flat&logo=claude&logoColor=white" /></a>
   <a href="https://developers.openai.com/codex"><img alt="OpenAI Codex" src="https://img.shields.io/badge/OpenAI_Codex-000000?style=flat&logo=openai&logoColor=white" /></a>
 </p>
@@ -150,6 +150,14 @@ flowchart TD
 Two pieces also stand alone: `/code-review` runs the bug-only cycle on the scope you name —
 fixes, re-checks and the gate — and stops at the report, leaving the commit to you; `/commit`
 tidies memory and documents and closes in separate commits.
+
+### `/handoff`
+
+When a job stops halfway and another agent has to finish it, `/handoff` writes the document that
+carries it: the problem and the case that shows it, what was already done, what is missing, and the
+evidence — outputs, traces, excerpts — **written into the file**, because whoever receives it reaches
+neither the conversation that did the work nor the project where the behaviour was observed. It
+deposits the handoff under `.daiku/` and stops: it opens no chain and finishes no task.
 
 ### `/release` — the promotion
 

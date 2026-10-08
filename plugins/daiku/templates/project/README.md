@@ -35,7 +35,7 @@ direction this project chose**. Three promises, each with a mechanism behind it.
 | `/code-review` | the bug-only review cycle on the scope you name: rounds, fixes and the gate, stopping at the report with no commit |
 | `/research` | notes on a library or a technology, gathered from the real sources and tidied into a file |
 | `/commit` | closes a diff written outside a review: it aligns memory and documentation, then commits in separate groups |
-| `/ship-feature` | carries an already studied folder through delivery to the commit, without reopening the study |
+| `/handoff` | hands a job stopped halfway to another agent: written from the conversation it reads the problem, what was done, what is missing and the evidence — logs, reproduction, excerpts — inlined, because whoever receives it reaches neither that conversation nor the project where the behaviour was observed |
 | `/release` | for a project that declared its two channels: it asks the version once on the block of commits accumulated since the last published release and writes it on production, replacing the release standing there for as long as nothing has pushed it — it never pushes |
 | `/init` | opens Daiku on a project: it writes this folder and the instructions file. Once per project, and again when the package carries a new skeleton |
 | `/new-project` | after `/init`, it writes the project's five founding documents — the offer, the identity, the domain, the stack, the architecture — from the package skeletons, at the paths the project declares |

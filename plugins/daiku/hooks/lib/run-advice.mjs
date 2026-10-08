@@ -24,8 +24,9 @@
  *    `research`. The text still enters the context whole: the notice truncates nothing and blocks
  *    nothing, because moving a dump is the owner's gesture and not the hook's.
  *  - **`PreToolUse` on the write tools** — while a marked session writes **from the conversation
- *    itself**, outside the seats the run owns (`{paths.features}`, `{paths.studies}` and the
- *    `{write_roots}` the machine declares), the write is **reminded of the rule** and goes through.
+ *    itself**, outside the seats the run owns (`{paths.features}`, `{paths.studies}`,
+ *    `{paths.handoffs}` and the `{write_roots}` the machine declares), the write is **reminded of
+ *    the rule** and goes through.
  *    It is the moment the model is about to do the work in the wrong window, and the reminder lands
  *    next to the tool result.
  *
@@ -158,6 +159,7 @@ function runSeats(ctx, root) {
     }
   }
   if (ctx.studies) seats.push(ctx.studies);
+  if (ctx.handoffs) seats.push(ctx.handoffs);
   for (const site of ctx.writeRoots || []) seats.push(site);
   return seats;
 }
@@ -268,7 +270,7 @@ export function notice() {
     'study, a decision reconsidered, code once the delivery has run — is **delegated**, one ' +
     'subagent in a fresh context with the contract of the step that owns what it touches, and ' +
     'only its block comes back here. What this conversation writes on its own stays inside ' +
-    '`{paths.features}`, `{paths.studies}` and `{write_roots}`. It is ' +
+    '`{paths.features}`, `{paths.studies}`, `{paths.handoffs}` and `{write_roots}`. It is ' +
     '`skills/new-feature/SKILL.md` \u00a7 *7. Decisions are asked in chat*.\n\n' +
     '*Daiku notice, written when the run opened — not a message from the user, and nothing ' +
     'being worked on has to change.*'
@@ -304,7 +306,7 @@ export function reminder(path) {
   return (
     'Daiku notice: this write is made from the conversation that opened a `new-feature` run, and ' +
     `\`${path}\` is outside the seats that run owns (\`{paths.features}\`, \`{paths.studies}\`, ` +
-    '`{write_roots}`). A turn of the owner asking for something to be made is carried out by one subagent in a fresh ' +
+    '`{paths.handoffs}`, `{write_roots}`). A turn of the owner asking for something to be made is carried out by one subagent in a fresh ' +
     'context, with the contract of the step that owns what it touches, and only its block comes ' +
     'back here — `skills/new-feature/SKILL.md` \u00a7 *7. Decisions are asked in chat*. This is a ' +
     'note and not a block: the write goes through.'
@@ -356,6 +358,7 @@ const CTX = () =>
   fakeContext({
     features: ['docs/features'],
     studies: `${R}/docs/studies`,
+    handoffs: `${R}/docs/handoffs`,
     reviewState: `${R}/.daiku/review-state`,
   });
 const CTX_NO_SEAT = () => fakeContext({});
@@ -482,12 +485,13 @@ function selfCheck() {
   );
   check('the reminder names the write', !!said && said.text.includes(`${R}/src/a.ts`));
   check('the reminder names the run it is inside', !!said && said.text.includes('`new-feature`'));
-  check('the reminder names the seats', !!said && said.text.includes('{paths.features}') && said.text.includes('{paths.studies}'));
+  check('the reminder names the seats', !!said && said.text.includes('{paths.features}') && said.text.includes('{paths.studies}') && said.text.includes('{paths.handoffs}'));
   check('the reminder says it blocks nothing', !!said && said.text.includes('not a block'));
   check('the reminder is a fact, not an order', !!said && said.text.startsWith('Daiku notice:'));
 
   check('the working folders are the run\u2019s own seat', writeAdvice(write(`${R}/docs/features/x/0. problem.md`), R, CTX(), R, true) === null);
   check('the notes are the run\u2019s own seat', writeAdvice(write(`${R}/docs/studies/pg.md`), R, CTX(), R, true) === null);
+  check('the handoffs are the run\u2019s own seat', writeAdvice(write(`${R}/docs/handoffs/x.md`), R, CTX(), R, true) === null);
   check('an existing file outside them is spoken to too', !!writeAdvice(write('README.md'), R, CTX(), R, true));
 
   // --- what is left alone, and why --------------------------------------------

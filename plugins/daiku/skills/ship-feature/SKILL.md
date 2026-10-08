@@ -1,7 +1,6 @@
 ---
 name: 'ship-feature'
-description: 'Delivers a feature from the already resolved decision-doc to the commit in a single invocation: worktree, brief, execution, review rounds, decision, memory and documentation alignment, the three commits, merge and report. It orchestrates its own phases delegating each to a subagent. Launched by hand on an existing folder, or by new-feature as its delivery.'
-argument-hint: '<folder with 1. decision-doc.md> [+ chosen solution, one option id and text per decision, if 2. blueprint.md is absent]'
+description: 'Internal contract of new-feature — the delivery of one feature from the already resolved decision-doc to the commit: worktree, brief, execution, review rounds, decision, memory and documentation alignment, the three commits, merge and report. It orchestrates its own phases delegating each to a subagent, and it is opened by new-feature § Delivery, never on its own.'
 ---
 
 You are the **engine** of the delivery of a single feature: the sequence — brief → execution → review rounds → decision → memory/documentation update → commit (up to three groups: feature, then doc/memory, then version) → merge → cleanup → report — you orchestrate **it**, delegating each phase to a subagent according to `contracts/orchestration.md`. There is no script doing it in your place.
@@ -10,14 +9,13 @@ You are the **engine** of the delivery of a single feature: the sequence — bri
 
 ## When to use it
 
-When you have **one** feature with `1. decision-doc.md` already resolved and you want the complete delivery (up to the conditional commit) without anybody having to chain `blueprint` → `execute` → `/review` → `/commit` in sequence. If you want to stay on the single atomic steps (to stop between one stage and the next), use those directly: this skill does not replace them, it chains them for the cases where you want the whole delivery in one shot.
+When the decisions of a feature are already resolved — `1. decision-doc.md` exists with every card answered — and the delivery has to run whole, up to the conditional commit, without anybody chaining `blueprint` → `execute` → `/review` → `/commit` by hand. It does not replace those single atomic steps, which stay launchable on their own for whoever wants to stop between one stage and the next: it chains them for the case where the whole delivery runs in one shot.
 
-## Invocation modes
+**`new-feature` § *Delivery* opens it, and that is the only way it is reached.** A folder already studied is handed to `new-feature`, which reads where its documents stop and opens this node from there — including on a delivery interrupted halfway, where the verdict says which phase remains and the pool gives back the worktree that delivery already holds. Launched on its own it would be a second way into the chain, with the owner unreachable from inside it.
 
-**You are launched by hand or by `new-feature` § *Delivery*.** The sequence is the same either way; what changes is where the input comes from and where the outcome goes.
+## The invocation
 
-- **By hand (`owner`).** `$ARGUMENTS` carries the folder; the chosen solution only if `<folder>/2. blueprint.md` is absent and the brief still has to be produced — one option id and text per decision, as written. If the folder does not exist or holds no `1. decision-doc.md`, stop and say so. If the brief is absent and the solution is **ambiguous** against the decision-doc — it names a decision or an option that do not exist there — do not guess and do not ask: stop, and report the options the document truly declares, so the owner relaunches you with the choice. If instead the solution was **not passed at all** and no brief exists, use for each decision the **`A`** option — which by contract is the recommended — and declare it in the outcome. Close with the contract block in chat. You never push: the push stays a manual act of the owner.
-- **From `new-feature` § *Delivery*.** Folder and chosen solution arrive resolved in the prompt — there is nobody to ask, and a question asked in here stays hanging (§ *Ask the owner* of `contracts/orchestration.md`). The constraints below hold unchanged, and they are not rewritten in the caller prompt.
+**You arrive with folder and chosen solution already resolved in the prompt.** The sequence is the same whether the caller opens a new delivery or resumes an interrupted one: where it starts from is the verdict of the evaluator (§ *The sequence*), never a flag. There is nobody to ask, and a question asked in here stays hanging (§ *Ask the owner* of `contracts/orchestration.md`). The constraints below hold unchanged, and they are not rewritten in the caller prompt. You never push: the push stays a manual act of the owner.
 
 ## Input
 
@@ -133,7 +131,7 @@ section cites it and does not restate it.
 
 ## Progress and findings
 
-**No progress log is kept on file.** Progress and findings go **in chat**, as you go: one line when a phase starts and when it returns, with the role running it, and immediately what you noticed and what needs no block — a subagent returned malformed, a phase slower than expected, evidence not adding up.
+**No progress log is kept on file.** Progress and findings are carried by your outcome, phase by phase: one line for each phase that ran, with the role running it, and what you noticed and what needs no block — a subagent returned malformed, a phase slower than expected, evidence not adding up. They reach the owner through whoever invoked you, which is the node running in the conversation: **you have no channel to them** (§ *Ask the owner* of `contracts/orchestration.md`), and a question raised in here stays hanging.
 
 The state needed to **resume** is not that: they are the artefacts the phases deposit (`2. blueprint.md`, `3. memory-report.md`, `4. review-notes.md`, `5. review-report.md`) and `git log`. Those are verifiable, a hand-written log is not — and resumption trusting a line nobody guarantees was written restarts from the wrong phase. The 3 in 3. memory-report.md is the outcome of phase 5b — the files it touched and the items to confirm with the owner — which without an artefact would be the only phase leaving nothing behind. **It is not a journal**: it says what that phase left, never how it got there.
 
@@ -337,7 +335,7 @@ One subagent running the node `reconcile`: read in full `skills/reconcile/SKILL.
 The node asks the evaluator `question: "reconcile"` — through `architect/reconcile.mjs`, which names the `paths`, one entry per obstructed path — and reads the verdict:
 
 - **`reconcile`** — the two sides are disjoint line by line. The node runs `architect/reconcile.mjs` with `action: "merge"`, which lands the merge keeping both — `git merge --no-ff --autostash` on a dirty tree, the union of the disjoint sides on a merge in progress — and returns `merged: true` with the `merge_sha`. The delivery goes on to § *6c. Cleanup*, and the slot is `free`.
-- **`stop`** — at least one path is changed on the same lines by both sides. The node merges nothing and returns `merged: false` with `overlap` naming those paths, `patch`, `dirty_paths` and the structured `question`. Carry the question into the chat as § *Ask the owner* of `contracts/orchestration.md` prescribes, and **stop**: the run resumes on the same folder and re-opens this node in **resolved mode** — the class of § *Invocation modes* of `skills/reconcile/SKILL.md` — with the owner's answer, which completes the merge. Until then the slot is `blocked`.
+- **`stop`** — at least one path is changed on the same lines by both sides. The node merges nothing and returns `merged: false` with `overlap` naming those paths, `patch`, `dirty_paths` and the structured `question`. Return that question in your block — whoever invoked you runs in the conversation and carries it to the owner, as § *Ask the owner* of `contracts/orchestration.md` prescribes — and **stop**: the run resumes on the same folder and re-opens this node in **resolved mode** — the class of § *Invocation modes* of `skills/reconcile/SKILL.md` — with the owner's answer, which completes the merge. Until then the slot is `blocked`.
 
 The node fails loudly if it cannot proceed — a missing input, or an overlap that a union would have to invent — and on that, or on an owner who chooses to abort, the delivery closes `BLOCKED_NO_COMMIT` (slot `blocked`): no stage, no memory, no commit beyond what the branch already holds, the worktree left as it is, and the `reason` names the overlap. In no case does the reconciliation commit the other session's uncommitted work: the working tree stays as it was, `main-tree.patch` is the declared recoverable copy.
 
@@ -384,7 +382,7 @@ If Acquisition, Brief or Execute fail, the delivery stops — say so in chat, ha
 
 ## Outcome
 
-1. **In chat, a few lines**: final state (`GREEN_COMMITTED` | `GREEN_WITH_POST_DECISIONS` | `BLOCKED_NO_COMMIT` | `blocked`), used worktree, SHA if committed and merge SHA, whether memory was updated and its SHA (absent if there was nothing to update). The detail — gate, to-confirm, remaining decisions — is already in `<folder>/5. review-report.md`: **do not repeat it**, refer to the file.
+1. **The few lines whoever invoked you reports**: final state (`GREEN_COMMITTED` | `GREEN_WITH_POST_DECISIONS` | `BLOCKED_NO_COMMIT` | `blocked`), used worktree, SHA if committed and merge SHA, whether memory was updated and its SHA (absent if there was nothing to update). The detail — gate, to-confirm, remaining decisions — is already in `<folder>/5. review-report.md`: **do not repeat it**, refer to the file.
 
 2. **Always close with the contract block**, so whoever invoked you — `new-feature` — reads it without interpreting the prose. No field is omitted: with absent value write `null`.
 
