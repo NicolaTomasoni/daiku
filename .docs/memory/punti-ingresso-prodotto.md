@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 38efe876-5b85-4605-8e0f-a47275150768
-  modified: 2026-10-04T11:30:28.000Z
+  modified: 2026-10-08T17:16:44.000Z
 ---
 
 Daiku ha **dieci entry point** — le sole skill che si lanciano a mano. Stanno in `contracts/orchestration.md` §3, e il README del prodotto li racconta dal più semplice al più grande. Tutto il resto sotto `skills/` è **contratto interno**: lo riceve un subagent come path da leggere, non si invoca.
@@ -34,4 +34,4 @@ Interni, mai a mano: `decision-doc`, `blueprint`, `ship-feature`, `execute`, `fi
 
 **E `new-feature` si apre solo su richiesta dell'owner.** È la sola skill di cui nessun altro nodo è chiamante: il `GRAPH` dichiara `owner`, e `owner` è l'umano che chiede, non la sessione che giudica un lavoro meritevole della catena. Un lavoro che merita una feature è una riga che lo propone. Vedi [[corpus-di-sviluppo]].
 
-**How to apply:** prima di aggiungere un `argument-hint` o un pointer a un contratto interno, rileggere orchestration §3. Vedi [[alberatura-pacchetto]] e [[corpus-di-sviluppo]].
+**How to apply:** prima di aggiungere un `argument-hint` o un pointer a un contratto interno, rileggere orchestration §3; per un **ingresso della catena** la sede è `ENTRIES` di `architect/architect.mjs`, che rifiuta ogni altro nome — e il banco lo prova, perché un nome che non è un ingresso lì dentro muore come input malformato. Vedi [[alberatura-pacchetto]] e [[corpus-di-sviluppo]].
