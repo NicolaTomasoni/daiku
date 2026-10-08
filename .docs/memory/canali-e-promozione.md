@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: f135a876-1ccd-4db0-99e7-6c7abee5c262
-  modified: 2026-10-05T17:03:25.685Z
+  modified: 2026-10-08T09:15:43.736Z
 ---
 
 **Il prodotto ha il concetto di canale** (dal 3 ottobre 2026, ridisegnato il 5). Un progetto che lo
@@ -43,6 +43,15 @@ versione e changelog — e lo scrive lì. Finché il commit in testa a productio
 rilascio che nessun upstream porta) il rilascio lo **sostituisce**: i commit nuovi si aggiungono a
 quella versione invece di aprirne una. `action: "dry"` fa tutto tranne muovere il ref. Non pusha
 mai: [[push-solo-manuale]].
+
+**Il rilascio non parte da un albero sporco, e non lo rifiuta: lo pulisce** (dall'8 ottobre
+2026). Un rilascio porta l'albero di sviluppo **come i suoi commit lo tengono**, quindi il lavoro
+che sta nella worktree e in nessun commit uscirebbe dal rilascio senza che nessuno se ne accorga.
+`release` non lo scarta e non lo stash-a: lo fa passare per il ciclo di review col suo commit di
+chiusura — ed è così il **solo nodo che lancia `review` da fuori una consegna** — più un secondo
+`commit` per i path che quel ciclo non raggiunge; `architect/release.mjs` **rifiuta** un albero
+ancora non pulito, così un rilascio che non ha pulito non scrive niente. Release resta **atomico**:
+la pulizia non è una catena da ordinare (vedi [[valutatore-deterministico]]).
 
 **`commit` non scrive più versione né changelog dove i canali sono dichiarati.** Non è una
 conseguenza automatica della chiave: su `develop` la versione è una **beta** che si muove quando
