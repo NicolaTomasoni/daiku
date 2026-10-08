@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// daiku:script 1.0.9 — the Daiku version that wrote this file. `init` fills the version in
+// daiku:script 1.1.4-b.4 — the Daiku version that wrote this file. `init` fills the version in
 // when it copies the skeleton, and recreates the file whole whenever the package moves past it.
 /**
  * Updates Daiku on Claude Code: it reads the version in place, refreshes the marketplace catalogue,
@@ -21,6 +21,13 @@
  * Both commands are read back through `--json`, so the host's own prose stays off the screen and
  * a failure is shown in full instead of swallowed.
  *
+ * **And it is the only place that says whether the project itself needs anything.** Updating the
+ * package realigns nothing inside the project: the copies, the versioned scripts, the seats an
+ * older Daiku left behind and the keys the contract no longer names are `/daiku:init`'s to bring
+ * up. The marker at the top of this file is the version the project is aligned to — `init`
+ * rewrites it every time it realigns — so comparing it with the version that arrived is what tells
+ * the two cases apart, and the run closes saying which of them it is.
+ *
  * It stops at the first command that fails, with the exit code it gave.
  *
  * Written by Daiku's init, which recreates it whole when the package moves past the version in
@@ -31,6 +38,22 @@
 import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+/**
+ * The version this script was written by — the `daiku:script` marker of its own first lines, which
+ * `init` fills every time it realigns the project to a package. It is therefore not a fact about
+ * this file: it is **the version the project is aligned to**, and the one to compare with what
+ * arrives. `null` where the marker was never filled, and then nothing is said about alignment.
+ */
+const ALIGNED = (() => {
+  try {
+    const found = readFileSync(fileURLToPath(import.meta.url), 'utf-8').match(/^\/\/ daiku:script\s+(\S+)/m);
+    return found ? found[1] : null;
+  } catch {
+    return null;
+  }
+})();
 
 /** The two lines of the update, in order: without the first, the second has nothing new to take.
  * The second is read back as JSON, which is how the version that arrived is known for certain. */
@@ -119,6 +142,21 @@ function delta(before, after) {
   const from = before ? dim(before) : dim('version unknown');
   const to = after ? green(bold(after)) : dim('version unknown');
   return `${from} ${cyan('>>>')} ${to}`;
+}
+
+/**
+ * What to say about the project once the package has moved, and it is the one thing this script
+ * says about the project at all: updating the package realigns nothing inside it. The copies, the
+ * versioned scripts, the seats an older Daiku left and the keys the contract no longer names are
+ * `/daiku:init`'s to bring up, and a package update that said nothing would leave a project that
+ * looks current standing on an older one. `null` where the two versions cannot be compared:
+ * silence, never a guess.
+ */
+function alignment(after) {
+  if (!ALIGNED || !after) return null;
+  return ALIGNED === after
+    ? `This project is aligned to Daiku ${bold(after)}. Nothing to realign.`
+    : `This project is aligned to Daiku ${bold(ALIGNED)}, the package is ${bold(after)}: run ${cyan('/daiku:init')} to bring it up.`;
 }
 
 /**
@@ -215,6 +253,8 @@ async function main() {
   const after = arriving();
   if (after && before && after === before) {
     process.stdout.write(`Daiku ${bold(before)} is already the latest.\n`);
+    const line = alignment(after);
+    if (line) process.stdout.write(`${line}\n`);
     return;
   }
   process.stdout.write(`\n  ${delta(before, after)}\n\n`);
@@ -250,6 +290,8 @@ async function main() {
   } else {
     process.stdout.write(`${green('Daiku')} updated.\n`);
   }
+  const realign = alignment(now || after);
+  if (realign) process.stdout.write(`${realign}\n`);
   process.stdout.write('Open a new Claude Code session to load it.\n');
 }
 

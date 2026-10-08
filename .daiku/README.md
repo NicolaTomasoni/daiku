@@ -32,12 +32,13 @@ direction this project chose**. Three promises, each with a mechanism behind it.
 |---|---|
 | `/new-feature` | the one every job starts with: from the idea in natural language to the commit, orchestrating the whole chain below |
 | `/review` | the quality cycle on a diff: reviewers, fixes, re-checks, then the commit |
-| `/code-review` | a bugs-only pass on the scope you name, with the outcome in chat and no cycle opened |
+| `/code-review` | the bug-only review cycle on the scope you name: rounds, fixes and the gate, stopping at the report with no commit |
 | `/research` | notes on a library or a technology, gathered from the real sources and tidied into a file |
 | `/commit` | closes a diff written outside a review: it aligns memory and documentation, then commits in separate groups |
-| `/blueprint` | turns an already resolved decision document into the execution brief, and stops there |
-| `/ship-feature` | carries an already studied folder through delivery to the commit, without reopening the study |
+| `/handoff` | hands a job stopped halfway to another agent: written from the conversation it reads the problem, what was done, what is missing and the evidence — logs, reproduction, excerpts — inlined, because whoever receives it reaches neither that conversation nor the project where the behaviour was observed |
+| `/release` | for a project that declared its two channels: it asks the version once on the block of commits accumulated since the last published release and writes it on production, replacing the release standing there for as long as nothing has pushed it — it never pushes |
 | `/init` | opens Daiku on a project: it writes this folder and the instructions file. Once per project, and again when the package carries a new skeleton |
+| `/new-project` | after `/init`, it writes the project's five founding documents — the offer, the identity, the domain, the stack, the architecture — from the package skeletons, at the paths the project declares |
 | `/sync-host` | on Codex only: it installs guardrails and roles inside the project, and it is re-run after every package update |
 
 ## How a job travels
@@ -60,13 +61,16 @@ codebase, or the machine and the person running it?
   memory root, the commit convention.
 - **`.daiku/environment.json`** — the machine and the host: default host, model per role, backends.
   One machine may replace it whole with `.daiku/environment.local.json`, which stays out of version
-  control.
+  control. To override it on one machine, copy the shared file whole to `.daiku/environment.local.json`
+  and change there only the values of that machine and not of the project — `write_roots`, the folders
+  it admits writes in, is one. It is a complete alternative, not a list of differences: whatever it
+  does not repeat is not read from the shared file.
 - **`.daiku/domain/` and `.daiku/policies/`** — local judgement: conventions and criteria needing a
   *why*, and architectural rules valid only for certain paths.
 
 **A key that is not declared is not invented.** The step that needed it is skipped and says so in
 its outcome: an incomplete `project.json` makes a skill do less, never do wrong. That is also why
-what this project does not have — an area, a test command, a technical document — is simply absent.
+what this project does not have — an area, a test command, a coverage command — is simply absent.
 
 ## What stays in the repository
 

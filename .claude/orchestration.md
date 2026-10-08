@@ -10,7 +10,7 @@ In `.claude/commands/` stanno **solo i comandi che il prodotto non ha**: come si
 come lo si pubblica non è una capacità che Daiku offra a un progetto, quindi non vive nel pacchetto.
 Tutto il resto del metodo — aprire una feature, consegnarla, il ciclo di review, il commit,
 l'allineamento della memoria — **sono le skill di Daiku stesso**, installate dal marketplace e
-invocate come `daiku:*` (`new-feature`, `ship-feature`, `review`, `commit`, `update-memory`,
+invocate come `daiku:*` (`new-feature`, `review`, `commit`, `update-memory`,
 `research`, …). Un comando che ha il suo gemello là non vive anche qui.
 
 Nessuno dei due alberi aggiorna l'altro: il prodotto si modifica solo sotto `plugins/daiku/`, che è
