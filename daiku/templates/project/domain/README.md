@@ -28,9 +28,9 @@ here, and that is the point.
 
 **Why those two have a default.** A commit convention is fine until it annoys you, and starting
 from a written one beats starting from nothing. The memory contract is there for a harder reason:
-that corpus has two writers from day one — the host, which writes on its own initiative, and
-`/update-memory` on every commit — and without a shape declared somewhere they diverge within the
-first week, in the same folder, with nobody noticing. Neither file depends on your stack, which is
+that corpus has two writers from day one — the host, which writes whenever a modification has to be
+realigned, and `/update-memory` on every commit — and without a shape declared somewhere they
+diverge within the first week, in the same folder, with nobody noticing. Neither file depends on your stack, which is
 what makes shipping them honest.
 
 Test macro-categories and performance hot spots do depend on it, and on your architecture: a

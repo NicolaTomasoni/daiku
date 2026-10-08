@@ -1,8 +1,16 @@
 {
   "name": "daiku",
-  "version": "1.1.3",
+  "version": "1.1.4",
   "description": "Autonomous architecture-first development method: skill contracts, role orchestration, and project parameter contracts.",
-  "author": { "name": "Nicola Tomasoni" },
+  "author": {
+    "name": "Nicola Tomasoni"
+  },
   "license": "MIT",
-  "keywords": ["method", "orchestration", "review", "memory", "contracts"]
+  "keywords": [
+    "method",
+    "orchestration",
+    "review",
+    "memory",
+    "contracts"
+  ]
 }

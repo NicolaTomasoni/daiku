@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * The test benches of the six hooks, of the four programs in `architect/` and of `init`'s scan
+ * The test benches of the six hooks, of the five programs in `architect/` and of `init`'s scan
  * (`skills/init/scan.mjs`), in a single shot.
  *
  * `node hooks/self-check.mjs` from the package root. Exits `0` if every case is
@@ -16,9 +16,10 @@
  * does not fail open, it fails loudly, and its verdict binds — so a case it does not cover
  * is a delivery that stops, not a wrong verdict. That is why it is launched here too and
  * not only by hand: the promise «the benches run together» is worth more, not less, for the
- * one program whose silence stops work. The other three are `architect/ledger.mjs`, the review's
- * disk side, `architect/pool.mjs`, the worktree pool's, and `architect/reconcile.mjs`, the merge
- * reconciliation's, which fail loudly for the same reason
+ * one program whose silence stops work. The other four are `architect/ledger.mjs`, the review's
+ * disk side, `architect/pool.mjs`, the worktree pool's, `architect/reconcile.mjs`, the merge
+ * reconciliation's, and `architect/release.mjs`, the release's, which fail loudly for the same
+ * reason
  * and whose benches run real Git on throwaway repositories under the system temp directory.
  *
  * **A check nobody saw fail counts as red.** A bench whose rules can be enumerated reports,
@@ -27,7 +28,7 @@
  * so a non-empty `never_red` turns that bench red here even when `failed` is empty. The
  * evaluator's bench reports it; a bench that does not is read as before.
  *
- * Those four benches live beside their programs, in `architect/`, and are **not** replicated under `hooks/lib/`:
+ * Those five benches live beside their programs, in `architect/`, and are **not** replicated under `hooks/lib/`:
  * that folder is copied into the user's project by `sync-host`, and a verifier replicated
  * in every project is the duplication `contracts/project-contract.md` §8 condemns.
  *
@@ -79,7 +80,7 @@ function benches() {
   for (const name of names) {
     found.push({ label: name, file: join(LIB, name), args: ['--self-check'] });
   }
-  for (const program of ['architect.mjs', 'ledger.mjs', 'pool.mjs', 'reconcile.mjs']) {
+  for (const program of ['architect.mjs', 'ledger.mjs', 'pool.mjs', 'reconcile.mjs', 'release.mjs']) {
     const file = join(ROOT, 'architect', program);
     try {
       readFileSync(file);

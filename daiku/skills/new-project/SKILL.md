@@ -46,7 +46,7 @@ git stash push -u -m "daiku: <role> — <path> superseded by <documents.<role>>"
 
 Without the pathspec it would take the whole working tree, and what else is in progress there is not yours to move. You never `pop` it and never `drop` it: the stash is a place of deposit. Where the file is tracked and clean, Git has nothing to save and says so — the content is in the history already, and removing the file is what closes it. You read it **before** closing it; after, it comes back with `git stash show -p stash@{n} -- "<path>"` (`git show stash@{n}^3:"<path>"` for a file that was untracked), `n` being the entry you just made.
 
-**The instructions file and the `README` are never predecessors**, whatever they carry: they stay where they are, feeding your documents and being the first thing whoever arrives reads. A line of the instructions file naming a file that has moved is not yours to correct either: the next `update-memory` — which runs at every commit — is what realigns the file, and your report is what tells it which names moved.
+**The instructions file and the `README` are never predecessors**, whatever they carry: they stay where they are, feeding your documents and being the first thing whoever arrives reads. You do not restructure that file, and a name that has moved for reasons other than this run is reported in your outcome for the next `update-memory` to realign. The line this run has just made dead — the predecessor you closed into a stash, named there — is repaired in the same work: a dead reference is corrected where it stands, never listed.
 
 ## Procedure
 

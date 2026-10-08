@@ -2,11 +2,14 @@
 /**
  * Stop notice — Stop.
  *
- * It says at session end the one thing whoever stops **cannot see from the
- * transcript tail**: a review cycle that died with its ledger open. A cycle
+ * It says at session end the two things whoever stops **cannot see from the
+ * transcript tail**: a review cycle that died with its ledger open, and a session that changed
+ * code and left the memory corpus untouched.
+ *
+ * **The first — a cycle left open.** A cycle
  * interrupted with `outcome` still `null` restarts from zero unless the ledger is
  * handed over — and with the anchors of the applied gone, `on_previous_fix` and
- * `oscillation` run against another feature's history. The notice lists those
+ * `oscillation` run against another feature's history. This notice lists those
  * ledgers with their `base` and `item`, so the session resumes from there instead
  * of reopening the diff blind.
  *
@@ -53,6 +56,28 @@
  * throws away the anchors the next review would have read; the marker keeps them and stops
  * the notice.
  *
+ * **The second — a corpus left behind.** It speaks when the session **changed code and never
+ * touched the memory**: at least one write under `{code_root}`, none under `{memory.root}`, and no
+ * `git commit` run in the session. The memory is written by the session that changes something,
+ * not only by the commit that closes it, and a modification that ends before the corpus has been
+ * realigned is a modification not finished — so an omission nobody can see from the tail is
+ * exactly what a stop has to say.
+ *
+ * It is a **state report and not an accusation**: it says the pass has not run here, not that the
+ * corpus is wrong, and it carries how it is answered — where nothing the corpus holds has become
+ * false, there is nothing to write and the pass is a look that confirms it.
+ *
+ * A commit silences it, and that is no loophole: in a project that declared `{paths.review_state}`
+ * the guard admits `git commit` only inside a review cycle, and the cycle delegates
+ * `update-memory` on the same diff — where it writes, the corpus moves and this notice is silent
+ * by its own reading. Two perimeters keep it honest, and both are declarations of the project:
+ * **writes under `.daiku/` are not code** — the working folders, the studies, the policies and the
+ * domain files are the method's seats, and a session that wrote them has changed no product — and
+ * **only a write counts, never a read**: the four tools that change a file are `Edit`, `Write`,
+ * `MultiEdit` and `NotebookEdit`, and a path quoted inside a document the session read is not a
+ * path it touched. Undeclared `{code_root}` or `{memory.root}`: no notice, as everywhere else —
+ * §6 of `contracts/project-contract.md`.
+ *
  * The ledgers live where the project says, via `{paths.review_state}` in
  * `.daiku/project.json`: the same key the review writes them under. When it is
  * not declared, this notice does not exist — §6 of `contracts/project-contract.md`,
@@ -73,13 +98,14 @@
  *  - **`stop_hook_active`**, read from the input: `true` when the stop being handled is
  *    already the continuation an earlier notice caused. The hook goes silent there — it is
  *    the remedy the harness itself names when it overrides a looping hook.
- *  - **the mark of the session**: the set of ledgers announced, reduced to a comparison and
- *    written where the host keeps the session's own scratch files (`scratchpad_dir` of the
- *    event, or the OS temporary directory keyed by `session_id` where the host has none). The
- *    same set is never announced twice, so the notice arrives **once per session** instead of
- *    once per stop — and a host reporting `stop_hook_active` wrongly does not send it in a
- *    loop. The mark is the **set**, never the text: the text carries how long ago the ledger
- *    was last written, and a mark carrying it would call every passing hour a piece of news.
+ *  - **the mark of the session**: the set announced — the ledgers, and whether the corpus notice
+ *    went out — reduced to a comparison and written where the host keeps the session's own scratch
+ *    files (`scratchpad_dir` of the event, or the OS temporary directory keyed by `session_id`
+ *    where the host has none). The same set is never announced twice, so a notice arrives **once
+ *    per session** instead of once per stop — and a host reporting `stop_hook_active` wrongly does
+ *    not send it in a loop. The mark is the **set**, never the text: the text carries how long ago
+ *    the ledger was last written, and a mark carrying it would call every passing hour a piece of
+ *    news.
  *
  * The mark is the only thing this hook writes, and it is written **outside the
  * project**: a state folder of Daiku's inside the repository would be one more seat to keep.
@@ -102,7 +128,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { invokedDirectly, projectRoot } from './project-root.mjs';
-import { REAL_READS, loadContext, fakeContext } from './daiku-config.mjs';
+import { REAL_READS, loadContext, fakeContext, isInside } from './daiku-config.mjs';
 
 const ROOT = projectRoot();
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -110,7 +136,7 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 /**
  * The ledger's own fields: `schemas/blocks.json` § *ledger*, `required`. `architect/ledger.mjs`
  * validates every ledger against that entry before writing it, and refuses a key the form does
- * not declare — so each file the review leaves carries **exactly** these nine, the empty ones
+ * not declare — so each file the review leaves carries **exactly** these ten, the empty ones
  * included, from the scope on: only the values change between the first round and the exit.
  *
  * They are copied here rather than read from the schema at run time because on Codex this file
@@ -119,6 +145,29 @@ const HERE = dirname(fileURLToPath(import.meta.url));
  * bench ties the copy back to the schema it mirrors.
  */
 const LEDGER_FIELDS = [
+  'base',
+  'item',
+  'scope_tree',
+  'scope_files',
+  'rounds',
+  'outcome',
+  'coverage',
+  'gate',
+  'gate_detail',
+  'gate_origin',
+];
+
+/**
+ * The fields **every** form of our ledger carries: the ones the review has written since the
+ * ledger took this shape, and which no build may drop. `isLedger` tests these and never the list
+ * above in full, because a guard outlives the build carrying it in **both** directions. A ledger
+ * written by an **older** build lacks the field a later one added — `gate_origin` is the latest —
+ * and one written by a **newer** build carries keys this build does not know; demanded at the
+ * newest list, the older ledger reads as another tool's file, and its open cycle disappears from
+ * the notice and stops holding `git commit` open. The core is named here, beside the form it sits
+ * inside, so both directions are answered by the same line.
+ */
+const LEDGER_CORE = [
   'base',
   'item',
   'scope_tree',
@@ -159,18 +208,24 @@ const TOUCHED_KEYS = ['file_path', 'notebook_path', 'path', 'command'];
  * folder is shared ground: a project that reviewed before Daiku leaves its own ledgers there
  * (`base`, `item`, `gate`, `gate_detail`, and keys of its own language), and a review of ours
  * leaves the findings file of every round in the same folder, under the same extension —
- * `review-ledger-<base>-<HHMMSS>.round-1.findings.json`. Neither carries an `outcome`, and both
- * would be listed as interrupted cycles.
+ * `review-ledger-<base>-<HHMMSS>.round-1.findings.json`. Neither carries the fields every form
+ * of ours shares, and both would be listed as interrupted cycles.
  *
- * The form is the whole key set, not the presence of `outcome`: the tool writes nothing the
- * schema refuses and omits nothing it requires, so a file carrying every field and no other is
- * a ledger, and one carrying another tool's keys is that tool's business. It is the judgement
- * the tool itself makes of a handed ledger (`architect/ledger.mjs`, `ledgerAt`), and the two
- * must agree: what the review would refuse to resume is not a ledger this notice may list.
+ * **The core, not the whole key set, and never only the one build.** `LEDGER_FIELDS` above is a
+ * copy of the schema of the build carrying it, and the guard is not that build forever: the ledger
+ * standing in the seat may have been written by an older one or by a newer one. Demanded at the
+ * newest list, a ledger written before `gate_origin` existed reads as another tool's file — the
+ * interrupted cycle it holds disappears from this notice and stops holding `git commit` open;
+ * demanded at the exact key count, a ledger of a newer build reads the same way. Both are the
+ * bootstrap of every change that grows the ledger. So the test is `LEDGER_CORE` — the fields every
+ * form of ours carries — and a file carrying them **and more** is still ours: the extra key belongs
+ * to a ledger of another build. The judgement the tool makes of a handed ledger
+ * (`architect/ledger.mjs`, `ledgerAt`) stays strict and answers another question — whether the
+ * ledger **it resumes** matches the schema of the build in place — and `isLedgerShape` (the `log`
+ * action) tests this same core, so the seats keep agreeing on what a ledger is.
  */
 function isLedger(value) {
-  const keys = Object.keys(value);
-  return keys.length === LEDGER_FIELDS.length && LEDGER_FIELDS.every((field) => field in value);
+  return LEDGER_CORE.every((field) => field in value);
 }
 
 /**
@@ -243,17 +298,27 @@ const REAL_ENV = {
 };
 
 /**
- * Ledgers left open: `outcome` still `null`, no `.abandoned` beside them, each with the work it
- * names, its blocking count and the instant it last moved.
+ * The ledgers in the state folder: every file carrying the ledger's own form, with the work it
+ * names, its blocking count, the instant it last moved, and the fields saying where the cycle
+ * stood when it stopped — `outcome`, the gate it reached, and the origin of a red one
+ * (`gate_origin`).
+ *
+ * Exported because two readers ask different questions of the same files and must agree on what a
+ * ledger **is**: the Stop notice wants the ones still open, and the review guard of
+ * `command-guard.mjs` wants the ones a commit may close — which include a cycle that has just
+ * exited with a gate a commit may close: green, or red only for a cause the diff does not carry
+ * (`gate_origin` `pre-existing`), the exact state in which the review's own commit runs.
+ * `openLedgers` below is the first of the two questions, and nothing else.
+ *
+ * **A seat that does not answer is left to the caller.** Where the state folder cannot be read
+ * this **throws**, and each reader answers it in its own way: the Stop notice stays silent, its
+ * contract being fail-open *and* silent, and the review guard allows the commit. Folding the
+ * non-answer into the empty list would tell the guard that a seat it could not read holds no
+ * cycle — and a commit would be denied over a folder nobody could open.
  */
-export function openLedgers(reviewState, env) {
-  const open = [];
-  let names;
-  try {
-    names = env.list(reviewState);
-  } catch {
-    return open; // missing folder: stay silent
-  }
+export function ledgers(reviewState, env) {
+  const found = [];
+  const names = env.list(reviewState); // a seat that does not answer throws: see above
   const sorted = [...names].sort();
   for (const name of sorted) {
     if (!name.endsWith('.json')) continue;
@@ -265,32 +330,48 @@ export function openLedgers(reviewState, env) {
     }
     if (!ledger || typeof ledger !== 'object' || Array.isArray(ledger)) continue;
     if (!isLedger(ledger)) continue; // another tool's file, or a findings file: not a ledger
-    if (ledger.outcome !== null) continue;
     try {
-      if (env.exists(join(reviewState, name + ABANDONED))) continue; // set aside: no longer open
+      if (env.exists(join(reviewState, name + ABANDONED))) continue; // set aside: not a cycle
     } catch {
-      /* an unanswerable seat is not a declaration: the ledger stays open */
+      /* an unanswerable seat is not a declaration: the ledger stays */
     }
     const item = typeof ledger.item === 'string' && ledger.item.trim() ? ledger.item.trim() : null;
     const files = Array.isArray(ledger.scope_files)
       ? ledger.scope_files.filter((file) => typeof file === 'string' && file.trim())
       : [];
-    open.push({
+    found.push({
       file: name,
       base: typeof ledger.base === 'string' && ledger.base ? ledger.base : '?',
       item: item || '?',
       work: item,
       scope_files: files,
       blocking: blockingItems(ledger),
+      outcome: typeof ledger.outcome === 'string' ? ledger.outcome : null,
+      gate: typeof ledger.gate === 'string' ? ledger.gate : null,
+      gate_origin: typeof ledger.gate_origin === 'string' ? ledger.gate_origin : null,
       lastWrite: lastWrite(reviewState, name, sorted, env),
     });
   }
-  return open;
+  return found;
 }
 
-/** Is the cycle still at work? A write inside the quiet window — or no clock to say it is not. */
-function running(entry, now) {
-  return entry.lastWrite !== null && now - entry.lastWrite < QUIET_MS;
+/**
+ * Ledgers left open: `outcome` still `null`, no `.abandoned` beside them, each with the work it
+ * names, its blocking count and the instant it last moved.
+ */
+export function openLedgers(reviewState, env) {
+  return ledgers(reviewState, env).filter((entry) => entry.outcome === null);
+}
+
+/** Is the cycle still at work? A write inside the quiet window — or no clock to say it is not.
+ *
+ * Exported, and with the window as an argument, because the review guard of `command-guard.mjs`
+ * asks two questions of the same ledgers and they are not the same question: whether a cycle is
+ * **alive** (the quiet window, the Stop notice's question too) and whether a commit standing here
+ * is the one a cycle that has just exited decided on (a much shorter one). One function, two
+ * windows, and `QUIET_MS` stays the default. */
+export function running(entry, now, window = QUIET_MS) {
+  return entry.lastWrite !== null && now - entry.lastWrite < window;
 }
 
 /** Every `tool_use` block of one parsed trace line, wherever it sits in it. */
@@ -355,6 +436,125 @@ function touched(entry, transcript) {
   return false;
 }
 
+// --- the corpus, and what this session did to it -------------------------------
+
+/**
+ * The four tools that change a file. A read is not a modification, and neither is a shell line
+ * that only names a path: the trace carries both, and this notice watches the first alone.
+ */
+const WRITE_TOOLS = new Set(['Edit', 'Write', 'MultiEdit', 'NotebookEdit']);
+
+/** The path a write call names: `file_path` for the three, `notebook_path` for a notebook. */
+function writtenPath(call) {
+  for (const key of ['file_path', 'notebook_path']) {
+    const value = call.input[key];
+    if (typeof value === 'string' && value.trim()) return value.trim();
+  }
+  return null;
+}
+
+/**
+ * What the trace shows the session **modifying**: the code paths it wrote, the memory paths it
+ * wrote, and whether a commit ran.
+ *
+ * `seats` carries the three seats resolved from `.daiku/project.json`: `codeRoot`, `memoryRoot`,
+ * and `ownSeat`, the `.daiku/` folder. A write under the last one is no code: the working folders,
+ * the studies, the policies and the domain files are the method's own seats, and a session that
+ * wrote them has changed no product. A write under the memory is its own list, and both lists are
+ * read the same way — by `isInside`, which folds the Windows separators and the case.
+ */
+export function modifications(transcript, seats) {
+  const code = [];
+  const memory = [];
+  let committed = false;
+  for (const line of String(transcript).split('\n')) {
+    if (!line.includes('"tool_use"')) continue; // the trace's own acts, not what it quotes
+    let entry;
+    try {
+      entry = JSON.parse(line);
+    } catch {
+      continue;
+    }
+    for (const call of callsIn(entry)) {
+      const name = typeof call.name === 'string' ? call.name : '';
+      if (WRITE_TOOLS.has(name)) {
+        const path = writtenPath(call);
+        if (!path) continue;
+        if (seats.memoryRoot && isInside(path, seats.memoryRoot)) memory.push(path);
+        else if (
+          seats.codeRoot &&
+          isInside(path, seats.codeRoot) &&
+          !(seats.ownSeat && isInside(path, seats.ownSeat))
+        )
+          code.push(path);
+        continue;
+      }
+      const command = call.input.command;
+      if (typeof command === 'string' && /\bgit\s+commit\b/.test(command)) committed = true;
+    }
+  }
+  return { code, memory, committed };
+}
+
+/**
+ * Did this session change code and leave the memory untouched? `null` when it did not — nothing
+ * was written, the memory moved, or a commit ran, which in a project declaring
+ * `{paths.review_state}` means the cycle delegated `update-memory` on the same diff. Otherwise the
+ * number of code paths it wrote, which is what the notice's own sentence says.
+ */
+export function corpusBehind(transcript, seats) {
+  const seen = modifications(transcript, seats);
+  if (seen.committed || !seen.code.length || seen.memory.length) return null;
+  return seen.code.length;
+}
+
+/** A path as the notice prints it: the separators of the JSON, in every shell. */
+function slashy(path) {
+  return String(path).replace(/\\/g, '/');
+}
+
+/** The corpus notice: what was seen, the rule, and how it is answered. */
+function renderCorpus(count, seats) {
+  const files = `${count} file${count === 1 ? '' : 's'}`;
+  return (
+    `The memory corpus was not touched in this session, and code was: ${files} written under ` +
+    `\`${slashy(seats.codeRoot)}\`, none under \`${slashy(seats.memoryRoot)}\`.\n\n` +
+    `The corpus is aligned by the work that changes something, not only by the commit that closes ` +
+    `it: a memory, a policy, the instructions file or a reference that a modification has made ` +
+    `false is corrected in the same work, and the alignment is not a judgement on whether the diff ` +
+    `deserves it. Nothing here says the corpus is wrong — it says the pass that would know has not ` +
+    `run in this session. Where nothing it holds has become false, there is nothing to write and ` +
+    `this notice is already answered.\n\n` +
+    `*Daiku status notice, written at the end of the turn — not a message from the user, and ` +
+    `nothing being worked on has to change. It is delivered once per session, and returns in a ` +
+    `later one that goes back to the same work.*`
+  );
+}
+
+/**
+ * The corpus notice for this stop, or `null`. Undeclared `{code_root}` or `{memory.root}`: nothing
+ * to compare, and silence — §6 of `contracts/project-contract.md`. No trace, or an unreadable one:
+ * silence too, as for the ledgers, because what the session did would be a guess.
+ */
+function corpusNotice(root, env, ctx, site) {
+  if (!ctx || !ctx.present || !ctx.codeRoot || !ctx.memoryRoot) return null;
+  const trace = site && typeof site.transcript === 'string' ? site.transcript : '';
+  if (!trace) return null;
+  let transcript;
+  try {
+    transcript = env.read(trace);
+  } catch {
+    return null;
+  }
+  const seats = {
+    codeRoot: ctx.codeRoot,
+    memoryRoot: ctx.memoryRoot,
+    ownSeat: join(root, '.daiku'),
+  };
+  const count = corpusBehind(transcript, seats);
+  return count ? renderCorpus(count, seats) : null;
+}
+
 /** The instant the notice is written at: the environment's clock, or the machine's. */
 function instant(env) {
   try {
@@ -373,7 +573,12 @@ function instant(env) {
 export function announceable(root, env, ctx, site = {}) {
   if (!ctx || !ctx.present || !ctx.reviewState) return [];
   const now = instant(env);
-  const quiet = openLedgers(ctx.reviewState, env).filter((entry) => !running(entry, now));
+  let quiet;
+  try {
+    quiet = openLedgers(ctx.reviewState, env).filter((entry) => !running(entry, now));
+  } catch {
+    return []; // a seat that does not answer: silence, as for a folder that is not there
+  }
   if (!quiet.length) return [];
   const trace = typeof site.transcript === 'string' ? site.transcript.trim() : '';
   if (!trace) return []; // no trace: whose ledger this is would be a guess
@@ -425,10 +630,29 @@ function render(entries, now) {
   );
 }
 
-export function advice(root, env, ctx, site) {
+/**
+ * Both notices of this stop: the text as the reader sees it, and the set it speaks about reduced
+ * to the comparison the mark keeps. The two are built together because they are two views of the
+ * same reading — what this session did, and what it left behind.
+ */
+function notices(root, env, ctx, site) {
   const entries = announceable(root, env, ctx, site);
-  if (!entries.length) return null;
-  return render(entries, instant(env));
+  const corpus = corpusNotice(root, env, ctx, site);
+  const parts = [];
+  if (entries.length) parts.push(render(entries, instant(env)));
+  if (corpus) parts.push(corpus);
+  return {
+    text: parts.length ? parts.join('\n\n---\n\n') : null,
+    // The set, never the text: the ledger notice carries how long ago its ledger moved, so a mark
+    // over the text would call each passing hour a piece of news.
+    fingerprint: digest(
+      [entries.length ? announcedSet(entries) : '', corpus ? 'corpus' : ''].filter(Boolean).join('\n')
+    ),
+  };
+}
+
+export function advice(root, env, ctx, site) {
+  return notices(root, env, ctx, site).text;
 }
 
 // --- the mark of the session ---------------------------------------------------
@@ -507,13 +731,12 @@ export function notice(event, root, env, ctx) {
   if (event && event.stop_hook_active === true) return null; // already a continuation: silence
   const trace = event && typeof event.transcript_path === 'string' ? event.transcript_path.trim() : '';
   const site = { transcript: trace || null };
-  const entries = announceable(root, env, ctx, site);
-  if (!entries.length) return null;
+  const { text, fingerprint } = notices(root, env, ctx, site);
+  if (!text) return null;
   const path = markPath(event || {}, env);
-  const fingerprint = announcedSet(entries);
   if (announced(env, path) === fingerprint) return null; // this session already heard this set
   markAnnounced(env, path, fingerprint);
-  return render(entries, instant(env));
+  return text;
 }
 
 // --- test bench -----------------------------------------------------------
@@ -602,9 +825,10 @@ const ledger = (item, outcome, toConfirm = []) =>
     coverage: outcome === null ? null : 'tests-written',
     gate: outcome === null ? null : 'green',
     gate_detail: outcome === null ? null : 'ok',
+    gate_origin: null,
   });
 
-/** A ledger the scope just opened: no round yet, the four tail fields still empty. */
+/** A ledger the scope just opened: no round yet, the five tail fields still empty. */
 const FRESH_LEDGER = JSON.stringify({
   base: 'abc1234',
   item: 'docs/new-developments/beta',
@@ -615,6 +839,7 @@ const FRESH_LEDGER = JSON.stringify({
   coverage: null,
   gate: null,
   gate_detail: null,
+  gate_origin: null,
 });
 
 const OPEN_LEDGER = ledger('docs/new-developments/gamma', null, [
@@ -634,6 +859,7 @@ const HAND_LEDGER = JSON.stringify({
   coverage: null,
   gate: null,
   gate_detail: null,
+  gate_origin: null,
 });
 
 /**
@@ -663,6 +889,10 @@ const call = (name, input) =>
   });
 
 const read = (path) => call('Read', { file_path: `${R}/${path}` });
+
+/** A trace line for a call that changes a file, and one for a shell line. */
+const write = (path) => call('Write', { file_path: `${R}/${path}`, content: 'x' });
+const shell = (command) => call('Bash', { command });
 
 /**
  * The session's trace by default: one that worked on the three work folders the fixtures below
@@ -756,6 +986,32 @@ function selfCheck() {
 
   const findings = { [`${STATE}/review-ledger-abc1234-120000.round-1.findings.json`]: FINDINGS };
   check('a findings file is not a ledger', advice(R, env(findings), CTX(), SITE) === null);
+
+  // The form is a copy of the schema of the build carrying it, and the guard outlives that
+  // build: the ledger standing in the seat may have been written by a newer one. Every field
+  // this list knows, **and more**, is still ours — the extra key is a newer ledger's — where the
+  // exact key count would read it as another tool's file and deny every commit on it.
+  const newerLedger = JSON.parse(OPEN_LEDGER);
+  newerLedger.gate_files = ['src/other.ts'];
+  const newer = { [`${STATE}/review-ledger-abc1234-120000.json`]: JSON.stringify(newerLedger) };
+  const textNewer = advice(R, env(newer), CTX(), SITE);
+  check(
+    'a ledger of a newer build, carrying an extra field, is still ours',
+    !!textNewer && textNewer.includes('gamma')
+  );
+
+  // And the copy seen the other way: the build **before** this one wrote no `gate_origin`, and its
+  // ledger is ours all the same. Demanded at the newest list, it would read as another tool's file
+  // — and an interrupted cycle left under that build would vanish from this notice and stop holding
+  // `git commit` open.
+  const olderLedger = JSON.parse(OPEN_LEDGER);
+  delete olderLedger.gate_origin;
+  const legacy = { [`${STATE}/review-ledger-abc1234-120000.json`]: JSON.stringify(olderLedger) };
+  const textLegacy = advice(R, env(legacy), CTX(), SITE);
+  check(
+    'a ledger of an older build, before a field was added, is still ours',
+    !!textLegacy && textLegacy.includes('gamma')
+  );
 
   // A closed review leaves its ledger *and* its findings files behind for good: neither may
   // reopen the notice.
@@ -972,6 +1228,126 @@ function selfCheck() {
   const elsewhere = env(open, { transcript: read('docs/other/1. decision-doc.md') });
   check('another session\'s cycle: no notice', notice(stop(), R, elsewhere, CTX()) === null);
 
+  // --- the corpus notice -------------------------------------------------------
+  // The second thing a stop cannot see: a session that changed code and never touched the memory.
+  // The trace is the only witness, and it is read the same way as for the ledgers.
+  const CORPUS = () => fakeContext({ codeRoot: `${R}/src`, memoryRoot: `${R}/memory` });
+  const codeWrite = write('src/a.ts');
+
+  const textCorpus = advice(R, env({}, { transcript: codeWrite }), CORPUS(), SITE);
+  check(
+    'code written, memory untouched: the corpus notice speaks',
+    !!textCorpus && textCorpus.includes('memory corpus was not touched')
+  );
+  check(
+    'the notice names the two seats as the project declared them',
+    !!textCorpus && textCorpus.includes(`${R}/src`) && textCorpus.includes(`${R}/memory`)
+  );
+  check('the notice counts the files it saw', !!textCorpus && textCorpus.includes('1 file written'));
+  check(
+    'the notice says the corpus is aligned by the work, not only by the commit',
+    !!textCorpus && textCorpus.includes('not only by the commit')
+  );
+  check('the notice says how it is answered', !!textCorpus && textCorpus.includes('already answered'));
+  check(
+    'the corpus notice says it is not a message from the user',
+    !!textCorpus && textCorpus.includes('not a message from the user')
+  );
+  check(
+    'the corpus notice says it comes once per session',
+    !!textCorpus && textCorpus.includes('once per session')
+  );
+
+  const twoWrites = [codeWrite, write('src/b.ts')].join('\n');
+  check(
+    'two files agree in the plural',
+    (advice(R, env({}, { transcript: twoWrites }), CORPUS(), SITE) || '').includes('2 files written')
+  );
+
+  check(
+    'a write to the memory alone: silence',
+    advice(R, env({}, { transcript: write('memory/note.md') }), CORPUS(), SITE) === null
+  );
+  check(
+    'a write to the memory beside the code: silence',
+    advice(R, env({}, { transcript: [codeWrite, write('memory/note.md')].join('\n') }), CORPUS(), SITE) === null
+  );
+  // The method's own seats live under `.daiku/`, which may well sit inside the code root: a
+  // session that wrote a blueprint has changed no product. The code root here is the repository
+  // root itself, so `.daiku/` does sit inside it and this write reaches the `ownSeat` exclusion:
+  // were that exclusion to vanish, the write would be counted as code and the assertion would go
+  // red. It has its own context because the shared `CORPUS` keeps the code root at `${R}/src`,
+  // where a `.daiku/` write is discarded by the code-root test, not by the exclusion.
+  check(
+    'a write under `.daiku/`: silence',
+    advice(
+      R,
+      env({}, { transcript: write('.daiku/features/x/2. blueprint.md') }),
+      fakeContext({ codeRoot: R, memoryRoot: `${R}/memory` }),
+      SITE
+    ) === null
+  );
+  check(
+    'a write outside the code root: silence',
+    advice(R, env({}, { transcript: write('docs/notes.md') }), CORPUS(), SITE) === null
+  );
+  // Only the four writing tools count: a read is not a modification, and neither is a path quoted
+  // inside a command.
+  check(
+    'a read is not a modification: silence',
+    advice(R, env({}, { transcript: read('src/a.ts') }), CORPUS(), SITE) === null
+  );
+  // A commit means the cycle ran, and the cycle delegates `update-memory` on the same diff.
+  check(
+    'a commit silences it: the cycle aligned the memory',
+    advice(
+      R,
+      env({}, { transcript: [codeWrite, shell('git commit -m "x"')].join('\n') }),
+      CORPUS(),
+      SITE
+    ) === null
+  );
+  check(
+    'no `{code_root}` declared: silence',
+    advice(R, env({}, { transcript: codeWrite }), fakeContext({ memoryRoot: `${R}/memory` }), SITE) === null
+  );
+  check(
+    'no `{memory.root}` declared: silence',
+    advice(R, env({}, { transcript: codeWrite }), fakeContext({ codeRoot: `${R}/src` }), SITE) === null
+  );
+  check('a corpus stop with no trace: silence', advice(R, env({}, { transcript: null }), CORPUS(), {}) === null);
+
+  // The two notices are independent: an open ledger and an untouched corpus stand together, and
+  // each is silent where the other speaks.
+  const both = advice(
+    R,
+    env(
+      { [`${STATE}/review-ledger-abc1234-120000.json`]: OPEN_LEDGER },
+      { transcript: [read('docs/new-developments/gamma/1. decision-doc.md'), codeWrite].join('\n') }
+    ),
+    fakeContext({ reviewState: STATE, codeRoot: `${R}/src`, memoryRoot: `${R}/memory` }),
+    SITE
+  );
+  check(
+    'a ledger and a corpus: both notices in one text',
+    !!both && both.includes('gamma') && both.includes('memory corpus was not touched')
+  );
+
+  const corpusSession = env({}, { transcript: codeWrite });
+  check('the corpus notice reaches a stop', !!notice(stop(), R, corpusSession, CORPUS()));
+  check(
+    'and the same session does not hear it twice',
+    notice(stop(), R, corpusSession, CORPUS()) === null
+  );
+  check(
+    'another session hears it again',
+    !!notice(stop({ session_id: 'sess-2' }), R, corpusSession, CORPUS())
+  );
+  check(
+    'a stop the hook itself caused says nothing about the corpus either',
+    notice(stop({ stop_hook_active: true }), R, env({}, { transcript: codeWrite }), CORPUS()) === null
+  );
+
   // --- the form the hook recognises mirrors the schema -------------------------
   // The one read this bench makes on disk: `schemas/blocks.json` is the seat declaring the
   // ledger's form, and the list copied in this file must move with it. It is not reachable from
@@ -986,6 +1362,13 @@ function selfCheck() {
   check(
     'the ledger form is the one schemas/blocks.json § ledger declares (unrunnable where the schema is not beside this file)',
     Array.isArray(mirrored) && mirrored.length === LEDGER_FIELDS.length && LEDGER_FIELDS.every((field) => mirrored.includes(field))
+  );
+  // The core `isLedger` really tests is a subset of that form: a core field the schema no longer
+  // requires would make the guard recognise a file the tool would not write, and this is where it
+  // is caught.
+  check(
+    'the core `isLedger` tests is a subset of the form the schema declares',
+    Array.isArray(mirrored) && LEDGER_CORE.every((field) => mirrored.includes(field))
   );
 
   process.stdout.write(

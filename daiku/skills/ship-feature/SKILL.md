@@ -1,7 +1,6 @@
 ---
 name: 'ship-feature'
-description: 'Delivers a feature from the already resolved decision-doc to the commit in a single invocation: worktree, brief, execution, review rounds, decision, memory and documentation alignment, the three commits, merge and report. It orchestrates its own phases delegating each to a subagent. Launched by hand on an existing folder, or by new-feature as its delivery.'
-argument-hint: '<folder with 1. decision-doc.md> [+ chosen solution, one option id and text per decision, if 2. blueprint.md is absent]'
+description: 'Internal contract of new-feature — the delivery of one feature from the already resolved decision-doc to the commit: worktree, brief, execution, review rounds, decision, memory and documentation alignment, the three commits, merge and report. It orchestrates its own phases delegating each to a subagent, and it is opened by new-feature § Delivery, never on its own.'
 ---
 
 You are the **engine** of the delivery of a single feature: the sequence — brief → execution → review rounds → decision → memory/documentation update → commit (up to three groups: feature, then doc/memory, then version) → merge → cleanup → report — you orchestrate **it**, delegating each phase to a subagent according to `contracts/orchestration.md`. There is no script doing it in your place.
@@ -10,14 +9,13 @@ You are the **engine** of the delivery of a single feature: the sequence — bri
 
 ## When to use it
 
-When you have **one** feature with `1. decision-doc.md` already resolved and you want the complete delivery (up to the conditional commit) without anybody having to chain `blueprint` → `execute` → `/review` → `/commit` in sequence. If you want to stay on the single atomic steps (to stop between one stage and the next), use those directly: this skill does not replace them, it chains them for the cases where you want the whole delivery in one shot.
+When the decisions of a feature are already resolved — `1. decision-doc.md` exists with every card answered — and the delivery has to run whole, up to the conditional commit, without anybody chaining `blueprint` → `execute` → `/review` → `/commit` by hand. It does not replace those single atomic steps, which stay launchable on their own for whoever wants to stop between one stage and the next: it chains them for the case where the whole delivery runs in one shot.
 
-## Invocation modes
+**`new-feature` § *Delivery* opens it, and that is the only way it is reached.** A folder already studied is handed to `new-feature`, which reads where its documents stop and opens this node from there — including on a delivery interrupted halfway, where the verdict says which phase remains and the pool gives back the worktree that delivery already holds. Launched on its own it would be a second way into the chain, with the owner unreachable from inside it.
 
-**You are launched by hand or by `new-feature` § *Delivery*.** The sequence is the same either way; what changes is where the input comes from and where the outcome goes.
+## The invocation
 
-- **By hand (`owner`).** `$ARGUMENTS` carries the folder; the chosen solution only if `<folder>/2. blueprint.md` is absent and the brief still has to be produced — one option id and text per decision, as written. If the folder does not exist or holds no `1. decision-doc.md`, stop and say so. If the brief is absent and the solution is **ambiguous** against the decision-doc — it names a decision or an option that do not exist there — do not guess and do not ask: stop, and report the options the document truly declares, so the owner relaunches you with the choice. If instead the solution was **not passed at all** and no brief exists, use for each decision the **`A`** option — which by contract is the recommended — and declare it in the outcome. Close with the contract block in chat. You never push: the push stays a manual act of the owner.
-- **From `new-feature` § *Delivery*.** Folder and chosen solution arrive resolved in the prompt — there is nobody to ask, and a question asked in here stays hanging (§ *Ask the owner* of `contracts/orchestration.md`). The constraints below hold unchanged, and they are not rewritten in the caller prompt.
+**You arrive with folder and chosen solution already resolved in the prompt.** The sequence is the same whether the caller opens a new delivery or resumes an interrupted one: where it starts from is the verdict of the evaluator (§ *The sequence*), never a flag. There is nobody to ask, and a question asked in here stays hanging (§ *Ask the owner* of `contracts/orchestration.md`). The constraints below hold unchanged, and they are not rewritten in the caller prompt. You never push: the push stays a manual act of the owner.
 
 ## Input
 
@@ -133,7 +131,7 @@ section cites it and does not restate it.
 
 ## Progress and findings
 
-**No progress log is kept on file.** Progress and findings go **in chat**, as you go: one line when a phase starts and when it returns, with the role running it, and immediately what you noticed and what needs no block — a subagent returned malformed, a phase slower than expected, evidence not adding up.
+**No progress log is kept on file.** Progress and findings are carried by your outcome, phase by phase: one line for each phase that ran, with the role running it, and what you noticed and what needs no block — a subagent returned malformed, a phase slower than expected, evidence not adding up. They reach the owner through whoever invoked you, which is the node running in the conversation: **you have no channel to them** (§ *Ask the owner* of `contracts/orchestration.md`), and a question raised in here stays hanging.
 
 The state needed to **resume** is not that: they are the artefacts the phases deposit (`2. blueprint.md`, `3. memory-report.md`, `4. review-notes.md`, `5. review-report.md`) and `git log`. Those are verifiable, a hand-written log is not — and resumption trusting a line nobody guarantees was written restarts from the wrong phase. The 3 in 3. memory-report.md is the outcome of phase 5b — the files it touched and the items to confirm with the owner — which without an artefact would be the only phase leaving nothing behind. **It is not a journal**: it says what that phase left, never how it got there.
 
@@ -233,14 +231,16 @@ Describe each open item as `<file>[:<line>] [<class>] <scenario>`, then:
 
 | Condition | Outcome |
 |---|---|
-| `gate` ≠ `green` | `BLOCKED_NO_COMMIT` — blocker: `gate red: <gate_detail>` plus all blocking items |
+| the gate is red for a cause the diff carries (`gate_origin` `diff` or `null`) | `BLOCKED_NO_COMMIT` — blocker: `gate red: <gate_detail>` plus all blocking items |
 | `outcome` is `oscillation` or `rounds-exhausted` | `BLOCKED_NO_COMMIT` — blocker: the cycle did not converge, with the exit and the severe findings of the last round |
 | `missing_disciplines` is not empty | `BLOCKED_NO_COMMIT` — blocker: the disciplines that did not run on this diff |
-| gate green, at least one `blocking: true` item | `BLOCKED_NO_COMMIT` — blocker: those items |
-| gate green, no blocking, non-blocking items remain | `GREEN_WITH_POST_DECISIONS` |
-| gate green, no open item | `GREEN_COMMITTED` |
+| the gate does not block (green, or red only for a cause outside the diff), at least one `blocking: true` item | `BLOCKED_NO_COMMIT` — blocker: those items |
+| the gate does not block, no blocking item and non-blocking items remain | `GREEN_WITH_POST_DECISIONS` |
+| the gate does not block, no open item | `GREEN_COMMITTED` |
 
 The blocking conditions are **all** evaluated: an outcome satisfying more than one reports them all as blockers, and the first occurring does not close the evaluation.
+
+A red standing only outside the diff is not a blocker and does not enter `to_confirm`: `gate_origin` says so (`pre-existing`), it is a fact to declare — the report names it and `gate_detail` with it — never a fork to put to the owner.
 
 The three lines at the top are the same with which `/review` stops alone before committing (§ *Closing* of its file), and they hold here for the same reason: `rounds-exhausted` is an exit by exhaustion, not by convergence — the cycle was still correcting defects when it ran out of room; `oscillation` means two rounds bouncing the same line; a missed discipline did not run on this diff and **will never run again**, because `arch` and `perf` are done only once on the complete diff. Without these lines the same identical review outcome would block the commit if launched by hand and let it pass inside the delivery — while this skill declares it runs "the same discipline".
 
@@ -250,7 +250,7 @@ The **non**-blocking items are `post_commit_decisions`: they do not stop the com
 
 ### Mechanical unblock — when the only blocker is the red gate
 
-**Whether the block is only the red gate is asked, not judged here.** Call the evaluator with `question: "unblock"` and the same `review_outcome` block: `unblock` or `blocked`, and on `blocked` the reasons. It unblocks only when the cycle already said everything it knew how to say — converged exit (`fixed-point`), empty `missing_disciplines`, no `blocking: true` item and empty `to_confirm` — and **on `blocked` the three consequences below hold unchanged**: they are ours, not a classification.
+**Whether the block is only the red gate is asked, not judged here.** Call the evaluator with `question: "unblock"` and the same `review_outcome` block: `unblock` or `blocked`, and on `blocked` the reasons. It unblocks only when the cycle already said everything it knew how to say — converged exit (`fixed-point`), empty `missing_disciplines`, no `blocking: true` item and empty `to_confirm` — and **on `blocked` the three consequences below hold unchanged**: they are ours, not a classification. A red standing only outside the diff (`gate_origin: "pre-existing"`) is **not** the block this road exists for — the diff carries nothing to correct there — so the verdict is `blocked` as with a green gate, and the red is declared, never corrected.
 
 If the verdict is `unblock`, delegate **one** worker subagent which, in the work root, corrects only the gate findings on the diff lines with an obvious single-solution fix (mechanical lint, format, types), relaunches the gate of the touched area and returns `gate`/`gate_detail`/`needs_tradeoff`. Constraints: no behaviour change, no file outside the reported ones, never stage/commit, and if even a single fix admits two defensible options the subagent leaves it alone and declares it in `needs_tradeoff` instead of guessing.
 
@@ -275,7 +275,7 @@ Two subagents in sequence, **both before the commit**.
 
 If `staged` is `false`, there is nothing to deliver: skip 5b and 6, go to the report.
 
-**5b. Memory/documentation update — judge role.** In the prompt:
+**5b. Memory/documentation update — worker role.** In the prompt:
 
 - read in full `skills/update-memory/SKILL.md` and follow that contract to the letter;
 - the diff to inspect is the one **in index** under `{code_root}` in the **work root** of the worktree: `git -C <worktree_root> diff --cached --stat -- {code_root}` and `git -C <worktree_root> diff --cached -- {code_root}`; it is the full diff of the feature, the same the commit will produce;
@@ -291,13 +291,13 @@ The expected outcome is the block `skills/update-memory/SKILL.md` declares in it
 
 A single subagent, up to three distinct commits and in the declared order, on the worktree branch (`{worktree.branch_prefix}<name>`). In the prompt: the work root, and run Git commands with `git -C <worktree_root>`, in order, without asking confirmation.
 
-**It writes on three paths only, and they are those of commit 3.** The bump touches `{changelog}`, `{version.file}` and the files of `{version.replicated_in}`: the subagent modifies them, and outside those three pathspecs it writes nothing — it touches no code, no memory, no documentation. Everything else of this phase is Git commands.
+**It writes on commit 3's paths only, and they are three where the project declared no `channels.production`.** The version discipline touches `{changelog}`, `{version.file}` and the files of `{version.replicated_in}`: the subagent modifies them, and outside those pathspecs it writes nothing — it touches no code, no memory, no documentation. Everything else of this phase is Git commands. **Where the two channels are declared this phase writes no path at all**: those files are production's, `release` writes them, and the third commit below does not exist — see `skills/commit/SKILL.md`, § *Version and changelog*.
 
 **Commit 1 — the feature.** The files under `{code_root}` are **already** in index: do not run `git add`, you commit exactly what is there. Message conforming to § *Commit convention* of `skills/commit/SKILL.md`, which resolves it on the project. **Never** co-authorship trailers nor mentions of the agent generating the work. Then `git log --oneline -1` to read its SHA.
 
 **Commit 2 — doc and memory.** Only if step 5b truly wrote something and only if the first commit succeeded. **Exclusive** scope the files listed by 5b: `git status --porcelain -- <each one>` to confirm they are modified, `git add <the same ones, listed singly>` (never `-A`, never `.`, never files under `{code_root}`), commit with message opening with `{commit.memory_prefix}`, for the rest according to the same convention, `git log --oneline -1` for the SHA. If 5b wrote nothing, this commit **does not exist**: do not touch files outside `{code_root}`. If 5b came back with `committed` set — that is it committed its own group while not authorised — this commit **does not exist just the same**: report that SHA in `memory_commit_sha` with `memory_committed: true`, and do not attempt an empty commit on files nobody modified anymore.
 
-**Commit 3 — version and changelog.** Third group: `{changelog}`, `{version.file}` and the files of `{version.replicated_in}`. **If one of these falls under `{code_root}`** — a `package.json`, a `pyproject.toml` — step 5a already put it in index and commit 1 carried it away as it was, without the new number: that file is modified now and re-enters **here**, in the third group, which is not empty only because one of its paths had already been committed once. Declare it in `detail`, because it is the only case where a path appears in two of the three commits. When the changelog entry is written, when the bump is done and what it entails is declared in `skills/commit/SKILL.md`, § *Version bump and changelog*: the subagent reads it **from there** and executes it, **do not rewrite it here** — it is the same form with which phase 3 refers to `skills/review/SKILL.md` instead of rewriting its discipline. A single source for the changelog, otherwise features delivered from here never arrive in the version register, while the same ones delivered by the closing commit of `/review` get there. Message and order are those that section declares; the commit goes **after** the first two and does not exist if the group is empty. Then `git log --oneline -1` for the SHA.
+**Commit 3 — version and changelog, on a project that declared no `channels.production`.** Third group: `{changelog}`, `{version.file}` and the files of `{version.replicated_in}`. **Where the two channels are declared this commit does not exist**, and no version and changelog is written by this phase at all: they live on production and `release` writes them. **If one of these falls under `{code_root}`** — a `package.json`, a `pyproject.toml` — step 5a already put it in index and commit 1 carried it away as it was, without the new number: that file is modified now and re-enters **here**, in the third group, which is not empty only because one of its paths had already been committed once. Declare it in `detail`, because it is the only case where a path appears in two of the three commits. When the changelog entry is written, when the bump is done and what it entails is declared in `skills/commit/SKILL.md`, § *Version and changelog*: the subagent reads it **from there** and executes it, **do not rewrite it here** — it is the same form with which phase 3 refers to `skills/review/SKILL.md` instead of rewriting its discipline. A single source for the changelog, otherwise features delivered from here never arrive in the version register, while the same ones delivered by the closing commit of `/review` get there. Message and order are those that section declares; the commit goes **after** the first two and does not exist if the group is empty. Then `git log --oneline -1` for the SHA.
 
 **Never `git push`**, in none of the three.
 
@@ -335,7 +335,7 @@ One subagent running the node `reconcile`: read in full `skills/reconcile/SKILL.
 The node asks the evaluator `question: "reconcile"` — through `architect/reconcile.mjs`, which names the `paths`, one entry per obstructed path — and reads the verdict:
 
 - **`reconcile`** — the two sides are disjoint line by line. The node runs `architect/reconcile.mjs` with `action: "merge"`, which lands the merge keeping both — `git merge --no-ff --autostash` on a dirty tree, the union of the disjoint sides on a merge in progress — and returns `merged: true` with the `merge_sha`. The delivery goes on to § *6c. Cleanup*, and the slot is `free`.
-- **`stop`** — at least one path is changed on the same lines by both sides. The node merges nothing and returns `merged: false` with `overlap` naming those paths, `patch`, `dirty_paths` and the structured `question`. Carry the question into the chat as § *Ask the owner* of `contracts/orchestration.md` prescribes, and **stop**: the run resumes on the same folder and re-opens this node in **resolved mode** — the class of § *Invocation modes* of `skills/reconcile/SKILL.md` — with the owner's answer, which completes the merge. Until then the slot is `blocked`.
+- **`stop`** — at least one path is changed on the same lines by both sides. The node merges nothing and returns `merged: false` with `overlap` naming those paths, `patch`, `dirty_paths` and the structured `question`. Return that question in your block — whoever invoked you runs in the conversation and carries it to the owner, as § *Ask the owner* of `contracts/orchestration.md` prescribes — and **stop**: the run resumes on the same folder and re-opens this node in **resolved mode** — the class of § *Invocation modes* of `skills/reconcile/SKILL.md` — with the owner's answer, which completes the merge. Until then the slot is `blocked`.
 
 The node fails loudly if it cannot proceed — a missing input, or an overlap that a union would have to invent — and on that, or on an owner who chooses to abort, the delivery closes `BLOCKED_NO_COMMIT` (slot `blocked`): no stage, no memory, no commit beyond what the branch already holds, the worktree left as it is, and the `reason` names the overlap. In no case does the reconciliation commit the other session's uncommitted work: the working tree stays as it was, `main-tree.patch` is the declared recoverable copy.
 
@@ -352,7 +352,7 @@ It is the only phase having to report fields produced by **seven others**, and a
 - the path to append on, `<folder>/5. review-report.md`, and the tail-append constraint;
 - `<folder>` and the **delivered solution**, verbatim: it is the one distilling it, not you;
 - from **phase 2**: the path of `<folder>/4. review-notes.md`, whose *Considerations* section is material for the open-items paragraph where a point is still open — its *Handoff* section is evidence for a program, not for the report;
-- from the **phase 3** block: `gate` and `gate_detail`, `outcome`, `missing_disciplines` and `independence`;
+- from the **phase 3** block: `gate` and `gate_detail` and `gate_origin`, `outcome`, `missing_disciplines` and `independence`;
 - from **phase 4**: the classified `status` and the remaining `to_confirm` items, with their `scenario`;
 - from the **phase 5b** block: `updated` and the `confirm_with_owner` items;
 - from the **phase 6** block: `committed` and the three SHAs — `commit_sha`, `memory_commit_sha`, `version_commit_sha` — plus the dirty paths declared by phase 4 (no parking: the worktree stays dirty and declared);
@@ -382,7 +382,7 @@ If Acquisition, Brief or Execute fail, the delivery stops — say so in chat, ha
 
 ## Outcome
 
-1. **In chat, a few lines**: final state (`GREEN_COMMITTED` | `GREEN_WITH_POST_DECISIONS` | `BLOCKED_NO_COMMIT` | `blocked`), used worktree, SHA if committed and merge SHA, whether memory was updated and its SHA (absent if there was nothing to update). The detail — gate, to-confirm, remaining decisions — is already in `<folder>/5. review-report.md`: **do not repeat it**, refer to the file.
+1. **The few lines whoever invoked you reports**: final state (`GREEN_COMMITTED` | `GREEN_WITH_POST_DECISIONS` | `BLOCKED_NO_COMMIT` | `blocked`), used worktree, SHA if committed and merge SHA, whether memory was updated and its SHA (absent if there was nothing to update). The detail — gate, to-confirm, remaining decisions — is already in `<folder>/5. review-report.md`: **do not repeat it**, refer to the file.
 
 2. **Always close with the contract block**, so whoever invoked you — `new-feature` — reads it without interpreting the prose. No field is omitted: with absent value write `null`.
 

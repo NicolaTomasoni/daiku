@@ -74,6 +74,7 @@ of a file, the presence or absence of an area. Three prohibitions, in order of s
 | `version.replicated_in` | other files carrying the same version and updated together; empty or absent list if there are none |
 | `paths.studies` | folder of the notes on a studied technology, one file per technology; it stands **under `.daiku/`**, like the key below it |
 | `paths.features` | folder hosting the working folders, one per problem, with the method's numbered files inside — and, beside them, the feature catalogue: one folder per feature, one file per study contributing to it; under `.daiku/` |
+| `paths.handoffs` | folder of the handoff documents, one file per job left to another agent, each carrying the problem, what was done, what is missing and the evidence inlined; under `.daiku/`, like the two keys above it |
 | `paths.review_state` | folder of the run's out-of-version-control state: a review's ledger, and the worktree pool's registry (`worktree-pool.json`, written by `architect/pool.mjs`); it stands **inside the repository tree**, under the technical root, but **outside version control** — a `.gitignore` line excludes it — and it is **never under `.daiku/`**, which is versioned (§8); stable, not session-scoped |
 | `memory.root` | root of the persistent memory corpus, inside the repository (§8); on Claude Code it is also the folder where the host writes its own memory (§4.2) |
 | `memory.index` | index file of the corpus, the one read first |
@@ -84,7 +85,9 @@ of a file, the presence or absence of an area. Three prohibitions, in order of s
 | `worktree.max` | maximum number of pool worktrees: never one more, never an off-convention name |
 | `worktree.branch_prefix` | branch prefix of each worktree, followed by its name |
 | `channels.development` | name of the development branch, the one the work lives on; `init` writes it from its answer, and `release` and the merge of a delivery read it |
-| `channels.production` | name of the production branch, where the work does not commit and which advances only by a release; its presence is the switch of the branch guard (§4.1) |
+| `channels.production` | name of the production branch, where the work does not commit and which advances only by a release. It is a **line of releases**: each one is a commit of its own carrying the development tree as it stood, the version and the changelog, so production is not development's ancestor and nothing of a release travels back — its presence is the switch of the branch guard (§4.1) |
+| `release.source` | folder of development whose **content** becomes production's tree, where the two sides do not have the same shape; absent where they do, and then production's tree is development's plus the version and the changelog. A release resolves `version.*` and `changelog` on production by taking this prefix off the front, which is what lets the keys be written once, in the shape of the project |
+| `release.never` | paths of the project that never reach production, **on top of the method's own footprint** — `.daiku/`, the instructions file, `.claude/`, `.codex/`, and the memory root — which no project declares and no release publishes. It is what `new-project` asks the project to personalise: a release writes the product, and what is a product is the project's answer |
 | `areas` | the set of declared areas; cited thus when a skill **enumerates** them instead of naming one (§5.3) |
 | `areas.<area>.paths` | the paths belonging to the area, each usable as a Git pathspec |
 | `areas.<area>.gate` | the area's gate command: lint, format, type-check, test and package build |
@@ -95,13 +98,13 @@ of a file, the presence or absence of an area. Three prohibitions, in order of s
 
 No key is mandatory besides `contract`: everything else is subject to §6.
 
-**The two keys of the method's own documents — `paths.studies` and `paths.features` — stand under
-`.daiku/`.** What they host is Daiku's corpus and not the project's documentation: `0. problem.md`,
-`1. decision-doc.md`, the notes and the catalogue are written by the method, read by the method, and
-seated among the project's own files they would be a second documentation tree that nobody chose and
-that the project is expected to keep. `.daiku/` is versioned (§8), so they enter the history like any
-other source file, and `init` **assigns** those two seats rather than adopting a folder the project
-already keeps.
+**The three keys of the method's own documents — `paths.studies`, `paths.features` and
+`paths.handoffs` — stand under `.daiku/`.** What they host is Daiku's corpus and not the project's
+documentation: `0. problem.md`, `1. decision-doc.md`, the notes, the catalogue and the handoffs are
+written by the method, read by the method, and seated among the project's own files they would be a
+second documentation tree that nobody chose and that the project is expected to keep. `.daiku/` is
+versioned (§8), so they enter the history like any other source file, and `init` **assigns** those
+three seats rather than adopting a folder the project already keeps.
 
 **Which file covers a path that stays out of version control.** `paths.review_state`
 stands outside what Git versions, and "is this path ignored?" is answered by the repository's own
@@ -112,25 +115,39 @@ run before declaring a path covered or uncovered.
 
 ### 4.1 The key a hook reads
 
-The command guard reads two keys. `worktree.pool` lights its worktree branch: a declared pool
+The command guard reads three keys. `worktree.pool` lights its worktree branch: a declared pool
 *is* the declaration that those directories belong to Daiku. `channels.production` lights its
 branch branch: a declared production branch *is* the declaration that the project keeps its work
 on a development branch and lets production advance only by a release, so the guard denies `git
 commit` and `git merge` while production is active and `git checkout`/`git switch` towards it —
 and reads the current branch only on a line that names `git`. Without `channels.production` the
-guard never reads the branch and says nothing. The guard's other four branches
+guard never reads the branch and says nothing. `paths.review_state` lights its review branch: a
+declared seat *is* the declaration that `git commit` closes a review cycle, so the guard denies a
+commit outside one — reading the seat only on a `git commit`, and allowing where the seat does
+not answer. The guard's other four branches
 (junction, `--no-verify`, push, agent attribution) deny on
 every project that opened Daiku, with no switch. `hooks/README.md` carries the full branch table.
+
+**A release does not need the guard relaxed, and does not get it.** Production advancing by a
+release means the release writes there, and the denial above would make that impossible if writing
+meant standing: it does not. `architect/release.mjs` builds the commit on a throwaway index and
+moves the ref, so `git commit` never runs on production and the branch is never checked out — the
+denial stays whole and the release is a write the guard has nothing to say about.
 
 ### 4.2 The key the host reads
 
 `memory.root` has a second reader that is neither a skill nor a hook: it is **the host**, on Claude
 Code, where the memory the agent writes for itself is a folder of files and its location is declared
 with `autoMemoryDirectory`. `init` points it there, and from that moment that corpus has two writers
-— the host on its own initiative, `update-memory` on every commit's diff — and a single location,
-**versioned together with the code**. It is why this folder sits inside the repository and not
-beside it: a memory that does not enter a diff is re-read by nobody, corrected by nobody and dies
-with the laptop it was born on.
+— the host, which realigns what its own change has made false, and `update-memory` on every commit's
+diff — and a single location, **versioned together with the code**. It is why this folder sits inside
+the repository and not beside it: a memory that does not enter a diff is re-read by nobody, corrected
+by nobody and dies with the laptop it was born on.
+
+**And the two are not substitutes, because a modification owes the pass in the same work.** Neither
+waits for the other: the host answers for what its own change has just made false, the commit's step
+walks the whole perimeter again on the frozen diff. A corpus left behind between the two is read and
+believed by the next session exactly like a correct one.
 
 Two consequences, and neither is an installation detail.
 
@@ -275,7 +292,7 @@ the one it is written in**: it is the one the project declares. There are two ke
 different audiences, and on many projects they do not coincide.
 
 - **`{language.chat}`** — everything a person reads: the chat reply, the end-of-skill summary, the report, and the documents the method produces (`0. problem.md`,
-  `1. decision-doc.md`, `2. blueprint.md`, the review notes, the delivery report).
+  `1. decision-doc.md`, `2. blueprint.md`, the review notes, the delivery report, the handoff).
 - **`{language.commit}`** — everything staying in the repository's shared history: the
   commit message and the changelog entry. It is separate because a project with an interface in
   one language often has a Git history in another, and whoever reads `git log` in two years is not who

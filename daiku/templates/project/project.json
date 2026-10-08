@@ -23,6 +23,7 @@
   "paths": {
     "studies": "<folder of the notes on a technology, one file per technology>",
     "features": "<folder holding the working folders, one per problem>",
+    "handoffs": "<folder of the handoff documents, one per job left to another agent>",
     "review_state": "<folder of the run's state outside version control: the review ledger and the worktree pool's registry>"
   },
   "memory": {
@@ -40,7 +41,11 @@
   },
   "channels": {
     "development": "<name of the development branch the work lives on, asked at init — e.g. develop>",
-    "production": "<name of the production branch, where the work does not commit and which advances only by a release; drop this key and the branch guard stays off>"
+    "production": "<name of the production branch, a line of releases: the work does not commit there and it advances only by a release; drop this key and the branch guard stays off>"
+  },
+  "release": {
+    "source": "<folder of the development branch whose content becomes the production tree, where the two sides do not have the same shape — e.g. plugins; drop this key where they do>",
+    "never": ["<paths that never reach production, on top of the method's own footprint — drop this key where there are none>"]
   },
   "areas": {
     "<area name>": {

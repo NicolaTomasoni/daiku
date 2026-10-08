@@ -59,21 +59,23 @@
     },
     "gate": {
       "producer": "skills/review/SKILL.md § Gate (review-internal, no producer file)",
-      "required": ["gate", "gate_detail"],
+      "required": ["gate", "gate_detail", "gate_files"],
       "optional": [],
       "enums": {
         "gate": ["green", "red"]
-      }
+      },
+      "note": "The block the gate step reports: `gate` is binary, `gate_detail` the real output of the commands, and `gate_files` the paths the failure names — empty `[]` on a green gate, because a green nothing failed on names nothing."
     },
     "review-outcome": {
       "producer": "skills/review/SKILL.md § Outcome",
-      "required": ["rounds", "outcome", "disciplines_round_1", "missing_disciplines", "independence", "oscillation", "applied", "severe", "on_previous_fix", "discarded", "gate", "gate_detail", "commit", "commit_sha", "blocking", "coverage", "ledger", "report", "to_confirm"],
+      "required": ["rounds", "outcome", "disciplines_round_1", "missing_disciplines", "independence", "oscillation", "applied", "severe", "on_previous_fix", "discarded", "gate", "gate_detail", "gate_origin", "commit", "commit_sha", "blocking", "coverage", "ledger", "report", "to_confirm"],
       "optional": [],
       "enums": {
         "outcome": ["fixed-point", "diminishing-returns", "oscillation", "rounds-truncated", "rounds-exhausted"],
         "independence": ["intact", "lost"],
         "commit": ["done", "partial", "not-requested", "skipped"],
-        "coverage": ["tests-written", "no-tests-needed", "no-test-command"]
+        "coverage": ["tests-written", "no-tests-needed", "no-test-command"],
+        "gate_origin": ["diff", "pre-existing"]
       }
     },
     "code-review-outcome": {
@@ -172,23 +174,24 @@
     },
     "release": {
       "producer": "skills/release/SKILL.md § What you return",
-      "required": ["ok", "released", "version", "development_sha", "production_sha", "changelog", "detail"],
+      "required": ["ok", "released", "version", "development_sha", "production_sha", "amended", "changelog", "detail"],
       "optional": [],
       "enums": {},
-      "note": "The block of the promotion node. `released` is false when nothing was promoted — no channels declared, the copy not standing on the development branch, production carrying commits development lacks, or a dirty tree — and `detail` says which. When it is true, `version` is the number the release wrote, `development_sha` the tip of the development branch after the version commit and `production_sha` where production now stands (the same tip: the promotion is a fast-forward), `changelog` the path whose section was written. `ok` is false only when the node could not proceed. It never pushes: `production_sha` is a local ref."
+      "note": "The block of the release node. `released` is false when nothing was released — no channels declared, the copy not standing on the development branch, a working copy holding production, a dirty tree, or nothing to release — and `detail` says which. When it is true, `version` is the number the release wrote (or null where the project declares none), `development_sha` the development tip the release carried, `production_sha` where production now stands, `amended` whether it replaced a draft on production instead of opening a release on top, and `changelog` the path whose section was written (or null). `ok` is false only when the node could not proceed. It never pushes: `production_sha` is a local ref, and a release is closed by the push, not by the node."
     }
   },
   "ledger": {
     "producer": "skills/review/SKILL.md § Baseline and ledger",
-    "required": ["base", "item", "scope_tree", "scope_files", "rounds", "outcome", "coverage", "gate", "gate_detail"],
+    "required": ["base", "item", "scope_tree", "scope_files", "rounds", "outcome", "coverage", "gate", "gate_detail", "gate_origin"],
     "round_required": ["n", "disciplines", "missing_disciplines", "pre_apply_tree", "post_apply_tree", "applied", "discarded", "to_confirm", "oscillation", "check_fast", "check_tests", "verdict", "why"],
     "round_optional": ["cost", "deviations"],
     "enums": {
       "rounds.verdict": ["continue", "stop"],
       "rounds.check_fast.status": ["green", "red", "skipped"],
-      "rounds.check_tests.status": ["green", "red", "skipped"]
+      "rounds.check_tests.status": ["green", "red", "skipped"],
+      "gate_origin": ["diff", "pre-existing"]
     },
-    "note": "Written only by architect/ledger.mjs, which validates it against this entry before every write. `outcome`, `coverage` and `gate` take the domains of § review-outcome and § gate once set; until their step ran they are null. `cost` holds only the numbers the host reported for each step, never an estimate."
+    "note": "Written only by architect/ledger.mjs, which validates it against this entry before every write. `outcome`, `coverage` and `gate` take the domains of § review-outcome and § gate once set; until their step ran they are null. `gate_origin` is `null` until the tail measures it, and stays `null` on a green gate or on a red that names no file — the two legitimate nulls. `cost` holds only the numbers the host reported for each step, never an estimate."
   },
   "pool": {
     "producer": "skills/ship-feature/SKILL.md § Worktree pool",
@@ -199,9 +202,19 @@
     },
     "note": "The pool registry, written only by architect/pool.mjs, which validates it against this entry before every write. It records who took each slot and how the delivery left it: `in-use` at acquisition, `free` after the merge and cleanup, `blocked` when the delivery stopped without merging — its tree dirty on purpose, or clean on a branch that went into conflict. The measured state is what git says of the slot, a clean tree or a dirty one, and where its commits stand; `state` is the attribution the agent cannot re-derive, and it is also the hold: `in-use` is a delivery working in that slot. A slot is reusable when its tree is clean, its branch holds nothing the integration branch lacks **and** no delivery holds it — the clean tree of a slot just taken is exactly what made it look free, and it is why the hold is part of the rule and not a gloss on it. A slot held by the delivery asking is taken back as it stands, without a reset. Every read and every write of this registry runs under an exclusive lock file beside it, so two acquisitions never choose on the same reading."
   },
+  "review-log": {
+    "producer": "skills/review/SKILL.md § The ledger tool",
+    "required": ["ledgers", "rows"],
+    "row_required": ["ledger", "base", "item", "round", "discipline", "state", "findings", "confidence"],
+    "enums": {
+      "rows.state": ["returned", "lost", "not-launched"],
+      "rows.discipline": ["bug", "arch", "perf", "dead"]
+    },
+    "note": "The finder performance log: an aggregate derived from the ledgers of {paths.review_state}, written only by architect/ledger.mjs's `log` action, which validates it against this entry before writing. `ledgers` is the sorted list of the ledger file names read — the sample, one entry per ledger recognised by its form, even one that carries no round yet. `rows` is one row per ledger × round × discipline of the roster, in that order: the roster is the disciplines seen in the `disciplines` and `missing_disciplines` of any round of any ledger, in the canonical order bug, arch, perf, dead. `state` says whether that discipline ran in that round — `returned` when the finder came back, `lost` when it was launched and lost, `not-launched` when it was never asked. `findings` is the raw finding count the discipline produced in the round, `confidence` the raw count by level; both are null when the round's findings file is absent — not zero, which is what a discipline present and empty reads. The closing round on tests lives outside `rounds` and produces no row. It is not a ledger: it carries neither the ten fields of § ledger nor the rounds, and the hooks reading the folder skip it."
+  },
   "params": {
     "producer": "contracts/project-contract.md §4 and contracts/orchestration.md §7",
-    "project_json": ["contract", "name", "repo_root", "code_root", "language.chat", "language.commit", "documents", "documents.product", "documents.brand", "documents.domain", "documents.stack", "documents.architecture", "changelog", "version.file", "version.field", "version.replicated_in", "paths.studies", "paths.features", "paths.review_state", "memory.root", "memory.index", "commit.memory_prefix", "review.disciplines", "worktree.pool", "worktree.prefix", "worktree.max", "worktree.branch_prefix", "channels.development", "channels.production", "areas", "areas.<area>.paths", "areas.<area>.gate", "areas.<area>.check_fast", "areas.<area>.lint_fix", "areas.<area>.test_targeted", "areas.<area>.coverage"],
+    "project_json": ["contract", "name", "repo_root", "code_root", "language.chat", "language.commit", "documents", "documents.product", "documents.brand", "documents.domain", "documents.stack", "documents.architecture", "changelog", "version.file", "version.field", "version.replicated_in", "paths.studies", "paths.features", "paths.handoffs", "paths.review_state", "memory.root", "memory.index", "commit.memory_prefix", "review.disciplines", "worktree.pool", "worktree.prefix", "worktree.max", "worktree.branch_prefix", "channels.development", "channels.production", "release.source", "release.never", "areas", "areas.<area>.paths", "areas.<area>.gate", "areas.<area>.check_fast", "areas.<area>.lint_fix", "areas.<area>.test_targeted", "areas.<area>.coverage"],
     "environment_json": ["contract", "default_host", "hosts", "backends", "hosts.<host>.models", "hosts.<host>.models.<role>", "hosts.<host>.models.judge", "hosts.<host>.models.worker", "hosts.<host>.instructions_file", "hosts.<host>.skill_pointers", "hosts.<host>.enforcement", "hosts.<host>.settings_file", "hosts.<host>.base_url_env", "hosts.<host>.native_backend", "backends.<backend>", "backends.<backend>.base_url", "backends.<backend>.sequential_fanout", "backends.<backend>.caveats", "write_roots", "prompt_dump_chars"],
     "contract_expected": {
       "project_json": 1,

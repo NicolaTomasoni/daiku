@@ -29,9 +29,12 @@ const ABSENT = Object.freeze({
   present: false,
   pool: null,
   studies: [],
+  handoffs: null,
   guardrails: Object.freeze({}),
   libNotes: null,
   reviewState: null,
+  codeRoot: null,
+  memoryRoot: null,
   writeRoots: Object.freeze([]),
   promptDumpChars: null,
   channels: null,
@@ -50,16 +53,18 @@ function resolvePath(value, root) {
  *
  * The context carries what the hooks read and nothing else: the switch and the pool of the
  * command guard, `paths.features` — the working folders, the seat the run works in — and
- * `paths.studies` — the notes on a technology — for the two hooks that speak about the run's
- * seats, with the machine's `write_roots` for the reminder, and
- * `paths.review_state` for the ledger notice of `stop-advice`, and the environment file for the two
- * keys of `run-advice`: `write_roots`, the folders this machine admits, and `prompt_dump_chars`, the
- * size above which the notice that opens a run calls a prompt a raw dump (§7 of
- * `contracts/orchestration.md`). Every path comes from a key of `.daiku/project.json` (§4 of the
- * contract); the environment's two come from the file of §8 — the machine's local one first,
- * **taken whole**, never merged. A missing or unresolvable key contributes `null`, never a guessed
- * path and never a guessed number: §6 of the contract, applied to a hook. Nothing is read outside
- * the project: no seat of Daiku lives in the user home.
+ * `paths.studies` — the notes on a technology — and `paths.handoffs` — the handoff documents —
+ * for the two hooks that speak about the run's seats, with the machine's `write_roots` for the reminder,
+ * `paths.review_state` for the ledger notice of `stop-advice`, `code_root` and `memory.root` for
+ * the notice it gives when a session changed code and left the corpus untouched, and the
+ * environment file for the two keys of `run-advice`: `write_roots`, the folders this machine
+ * admits, and `prompt_dump_chars`, the size above which the notice that opens a run calls a
+ * prompt a raw dump (§7 of `contracts/orchestration.md`). Every path comes from a key of
+ * `.daiku/project.json` (§4 of the contract); the environment's two come from the file of §8 —
+ * the machine's local one first, **taken whole**, never merged. A missing or unresolvable key
+ * contributes `null`, never a guessed path and never a guessed number: §6 of the contract,
+ * applied to a hook. Nothing is read outside the project: no seat of Daiku lives in the user
+ * home.
  */
 export function loadContext(root, reads = REAL_READS) {
   try {
@@ -89,8 +94,13 @@ export function loadContext(root, reads = REAL_READS) {
       pool: resolvePath(json.worktree && json.worktree.pool, root),
       features,
       studies: resolvePath(json.paths && json.paths.studies, root),
+      handoffs: resolvePath(json.paths && json.paths.handoffs, root),
       guardrails: declared && typeof declared === 'object' ? declared : {},
       reviewState: resolvePath(json.paths && json.paths.review_state, root),
+      // The two seats of the corpus notice of `stop-advice`: the code the session changed, and
+      // the memory it must have aligned to it. Both are §4 keys, both degrade as absent.
+      codeRoot: resolvePath(json.code_root, root),
+      memoryRoot: resolvePath(json.memory && json.memory.root, root),
       writeRoots: environment.writeRoots,
       promptDumpChars: environment.promptDumpChars,
       // The two branch names of the channels group. `production` is the switch of the branch
@@ -179,8 +189,11 @@ export function fakeContext(fields = {}) {
     pool: fields.pool ? resolve(fields.pool) : null,
     features: fields.features || [],
     studies: seat(fields.studies),
+    handoffs: seat(fields.handoffs),
     guardrails: fields.guardrails || {},
     reviewState: seat(fields.reviewState),
+    codeRoot: seat(fields.codeRoot),
+    memoryRoot: seat(fields.memoryRoot),
     writeRoots: Array.isArray(fields.writeRoots) ? fields.writeRoots.map(seat).filter(Boolean) : [],
     promptDumpChars: typeof fields.promptDumpChars === 'number' && fields.promptDumpChars > 0 ? Math.floor(fields.promptDumpChars) : null,
     channels: fields.channels || null,

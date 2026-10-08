@@ -15,12 +15,12 @@
  *
  *  - **without `.daiku/project.json` the guard allows everything**, always, without looking
  *    at the line. It is the boundary, not a degradation: see `daiku-config.mjs`;
- *  - **two switches in the whole file**: the worktree pool, `{worktree.pool}`, and the project's
- *    channels, `channels.production`. Every other branch denies on every project that has opened
- *    Daiku, with no key — §6 of `contracts/project-contract.md`, *what the JSON does not declare
- *    does not exist*.
+ *  - **three switches in the whole file**: the worktree pool, `{worktree.pool}`, the project's
+ *    channels, `channels.production`, and where its review ledgers live, `{paths.review_state}`.
+ *    Every other branch denies on every project that has opened Daiku, with no key — §6 of
+ *    `contracts/project-contract.md`, *what the JSON does not declare does not exist*.
  *
- * There are six branches, in three families.
+ * There are seven branches, in three families.
  *
  * **An operating-system fact**, on in every Daiku project because it depends on
  * no choice of whoever works:
@@ -56,6 +56,11 @@
  *     and `git merge` are denied, and `git checkout`/`git switch` towards it are denied too — so
  *     one never arrives there to commit. The branch is read only on a line naming `git`, and only
  *     here: no declared production branch, no branch read and no check.
+ *  7. **The review state** (`{paths.review_state}`). `git commit` is the closing step of a review
+ *     cycle and never a gesture of its own: the ledger is read only on a `git commit`, and the
+ *     commit passes while a cycle is in flight or one whose gate a commit may close has just
+ *     exited; otherwise it is denied. A seat that does not answer allows. No declared review state,
+ *     no check.
  *
  * Where the host has a system `deny`, that stays the real door for 2 and 3: absolute, and
  * no source below can remove it. The two branches here close the shapes prefix
@@ -80,10 +85,11 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import { lstatSync, readFileSync } from 'node:fs';
+import { existsSync, lstatSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { isAbsolute, join, resolve } from 'node:path';
 import { invokedDirectly, projectRoot } from './project-root.mjs';
 import { REAL_READS, loadContext, fakeContext, isInside } from './daiku-config.mjs';
+import { ledgers, running } from './stop-advice.mjs';
 
 const ROOT = projectRoot();
 
@@ -530,7 +536,7 @@ function pathGuard(line, cwd, env, ctx, depth = 0) {
 
 // --- git guard -----------------------------------------------------------
 //
-// Four branches behind the project gate, and two switches in the whole file. The gate stays:
+// Four branches behind the project gate, and three switches in the whole file. The gate stays:
 // without `.daiku/project.json` this project has not opened Daiku, and the guard does not even
 // read the line. Behind the gate, push, `--no-verify` and commits crediting the agent are denied
 // **always** — an agent is never left any of these freedoms, and never trusting an LLM is the
@@ -737,6 +743,82 @@ function attributionGuard(line, cwd, env) {
 // Everything the guard knows about the world passes through here, so the test bench can
 // swap in a simulated filesystem and run without touching anything.
 
+/**
+ * How long a cycle that has **exited** can still be the one a commit standing here is closing.
+ *
+ * The closing commit follows the exit within minutes, and the clock starts at the last write the
+ * review makes — the `tail`, which writes the gate once the suite has run. A quarter of an hour is
+ * a ceiling an order of magnitude above that. It is deliberately **not** `QUIET_MS`: that one asks
+ * whether a cycle is still alive, and this one asks whether the commit is the one it decided on.
+ * One window for both questions would leave every green review holding the gate open for two hours.
+ */
+const COMMIT_DUE_MS = 15 * 60 * 1000;
+
+/** The review guard: `git commit` is the closing step of a review cycle, never a gesture of its own.
+ *
+ * The rule is `CLAUDE.md`'s for the workshop and `skills/review/SKILL.md`'s for the cycle, and it
+ * is one sentence: a diff no finder has read does not enter history. The benches say the package
+ * compiles, not that what it says is right, and between the two stands the code just written —
+ * the perimeter only a later round would look at, and the exact reason a single pass cannot see
+ * its own corrections.
+ *
+ * **The only signal is the review's own state**, because there is no other that whoever commits
+ * cannot fake: a ledger in `{paths.review_state}`. What holds the gate open is a cycle **in
+ * flight** — `outcome` still `null` — or one that has just **exited with a gate a commit may
+ * close**: green, or red only for a cause the diff does not carry (`gate_origin` `pre-existing`,
+ * the same reading `askDecision`/`askClosing` make) — which is the state the review's own commit
+ * runs in: the cycle writes `outcome` at its exit and commits afterwards, past coverage and the
+ * gate. Both are read through the same code the Stop notice reads (`ledgers`), so what a ledger
+ * **is** is decided once, and the two readers agree. Both stop holding once the ledger has been
+ * quiet longer than a cycle can be, once it has been set aside, or once the file is another
+ * tool's.
+ *
+ * **What it does not do, said plainly**: it reads no diff, and it cannot tell the commit closing a
+ * review from one made beside it. For as long as a ledger whose gate a commit may close sits
+ * inside `COMMIT_DUE_MS`, a direct commit passes. It stops the casual commit — the one made
+ * because the benches were green and the hour was late — and it holds the gate's own condition,
+ * since a red the diff carries opens nothing.
+ *
+ * A project that declares no `{paths.review_state}` has no cycle to be inside of: §6, and the
+ * guard does not exist. The seat is asked of `env`, like every other reading of the world, so the
+ * bench answers without a disk; a seat that does not answer allows — the fail-open contract.
+ */
+function reviewGuard(line, env, ctx) {
+  if (!ctx || !ctx.present || !ctx.reviewState) return null;
+  const invocations = gitInvocations(line);
+  if (!invocations.some((invocation) => invocation.length && invocation[0].t === 'commit')) {
+    return null; // not a commit: the state folder is never read
+  }
+  let found;
+  let now;
+  try {
+    found = ledgers(ctx.reviewState, env);
+    now = env.now();
+  } catch {
+    return null; // the seat did not answer: allow
+  }
+  const inFlight = (entry) => entry.outcome === null;
+  const justExited = (entry) =>
+    entry.outcome !== null && (entry.gate === 'green' || entry.gate_origin === 'pre-existing');
+  if (
+    found.some(
+      (entry) =>
+        (inFlight(entry) && running(entry, now)) ||
+        (justExited(entry) && running(entry, now, COMMIT_DUE_MS))
+    )
+  ) {
+    return null;
+  }
+  return {
+    reason:
+      '`git commit` outside a review cycle is not allowed: the commit is the closing step of ' +
+      '`/daiku:review`, and the cycle is what reads the code just written — the benches say it ' +
+      'compiles, not that it is right. Run the review on the work and let it commit. If a cycle ' +
+      'is open, it has been quiet too long or its gate is red: resume it, or set its ledger ' +
+      'aside, and relaunch. This guard reads the ledger, not your word.',
+  };
+}
+
 const REAL_ENV = {
   isLink: (path) => {
     try {
@@ -770,6 +852,32 @@ const REAL_ENV = {
       return null;
     }
   },
+  /** The state folder, read by the review guard alone, and only on a `git commit`: the same five
+   * questions `stop-advice.mjs` asks of the seat it reads its ledgers from.
+   *
+   * A folder that is **not there** is a seat with no cycle — the empty list, exactly as an empty
+   * one, and the commit is denied. A seat that **is** there and does not answer is another thing:
+   * this throws, and `reviewGuard` allows. Folding the two together would let a project escape
+   * the guard by deleting the folder, and would block every project whose seat is unreadable. */
+  list: (path) => {
+    try {
+      return readdirSync(path);
+    } catch (error) {
+      if (error && error.code === 'ENOENT') return [];
+      throw error;
+    }
+  },
+  read: (path) => readFileSync(path, 'utf-8'),
+  exists: (path) => existsSync(path),
+  /** When the file was written, or `null` where there is no clock to ask. */
+  stat: (path) => {
+    try {
+      return { mtimeMs: statSync(path).mtimeMs };
+    } catch {
+      return null;
+    }
+  },
+  now: () => Date.now(),
 };
 
 /** The decision, without leaving the process: what the test bench calls.
@@ -788,7 +896,8 @@ function evaluate(line, cwd, env, ctx) {
     commitGuard(line) ||
     attributionGuard(line, cwd, env) ||
     pushGuard(line) ||
-    branchGuard(line, cwd, env, ctx)
+    branchGuard(line, cwd, env, ctx) ||
+    reviewGuard(line, env, ctx)
   );
 }
 
@@ -808,8 +917,9 @@ function safeDecide(line, cwd, env, ctx) {
 
 /** A simulated filesystem: the project's technical root, and next to it a worktree pool
  * where `node_modules` and the venv are junctions — the layout this guard watches
- * when a project declares `{worktree.pool}`. */
-function fakeEnv(branch = 'main') {
+ * when a project declares `{worktree.pool}`. It carries too the review state folder, empty
+ * unless a case hands it ledgers: `review` maps a file name there to `{ text, at }`. */
+function fakeEnv(branch = 'main', review = {}) {
   const key = (p) => String(p).replace(/\\/g, '/').replace(/\/+$/, '').toLowerCase();
   const tree = new Map(
     Object.entries({
@@ -853,8 +963,54 @@ function fakeEnv(branch = 'main') {
     // The branch the simulated session is on. The real environment asks Git; here it is the
     // fixture's choice, so a case can stand on production, on development or on a pool branch.
     branch: () => branch,
+    // The review state folder, read by the review guard alone: which ledger files are there,
+    // their text, and the instant each was last written. Nothing else lives in the fixture.
+    list: (path) => (key(path) === REVIEW_STATE ? Object.keys(review) : []),
+    read: (path) => {
+      const written = review[lastSegment(path)];
+      if (!written) throw new Error(`absent: ${path}`);
+      return written.text;
+    },
+    exists: (path) => Boolean(review[lastSegment(path)]),
+    stat: (path) => {
+      const written = review[lastSegment(path)];
+      return written ? { mtimeMs: written.at } : null;
+    },
+    now: () => NOW,
   };
 }
+
+/** The state folder the review cases declare, the clock their fixtures are stamped against, and
+ * the two windows they are placed in: inside the quiet one, and well past it. */
+const REVIEW_STATE = 'c:/dev/project/.docs/runtime/review';
+const NOW = 1_800_000_000_000;
+const MINUTE = 60 * 1000;
+const HOUR = 60 * MINUTE;
+
+/** The last segment of a path: how a fixture names the files it holds. */
+const lastSegment = (path) => String(path).replace(/\\/g, '/').split('/').pop();
+
+/** A ledger as `architect/ledger.mjs` writes one: the whole form, with `outcome`, `gate` and
+ * `gate_origin` where the case says. `outcome` null is a cycle in flight; a written `outcome` with a
+ * green gate — or a red one whose `gate_origin` is `pre-existing` — is one that has just exited,
+ * which is the state the review's own commit runs in. A file lacking one of the ledger's core
+ * fields is another tool's, exactly as `isLedger` decides it for the Stop notice. */
+const ledgerText = (outcome = null, gate = null, origin = null) =>
+  JSON.stringify({
+    base: 'aaaaaaa',
+    item: null,
+    scope_tree: 'bbbbbbb',
+    scope_files: [],
+    rounds: [],
+    outcome,
+    coverage: null,
+    gate,
+    gate_detail: null,
+    gate_origin: origin,
+  });
+
+/** A ledger file the review guard reads as open, written `ago` milliseconds back. */
+const ledgerAt = (ago) => ({ text: ledgerText(), at: NOW - ago });
 
 const ROOT_CWD = 'C:/dev/project';
 const WT_CWD = 'C:/dev/wt/wt-1';
@@ -867,6 +1023,9 @@ const CTX_BARE = fakeContext({});
 
 /** A project that declared the two channels: the branch guard is on, and its production is `main`. */
 const CTX_CHANNELS = fakeContext({ channels: { development: 'develop', production: 'main' } });
+
+/** A project that declared where its review ledgers live: the review guard is on. */
+const CTX_REVIEW = fakeContext({ reviewState: 'C:/dev/project/.docs/runtime/review' });
 
 /** A repository Daiku never opened: the guard does not exist here. */
 const CTX_ABSENT = fakeContext({ present: false });
@@ -998,6 +1157,29 @@ const CASES = [
   ['without channels a checkout of production passes', 'git checkout main', ROOT_CWD, 'allow', '', CTX_BARE, 'develop'],
   ['a non-git command never reads the branch', 'rm -rf build', ROOT_CWD, 'allow', '', CTX_CHANNELS, 'main'],
 
+  // --- the review guard: no commit outside a cycle --------------------------
+  // The commit is the closing step of `/daiku:review`. The only signal is the review's own
+  // state, read through the same code the Stop notice reads: a ledger with the cycle still in
+  // flight, or one that has just exited with a gate a commit may close — green, or red only for
+  // a cause the diff does not carry (`gate_origin` `pre-existing`) — which is where the review's
+  // own commit stands, since the cycle writes `outcome` at its exit and commits afterwards. The
+  // two questions are asked with two different windows, and both are cases. The ways a ledger
+  // stops holding the gate open are each a case, and so are the two ways the guard stays off.
+  ['a commit with no review in flight is denied', 'git commit -m "x"', ROOT_CWD, 'deny', 'outside a review cycle', CTX_REVIEW, 'develop', {}],
+  ['a commit while a review is running passes', 'git commit -m "x"', ROOT_CWD, 'allow', '', CTX_REVIEW, 'develop', { 'review-ledger-aaaaaaa-101010.json': ledgerAt(MINUTE) }],
+  ['the review\'s own commit passes: the cycle exited with a green gate', 'git commit -m "x"', ROOT_CWD, 'allow', '', CTX_REVIEW, 'develop', { 'review-ledger-aaaaaaa-101010.json': { text: ledgerText('fixed-point', 'green'), at: NOW - MINUTE } }],
+  ['the review\'s own commit passes: the cycle exited with a red gate only outside the diff', 'git commit -m "x"', ROOT_CWD, 'allow', '', CTX_REVIEW, 'develop', { 'review-ledger-aaaaaaa-101010.json': { text: ledgerText('fixed-point', 'red', 'pre-existing'), at: NOW - MINUTE } }],
+  ['a green gate older than the commit it was closing holds nothing open', 'git commit -m "x"', ROOT_CWD, 'deny', 'outside a review cycle', CTX_REVIEW, 'develop', { 'review-ledger-aaaaaaa-101010.json': { text: ledgerText('fixed-point', 'green'), at: NOW - 30 * MINUTE } }],
+  ['a cycle that exited with a red gate holds nothing open', 'git commit -m "x"', ROOT_CWD, 'deny', 'outside a review cycle', CTX_REVIEW, 'develop', { 'review-ledger-aaaaaaa-101010.json': { text: ledgerText('fixed-point', 'red'), at: NOW - MINUTE } }],
+  ['a red gate the diff carries holds nothing open', 'git commit -m "x"', ROOT_CWD, 'deny', 'outside a review cycle', CTX_REVIEW, 'develop', { 'review-ledger-aaaaaaa-101010.json': { text: ledgerText('fixed-point', 'red', 'diff'), at: NOW - MINUTE } }],
+  ['a red gate outside the diff, older than the commit it was closing, holds nothing open', 'git commit -m "x"', ROOT_CWD, 'deny', 'outside a review cycle', CTX_REVIEW, 'develop', { 'review-ledger-aaaaaaa-101010.json': { text: ledgerText('fixed-point', 'red', 'pre-existing'), at: NOW - 30 * MINUTE } }],
+  ['a cycle that exited with no gate recorded holds nothing open', 'git commit -m "x"', ROOT_CWD, 'deny', 'outside a review cycle', CTX_REVIEW, 'develop', { 'review-ledger-aaaaaaa-101010.json': { text: ledgerText('fixed-point'), at: NOW - MINUTE } }],
+  ['a review quiet for two hours is not in flight', 'git commit -m "x"', ROOT_CWD, 'deny', 'outside a review cycle', CTX_REVIEW, 'develop', { 'review-ledger-aaaaaaa-101010.json': ledgerAt(3 * HOUR) }],
+  ['a ledger set aside does not hold the gate open', 'git commit -m "x"', ROOT_CWD, 'deny', 'outside a review cycle', CTX_REVIEW, 'develop', { 'review-ledger-aaaaaaa-101010.json': ledgerAt(MINUTE), 'review-ledger-aaaaaaa-101010.json.abandoned': { text: '', at: NOW - MINUTE } }],
+  ["another tool's file in the seat is not a ledger", 'git commit -m "x"', ROOT_CWD, 'deny', 'outside a review cycle', CTX_REVIEW, 'develop', { 'review-ledger-aaaaaaa-101010.json': { text: '{"outcome": null}', at: NOW - MINUTE } }],
+  ['a git command that is not a commit passes with no review', 'git status --short', ROOT_CWD, 'allow', '', CTX_REVIEW, 'develop', {}],
+  ['without a state folder declared the review guard is off', 'git commit -m "x"', ROOT_CWD, 'allow', '', CTX_FULL, 'develop', {}],
+
   // --- what is not this guard's business --------------------------------
   // They stay here as explicit proof: readers must see that the read perimeter,
   // the enforcement surface and the Git gestures towards HEAD belong to the host
@@ -1023,11 +1205,16 @@ function selfCheck() {
   const failed = [];
   let ran = 0;
 
-  for (const [name, line, cwd, expected, contains, ctx, branch] of CASES) {
+  for (const [name, line, cwd, expected, contains, ctx, branch, review] of CASES) {
     ran += 1;
     let outcome;
     try {
-      outcome = evaluate(line, cwd, branch ? fakeEnv(branch) : env, ctx || CTX_FULL);
+      outcome = evaluate(
+        line,
+        cwd,
+        branch || review ? fakeEnv(branch || 'main', review) : env,
+        ctx || CTX_FULL
+      );
     } catch (error) {
       failed.push(`${name}: exception ${error && error.message}`);
       continue;
@@ -1054,11 +1241,26 @@ function selfCheck() {
     branch: () => {
       throw new Error('git unreachable');
     },
+    // The state folder of the review guard is the fourth reading of the world: a seat that does
+    // not answer allows. The clock answers here, so the allowance can only come from the seat —
+    // with `now` missing the case would pass for the wrong reason and prove nothing.
+    list: () => {
+      throw new Error('seat unreachable');
+    },
+    read: () => {
+      throw new Error('seat unreachable');
+    },
+    stat: () => {
+      throw new Error('seat unreachable');
+    },
+    now: () => NOW,
   };
   // The link branch is the one interrogating the disk, and it allows when the disk does not
   // answer. The commit-message file is the other disk read, and a message it cannot open is
   // skipped, leaving the line alone to decide. The branch read is the third: a Git that does not
-  // answer lets the gesture through. The others decide on paths and parameters, which need no
+  // answer lets the gesture through. The state folder of the review guard is a fourth: a seat
+  // that does not answer lets a commit through, where a silent denial would block every project
+  // whose ledger folder is unreadable. The others decide on paths and parameters, which need no
   // disk to read, and stay denied.
   const brokenEnv = [
     ['rm -rf c:/dev/wt/wt-1/node_modules', ROOT_CWD, 'deny'],
@@ -1070,6 +1272,7 @@ function selfCheck() {
     ['git commit -F msg-signed.txt', ROOT_CWD, 'allow'],
     ['git commit -m x -m "Co-Authored-By: Claude"', ROOT_CWD, 'deny'],
     ['git commit -m x', ROOT_CWD, 'allow', CTX_CHANNELS],
+    ['git commit -m x', ROOT_CWD, 'allow', CTX_REVIEW],
   ];
   for (const [line, cwd, expected, ctx] of brokenEnv) {
     ran += 1;
