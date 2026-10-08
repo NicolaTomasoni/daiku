@@ -69,6 +69,9 @@ Every tree it writes goes through a throwaway index: the working tree and the re
 | `tail` | when coverage and the gate return | `ledger` and any of `coverage`, `gate`, `gate_detail`, `missing`, `to_confirm`; with `coverage: "no-test-command"` also `work_root`, `code_root`, `project` | `written` |
 | `layers` | the `arch` finder, `skills/arch-check/SKILL.md` | `ledger`, `work_root`, `code_root`, `layers` | the evaluator's block in `answer`, the count in `added` |
 | `ask` | § *Baseline and ledger*, § *Closing* | `ledger` (a path, or `null`) and `question`: the evaluator's input without its ledger | the evaluator's block in `answer` |
+| `log` | on demand, to read across the reviews of the folder | `state_dir` (`{paths.review_state}`) | `written`; `log`, `ledgers`, `rows` |
+
+The `log` action is the finder performance log: an aggregate **derived** from the ledgers already in the folder, written beside them as `review-log.json`. It reads their rounds and their per-round findings files without touching the ledger's form, and carries one row per ledger × round × discipline of the roster — whether the finder ran in that round, and, where the findings file is there, the raw findings and the confidence of what it produced. It is **not a ledger** — it carries neither the nine fields nor the rounds, so the hooks that read the folder skip it — and its form is the `review-log` entry of `schemas/blocks.json`, which is the normative seat, not this prose. It is read-only over the ledgers: it writes nothing but its own file.
 
 Its bench runs with `hooks/self-check.mjs`.
 

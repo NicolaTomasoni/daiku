@@ -45,9 +45,10 @@ resto del pacchetto discendono da qui, e sono la parte che conta:
   tace e diventa un requisito che ferma il lavoro. Vedi [[guardrail-nascono-spenti]].
 - **Non apre file del progetto.** Quello che sa del disco glielo passa l'agente, in chiaro
   nell'esito; l'unico file che legge è `schemas/blocks.json` del pacchetto stesso, per `block`. Le misure sul disco della review le fa perciò un secondo programma accanto a lui,
-  `architect/ledger.mjs`: legge Git, scrive il ledger — l'unico a scriverlo, validandolo contro
-  `schemas/blocks.json` § *ledger* prima di ogni scrittura — e chiede i verdetti al valutatore
-  importandone le domande invece di copiarle. È lui a misurare `on_previous_fix`, sui due alberi
+  `architect/ledger.mjs`: legge Git, scrive il ledger — l'unico a scriverlo — e il `review-log.json`
+  derivato dai ledger che gli stanno accanto, validando ciascuno contro la sua voce di
+  `schemas/blocks.json` (§ *ledger*, § *review-log*) prima di ogni scrittura, e chiede i verdetti al
+  valutatore importandone le domande invece di copiarle. È lui a misurare `on_previous_fix`, sui due alberi
   che fotografa attorno all'applicatore, file non tracciati compresi: una misura che un agente
   esegue e riporta è una dichiarazione, una che esegue un programma è una misura. L'oscillazione,
   che è un confronto di stringhe sul ledger, la misura il valutatore; e in `round` il verdetto di
@@ -86,7 +87,7 @@ stdin e uno su stdout. Le chiavi che ogni domanda richiede sono dichiarate una v
 `REQUIRES` di `architect.mjs`, e il suo banco rifiuta una chiamata al valutatore, nei contratti di
 `skills/`, il cui paragrafo non le nomina tutte. Cosa risponde e il blocco di ritorno stanno in
 `skills/ship-feature/SKILL.md` § *The evaluator* e in `schemas/blocks.json` § *architect*; le
-azioni dello strumento — `scope`, `findings`, `areas`, `round`, `tail`, `layers`, `ask` — in
+azioni dello strumento — `scope`, `findings`, `areas`, `round`, `tail`, `layers`, `ask`, `log` — in
 `skills/review/SKILL.md` § *The ledger tool*: si citano, non si ricopiano. La forma del banco — `.mjs` Node senza dipendenze, radice per argomento,
 `--self-check` a totale contato — è ormai la convenzione di questo repository: chi ne scrive un
 altro la prende da `.docs/tools/check-topology.mjs` invece di reinventarla. Vedi
