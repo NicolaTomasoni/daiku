@@ -27,10 +27,11 @@
  *       `{checks, passed, failed[]}` on stdout, exit 1 on the first red. `hooks/self-check.mjs`
  *       launches it.
  *
- * What it writes, and nothing else: the ledger and the findings files beside it, in the folder
- * the caller names (`{paths.review_state}`), and Git objects. Every tree is written through a
- * throwaway index (`GIT_INDEX_FILE`) seeded from the real one, so the working tree and the real
- * index are never touched, and an untracked file is in the tree like any other.
+ * What it writes: the ledger and the findings files beside it, in the folder the caller names
+ * (`{paths.review_state}`), the `review-log.json` the `log` action derives in that same folder,
+ * and Git objects. Every tree is written through a throwaway index (`GIT_INDEX_FILE`) seeded from
+ * the real one, so the working tree and the real index are never touched, and an untracked file is
+ * in the tree like any other.
  *
  * The prose of its actions — when each is called, what it takes and what it returns — lives in
  * the skill hosting it, `skills/review/SKILL.md` § *The ledger tool*.
@@ -370,6 +371,70 @@ function validateLedger(ledger, schemas) {
   }
   if (wrong.length) fail(`the ledger does not match schemas/blocks.json § ledger: ${wrong.join('; ')}`);
   return ledger;
+}
+
+/**
+ * Is this parsed file one of **our** ledgers? The same judgement the two hooks make — `isLedger`
+ * and `LEDGER_FIELDS` in `hooks/lib/stop-advice.mjs`: the form is the whole key set, exactly the
+ * fields `schemas.ledger.required` declares and no other. A `review-log.json`, a
+ * `<ledger>.round-N.findings.json` and a file of another tool all carry another key set and are
+ * left alone. The seats must agree: what this reads as a ledger is what the hooks read as one.
+ */
+function isLedgerShape(value, spec) {
+  if (!isObject(value)) return false;
+  const keys = Object.keys(value);
+  return keys.length === spec.required.length && spec.required.every((field) => has(value, field));
+}
+
+const CONFIDENCE_LEVELS = ['high', 'medium', 'low'];
+
+/**
+ * The review log, validated against `schemas/blocks.json` § review-log before every write,
+ * mirroring `validateLedger`: the exact key set and the enums are data, the types of a row's
+ * fields are checked here, and a violation is a loud failure — a log written half-formed is not a
+ * log. A row carries the discipline in a round of a ledger, the state the finder ran in, and the
+ * raw findings with their confidence, `null` where the round's findings file is absent.
+ */
+function validateLog(log, schemas) {
+  const spec = schemas['review-log'];
+  if (!spec) fail('schemas/blocks.json carries no § review-log: the log has no form to be written against');
+  if (!isObject(log)) fail('the review log is not a JSON object');
+  const wrong = [];
+  for (const key of spec.required) if (!has(log, key)) wrong.push(`${key} is missing`);
+  for (const key of Object.keys(log)) if (!spec.required.includes(key)) wrong.push(`${key} is not a field of the review log`);
+  if (!Array.isArray(log.ledgers) || !log.ledgers.every(nonEmpty)) wrong.push('ledgers must be the list of the ledger file names read');
+  if (!Array.isArray(log.rows)) wrong.push('rows must be an array');
+  else {
+    log.rows.forEach((row, at) => {
+      const where = `rows[${at}]`;
+      if (!isObject(row)) {
+        wrong.push(`${where} is not a row`);
+        return;
+      }
+      for (const key of spec.row_required) if (!has(row, key)) wrong.push(`${where}.${key} is missing`);
+      for (const key of Object.keys(row)) if (!spec.row_required.includes(key)) wrong.push(`${where}.${key} is not a field of a row`);
+      if (!nonEmpty(row.ledger)) wrong.push(`${where}.ledger must be the name of the ledger read`);
+      if (!nonEmpty(row.base)) wrong.push(`${where}.base must be the SHA of the ledger's base`);
+      if (row.item !== null && !nonEmpty(row.item)) wrong.push(`${where}.item must be the work folder, or null`);
+      if (!Number.isInteger(row.round) || row.round < 1) wrong.push(`${where}.round must be the positive number of the round`);
+      if (!nonEmpty(row.discipline)) wrong.push(`${where}.discipline must be a discipline`);
+      if (row.findings !== null && (!Number.isInteger(row.findings) || row.findings < 0)) wrong.push(`${where}.findings must be a non-negative integer, or null`);
+      if (row.confidence !== null) {
+        if (!isObject(row.confidence)) wrong.push(`${where}.confidence must be the raw count by level, or null`);
+        else {
+          for (const level of CONFIDENCE_LEVELS) {
+            if (!Number.isInteger(row.confidence[level]) || row.confidence[level] < 0) wrong.push(`${where}.confidence.${level} must be a non-negative integer`);
+          }
+          for (const key of Object.keys(row.confidence)) if (!CONFIDENCE_LEVELS.includes(key)) wrong.push(`${where}.confidence.${key} is not a confidence level`);
+        }
+      }
+    });
+  }
+  for (const [path, domain] of Object.entries(spec.enums || {})) {
+    for (const got of valuesAt(log, path)) if (got !== null && !domain.includes(got)) wrong.push(`${path} is ${JSON.stringify(got)}, outside ${domain.join('|')}`);
+  }
+  if (wrong.length) fail(`the review log does not match schemas/blocks.json § review-log: ${wrong.join('; ')}`);
+  return log;
 }
 
 function readJson(path, what) {
@@ -914,6 +979,90 @@ function actAsk(input, root) {
   return answer({ action: 'ask', ledger: path && slashed(path), verdict: verdict.verdict, answer: verdict, detail: verdict.detail });
 }
 
+/** The canonical order of the disciplines, and the levels a raw finding's confidence can take. */
+const ROSTER_ORDER = ['bug', 'arch', 'perf', 'dead'];
+
+/**
+ * log — the finder performance log: an aggregate **derived** from the ledgers of the folder,
+ * written beside them. It walks the `.json` files of `state_dir`, recognises a ledger by its form
+ * (`isLedgerShape`, the judgement the two hooks make), and emits one row per ledger × round ×
+ * discipline of the roster — the disciplines seen in any round of any ledger, in the canonical
+ * order. `findings` and `confidence` come from the round's findings file when it exists and are
+ * `null` when it does not: an absent file is not a discipline that found nothing. The log touches
+ * no ledger's form — the round it walks is the ledger's own `rounds`, so the closing round on
+ * tests, kept outside them, produces no row — and writes nothing but its own file.
+ */
+function actLog(input, root) {
+  const schemas = schemasOf(root);
+  const dir = resolve(text(input, 'state_dir'));
+  let names;
+  try {
+    names = readdirSync(dir).filter((name) => name.endsWith('.json')).sort();
+  } catch (error) {
+    return fail(`state_dir ${JSON.stringify(input.state_dir)} cannot be read: ${error.message}`);
+  }
+  const ledgers = [];
+  const roster = new Set();
+  const records = [];
+  for (const name of names) {
+    const path = join(dir, name);
+    const value = readJson(path, 'a file of the state folder');
+    if (!isLedgerShape(value, schemas.ledger)) continue;
+    if (!Array.isArray(value.rounds)) fail(`${slashed(path)} carries ${JSON.stringify(value.rounds)} where the ledger's rounds must be an array`);
+    for (const round of value.rounds) if (!isObject(round)) fail(`${slashed(path)}: every round must be an object`);
+    ledgers.push(name);
+    records.push({ name, path, ledger: value });
+    for (const round of value.rounds) {
+      for (const discipline of [...(round.disciplines || []), ...(round.missing_disciplines || [])]) roster.add(discipline);
+    }
+  }
+  const order = ROSTER_ORDER.filter((discipline) => roster.has(discipline));
+  const rows = [];
+  for (const record of records) {
+    for (const round of record.ledger.rounds) {
+      for (const discipline of order) rows.push(logRow(record, round, discipline));
+    }
+  }
+  const path = join(dir, 'review-log.json');
+  writeJson(path, validateLog({ ledgers, rows }, schemas));
+  return answer({
+    action: 'log', ledger: slashed(path), verdict: 'written', log: slashed(path), ledgers, rows,
+    detail: `the finder log of ${ledgers.length} ledger${ledgers.length === 1 ? '' : 's'} written in ${slashed(path)}: ${rows.length} rows over ${order.length ? order.join(', ') : 'no discipline'}; ` +
+      `the log is not a ledger, so the hooks that read the folder skip it.`,
+  });
+}
+
+/** One row of the log: a discipline, in a round of a ledger, as the disk holds it. */
+function logRow(record, round, discipline) {
+  const file = findingsPath(record.path, round.n);
+  const present = existsSync(file);
+  const found = present ? readJson(file, 'the findings file') : null;
+  const keys = found && isObject(found.keys) ? Object.entries(found.keys) : [];
+  const mine = keys.filter(([key]) => {
+    const match = FINDER_KEY.exec(key);
+    return match && match[1] === discipline;
+  });
+  const returned = (round.disciplines || []).includes(discipline) || mine.some(([, entry]) => entry && entry.valid);
+  const lost = (round.missing_disciplines || []).includes(discipline) || mine.some(([, entry]) => entry && !entry.valid);
+  let findings = null;
+  let confidence = null;
+  if (present) {
+    findings = 0;
+    confidence = { high: 0, medium: 0, low: 0 };
+    for (const [, entry] of mine) {
+      for (const finding of entry && Array.isArray(entry.findings) ? entry.findings : []) {
+        findings += 1;
+        const level = finding && finding.confidence;
+        if (CONFIDENCE_LEVELS.includes(level)) confidence[level] += 1;
+      }
+    }
+  }
+  return {
+    ledger: record.name, base: record.ledger.base, item: record.ledger.item, round: round.n,
+    discipline, state: returned ? 'returned' : lost ? 'lost' : 'not-launched', findings, confidence,
+  };
+}
+
 const ACTIONS = {
   scope: actScope,
   findings: actFindings,
@@ -922,6 +1071,7 @@ const ACTIONS = {
   tail: actTail,
   layers: actLayers,
   ask: actAsk,
+  log: actLog,
 };
 
 function dispatch(input, root) {
@@ -1446,6 +1596,141 @@ function runBench(root) {
       const removed = hunks.flatMap((h) => h.removed);
       const added = hunks.flatMap((h) => h.added.map((row) => row.text));
       check('parser:a-content-line-shaped-like-a-header-is-content', removed.includes('-- a comment') && added.includes('--- x'), JSON.stringify(hunks));
+    });
+
+    /* --- log: the aggregate derived from the ledgers of the folder, read-only over their form --- */
+    attempt('log', () => {
+      const sha = 'a'.repeat(40);
+      const round = (n, extra = {}) => ({
+        n, disciplines: ['bug'], missing_disciplines: [],
+        pre_apply_tree: 'p'.repeat(40), post_apply_tree: 'q'.repeat(40), applied: [], discarded: [],
+        to_confirm: [], oscillation: [], check_fast: [], check_tests: [], verdict: 'stop', why: '', ...extra,
+      });
+      const ledger = (extra = {}) => ({
+        base: sha, item: 'features/x', scope_tree: 't', scope_files: ['src/a.js'], rounds: [],
+        outcome: null, coverage: null, gate: null, gate_detail: null, ...extra,
+      });
+      const container = (name) => {
+        const state = join(home, 'log', name);
+        mkdirSync(state, { recursive: true });
+        const write = (file, value) => writeFileSync(join(state, file), JSON.stringify(value, null, 2), 'utf-8');
+        return { state, write, run: (extra = {}) => settle({ action: 'log', state_dir: state, ...extra }) };
+      };
+      const findings = (keys) => ({ round: 1, keys, applier_attempts: 0, findings: [] });
+      const key = (discipline, valid, list) => ({ discipline, attempts: 1, valid, blockers: [], returned: true, findings: list });
+      const rowOf = (result, file, discipline = 'bug') => (result.rows || []).find((row) => row.ledger === file && row.discipline === discipline);
+
+      /* one ledger, one bug round: the row counts the raw findings and their confidence */
+      const c1 = container('basic');
+      const l1 = 'review-ledger-aaaaaaa-000000.json';
+      c1.write(l1, ledger({ rounds: [round(1)] }));
+      c1.write('review-ledger-aaaaaaa-000000.round-1.findings.json', findings({
+        bug: key('bug', true, [{ confidence: 'high' }, { confidence: 'medium' }]),
+      }));
+      const r1 = c1.run();
+      const b1 = rowOf(r1, l1);
+      check(
+        'log:a-returned-finder-counts-its-raw-findings-and-confidence',
+        r1.verdict === 'written' && !!b1 && b1.state === 'returned' && b1.findings === 2 && JSON.stringify(b1.confidence) === '{"high":1,"medium":1,"low":0}',
+        JSON.stringify(r1)
+      );
+
+      /* a lost discipline: in missing_disciplines, and its key did not come back valid */
+      const c2 = container('lost');
+      const l2 = 'review-ledger-aaaaaaa-000000.json';
+      c2.write(l2, ledger({ rounds: [round(1, { missing_disciplines: ['arch'] })] }));
+      c2.write('review-ledger-aaaaaaa-000000.round-1.findings.json', findings({
+        bug: key('bug', true, []), arch: key('arch', false, []),
+      }));
+      const r2 = c2.run();
+      const a2 = rowOf(r2, l2, 'arch');
+      check(
+        'log:a-lost-discipline-reads-lost-with-zero',
+        !!a2 && a2.state === 'lost' && a2.findings === 0 && JSON.stringify(a2.confidence) === '{"high":0,"medium":0,"low":0}',
+        JSON.stringify(r2)
+      );
+
+      /* the roster is folder-wide: a discipline another ledger ran reads not-launched here */
+      const c3 = container('roster');
+      const l3a = 'review-ledger-aaaaaaa-000000.json';
+      const l3b = 'review-ledger-bbbbbbb-000000.json';
+      c3.write(l3a, ledger({ rounds: [round(1, { disciplines: ['bug', 'arch'] })] }));
+      c3.write('review-ledger-aaaaaaa-000000.round-1.findings.json', findings({ bug: key('bug', true, [{ confidence: 'high' }]), arch: key('arch', true, []) }));
+      c3.write(l3b, ledger({ rounds: [round(1)] }));
+      c3.write('review-ledger-bbbbbbb-000000.round-1.findings.json', findings({ bug: key('bug', true, []) }));
+      const r3 = c3.run();
+      const a3 = rowOf(r3, l3b, 'arch');
+      check(
+        'log:a-discipline-never-asked-in-a-round-is-not-launched',
+        !!a3 && a3.state === 'not-launched' && a3.findings === 0,
+        JSON.stringify(r3)
+      );
+
+      /* no findings file on disk: null, not zero */
+      const c4 = container('no-findings');
+      const l4 = 'review-ledger-aaaaaaa-000000.json';
+      c4.write(l4, ledger({ rounds: [round(1)] }));
+      const r4 = c4.run();
+      const b4 = rowOf(r4, l4);
+      check(
+        'log:a-missing-findings-file-reads-null-not-zero',
+        !!b4 && b4.state === 'returned' && b4.findings === null && b4.confidence === null,
+        JSON.stringify(r4)
+      );
+
+      /* the closing round on tests is not among the rounds: no row, the sample untouched */
+      const c5 = container('tests-round');
+      const l5 = 'review-ledger-aaaaaaa-000000.json';
+      c5.write(l5, ledger({ rounds: [round(1)] }));
+      c5.write('review-ledger-aaaaaaa-000000.round-1.findings.json', findings({ bug: key('bug', true, []) }));
+      c5.write('review-ledger-aaaaaaa-000000.tests.findings.json', findings({ 't-bug-1': key('bug', true, [{ confidence: 'high' }]) }));
+      const r5 = c5.run();
+      check(
+        'log:the-closing-round-on-tests-produces-no-row',
+        (r5.rows || []).length === 1 && JSON.stringify(r5.ledgers) === JSON.stringify([l5]),
+        JSON.stringify(r5)
+      );
+
+      /* a review-log.json in the folder is not a ledger and adds no row */
+      const c6 = container('self');
+      const l6 = 'review-ledger-aaaaaaa-000000.json';
+      c6.write(l6, ledger({ rounds: [round(1)] }));
+      c6.write('review-ledger-aaaaaaa-000000.round-1.findings.json', findings({ bug: key('bug', true, []) }));
+      c6.write('review-log.json', { ledgers: [], rows: [] });
+      const r6 = c6.run();
+      check(
+        'log:a-review-log-in-the-folder-is-not-mistaken-for-a-ledger',
+        (r6.ledgers || []).length === 1 && !(r6.ledgers || []).includes('review-log.json'),
+        JSON.stringify(r6)
+      );
+
+      /* a file in another tool's form is skipped, like the hooks skip it */
+      const c7 = container('foreign');
+      const l7 = 'review-ledger-aaaaaaa-000000.json';
+      c7.write(l7, ledger({ rounds: [round(1)] }));
+      c7.write('review-ledger-aaaaaaa-000000.round-1.findings.json', findings({ bug: key('bug', true, []) }));
+      c7.write('review-ledger-ccccccc-000000.json', { base: sha, item: null, gate: null, gate_detail: null, giri: [], uscita: null });
+      const r7 = c7.run();
+      check('log:a-file-in-another-form-is-skipped', JSON.stringify(r7.ledgers) === JSON.stringify([l7]), JSON.stringify(r7));
+
+      refused('log:state-dir-is-required', { action: 'log' }, 'state_dir is required');
+      refused('log:an-unreadable-folder-is-refused', { action: 'log', state_dir: join(home, 'log', 'absent') }, 'absent');
+
+      /* two ledgers, a different number of rounds: sum(rounds x roster) rows, the names in order */
+      const c8 = container('two');
+      const l8a = 'review-ledger-aaaaaaa-000000.json';
+      const l8b = 'review-ledger-bbbbbbb-000000.json';
+      c8.write(l8a, ledger({ rounds: [round(1)] }));
+      c8.write('review-ledger-aaaaaaa-000000.round-1.findings.json', findings({ bug: key('bug', true, []) }));
+      c8.write(l8b, ledger({ rounds: [round(1), round(2)] }));
+      c8.write('review-ledger-bbbbbbb-000000.round-1.findings.json', findings({ bug: key('bug', true, []) }));
+      c8.write('review-ledger-bbbbbbb-000000.round-2.findings.json', findings({ bug: key('bug', true, []) }));
+      const r8 = c8.run();
+      check(
+        'log:one-row-per-round-times-roster-and-the-names-in-order',
+        (r8.rows || []).length === 3 && JSON.stringify(r8.ledgers) === JSON.stringify([l8a, l8b]),
+        JSON.stringify(r8)
+      );
     });
 
     refused('reject:unknown-action', { action: 'invented' }, 'action is required');
