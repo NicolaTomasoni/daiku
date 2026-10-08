@@ -5,7 +5,7 @@
   "code_root": "plugins/",
   "language": {
     "chat": "it",
-    "commit": "it"
+    "commit": "en"
   },
   "changelog": "plugins/CHANGELOG.md",
   "version": {
