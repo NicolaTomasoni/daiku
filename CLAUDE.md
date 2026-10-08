@@ -85,8 +85,9 @@ che è giusto: fra i due c'è di mezzo il codice appena scritto, che nessun find
 commit diretto non accorcia la strada, la copre: mette in storia un diff che nessuno rileggerà. Vale
 anche per un file solo, e vale coi banchi verdi. **La seconda sede del divieto è la guardia**: in
 `plugins/daiku/hooks/lib/command-guard.mjs` il ramo `reviewGuard` nega `git commit` quando nella
-sede dei ledger non c'è nessun ciclo in volo né un ciclo appena uscito con gate verde — il testo
-dice cosa fare, il controllo lo impone.
+sede dei ledger non c'è nessun ciclo in volo né un ciclo appena uscito con un gate che il commit può
+chiudere — verde, o rosso solo per una causa fuori dal diff (`gate_origin: "pre-existing"`) — il
+testo dice cosa fare, il controllo lo impone.
 
 **Le skill del metodo si modificano solo in `plugins/daiku/skills/`.** Una modifica che valga per
 il prodotto si scrive **solo** lì, che è l'unico albero pubblicato; riportarla in un comando del

@@ -264,6 +264,15 @@ function reviewOutcomeOf(input, required) {
   if (!Array.isArray(out.to_confirm)) {
     throw new BadInput('review_outcome.to_confirm must be an array');
   }
+  // `gate_origin` is a required key that admits `null`: a green gate and a red naming no file are
+  // the two legitimate nulls, so the presence of the key is checked and the value's domain, never
+  // its nullity — refusing a null here would refuse the two fallbacks this field exists to carry.
+  if (!Object.prototype.hasOwnProperty.call(out, 'gate_origin')) {
+    throw new BadInput('review_outcome.gate_origin is required: the origin of a red gate — "diff", "pre-existing" or null');
+  }
+  if (out.gate_origin !== null && out.gate_origin !== 'diff' && out.gate_origin !== 'pre-existing') {
+    throw new BadInput(`review_outcome.gate_origin must be "diff", "pre-existing" or null, got ${JSON.stringify(out.gate_origin)}`);
+  }
   return out;
 }
 
@@ -407,7 +416,11 @@ function askOrder(input) {
 function askDecision(input) {
   const out = reviewOutcomeOf(input, ['gate', 'outcome', 'missing_disciplines', 'to_confirm']);
   const blockers = [];
-  if (out.gate !== 'green') blockers.push(`gate red: ${out.gate_detail === undefined || out.gate_detail === null ? 'no detail declared' : out.gate_detail}`);
+  // Row 1 blocks on a red the diff carries: a red standing only on a cause outside the diff
+  // (`gate_origin: "pre-existing"`) is declared, not a blocker, and the delivery proceeds.
+  if (out.gate !== 'green' && out.gate_origin !== 'pre-existing') {
+    blockers.push(`gate red: ${out.gate_detail === undefined || out.gate_detail === null ? 'no detail declared' : out.gate_detail}`);
+  }
   if (out.outcome === 'oscillation' || out.outcome === 'rounds-exhausted') {
     blockers.push(`the cycle did not converge, it exited by ${out.outcome}`);
   }
@@ -463,7 +476,7 @@ function askClosing(input) {
     ['a detected oscillation', (out.oscillation || 0) === 0],
     ['an exit by rounds-exhausted', out.outcome !== 'rounds-exhausted'],
     ['missing disciplines', out.missing_disciplines.length === 0],
-    ['a green gate', out.gate === 'green'],
+    ['a green gate', out.gate === 'green' || out.gate_origin === 'pre-existing'],
     ['a ledger the commit can read', readableLedger(input.ledger)],
   ];
   const blockers = conditions.filter(([, holds]) => !holds).map(([name]) => name);
@@ -480,7 +493,9 @@ function askClosing(input) {
 function askUnblock(input) {
   const out = reviewOutcomeOf(input, ['gate', 'outcome', 'missing_disciplines', 'to_confirm']);
   const holds = [];
-  if (out.gate === 'green') holds.push('the gate is not red, so the block is not the first row of the table');
+  // The first row of the table is the block this road exists for. A red standing only on a cause
+  // outside the diff is not it — the diff carries nothing to correct — so it holds like the green.
+  if (out.gate === 'green' || out.gate_origin === 'pre-existing') holds.push('the gate is not red, or it is red only for a cause outside the diff, so the block is not the first row of the table');
   if (out.outcome !== 'fixed-point') holds.push(`the cycle did not exit at a fixed point, it exited by ${out.outcome}`);
   if (out.missing_disciplines.length) holds.push(`disciplines that did not run on this diff: ${out.missing_disciplines.join(', ')}`);
   if (blockingItems(out).length) holds.push('a blocking item remains');
@@ -1557,6 +1572,7 @@ function matches(got, expect) {
 const GREEN = (extra = {}) => ({
   gate: 'green',
   gate_detail: 'ok',
+  gate_origin: null,
   outcome: 'fixed-point',
   missing_disciplines: [],
   to_confirm: [],
@@ -1573,7 +1589,7 @@ const OUTCOME = (id, extra = {}) => ({ finding_id: id, file: 'a.mjs', symbol: 'f
 const APPLIER = (extra = {}) => ({ applied: [], discarded: [], to_confirm: [], oscillation: [], ...extra });
 const LEDGER = (rounds) => ({
   base: 'abc1234', item: 'x/y', rounds: rounds.map((round, index) => ({ n: index + 1, ...round })),
-  outcome: null, coverage: null, gate: null, gate_detail: null,
+  outcome: null, coverage: null, gate: null, gate_detail: null, gate_origin: null,
 });
 const LAYER = (extra = {}) => ({
   policy: '.daiku/policies/server.md', name: 'api', folders: ['src/server/api/**'], deny_imports: ['src/server/db/**'], ...extra,
@@ -1643,6 +1659,18 @@ const CASES = [
   { id: 'decision:every-blocking-condition', cites: { file: 'skills/ship-feature/SKILL.md', section: '4. Decision' },
     input: { question: 'decision', review_outcome: GREEN({ gate: 'red', outcome: 'oscillation', missing_disciplines: ['perf'], to_confirm: [{ file: 'a.mjs', class: 'bug', blocking: true, scenario: 'x' }] }) },
     expect: { verdict: 'BLOCKED_NO_COMMIT', blockers_length_at_least: 4 } },
+  { id: 'decision:row-1-gate-red-pre-existing', cites: { file: 'skills/ship-feature/SKILL.md', section: '4. Decision' },
+    input: { question: 'decision', review_outcome: GREEN({ gate: 'red', gate_detail: 'tsc: 2 errors', gate_origin: 'pre-existing' }) },
+    expect: { verdict: 'GREEN_COMMITTED', blockers: [] } },
+  { id: 'decision:row-1-gate-red-pre-existing-with-post-decisions', cites: { file: 'skills/ship-feature/SKILL.md', section: '4. Decision' },
+    input: { question: 'decision', review_outcome: GREEN({ gate: 'red', gate_detail: 'x', gate_origin: 'pre-existing', to_confirm: [{ file: 'a.mjs', class: 'arch', blocking: false, scenario: 'x' }] }) },
+    expect: { verdict: 'GREEN_WITH_POST_DECISIONS' } },
+  { id: 'decision:row-1-gate-red-diff', cites: { file: 'skills/ship-feature/SKILL.md', section: '4. Decision' },
+    input: { question: 'decision', review_outcome: GREEN({ gate: 'red', gate_detail: 'x', gate_origin: 'diff' }) },
+    expect: { verdict: 'BLOCKED_NO_COMMIT', blockers_include: 'gate red: x' } },
+  { id: 'decision:row-1-gate-red-unattributed', cites: { file: 'skills/ship-feature/SKILL.md', section: '4. Decision' },
+    input: { question: 'decision', review_outcome: GREEN({ gate: 'red', gate_detail: 'x', gate_origin: null }) },
+    expect: { verdict: 'BLOCKED_NO_COMMIT', blockers_include: 'gate red: x' } },
 
   /* --- question: closing — skills/review/SKILL.md § Closing, the six conditions --- */
   { id: 'closing:all-six-hold', cites: { file: 'skills/review/SKILL.md', section: 'Closing' },
@@ -1678,6 +1706,15 @@ const CASES = [
   { id: 'closing:condition-rounds-truncated-does-not-block', cites: { file: 'skills/review/SKILL.md', section: 'Closing' },
     input: { question: 'closing', review_outcome: GREEN({ oscillation: 0, outcome: 'rounds-truncated' }), ledger: { base: 'abc1234', item: 'x/y', rounds: [], outcome: 'rounds-truncated', coverage: 'no-tests-needed', gate: 'green', gate_detail: 'ok' } },
     expect: { verdict: 'commit' } },
+  { id: 'closing:condition-gate-red-pre-existing-does-not-block', cites: { file: 'skills/review/SKILL.md', section: 'Closing' },
+    input: { question: 'closing', review_outcome: GREEN({ oscillation: 0, gate: 'red', gate_detail: 'x', gate_origin: 'pre-existing' }), ledger: { base: 'abc1234', item: 'x/y', rounds: [], outcome: 'fixed-point', coverage: 'no-tests-needed', gate: 'red', gate_detail: 'x' } },
+    expect: { verdict: 'commit', blockers: [] } },
+  { id: 'closing:condition-gate-red-diff-blocks', cites: { file: 'skills/review/SKILL.md', section: 'Closing' },
+    input: { question: 'closing', review_outcome: GREEN({ oscillation: 0, gate: 'red', gate_detail: 'x', gate_origin: 'diff' }), ledger: { base: 'abc1234', item: 'x/y', rounds: [], outcome: 'fixed-point', coverage: 'no-tests-needed', gate: 'red', gate_detail: 'x' } },
+    expect: { verdict: 'stop', blockers_include: 'green gate' } },
+  { id: 'closing:condition-gate-red-unattributed-blocks', cites: { file: 'skills/review/SKILL.md', section: 'Closing' },
+    input: { question: 'closing', review_outcome: GREEN({ oscillation: 0, gate: 'red', gate_detail: 'x', gate_origin: null }), ledger: { base: 'abc1234', item: 'x/y', rounds: [], outcome: 'fixed-point', coverage: 'no-tests-needed', gate: 'red', gate_detail: 'x' } },
+    expect: { verdict: 'stop', blockers_include: 'green gate' } },
 
   /* --- question: unblock — skills/ship-feature/SKILL.md § Mechanical unblock --- */
   { id: 'unblock:only-the-gate', cites: { file: 'skills/ship-feature/SKILL.md', section: 'Mechanical unblock' },
@@ -1697,6 +1734,9 @@ const CASES = [
     expect: { verdict: 'blocked' } },
   { id: 'unblock:green-gate-is-not-a-block', cites: { file: 'skills/ship-feature/SKILL.md', section: 'Mechanical unblock' },
     input: { question: 'unblock', review_outcome: GREEN() },
+    expect: { verdict: 'blocked' } },
+  { id: 'unblock:gate-red-pre-existing-is-not-the-block', cites: { file: 'skills/ship-feature/SKILL.md', section: 'Mechanical unblock' },
+    input: { question: 'unblock', review_outcome: GREEN({ gate: 'red', gate_detail: 'lint', gate_origin: 'pre-existing' }) },
     expect: { verdict: 'blocked' } },
 
   /* --- question: propagation — contracts/orchestration.md §4, validation clause --- */
@@ -2204,6 +2244,8 @@ const REJECTED = [
   { id: 'reject:unknown-entry', input: { question: 'order', entry: 'invented', present: [], ledger: null } },
   { id: 'reject:present-not-a-list', input: { question: 'order', entry: 'new-feature', present: 'x', ledger: null } },
   { id: 'reject:review-outcome-absent', input: { question: 'decision' } },
+  { id: 'reject:gate-origin-absent', input: { question: 'decision', review_outcome: { gate: 'red', gate_detail: 'x', outcome: 'fixed-point', missing_disciplines: [], to_confirm: [] } } },
+  { id: 'reject:gate-origin-outside-its-domain', input: { question: 'decision', review_outcome: GREEN({ gate_origin: 'forse' }) } },
   { id: 'reject:gate-outside-its-domain', input: { question: 'decision', review_outcome: GREEN({ gate: 'yellow' }) } },
   { id: 'reject:outcome-outside-its-domain', input: { question: 'decision', review_outcome: GREEN({ outcome: 'converged' }) } },
   { id: 'reject:missing-disciplines-not-a-list', input: { question: 'decision', review_outcome: GREEN({ missing_disciplines: 'arch' }) } },
