@@ -23,7 +23,7 @@ perché i due host cercano file con nomi diversi e ignorano quelli dell'altro.
 
 | Dentro il pacchetto | Cosa c'è | Chi lo legge |
 |---|---|---|
-| `skills/` | i **21 contratti** del metodo, uno per cartella; accanto alla `SKILL.md` di `init` sta `scan.mjs`, il programma che misura cosa manca sul disco prima che `init` scriva, col banco che `hooks/self-check.mjs` lancia | **entrambi** gli host, stessi identici file |
+| `skills/` | i **23 contratti** del metodo, uno per cartella; accanto alla `SKILL.md` di `init` sta `scan.mjs`, il programma che misura cosa manca sul disco prima che `init` scriva, col banco che `hooks/self-check.mjs` lancia | **entrambi** gli host, stessi identici file |
 | `contracts/` | `orchestration.md`, `project-contract.md` | le skill li aprono per path; non sono skill loro stessi |
 | `agents/` | `finder` — l'unico subagent a toolset ristretto | solo Claude Code: Codex lo rifiuta |
 | `hooks/` | il wiring `hooks.json`, i **sei hook** in `lib/` e i **due moduli** che importano (`project-root.mjs`, `daiku-config.mjs`); accanto, fuori da `lib/`, `self-check.mjs`, `template-check.mjs` e `README.md`, che sono di chi sviluppa il pacchetto e non si trasportano | solo Claude Code: su Codex `plugin_hooks` è rimossa |
@@ -59,7 +59,7 @@ solo `.gitignore` e `.gitattributes` del repository di sviluppo.
   path della sua home. Non c'entra niente con Daiku.
 - **`.daiku/`** — i parametri del **cantiere**, non del prodotto, e versionati come il resto: è
   ciò che accende le guardie di Daiku su questo repository (vedi [[guardie-di-macchina]]), e tiene
-  le sedi dei lavori — `features/` e `studies/`, come vuole il contratto del prodotto. Il suo
+  le sedi dei lavori — `features/`, `studies/` e `handoffs/`, come vuole il contratto del prodotto. Il suo
   `project.json` dichiara `plugins/` come codice, `.docs/memory` come memoria e
   `.docs/runtime/review` come ledger; fuori da lì non entra nessun file **nuovo**, in radice e in
   `.claude/` compresi. Vedi [[daiku-versionato]] per la cartella come sede del progetto ospite.

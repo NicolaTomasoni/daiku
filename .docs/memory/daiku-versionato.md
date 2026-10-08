@@ -9,7 +9,8 @@ metadata:
 ---
 
 `.daiku/` **entra nella storia condivisa** del progetto che l'ha aperta: `project.json`,
-`environment.json`, `domain/`, `policies/`, le sedi dei lavori `features/` e `studies/`, e la
+`environment.json`, `domain/`, `policies/`, le sedi dei lavori `features/`, `studies/` e
+`handoffs/`, e la
 documentazione di Daiku su sé stesso, che `init`
 deposita come `.daiku/README.md`. È la configurazione che il progetto ha scritto di sé,
 e parte di essa è scritta a mano — le policy e il domain, che nessun `init` rigenera — quindi un

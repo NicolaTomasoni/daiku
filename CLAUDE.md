@@ -48,14 +48,14 @@ e nient'altro esce.
 | `plugins/.agents/plugins/marketplace.json` | vetrina Codex, stessa destinazione |
 | `plugins/daiku/` | il pacchetto Daiku — ciò che gli host installano |
 | `.docs/` | memoria, confronti, esempi, strumenti di sviluppo |
-| `.daiku/` | i parametri del **cantiere**, non del prodotto: le guardie di Daiku su questo repository, e sotto di sé le sedi dei lavori — `features/` e `studies/` |
+| `.daiku/` | i parametri del **cantiere**, non del prodotto: le guardie di Daiku su questo repository, e sotto di sé le sedi dei lavori — `features/`, `studies/` e `handoffs/` |
 | `CLAUDE.md`, `.claude/`, `.vscode/`, `.gitignore`, `.gitattributes` | sviluppo, obbligati in radice dagli host e da git |
 
 `.daiku/project.json` non è una sede di sviluppo come le altre: **è il gate delle guardie.** Il
 pacchetto è installato su ogni repository che l'host apre, ma non nega niente dove il progetto non
 ha dichiarato di aver aperto Daiku — e senza di esso, qui, `git push` non lo fermerebbe nessuno.
 Le sue chiavi dichiarano le sedi che il cantiere usa davvero: il codice è `plugins/`, le sedi dei
-lavori sono `.daiku/features` e `.daiku/studies`, la memoria è `.docs/memory` e i ledger dei giri
+lavori sono `.daiku/features`, `.daiku/studies` e `.daiku/handoffs`, la memoria è `.docs/memory` e i ledger dei giri
 di review sono `.docs/runtime/review`. Fuori da quelle sedi
 non entra un file **nuovo** — in radice, e in `.claude/`: è voluto, perché in radice non entra
 niente e i comandi del cantiere si scrivono su ordine dell'owner.
@@ -74,7 +74,9 @@ rispetto a `plugins/`. È una scelta, non una trascuratezza.
 
 **Con cui Daiku si sviluppa sono le skill di Daiku stesso**: aprire una feature, consegnarla, il
 ciclo di review, il commit e l'allineamento della memoria si lanciano come `daiku:*`, dal pacchetto
-installato dal marketplace. Sotto `.claude/commands/` restano **solo i comandi che il prodotto non
+installato dal marketplace — **quando è l'owner a chiederlo**. `new-feature` apre una feature **solo
+su richiesta esplicita dell'owner**: un lavoro che a te sembra meritare la catena è una riga che lo
+propone, mai un giro avviato al posto suo. Sotto `.claude/commands/` restano **solo i comandi che il prodotto non
 ha** — `studia-repository`, `translate-skill`. Il rilascio non è fra loro: lo fa `release`, che è
 una skill del pacchetto come le altre.
 

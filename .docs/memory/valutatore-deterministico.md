@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 43bcfac4-1cc3-4310-acf9-530699fcf261
-  modified: 2026-10-08T09:15:35.445Z
+  modified: 2026-10-08T16:04:14.400Z
 ---
 
 **Dal 23 settembre 2026 il prodotto ha un valutatore deterministico.** È
@@ -25,7 +25,7 @@ e applicatore dallo strumento del ledger), lo slot del pool dei worktree (`pool`
 chiesta da `architect/reconcile.mjs`) — e **possiede l'ordine della catena**: la tabella di §3 di
 `contracts/orchestration.md` non lo dichiara più, ne è il riflesso, e il banco del valutatore
 rifiuta la divergenza nei due versi. Gli entry che non aprono una catena **da ordinare** — `study`
-lanciato a mano, e dal 3 ottobre 2026 `release` — stanno in `ATOMIC` di `architect.mjs`: chiesti con
+lanciato a mano, `handoff`, e dal 3 ottobre 2026 `release` — stanno in `ATOMIC` di `architect.mjs`: chiesti con
 `order` rispondono `stop` con la loro ragione, perché non c'è una sequenza da ordinare. Per `release`
 questo non vuol più dire «non lancia niente»: dall'8 ottobre 2026, prima di scrivere, fa passare un
 albero non pulito per il ciclo di review e il suo commit — una pulizia, non una catena da ordinare

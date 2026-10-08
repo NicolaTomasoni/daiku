@@ -12,10 +12,16 @@ metadata:
 
 **Con cui Daiku si sviluppa sono le skill di Daiku stesso.** Il pacchetto è installato dal
 marketplace online — `NicolaTomasoni/daiku`, ramo di produzione `main` — e aprire una feature,
-consegnarla, il ciclo di review, il commit, l'allineamento della memoria e **il rilascio** sono le
-sue skill, invocate come `daiku:*` (`new-feature`, `ship-feature`, `review`, `code-review`, `commit`,
+il ciclo di review, il commit, l'allineamento della memoria e **il rilascio** sono le
+sue skill, invocate come `daiku:*` (`new-feature`, `review`, `code-review`, `commit`,
 `release`, `update-memory`, `research`, `study`, `decision-doc`, `blueprint`, `execute`). Un comando
 che ha il suo gemello là non vive anche qui.
+
+**`new-feature` si apre solo se è l'owner a chiedere la feature.** Non è una delle nove che si
+lanciano a mano su iniziativa di chi legge — quelle vivono in [[punti-ingresso-prodotto]] — e la
+catena che apre la cartella è il gesto che il metodo lascia all'owner: `GRAPH` dichiara `owner` come
+suo unico chiamante, e `owner` è l'umano, non la sessione. Un lavoro che a te sembra meritare la
+feature è una riga che lo propone.
 
 **I due comandi che restano** coprono ciò che Daiku non fa per un progetto, perché riguarda il
 costruire Daiku stesso: `studia-repository`, `translate-skill`. Il contratto che li lega è

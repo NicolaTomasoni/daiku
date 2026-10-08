@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: bb0219dd-76c8-4a09-bf9b-4cb040132a6e
-  modified: 2026-10-03T14:35:07.098Z
+  modified: 2026-10-08T16:04:13.128Z
 ---
 
 Dal 19 settembre 2026 `init` **scrive il file di istruzioni** del progetto ospite (`CLAUDE.md` o
@@ -24,7 +24,7 @@ non revocata.
 esattamente il problema che la vecchia regola temeva.
 
 - **La prosa già scritta nello scheletro è un default del pacchetto, non un'invenzione della
-  sessione** — *Behaviour*, *Git and commits*, le cinque hard rule coi loro slug. Si copia com'è.
+  sessione** — *Behaviour*, *Git and commits*, le sei hard rule coi loro slug. Si copia com'è.
   Nessuno la sta deducendo da questo repository perché non parla di questo repository.
 - **Un invariante si scrive solo dove lo si è visto affermato**: in un file di istruzioni che
   c'era già, in un documento del repository, o in una regola che la struttura rispetta senza

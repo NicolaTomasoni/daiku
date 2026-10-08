@@ -17,7 +17,7 @@ Daiku ha **dieci entry point** — le sole skill che si lanciano a mano. Stanno 
 - `review` — controlla un diff a giri, con finder indipendenti e applicatore
 - `code-review` — il ciclo solo-bug sullo scope detto a mano: giri, fix e gate come `review`, ma si ferma al report senza committare
 - `commit` — allinea memoria e documenti con `update-memory`, poi chiude in commit separati
-- `ship-feature` — da una cartella esistente, col brief o senza, consegna fino al commit senza riaprire lo studio
+- `handoff` — a metà di un lavoro lo lasci a un altro agente: scrive il documento che porta il problema, cosa è stato fatto e cosa manca, con le prove inline, e si ferma — non apre nessuna catena e non consegna niente
 - `release` — il progetto che ha dichiarato i canali: chiede la versione una volta sul blocco di commit accumulati sul ramo di sviluppo e sposta la produzione sulla sua punta con un fast-forward locale, senza mai pushare
 
 **L'installazione — una volta per progetto (3):**
@@ -26,8 +26,12 @@ Daiku ha **dieci entry point** — le sole skill che si lanciano a mano. Stanno 
 - `sync-host` — solo su Codex: `init` lo lancia come ultimo passo, e si rilancia dopo ogni aggiornamento; riallinea guardrail e ruoli in `.codex/`
 - `new-project` — dopo `init`, scrive i cinque documenti fondativi del progetto (prodotto, identità, dominio, stack, architettura) dagli scheletri del pacchetto ai path dichiarati in `documents.*`; rilanciabile per riallinearli, senza sovrascrivere il lavoro a mano
 
-Interni, mai a mano: `decision-doc`, `blueprint`, `execute`, `finder-prompt`, `applier`, `arch-check`, `perf`, `dead-code`, `test-coverage`, `study`, `update-memory`, `reconcile`. `research` e `ship-feature` sono entrambi: entry point a mano, e figli interni di `new-feature`. `blueprint` è solo interno: lo aprono `ship-feature` come fase 1 e `new-feature` per il fermarsi al brief. Anche `sync-host` è entrambi: entry point a mano, e figlio di `init` su Codex.
+Interni, mai a mano: `decision-doc`, `blueprint`, `ship-feature`, `execute`, `finder-prompt`, `applier`, `arch-check`, `perf`, `dead-code`, `test-coverage`, `study`, `update-memory`, `reconcile`. `research` è entrambi: entry point a mano, e figlio interno di `new-feature`. `ship-feature` è **solo interno**: è la consegna, e la apre `new-feature`; una cartella già decisa si consegna da lì, riprendendo la catena dal punto in cui i documenti si fermano. `blueprint` è solo interno: lo aprono `ship-feature` come fase 1 e `new-feature` per il fermarsi al brief. Anche `sync-host` è entrambi: entry point a mano, e figlio di `init` su Codex.
+
+**Marchio dell'invocabilità a mano è l'`argument-hint`**: le dieci che l'hanno sono le dieci della tabella, e nessun'altra skill ne porta uno. `ship-feature` non ne ha più uno, perché non è più un entry point.
 
 **Why:** se un contratto interno diventa lanciabile a mano si apre un secondo modo di arrivarci, con scope e permessi diversi da mantenere allineati per sempre. Per questo il numero non cresce da solo: sono dieci — sette nel metodo, dove `release` è il gesto di promozione fra due rami che nessun altro nodo compie; tre nell'installazione, l'ultimo è `new-project`, che scrive i documenti fondativi le cui sedi `init` ha solo assegnato.
+
+**E `new-feature` si apre solo su richiesta dell'owner.** È la sola skill di cui nessun altro nodo è chiamante: il `GRAPH` dichiara `owner`, e `owner` è l'umano che chiede, non la sessione che giudica un lavoro meritevole della catena. Un lavoro che merita una feature è una riga che lo propone. Vedi [[corpus-di-sviluppo]].
 
 **How to apply:** prima di aggiungere un `argument-hint` o un pointer a un contratto interno, rileggere orchestration §3. Vedi [[alberatura-pacchetto]] e [[corpus-di-sviluppo]].

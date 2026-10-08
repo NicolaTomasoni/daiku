@@ -15,16 +15,30 @@ indicare la cartella *è* la conferma.
 **Lo stato sono i documenti.** Il contratto lo dichiarava già — «Keep no log on file: the state
 needed to resume is the documents the phases deposit in the folder» — ma nessun passo lo leggeva:
 rilanciare il nodo rifaceva la ricognizione del codice e riscriveva `0. problem.md`. Ora la ripresa
-legge tre cose, in quest'ordine:
+legge quattro cose, in quest'ordine:
 
 1. **il verdetto** — `architect/architect.mjs` con `question: "order"`, `entry: "new-feature"`,
    `present` (i documenti presenti) e `ledger`: `stop` ferma il giro, `remaining` nomina le fasi che
-   restano e **quelle prima non si rifanno**;
+   restano, **il suo primo elemento è la fase da fare** e **quelle prima non si rifanno**;
 2. **la domanda per prima, qualunque fase il verdetto nomini** — `1. decision-doc.md` presente prova
    le decisioni *studiate*, non risposte: se una scheda di `0.5. strategic-study.md` o
-   `1. decision-doc.md` non porta la sua riga `Choice:`, la fase è il punto 7, e il punto 6 non gira;
-3. **poi la fase del verdetto** — nessun documento di decisioni, punto 6; documento tutto risposto e
-   stadio tecnico non ancora su disco, punto 8 (incorporazione); `acquisition` o oltre, punto 10.
+   `1. decision-doc.md` non porta la sua riga `Choice:`, la fase è il punto 7, e il punto 6 non gira.
+   Un documento con tutte le schede risposte e lo stadio tecnico non ancora su disco è invece il
+   punto 8 (incorporazione), e anche questo si legge prima della lista, perché la domanda viene prima;
+3. **il riesame, che il verdetto non vede** — il punto 5 non ha artefatto: la sua unica traccia è la
+   coda *What it rests on* di `0. problem.md`, che si scrive **sempre**, anche quando non c'era
+   niente da studiare. Un `0. problem.md` senza quella coda è un problema scritto prima delle note, e
+   la ripresa fa girare il punto 5 prima delle decisioni — altrimenti un giro interrotto dopo
+   `research` entra nello studio delle decisioni con un problema che le fonti non hanno mai
+   corretto, e niente lo dice;
+4. **poi la fase del verdetto**, primo elemento di `remaining` — `problem` → punti 2 e 3, la
+   ricognizione e la prima stesura; `decisions` → punto 5 (se la coda manca) e poi punto 6;
+   `acquisition` o oltre → punto 10, la consegna, che riprende sul verdetto suo.
+
+**Un'interruzione fra la domanda e l'incorporazione rifà la domanda, ed è dichiarato.** Le risposte
+dell'owner vivono nella chat che le ha portate: la riga `Choice:` la scrive l'incorporazione, non la
+domanda, quindi per il disco quella scheda è senza risposta. Il giro ripreso le richiede — è il caso
+che `new-feature` § *If a step fails* già nomina per l'incorporazione fallita.
 
 **Una scheda è risposta quando porta la sua riga `Choice:`** (`skills/decision-doc/SKILL.md`
 § *Phase 4*), e la ripresa chiede **solo quelle senza**, **col numero che hanno nella lista di quel

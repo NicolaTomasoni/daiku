@@ -4,7 +4,7 @@ description: "Il turno dell'owner che chiede lavoro si delega, mai si esegue nel
 metadata:
   node_type: memory
   type: project
-  modified: 2026-09-30T19:20:41.114Z
+  modified: 2026-10-08T16:04:11.833Z
   originSessionId: 715311ff-404d-46a6-a631-04f17ff013e9
 ---
 
@@ -25,7 +25,7 @@ diverso**, non si improvvisa un passo: si dice, e l'owner la apre come giro suo.
 `hooks/hooks.json`: su `UserPromptSubmit` — il prompt che apre un giro (`/…new-feature`) **marca la
 sessione** e enuncia la regola una volta sola — e su `PreToolUse` di `Edit`/`Write`/`MultiEdit`, dove
 una scrittura fatta **dalla conversazione** fuori dalle sedi del giro (`{paths.features}`,
-`{paths.studies}`, `{write_roots}`) riceve di nuovo la regola in `additionalContext` e **passa**:
+`{paths.studies}`, `{paths.handoffs}`, `{write_roots}`) riceve di nuovo la regola in `additionalContext` e **passa**:
 nessun `permissionDecision`, mai. Il marchio sta nello scratch della sessione o nella cartella
 temporanea di sistema, mai nel repository; è l'accensione **per sessione e non per progetto**, ed è
 l'unica che un hook scrive da sé.
