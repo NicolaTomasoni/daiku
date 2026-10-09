@@ -18,9 +18,8 @@ servizio — che esisteva perché il macchinario di pubblicazione ci copiava i f
 **ritirato**, e quel macchinario con lui. Il rilascio non ne ha bisogno: non si mette mai su
 production.
 
-`develop` **porta una beta della prossima versione**: i due manifest dichiarano la versione di
-`main` col patch alzato di uno più un contatore — `1.1.6-b.1` — scritto dopo un punto, perché
-`b10` verrebbe prima di `b9` in semver. Non è un rilascio e nessun rilascio la legge: il numero di
+`develop` **porta una beta**: i due manifest dichiarano la versione di `main` stessa, marcata con un
+contatore — `1.1.5-b.1` — scritto dopo un punto, perché `b10` verrebbe prima di `b9` in semver. Non è un rilascio e nessun rilascio la legge: il numero di
 un rilascio si deriva da `main` e si scrive su `main`, dove questa viene sovrascritta. Serve perché
 il pacchetto si installa anche dall'albero di sviluppo — il marketplace di questa macchina punta
 alla cartella di prodotto — ed è quella dichiarazione a far muovere la copia installata; sale quando
