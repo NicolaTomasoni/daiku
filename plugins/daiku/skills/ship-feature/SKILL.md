@@ -46,7 +46,7 @@ Every delivery works on a pool worktree, never on the main tree. The pool lives 
 Two roots, two roles, passed to every phase already resolved:
 
 - **work root** — inside the worktree, the same relative position the technical root occupies in the main tree: code, diff, stage, commit, gate and fix run here, and from here `{code_root}` and the command cwds of `{areas}` resolve. Do not guess it: `architect/pool.mjs` reads it out of Git — the position this tree's technical root holds inside the worktree, `git rev-parse --show-prefix` — and returns it in `worktree_root` (§ *0. Acquisition*).
-- **artefacts root** — the main tree: `2. blueprint.md`, `3. memory-report.md`, `4. review-notes.md` and `5. review-report.md`, plus the ledger in `{paths.review_state}/`, live here, so resumption and report do not depend on the worktree.
+- **artefacts root** — the main tree: `2. blueprint.md`, `3. memory-report.md`, `4. review-notes.md`, `5. review-report.md` and the early block's `5. delivery-report.md`, plus the ledger in `{paths.review_state}/`, live here, so resumption and report do not depend on the worktree.
 
 **A worktree is not an inert copy of the project.** If the project declares constraints on its own local environment — dependencies installed in a shared tree, links or junctions between the two copies, tools rewriting files outside the checkout — those constraints hold here and `{hosts.<host>.instructions_file}` declares them: read it before running any environment command inside the worktree. They are not rewritten here, and not guessed: an install command launched in the wrong place is the typical way a delivery breaks the main tree while believing it works on its own.
 
@@ -133,7 +133,7 @@ section cites it and does not restate it.
 
 **No progress log is kept on file.** Progress and findings are carried by your outcome, phase by phase: one line for each phase that ran, with the role running it, and what you noticed and what needs no block — a subagent returned malformed, a phase slower than expected, evidence not adding up. They reach the owner through whoever invoked you, which is the node running in the conversation: **you have no channel to them** (§ *Ask the owner* of `contracts/orchestration.md`), and a question raised in here stays hanging.
 
-The state needed to **resume** is not that: they are the artefacts the phases deposit (`2. blueprint.md`, `3. memory-report.md`, `4. review-notes.md`, `5. review-report.md`) and `git log`. Those are verifiable, a hand-written log is not — and resumption trusting a line nobody guarantees was written restarts from the wrong phase. The 3 in 3. memory-report.md is the outcome of phase 5b — the files it touched and the items to confirm with the owner — which without an artefact would be the only phase leaving nothing behind. **It is not a journal**: it says what that phase left, never how it got there.
+The state needed to **resume** is not that: they are the artefacts the phases deposit (`2. blueprint.md`, `3. memory-report.md`, `4. review-notes.md`, `5. review-report.md`, `5. delivery-report.md`) and `git log`. Those are verifiable, a hand-written log is not — and resumption trusting a line nobody guarantees was written restarts from the wrong phase. The 3 in 3. memory-report.md is the outcome of phase 5b — the files it touched and the items to confirm with the owner — which without an artefact would be the only phase leaving nothing behind. **It is not a journal**: it says what that phase left, never how it got there.
 
 ## The sequence
 
@@ -345,11 +345,14 @@ A subagent: `node <package root>/architect/pool.mjs <package root>` with `{"acti
 
 ### 7. Report — **worker** role
 
-Subagent appending **at the tail** of `<folder>/5. review-report.md` — the file phase 3 already wrote — never overwrite or reformat what is already there.
+Subagent writing the report. **Which file it lands on depends on whether phase 3 ran**, and that is the one thing you tell it and it cannot deduce: the fields it carries from the review — `gate`, `outcome`, `missing_disciplines` — exist only when phase 3 ran, and they are exactly the ones § *Early block* tells it not to expect when it did not.
 
-It is the only phase having to report fields produced by **seven others**, and a subagent in a fresh context derives none of them alone. In the prompt they therefore go **already resolved**, one by one (§4.1 of `contracts/orchestration.md`): rebuilding them from memory drops first precisely the lines saying what the delivery did **not** do — and a poor report is never reopened. In the prompt:
+- **Phase 3 ran** — the delivery reached the review, whatever its outcome: append **at the tail** of `<folder>/5. review-report.md` — the file phase 3 already wrote — never overwrite or reformat what is already there.
+- **Phase 3 did not run** — the early block of Acquisition, Brief or Execute: write `<folder>/5. delivery-report.md`, whole and from its first line. `5. review-report.md` is neither created nor touched: it is the artefact that proves phase 3, and a folder carrying it while `1. decision-doc.md` still stands is read by the evaluator as a work arrived after the delivery — `order` answers `stop` and the resumption § *The invocation* declares is lost. The early block reports on its own seat.
 
-- the path to append on, `<folder>/5. review-report.md`, and the tail-append constraint;
+It is the only phase having to report fields produced by **seven others** — fewer on the early block, where some of them never ran — and a subagent in a fresh context derives none of them alone. In the prompt they therefore go **already resolved**, one by one (§4.1 of `contracts/orchestration.md`): rebuilding them from memory drops first precisely the lines saying what the delivery did **not** do — and a poor report is never reopened. In the prompt:
+
+- the path to write on, with the constraint that goes with it: `<folder>/5. review-report.md` **appended at the tail** when phase 3 ran, `<folder>/5. delivery-report.md` **written whole** when it did not — and you tell it which of the two cases this is;
 - `<folder>` and the **delivered solution**, verbatim: it is the one distilling it, not you;
 - from **phase 2**: the path of `<folder>/4. review-notes.md`, whose *Considerations* section is material for the open-items paragraph where a point is still open — its *Handoff* section is evidence for a program, not for the report;
 - from the **phase 3** block: `gate` and `gate_detail` and `gate_origin`, `outcome`, `missing_disciplines` and `independence`;
@@ -359,7 +362,7 @@ It is the only phase having to report fields produced by **seven others**, and a
 - from **phase 6b**: `merged`, `merge_sha`, possible `conflicts` and `dirty_paths`; and when § *6b-bis* stopped on an overlap, its `overlap`, its `patch` and the question put to the owner — the artefact `<folder>/main-tree.patch` holds the other session's uncommitted work and is the recoverable copy; from **phase 0**: the `<name>` of the worktree and its branch;
 - the form of the block to write and the JSON block to return, which are those below.
 
-A single block, at the tail of the review report:
+A single block, at the tail of the file above:
 
 - title `## Delivery`;
 - below, **continuous prose in paragraphs**: what was delivered (distill the chosen solution to its essence, do not paste it verbatim); a paragraph on the review outcome (gate and its synthesis in one sentence, plus the limits review declared on itself — missed disciplines, lost independence — if any); a paragraph with final state and commits, and — when the merge needed § *6b-bis* — how the reconciliation ended and where `main-tree.patch` was left; if open items remain — blockers, post-commit forks, memory facts to confirm with the owner — a last paragraph summarising them grouped by theme and written **in a simple way**: what is at stake, which are the options and what changes by choosing one or the other, understandable without opening the code. If none remain — the normal case, because review and delivery resolve alone what they know how to resolve — omit that paragraph.
@@ -367,22 +370,22 @@ A single block, at the tail of the review report:
 Paragraphs separated by an empty line, readable at a glance.
 
 ```json
-{"ok": true, "report_path": "<folder>/5. review-report.md", "detail": "<if ok=false, why/reason: file not writable, append failed>"}
+{"ok": true, "report_path": "<folder>/5. review-report.md, or <folder>/5. delivery-report.md when the review did not run>", "detail": "<if ok=false, why/reason: file not writable, append failed>"}
 ```
 
 It is the last phase and nobody decides anything more on its outcome, but the block is still needed: a report not written is the only trace of the delivery disappearing, and without this field its absence is discovered by opening the file. If `ok` is `false`, report it in chat with the reason — the work is committed and not undone, but the delivery is not documented.
 
 ## Early block
 
-If Acquisition, Brief or Execute fail, the delivery stops — say so in chat, have the report write a block saying what had to be delivered, at which phase it stopped and why, and close with `status: "blocked"`. No stage, no memory, no commit, no merge.
+If Acquisition, Brief or Execute fail, the delivery stops — say so in chat, have the report write a block saying what had to be delivered, at which phase it stopped and why, and close with `status: "blocked"`. **The block lands on `<folder>/5. delivery-report.md`, the seat § *7. Report* reserves to a delivery that never reached the review** — never on `5. review-report.md`, which phase 3 did not write and which the evaluator reads as the proof that it did. No stage, no memory, no commit, no merge.
 
-**Also here the report is a subagent, and also here the prompt is the only channel.** You pass it only the fields of phase 7 existing at that point — file path and tail append, `<folder>` and solution, **which phase stopped** and the `detail` of its block, `status: "blocked"`, the dirty paths under `{code_root}` — and you explicitly tell it the others **do not exist**: gate, commit and memory never ran. Without that line the report tells them anyway, and it is how a delivery never started reads like a delivery arrived badly at the end.
+**Also here the report is a subagent, and also here the prompt is the only channel.** You pass it only the fields of phase 7 existing at that point — the seat, `<folder>/5. delivery-report.md`, written whole, `<folder>` and solution, **which phase stopped** and the `detail` of its block, `status: "blocked"`, the dirty paths under `{code_root}` — and you explicitly tell it the others **do not exist**: gate, commit and memory never ran. Without that line the report tells them anyway, and it is how a delivery never started reads like a delivery arrived badly at the end.
 
 **And also here the worktree stays dirty.** If Execute wrote something under `{code_root}`, before the report you list its paths (`git -C <worktree_root> status --porcelain -- {code_root}`) and declare them in the report and in `reason`; no parking: the worktree stays dirty and declared. The dirt stays confined to its worktree and its branch — but that slot leaves the pool until the owner cleans it: say so in the report with its name.
 
 ## Outcome
 
-1. **The few lines whoever invoked you reports**: final state (`GREEN_COMMITTED` | `GREEN_WITH_POST_DECISIONS` | `BLOCKED_NO_COMMIT` | `blocked`), used worktree, SHA if committed and merge SHA, whether memory was updated and its SHA (absent if there was nothing to update). The detail — gate, to-confirm, remaining decisions — is already in `<folder>/5. review-report.md`: **do not repeat it**, refer to the file.
+1. **The few lines whoever invoked you reports**: final state (`GREEN_COMMITTED` | `GREEN_WITH_POST_DECISIONS` | `BLOCKED_NO_COMMIT` | `blocked`), used worktree, SHA if committed and merge SHA, whether memory was updated and its SHA (absent if there was nothing to update). The detail — gate, to-confirm, remaining decisions — is already in the report file (`<folder>/5. review-report.md`, or `<folder>/5. delivery-report.md` when the delivery stopped before the review): **do not repeat it**, refer to the file.
 
 2. **Always close with the contract block**, so whoever invoked you — `new-feature` — reads it without interpreting the prose. No field is omitted: with absent value write `null`.
 
@@ -398,7 +401,7 @@ If Acquisition, Brief or Execute fail, the delivery stops — say so in chat, ha
      "memory_commit_sha": "<sha or null>",
      "version_commit_sha": "<sha or null>",
      "architect_agreement": "match|divergence|null",
-     "report_path": "<report path, <folder>/5. review-report.md>",
+     "report_path": "<report path: <folder>/5. review-report.md, or <folder>/5. delivery-report.md on the early block>",
      "reason": "<only if blocked: the exact reason>"
    }
    ```

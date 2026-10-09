@@ -4,8 +4,8 @@
   "hosts": {
     "claude": {
       "models": {
-        "judge": "opus",
-        "worker": "sonnet"
+        "judge": "sonnet",
+        "worker": "haiku"
       },
       "instructions_file": "CLAUDE.md",
       "enforcement": "harness",

@@ -20,6 +20,17 @@ Above the convention, whatever it is, two things hold that do not depend on the 
 - **The description says what changes, not what the work is called.** The name of the development, folder or feature does not enter the message: whoever rereads the history in a year looks for the change, not the label it had been labelled with.
 - **The body, if any, lists what was done**, in short lines. No prose and no motivations: those live in the decision document, which survives the commit.
 
+## Review of the diff being committed
+
+**The diff in index is reviewed before it is frozen: no commit carries a line no review has read.**
+Where the cycle that ends in this commit has just reviewed that same diff, this is that review and
+nothing runs a second time. Where instead the commit arrives by hand — on a diff written in chat
+that no cycle has looked at — the review is made **here**, on the staged diff, before the code
+group is committed: `review` is the flow that owns it, launched on the diff **in index**, and its
+outcome is reported as its own contract requires. Skipping it puts in history a diff nobody has
+read, which is the one thing the method refuses: the guard that denies `git commit` outside a
+review cycle is this same rule, read at the point where a command can still be stopped.
+
 ## Alignment of memory and documentation
 
 Before freezing the code in a commit, the non-code artefacts must be realigned **on the same diff**: it is the principle of the `Memory` phase of `ship-feature`, and it holds also when the commit arrives from a standalone review or from hand-made work. No feature enters a commit leaving the artefact behind. This skill does not replicate that contract: it **delegates** it.

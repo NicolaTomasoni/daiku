@@ -80,8 +80,8 @@ report) resta un **worker**: non merita un ruolo terzo.
 
 | Ruolo | Modello |
 |---|---|
-| **giudice** | `opus` |
-| **worker** | `sonnet` |
+| **giudice** | `sonnet` |
+| **worker** | `haiku` |
 
 È l'unica risoluzione ammessa, e avviene qui: la skill dichiara il ruolo e si ferma lì. Se
 un giorno questo corpus dovesse girare su un host che non permette di scegliere il modello di un
@@ -260,7 +260,7 @@ restituiscono all'agente — il prompt audit della skill `claude-api`:
 ```
 
 Gira in sola lettura: si chiede il report, non si applica il diff che propone. Il modello di
-riferimento è quello a cui risolvono gli alias `opus`/`sonnet` del pacchetto. Al subagent si passano,
+riferimento è quello a cui risolvono gli alias `sonnet`/`haiku` del pacchetto. Al subagent si passano,
 insieme al comando, le quattro regole di questo progetto che l'audit da solo non conosce:
 
 - un divieto che ha il suo gemello deterministico (hook, validatore, banco) o che protegge git, dati o
