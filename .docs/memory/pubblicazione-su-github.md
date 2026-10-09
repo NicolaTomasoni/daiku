@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 69438169-0316-47c8-a4e8-3365650ee2cf
-  modified: 2026-10-05T17:03:24.401Z
+  modified: 2026-10-09T15:56:22.442Z
 ---
 
 **Dal 5 ottobre 2026 il repository è uno solo.** `NicolaTomasoni/daiku` su GitHub, privato finché
@@ -19,7 +19,7 @@ servizio — che esisteva perché il macchinario di pubblicazione ci copiava i f
 production.
 
 `develop` **porta una beta della prossima versione**: i due manifest dichiarano la versione di
-`main` col patch alzato di uno più un contatore — `1.1.4-b.1` — scritto dopo un punto, perché
+`main` col patch alzato di uno più un contatore — `1.1.6-b.1` — scritto dopo un punto, perché
 `b10` verrebbe prima di `b9` in semver. Non è un rilascio e nessun rilascio la legge: il numero di
 un rilascio si deriva da `main` e si scrive su `main`, dove questa viene sovrascritta. Serve perché
 il pacchetto si installa anche dall'albero di sviluppo — il marketplace di questa macchina punta
