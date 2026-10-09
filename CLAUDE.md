@@ -246,6 +246,13 @@ leggere lì. Un file che racconta cosa è stato tolto è più lungo, più vecchi
 che dice solo cosa c'è — e ogni riga su qualcosa che non c'è più è una riga che il prossimo
 refactor dovrà ricordarsi di aggiornare.
 
+**Un ticket risolto si butta, sempre.** Il file che raccoglie un difetto osservato — la
+riproduzione, l'impatto, le vie d'uscita proposte — vive finché il difetto è aperto. Quando la
+riparazione entra nell'albero, il ticket **si butta**: non si archivia, non si committa «per non
+perderlo», non si sposta in una sede per conservarlo. Ciò che resta da sapere lo portano la memoria
+e `git log`, e un file che racconta un difetto riparato è una cosa in più da rileggere che non dice
+più niente di vero.
+
 ## Mai fidarsi di un LLM
 
 Un'istruzione scritta in una skill non è un vincolo: un agente può ignorarla, fraintenderla o non

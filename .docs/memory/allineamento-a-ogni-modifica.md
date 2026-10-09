@@ -1,6 +1,6 @@
 ---
 name: allineamento-a-ogni-modifica
-description: "L'allineamento di memoria, istruzioni, policy e documenti gira a ogni modifica e non solo al commit: perché la prosa da sola non bastava, e dov'è il controllo che lo dice"
+description: "L'allineamento di memoria, istruzioni, policy e documenti gira a ogni modifica e non solo al commit: perché la prosa da sola non bastava, perché la regola del lavoro ordinario non nomina più il passo del commit, e dov'è il controllo che lo dice"
 metadata:
   type: feedback
 ---
@@ -26,10 +26,20 @@ nel file di istruzioni che `init` deposita
 sotto `{code_root}` e non ha toccato `{memory.root}`, col suo banco dentro
 `node plugins/daiku/hooks/self-check.mjs`.
 
+**La regola del lavoro ordinario non nomina il passo del commit — deciso dall'owner l'8 ottobre
+2026.** Nominarlo era la falla: una sessione in chat leggeva il nome del passo, ne deduceva che la
+memoria si muta solo lì o su richiesta dell'owner, e chiudeva rimandandogliela. Le sedi che un
+progetto ospite legge dicono ora che **da chat il corpus lo scrive la sessione che ha la modifica in
+mano**, senza attese e senza domande; ciò che i flussi che committano aggiungono è un **secondo
+lettore sullo stesso diff**, non la prima occasione in cui la memoria può muoversi. Il nome del
+passo resta dove è il suo mestiere: le eccezioni di commit del file di istruzioni, la delega di
+`commit`, il proprio contratto.
+
 **È un avviso, non un diniego, e la scelta è questa.** Al commit la guardia della review nega già
 `git commit` fuori dal ciclo, e il ciclo delega `update-memory` sullo stesso diff: perciò un commit
 tace l'avviso invece di scavalcarlo — dove la guardia arriva, l'avviso non serve. Fuori dal ciclo
 non c'è nessun gesto da negare, solo un turno che finisce, ed è lì che l'avviso parla.
 
-Vedi [[guardrail-nascono-spenti]] per la regola delle due sedi e [[init-aggancia-la-memoria]] per i
-due scrittori del corpus.
+Vedi [[guardrail-nascono-spenti]] per la regola delle due sedi, [[il-commit-rivede-il-diff]] per
+ciò che il commit guarda prima di congelare, e [[init-aggancia-la-memoria]] per i due scrittori del
+corpus.
