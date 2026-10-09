@@ -20,6 +20,25 @@ Above the convention, whatever it is, two things hold that do not depend on the 
 - **The description says what changes, not what the work is called.** The name of the development, folder or feature does not enter the message: whoever rereads the history in a year looks for the change, not the label it had been labelled with.
 - **The body, if any, lists what was done**, in short lines. No prose and no motivations: those live in the decision document, which survives the commit.
 
+## Review of the diff being committed
+
+**The diff in index is reviewed before it is frozen: no commit carries a line no review has read.**
+Where the cycle that ends in this commit has just reviewed that same diff, this is that review and
+nothing runs a second time. Where instead the commit arrives by hand — on a diff written in chat
+that no cycle has looked at — the review is made **here**, on the staged diff, before the code
+group is committed: `review` is the flow that owns it, launched on the diff **in index**, and its
+outcome is reported as its own contract requires. Skipping it puts in history a diff nobody has
+read, which is the one thing the method refuses: the guard that denies `git commit` outside a
+review cycle is this same rule, read at the point where a command can still be stopped.
+
+## The prose the diff adds
+
+**A diff is not only code, and the read above covers its prose too.** Prose written in the same breath as the change is where a defect costs least to avoid and most to find late, and it is not the code's defect: read it once **as prose, on its own**, with the diff's colours taken away. Three things that read catches, and that no check reports for you:
+
+- **A cross-reference leaving the file is qualified.** A reference written unqualified means the heading of **that** file: inside a skill, "§ *Input*" is that skill's own `## Input`, not another's. Where the section meant belongs to another file, the file is named beside the reference — § *Ask the owner* of `contracts/orchestration.md`. An unqualified reference resolving to the wrong heading is not a broken link: it resolves, and it resolves elsewhere, so no check reports it — only a reader does.
+- **A justification is checked against the sentence above it.** A `because` or a `since` added to a prescription is a claim like any other, and the paragraph it lands in is what can refute it. Where the sentence above already establishes the fact the clause denies, the clause is decoration contradicting the text: remove it, or say the prescription without a reason.
+- **The paragraph is read whole, once, in the window it occupies.** Both of the above live in a few consecutive lines: invisible to the diff, obvious to a reader of the page.
+
 ## Alignment of memory and documentation
 
 Before freezing the code in a commit, the non-code artefacts must be realigned **on the same diff**: it is the principle of the `Memory` phase of `ship-feature`, and it holds also when the commit arrives from a standalone review or from hand-made work. No feature enters a commit leaving the artefact behind. This skill does not replicate that contract: it **delegates** it.

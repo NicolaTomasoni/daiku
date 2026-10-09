@@ -139,8 +139,9 @@ denial stays whole and the release is a write the guard has nothing to say about
 `memory.root` has a second reader that is neither a skill nor a hook: it is **the host**, on Claude
 Code, where the memory the agent writes for itself is a folder of files and its location is declared
 with `autoMemoryDirectory`. `init` points it there, and from that moment that corpus has two writers
-— the host, which realigns what its own change has made false, and `update-memory` on every commit's
-diff — and a single location, **versioned together with the code**. It is why this folder sits inside
+— the session, which realigns in the same work whatever its change has made false (and, on Claude
+Code, the host it runs in, keeping what it noticed mid-session), and `update-memory` on every
+commit's diff — and a single location, **versioned together with the code**. It is why this folder sits inside
 the repository and not beside it: a memory that does not enter a diff is re-read by nobody, corrected
 by nobody and dies with the laptop it was born on.
 

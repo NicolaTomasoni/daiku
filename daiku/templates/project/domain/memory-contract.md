@@ -12,9 +12,11 @@ the instructions file declares, and says so in its report.
 `memory.root` in `.daiku/project.json` — a folder **inside the repository**, versioned alongside
 the code. It has two writers, and they never coordinate:
 
-- **the host**, whenever it notices mid-session something worth keeping — and at the end of every
-  modification, before the work is declared done;
-- **`/update-memory`**, which runs on every commit and aligns the corpus to the diff.
+- **the session that makes the change**, in the same work and before the work is declared done —
+  a chat as much as a flow, and the host whenever it notices mid-session something worth keeping:
+  nothing here waits for a commit;
+- **the step the flows that commit declare** (`/update-memory`), a second reader on the same diff,
+  which runs at every commit.
 
 **The corpus is never left behind.** A modification that has made something here false is not
 finished until this corpus says what is true: the pass that looks for it runs on every

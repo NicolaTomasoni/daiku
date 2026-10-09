@@ -152,15 +152,18 @@ const REVIEW_PHASES = [
 ];
 
 /**
- * The four entry points `1. decision-doc.md` § *Il disegno* declares, plus the one it
- * excludes. `startsAt` is where in the chain the entry begins; `requires` are the
- * artefacts the entry declares already resolved — and the entry point that declares
- * one and does not find it is an incoherence, not a reading to pick.
+ * The entries the chain is opened from. `startsAt` is where in the chain the entry
+ * begins; `requires` are the artefacts the entry declares already resolved — and an
+ * entry that declares one and does not find it is an incoherence, not a reading to pick.
+ *
+ * The delivery is not one of them: `new-feature` § *Delivery* is the only node that opens
+ * `skills/ship-feature/SKILL.md`, so a folder already decided enters the chain through that
+ * run — `entry: "new-feature"` and the artefacts on disk, which the cut of § *The sequence*
+ * walks to `acquisition` by itself.
  */
 const ENTRIES = {
   'new-feature': { startsAt: 'problem', requires: [] },
   'decision-doc': { startsAt: 'decisions', requires: ['0. problem.md'] },
-  'ship-feature': { startsAt: 'acquisition', requires: ['1. decision-doc.md'] },
   review: { startsAt: null, review: true, requires: [] },
 };
 
@@ -1764,25 +1767,25 @@ const CASES = [
 
   /* --- question: resumption — skills/review/SKILL.md § Baseline and ledger --- */
   { id: 'resumption:resume-mid-cycle', cites: { file: 'skills/review/SKILL.md', section: 'Baseline and ledger' },
-    input: { question: 'resumption', entry: 'ship-feature', present: ['1. decision-doc.md'], ledger: { base: 'abc1234', item: 'x/y', rounds: [{ n: 1, verdict: 'continue' }], outcome: null, gate: null, gate_detail: null } },
+    input: { question: 'resumption', entry: 'new-feature', present: ['1. decision-doc.md'], ledger: { base: 'abc1234', item: 'x/y', rounds: [{ n: 1, verdict: 'continue' }], outcome: null, gate: null, gate_detail: null } },
     expect: { verdict: 'resume', resume_from: 'finder' } },
   { id: 'resumption:resume-at-the-scope', cites: { file: 'skills/review/SKILL.md', section: 'Baseline and ledger' },
-    input: { question: 'resumption', entry: 'ship-feature', present: ['1. decision-doc.md'], ledger: { base: 'abc1234', item: 'x/y', rounds: [], outcome: null, gate: null, gate_detail: null } },
+    input: { question: 'resumption', entry: 'new-feature', present: ['1. decision-doc.md'], ledger: { base: 'abc1234', item: 'x/y', rounds: [], outcome: null, gate: null, gate_detail: null } },
     expect: { verdict: 'resume', resume_from: 'scope' } },
   { id: 'resumption:resume-at-the-coverage', cites: { file: 'skills/review/SKILL.md', section: 'Baseline and ledger' },
-    input: { question: 'resumption', entry: 'ship-feature', present: ['1. decision-doc.md'], ledger: { base: 'abc1234', item: 'x/y', rounds: [{ n: 2, verdict: 'stop' }], outcome: 'fixed-point', coverage: null, gate: null, gate_detail: null } },
+    input: { question: 'resumption', entry: 'new-feature', present: ['1. decision-doc.md'], ledger: { base: 'abc1234', item: 'x/y', rounds: [{ n: 2, verdict: 'stop' }], outcome: 'fixed-point', coverage: null, gate: null, gate_detail: null } },
     expect: { verdict: 'resume', resume_from: 'coverage' } },
   { id: 'resumption:resume-at-the-gate', cites: { file: 'skills/review/SKILL.md', section: 'Baseline and ledger' },
-    input: { question: 'resumption', entry: 'ship-feature', present: ['1. decision-doc.md'], ledger: { base: 'abc1234', item: 'x/y', rounds: [{ n: 2, verdict: 'stop' }], outcome: 'fixed-point', coverage: 'no-tests-needed', gate: null, gate_detail: null } },
+    input: { question: 'resumption', entry: 'new-feature', present: ['1. decision-doc.md'], ledger: { base: 'abc1234', item: 'x/y', rounds: [{ n: 2, verdict: 'stop' }], outcome: 'fixed-point', coverage: 'no-tests-needed', gate: null, gate_detail: null } },
     expect: { verdict: 'resume', resume_from: 'gate' } },
   { id: 'resumption:restart-without-ledger', cites: { file: 'skills/review/SKILL.md', section: 'Baseline and ledger' },
-    input: { question: 'resumption', entry: 'ship-feature', present: ['1. decision-doc.md'], ledger: null },
+    input: { question: 'resumption', entry: 'new-feature', present: ['1. decision-doc.md'], ledger: null },
     expect: { verdict: 'restart', resume_from: null } },
   { id: 'resumption:restart-on-the-review-entry', cites: { file: 'skills/review/SKILL.md', section: 'Baseline and ledger' },
     input: { question: 'resumption', entry: 'review', present: ['4. review-notes.md'], ledger: null },
     expect: { verdict: 'restart', resume_from: null } },
   { id: 'resumption:restart-without-item', cites: { file: 'skills/review/SKILL.md', section: 'Baseline and ledger' },
-    input: { question: 'resumption', entry: 'ship-feature', present: ['1. decision-doc.md'], ledger: { base: 'abc1234', item: null, rounds: [] } },
+    input: { question: 'resumption', entry: 'new-feature', present: ['1. decision-doc.md'], ledger: { base: 'abc1234', item: null, rounds: [] } },
     expect: { verdict: 'restart' } },
 
   /* --- question: order — skills/ship-feature/SKILL.md § The sequence --- */
@@ -1790,11 +1793,14 @@ const CASES = [
     input: { question: 'order', entry: 'new-feature', present: [], ledger: null },
     expect: { verdict: 'proceed', remaining_starts_with: 'problem' } },
   { id: 'order:proceed-from-the-delivery', cites: { file: 'skills/ship-feature/SKILL.md', section: 'The sequence' },
-    input: { question: 'order', entry: 'ship-feature', present: ['1. decision-doc.md'], ledger: null },
+    input: { question: 'order', entry: 'new-feature', present: ['1. decision-doc.md'], ledger: null },
     expect: { verdict: 'proceed', remaining_starts_with: 'acquisition' } },
   { id: 'order:proven-phases-are-cut', cites: { file: 'skills/ship-feature/SKILL.md', section: 'The sequence' },
-    input: { question: 'order', entry: 'ship-feature', present: ['1. decision-doc.md', '2. blueprint.md'], ledger: null },
+    input: { question: 'order', entry: 'new-feature', present: ['1. decision-doc.md', '2. blueprint.md'], ledger: null },
     expect: { verdict: 'proceed', remaining_starts_with: 'execute' } },
+  { id: 'order:the-early-block-reports-on-its-own-seat', cites: { file: 'skills/ship-feature/SKILL.md', section: 'Early block' },
+    input: { question: 'order', entry: 'new-feature', present: ['0. problem.md', '1. decision-doc.md', '2. blueprint.md', '4. review-notes.md', '5. delivery-report.md'], ledger: null },
+    expect: { verdict: 'proceed', remaining_starts_with: 'review' } },
   { id: 'order:review-entry', cites: { file: 'skills/review/SKILL.md', section: 'The cycle' },
     input: { question: 'order', entry: 'review', present: [], ledger: null },
     expect: { verdict: 'proceed', remaining_starts_with: 'scope', remaining: ['scope', 'finder', 'applier', 'coverage', 'gate', 'closing'] } },
@@ -1802,16 +1808,13 @@ const CASES = [
     input: { question: 'order', entry: 'review', present: ['4. review-notes.md'], ledger: null },
     expect: { verdict: 'proceed', remaining_starts_with: 'scope' } },
 
-  /* --- the four entry points, plus the atomic one --- */
+  /* --- the three entry points, plus the atomic ones --- */
   { id: 'entry:new-feature', cites: { file: 'skills/new-feature/SKILL.md', section: 'The sequence' },
     input: { question: 'order', entry: 'new-feature', present: [], ledger: null },
     expect: { verdict: 'proceed', remaining_starts_with: 'problem' } },
   { id: 'entry:decision-doc', cites: { file: 'skills/decision-doc/SKILL.md', section: 'Input: the problem folder' },
     input: { question: 'order', entry: 'decision-doc', present: ['0. problem.md'], ledger: null },
     expect: { verdict: 'proceed', remaining_starts_with: 'decisions' } },
-  { id: 'entry:ship-feature', cites: { file: 'skills/ship-feature/SKILL.md', section: 'Input' },
-    input: { question: 'order', entry: 'ship-feature', present: ['1. decision-doc.md'], ledger: null },
-    expect: { verdict: 'proceed', remaining_starts_with: 'acquisition' } },
   { id: 'entry:review', cites: { file: 'skills/review/SKILL.md', section: 'Input' },
     input: { question: 'order', entry: 'review', present: [], ledger: null },
     expect: { verdict: 'proceed', remaining_starts_with: 'scope' } },
@@ -1826,8 +1829,8 @@ const CASES = [
   { id: 'ambiguity:incoherence-artifacts-exclude-each-other', cites: { file: 'skills/ship-feature/SKILL.md', section: 'Input' },
     input: { question: 'order', entry: 'new-feature', present: ['1. decision-doc.md', '5. review-report.md'], ledger: null },
     expect: { verdict: 'stop', readings_length: 0 } },
-  { id: 'ambiguity:incoherence-entry-declares-a-missing-artifact', cites: { file: 'skills/ship-feature/SKILL.md', section: 'Input' },
-    input: { question: 'order', entry: 'ship-feature', present: [], ledger: null },
+  { id: 'ambiguity:incoherence-entry-declares-a-missing-artifact', cites: { file: 'skills/decision-doc/SKILL.md', section: 'Input: the problem folder' },
+    input: { question: 'order', entry: 'decision-doc', present: [], ledger: null },
     expect: { verdict: 'stop', readings_length: 0 } },
   { id: 'ambiguity:fork-both-readings-are-defensible', cites: { file: 'skills/review/SKILL.md', section: 'Baseline and ledger' },
     input: { question: 'order', entry: 'new-feature', present: ['4. review-notes.md'], ledger: null },
@@ -2248,6 +2251,7 @@ const CASES = [
 const REJECTED = [
   { id: 'reject:unknown-question', input: { question: 'invented', entry: 'new-feature', present: [] } },
   { id: 'reject:unknown-entry', input: { question: 'order', entry: 'invented', present: [], ledger: null } },
+  { id: 'reject:the-delivery-is-not-an-entry', input: { question: 'order', entry: 'ship-feature', present: ['1. decision-doc.md'], ledger: null } },
   { id: 'reject:present-not-a-list', input: { question: 'order', entry: 'new-feature', present: 'x', ledger: null } },
   { id: 'reject:review-outcome-absent', input: { question: 'decision' } },
   { id: 'reject:gate-origin-absent', input: { question: 'decision', review_outcome: { gate: 'red', gate_detail: 'x', outcome: 'fixed-point', missing_disciplines: [], to_confirm: [] } } },

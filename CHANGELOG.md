@@ -1,5 +1,15 @@
 # Changelog
 
+### 1.1.5 — 2026-10-09
+
+- **The diff in index is reviewed before it is frozen.** No commit carries a line no review has read: where the cycle ending in the commit has just reviewed that same diff, that is the review and nothing runs a second time; where the commit arrives by hand, on a diff written in chat no cycle has looked at, the review is made there, on the staged diff, before the code group is committed. The rule lives in `commit`, and the commit exception of the project instructions declares it.
+- **The read before the commit covers the prose of the diff, not only its code.** Three classes are checked in it, and a check reports none of them: a cross-reference leaving its file is qualified — an unqualified one that resolves to the wrong heading is not a broken link, and nothing flags it but a reader; a justification is verified against the sentence above it, since a `because` the paragraph already refutes is decoration contradicting the text; and the paragraph is read whole, in the window it occupies.
+- **The early block reports on its own seat.** A delivery that stops in Acquisition, Brief or Execute writes `<folder>/5. delivery-report.md` — whole, from its first line — and leaves `5. review-report.md` to the review alone. That name is the artefact proving phase 3: a folder carrying it while `1. decision-doc.md` still stood was read as a work arrived after the delivery, `order` answered `stop`, and the resumption `ship-feature` declares was lost. `5. review-report.md` is what the review appends to, and nothing else writes it.
+- **The corpus gains its first writer.** The memory contract, the project instructions and the domain README now say one thing: a change that has made the corpus false is aligned in the same work — a chat as much as a flow — and `update-memory` on a commit's diff is a second reader on that same diff, never the first occasion on which the corpus may move.
+- **The environment template lowers its model aliases** to `sonnet` for the judge and `haiku` for the worker.
+
+---
+
 ### 1.1.4 — 2026-10-08
 
 - **`/release` promotes, and production is a line of releases.** The release builds production's tree out of the development one on a throwaway index and moves the ref with `update-ref`: it never checks production out, and the branch guard denying `git commit` and `git merge` there stays whole. Each release records the development sha it carried as a `Development:` trailer — which is where the next block of commits starts — and a release standing on production that nothing has pushed is a **draft**: the next one replaces it, same parent and new tree, so the commits arriving meanwhile join it instead of opening a version of their own. `commit` no longer writes version or changelog where the two channels are declared: they live on production, and `release` is the node that writes them.

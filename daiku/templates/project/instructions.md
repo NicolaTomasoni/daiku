@@ -92,11 +92,12 @@ what portable skills cite, because numbering differs from project to project.
 5. `[corpus-never-behind]` No modification ends with the corpus left behind. This file,
    `.daiku/policies/`, the memory corpus and the founding documents are realigned in the same work
    to whatever the change made false — never deferred to a commit that may not come, never skipped
-   because the diff looks like pure implementation, never handed back to the owner as a question.
-   Where the change is a delivery or a commit, the step is the one the flow declares
-   (`update-memory`); anywhere else it is the work itself, and the memory corpus is written by the
-   session as much as by that step. The pass runs whatever the diff: where nothing has become
-   false there is nothing to write, and that is its verdict, not an exemption from running it.
+   because the diff looks like pure implementation, never handed back to the owner as a question,
+   and never waiting on a step of the method to run: from a chat, in ordinary work, the corpus is
+   written by the session that has the change in hand. What a flow that commits adds is a second
+   reader on the same diff, not the first occasion on which the corpus may move. The pass runs
+   whatever the diff: where nothing has become false there is nothing to write, and that is its
+   verdict, not an exemption from running it.
 6. `[feature-opened-by-the-owner]` No agent opens a feature on its own initiative. The chain that
    opens a problem folder — `/new-feature`, and with it the study, the decisions and the delivery —
    starts only when the owner asks for it in so many words. A change an agent judges worth that
@@ -115,9 +116,12 @@ Declared exceptions:
 
 - `ship-feature` may commit after the gate and
   after memory and documentation have been aligned to the staged diff.
-- `commit`, invoked explicitly, authorises the commit under its own convention. Before committing
-  it always delegates the alignment of memory and documentation to `update-memory` — a mandatory
-  step, not a judgement on whether the diff deserves it.
+- `commit`, invoked explicitly, authorises the commit under its own convention. The diff in index
+  is reviewed before it is frozen — no commit carries a line no review has read — and where the
+  commit arrives by hand, on a diff written in chat that no cycle has looked at, the review is made
+  there, on the staged diff, before the code group is committed. Before committing it always
+  delegates the alignment of memory and documentation to `update-memory` — a mandatory step, not a
+  judgement on whether the diff deserves it.
 - `review` always closes with the commit, delegating it, but only on a clean cycle. If a single
   condition is missing it stops at the report.
 
