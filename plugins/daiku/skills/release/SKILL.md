@@ -18,9 +18,9 @@ keeps its own life.
 
 ## The two sides
 
-**Development carries a beta of the next release, and no changelog.** `{version.file}` stands there
-holding the number production carries now with its patch raised by one, marked as a beta with a
-counter — `1.1.4-b.7`. The counter goes **after a dot and is numeric**: `b.7`, never `b7`, which as
+**Development carries a beta, and no changelog.** `{version.file}` stands there holding the number
+production carries now, marked as a beta with a counter — `1.1.5-b.1`. The counter goes **after a
+dot and is numeric**: `b.7`, never `b7`, which as
 an alphanumeric identifier semver orders `b10` before `b9`. The beta is not a release, and no
 release ever reads it: a release derives its number from production's own and writes it on
 production, overwriting this one there. It is there because a package installed from its own
