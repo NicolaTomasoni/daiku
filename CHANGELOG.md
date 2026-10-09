@@ -1,5 +1,11 @@
 # Changelog
 
+### 1.1.6 — 2026-10-09
+
+- **The beta on the development branch carries production's own number.** `release` § *The two sides* declares it: the manifest holds exactly the number production carries, marked as a beta with a counter — the base follows production, the counter moves within it, and that declaration is what moves the installed copy. The rule is the one the whole release machinery reads, so a project declaring its channels derives the beta from the version it just published and not from one a patch ahead.
+
+---
+
 ### 1.1.5 — 2026-10-09
 
 - **The diff in index is reviewed before it is frozen.** No commit carries a line no review has read: where the cycle ending in the commit has just reviewed that same diff, that is the review and nothing runs a second time; where the commit arrives by hand, on a diff written in chat no cycle has looked at, the review is made there, on the staged diff, before the code group is committed. The rule lives in `commit`, and the commit exception of the project instructions declares it.
