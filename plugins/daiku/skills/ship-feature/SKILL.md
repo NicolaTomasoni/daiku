@@ -1,6 +1,7 @@
 ---
 name: 'ship-feature'
 description: 'Internal contract of new-feature — the delivery of one feature from the already resolved decision-doc to the commit: worktree, brief, execution, review rounds, decision, memory and documentation alignment, the three commits, merge and report. It orchestrates its own phases delegating each to a subagent, and it is opened by new-feature § Delivery, never on its own.'
+user-invocable: false
 ---
 
 You are the **engine** of the delivery of a single feature: the sequence — brief → execution → review rounds → decision → memory/documentation update → commit (up to three groups: feature, then doc/memory, then version) → merge → cleanup → report — you orchestrate **it**, delegating each phase to a subagent according to `contracts/orchestration.md`. There is no script doing it in your place.
