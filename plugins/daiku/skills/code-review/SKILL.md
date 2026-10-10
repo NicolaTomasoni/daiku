@@ -78,13 +78,13 @@ One bug finder, then the applier, then the fast check. Round **1** judges the wh
 - **Applier**, skipped at zero findings: with zero findings the round is empty — at round 1 the diff was correct at first shot, later you reached fixed point — say so and close the round without an applier. Otherwise **a single** subagent with `skills/applier/SKILL.md` as contract, the round's findings file by path, the ledger path, the round range, `BASE`, `work_root`, the resolved parameters, and `{memory.index}` with the memories the scope touches. It is the **only** step that writes.
 - **Fast check.** `action: "areas"` with `from: "last"` lists the areas the applier touched; for each declaring `{areas.<area>.check_fast}`, run it yourself as declared and read its exit — `green` or `red`. A red imposes another round, and its output reaches the next applier as a finding of discipline `check`.
 - **Targeted tests**, for every touched area that declares `{areas.<area>.test_targeted}`, as `skills/review/SKILL.md` § *Applier* declares: name the test files covering the modules the round touched, run `test_targeted` on them, and pass the outcome in `check_tests` — one entry per touched area, the **test files** in `files`. A red imposes another round like the fast check's, and reaches the next applier as a finding of discipline `check` naming the test files.
-- **Close the round.** `action: "round"` with the applier block as it came back, the `check_fast` and the `check_tests` outcomes, `rounds_cap` and your merit verdict — `merit` and a one-line `merit_why`. Same rules as `skills/review/SKILL.md` § *When to run another round*: it asks the evaluator `question: "round"` on the `ledger` it just wrote, with your `rounds_cap`, and the verdict is `continue` or an exit. Rule 0 oscillation, rule 1 zero applied → fixed-point, rule 2 at least three severe, or a fast check that comes back red, or a targeted test that comes back red, rule 3 your merit verdict.
+- **Close the round.** `action: "round"` with the applier block as it came back, the `check_fast` and the `check_tests` outcomes, `rounds_cap` and your merit verdict — `merit` and a one-line `merit_why`. Same rules as `skills/review/SKILL.md` § *When to run another round*: it asks the evaluator `question: "round"` on the `ledger` it just wrote, with your `rounds_cap`, and the verdict is `continue` or an exit. Rule 0 oscillation, rule 1 no fix applied and none discarded → `fixed-point`, rule 1a no fix applied and something discarded → `discarded-only`, rule 2 at least three severe, or a fast check that comes back red, or a targeted test that comes back red, rule 3 your merit verdict.
 
 A step not returning, when it is not the finder: relaunch it exactly once, and never a third time; the outcome each step declares for its second failure is the one `skills/review/SKILL.md` § *A step not returning, when it is not a finder* gives.
 
 ### Exits
 
-The first occurring holds, and you declare which: `fixed-point` (zero applied fixes), `diminishing-returns` (merit verdict `stop` at rule 3), `oscillation` (a fix brings back an anchor a later fix on the same site had replaced), `rounds-truncated` (the explicit `--rounds N` cap), `rounds-exhausted` (the guardrail of **6**, without `--rounds N`). A diff correct at first shot exits at `fixed-point` after a single round.
+The first occurring holds, and you declare which: `fixed-point` (no fix applied and nothing discarded), `discarded-only` (no fix applied and something discarded — it closed nothing), `diminishing-returns` (merit verdict `stop` at rule 3), `oscillation` (a fix brings back an anchor a later fix on the same site had replaced), `rounds-truncated` (the explicit `--rounds N` cap), `rounds-exhausted` (the guardrail of **6**, without `--rounds N`). A diff correct at first shot exits at `fixed-point` after a single round. `discarded-only` does not block: like the other exits it is declared and the cycle stops at the report.
 
 ### Gate — **worker** role, always
 
@@ -103,7 +103,7 @@ Report in chat, short: the rounds run and why you stopped, with the verdict clos
 ```json
 {
   "rounds": 0,
-  "outcome": "fixed-point|diminishing-returns|oscillation|rounds-truncated|rounds-exhausted",
+  "outcome": "fixed-point|discarded-only|diminishing-returns|oscillation|rounds-truncated|rounds-exhausted",
   "missing_disciplines": [],
   "oscillation": 0,
   "applied": 0, "severe": 0, "on_previous_fix": 0, "discarded": 0,

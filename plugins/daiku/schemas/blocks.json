@@ -35,7 +35,7 @@
     "finder": {
       "producer": "skills/finder-prompt/SKILL.md § The block you return",
       "required": ["findings"],
-      "optional": [],
+      "optional": ["hypotheses"],
       "enums": {
         "findings.confidence": ["high", "medium", "low"]
       }
@@ -71,7 +71,7 @@
       "required": ["rounds", "outcome", "disciplines_round_1", "missing_disciplines", "independence", "oscillation", "applied", "severe", "on_previous_fix", "discarded", "gate", "gate_detail", "gate_origin", "commit", "commit_sha", "blocking", "coverage", "ledger", "report", "to_confirm"],
       "optional": [],
       "enums": {
-        "outcome": ["fixed-point", "diminishing-returns", "oscillation", "rounds-truncated", "rounds-exhausted"],
+        "outcome": ["fixed-point", "discarded-only", "diminishing-returns", "oscillation", "rounds-truncated", "rounds-exhausted"],
         "independence": ["intact", "lost"],
         "commit": ["done", "partial", "not-requested", "skipped"],
         "coverage": ["tests-written", "no-tests-needed", "no-test-command"],
@@ -83,7 +83,7 @@
       "required": ["rounds", "outcome", "missing_disciplines", "oscillation", "applied", "severe", "on_previous_fix", "discarded", "gate", "gate_detail", "ledger", "to_confirm"],
       "optional": [],
       "enums": {
-        "outcome": ["fixed-point", "diminishing-returns", "oscillation", "rounds-truncated", "rounds-exhausted"],
+        "outcome": ["fixed-point", "discarded-only", "diminishing-returns", "oscillation", "rounds-truncated", "rounds-exhausted"],
         "gate": ["green", "red"]
       },
       "note": "The block of the bug-only cycle: the shape of § review-outcome minus the fields a bug-only cycle, stopping at the report, does not produce — `disciplines_round_1` and `independence` (one discipline, `bug`, always), `commit` and `commit_sha` (the cycle never commits), `blocking`, `coverage` and `report`. No `question` feeds it: the cycle stops at the report and hands the block to its caller, so this entry is the map of a shape the skill declares in prose, not a check any program runs — the prose of `skills/code-review/SKILL.md` stays the normative schema."
@@ -127,7 +127,7 @@
       "required": ["ok", "verdict", "remaining", "resume_from", "slot", "blockers", "retry", "fallback", "readings", "violations", "detail"],
       "optional": [],
       "enums": {
-        "verdict": ["BLOCKED_NO_COMMIT", "GREEN_COMMITTED", "GREEN_WITH_POST_DECISIONS", "blocked", "clean", "commit", "continue", "create", "diminishing-returns", "fallback", "fixed-point", "held", "invalid", "merit", "oscillation", "proceed", "reconcile", "restart", "resume", "retry", "reuse", "rounds-exhausted", "rounds-truncated", "stop", "unblock", "valid", "violations"]
+        "verdict": ["BLOCKED_NO_COMMIT", "GREEN_COMMITTED", "GREEN_WITH_POST_DECISIONS", "blocked", "clean", "commit", "continue", "create", "diminishing-returns", "discarded-only", "fallback", "fixed-point", "held", "invalid", "merit", "oscillation", "proceed", "reconcile", "restart", "resume", "retry", "reuse", "rounds-exhausted", "rounds-truncated", "stop", "unblock", "valid", "violations"]
       },
       "note": "The effective domain of `verdict` depends on `question`: this enum is the union of the eleven domains, one per question — decision, closing, unblock, propagation, resumption, order, round, layers, block, pool, reconcile — and `verdict` is `null` when the question does not apply, that is `propagation` on a block that came back. `remaining` and `resume_from` are filled by `order` and `resumption` alone; `slot` by `pool` alone, the number of the pool worktree to reuse, create or take back; `retry` and `fallback` by `propagation` alone; `readings` by the ambiguity rule alone; `violations` by `layers` alone, one `{file, line, policy, layer, fragment, text}` per violating line. Field names of the blocks this one consumes are not renamed on either side: `gate`, `gate_detail`, `outcome`, `missing_disciplines`, `blocking`, `to_confirm`, `base`, `item`, `rounds`, `commit`, `commit_sha`."
     },
@@ -205,12 +205,12 @@
   "review-log": {
     "producer": "skills/review/SKILL.md § The ledger tool",
     "required": ["ledgers", "rows"],
-    "row_required": ["ledger", "base", "item", "round", "discipline", "state", "findings", "confidence"],
+    "row_required": ["ledger", "base", "item", "round", "discipline", "state", "findings", "confidence", "closed", "discarded"],
     "enums": {
       "rows.state": ["returned", "lost", "not-launched"],
       "rows.discipline": ["bug", "arch", "perf", "dead"]
     },
-    "note": "The finder performance log: an aggregate derived from the ledgers of {paths.review_state}, written only by architect/ledger.mjs's `log` action, which validates it against this entry before writing. `ledgers` is the sorted list of the ledger file names read — the sample, one entry per ledger recognised by its form, even one that carries no round yet. `rows` is one row per ledger × round × discipline of the roster, in that order: the roster is the disciplines seen in the `disciplines` and `missing_disciplines` of any round of any ledger, in the canonical order bug, arch, perf, dead. `state` says whether that discipline ran in that round — `returned` when the finder came back, `lost` when it was launched and lost, `not-launched` when it was never asked. `findings` is the raw finding count the discipline produced in the round, `confidence` the raw count by level; both are null when the round's findings file is absent — not zero, which is what a discipline present and empty reads. The closing round on tests lives outside `rounds` and produces no row. It is not a ledger: it carries neither the ten fields of § ledger nor the rounds, and the hooks reading the folder skip it."
+    "note": "The finder performance log: an aggregate derived from the ledgers of {paths.review_state}, written only by architect/ledger.mjs's `log` action, which validates it against this entry before writing. `ledgers` is the sorted list of the ledger file names read — the sample, one entry per ledger recognised by its form, even one that carries no round yet. `rows` is one row per ledger × round × discipline of the roster, in that order: the roster is the disciplines seen in the `disciplines` and `missing_disciplines` of any round of any ledger, in the canonical order bug, arch, perf, dead. `state` says whether that discipline ran in that round — `returned` when the finder came back, `lost` when it was launched and lost, `not-launched` when it was never asked. `findings` is the raw finding count the discipline produced in the round, `confidence` the raw count by level; both are null when the round's findings file is absent — not zero, which is what a discipline present and empty reads. `closed` and `discarded` count, for the discipline of the row, the finding ids of that discipline among the round's `applied` and `discarded` — read by the id's prefix `r<round>-<discipline>[<shard>]-<k>` — and are zero, not null, when the round closed or discarded nothing. The closing round on tests lives outside `rounds` and produces no row. It is not a ledger: it carries neither the ten fields of § ledger nor the rounds, and the hooks reading the folder skip it."
   },
   "params": {
     "producer": "contracts/project-contract.md §4 and contracts/orchestration.md §7",

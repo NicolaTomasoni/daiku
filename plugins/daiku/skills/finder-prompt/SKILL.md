@@ -58,7 +58,9 @@ If one of the first four is missing, **do not choose it yourself and do not ask 
 Only the block, without a prose report. With zero findings write `{"findings": []}`.
 
 ```json
-{"findings": [{"file": "<path>", "line": 0, "symbol": "<Class.method | function | module | Component>", "confidence": "high|medium|low", "change": "<the concrete fix, for high and medium>", "description": "<...>"}]}
+{"findings": [{"file": "<path>", "line": 0, "symbol": "<Class.method | function | module | Component>", "confidence": "high|medium|low", "change": "<the concrete fix, for high and medium>", "description": "<...>"}], "hypotheses": [{"file": "<path>", "symbol": "<Class.method | function | module | Component>", "description": "<the hypothesis and the measurement it lacks>"}]}
 ```
+
+**`hypotheses` carries what is not a finding.** A discipline that meets an impact which, to justify itself, would need a measurement or a benchmark — a hypothetical impact — puts it here instead of in `findings`: an array of `{file, symbol, description}`, where `description` holds the hypothesis and the measurement it lacks. The field is optional and empty when there is none; the applier does not process it, and a round counts no finding for it. `{"findings": []}` stays a valid block.
 
 The `confidence` scale is declared by the contract of your discipline, in its *Finder mode*: use it, not one of yours. Confidence is your estimate, not a permission — the applier reverifies every finding before applying it, so a finding verified at low confidence is information, a silenced finding is not.
