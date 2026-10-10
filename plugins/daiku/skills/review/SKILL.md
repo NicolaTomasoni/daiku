@@ -71,7 +71,7 @@ Every tree it writes goes through a throwaway index: the working tree and the re
 | `ask` | § *Baseline and ledger*, § *Closing* | `ledger` (a path, or `null`) and `question`: the evaluator's input without its ledger | the evaluator's block in `answer` |
 | `log` | on demand, to read across the reviews of the folder | `state_dir` (`{paths.review_state}`) | `written`; `log`, `ledgers`, `rows` |
 
-The `log` action is the finder performance log: an aggregate **derived** from the ledgers already in the folder, written beside them as `review-log.json`. It reads their rounds and their per-round findings files without touching the ledger's form, and carries one row per ledger × round × discipline of the roster — whether the finder ran in that round, and, where the findings file is there, the raw findings and the confidence of what it produced. It is **not a ledger** — it carries neither the ten fields nor the rounds, so the hooks that read the folder skip it — and its form is the `review-log` entry of `schemas/blocks.json`, which is the normative seat, not this prose. It is read-only over the ledgers: it writes nothing but its own file.
+The `log` action is the finder performance log: an aggregate **derived** from the ledgers already in the folder, written beside them as `review-log.json`. It reads their rounds and their per-round findings files without touching the ledger's form, and carries one row per ledger × round × discipline of the roster — whether the finder ran in that round; where the findings file is there, the raw findings and their confidence; and the **outcomes** of the round for that discipline, `closed` and `discarded`, counted by the discipline each id of the round's `applied` and `discarded` carries. It is **not a ledger** — it carries neither the ten fields nor the rounds, so the hooks that read the folder skip it — and its form is the `review-log` entry of `schemas/blocks.json`, which is the normative seat, not this prose. It is read-only over the ledgers: it writes nothing but its own file.
 
 Its bench runs with `hooks/self-check.mjs`.
 
@@ -86,7 +86,7 @@ disciplines, and this section has nothing left to judge — `arch` runs only if 
 whatever the scope measured, and neither worker below is launched. Without the key the two parts
 below decide, and that is what they describe.
 
-**What can be measured, the tool measures**, and you run it: `action: "scope"`. It freezes the baseline — `git rev-parse` of the base-ref, and the first parent of the commit under review when the input named one (§ *Input*) → `BASE` — photographs the tree of `{code_root}` as it stands, untracked files included and ignored ones out, lists the files that differ from `BASE` there — intersected with the path list when the invocation restricted it (§ *Input*) — and activates **arch** when the `paths` frontmatter of a policy in `.daiku/policies/` covers one of them. The rule list is the only source: keep no layer list here. `empty` means no file remains: there is nothing to review, say so and close — no ledger was opened.
+**What can be measured, the tool measures**, and you run it: `action: "scope"`. It freezes the baseline — `git rev-parse` of the base-ref, and the first parent of the commit under review when the input named one (§ *Input*) → `BASE` — photographs the tree of `{code_root}` as it stands, untracked files included and ignored ones out, lists the files that differ from `BASE` there — intersected with the path list when the invocation restricted it (§ *Input*) — and makes **arch** active when the `paths` frontmatter of a policy in `.daiku/policies/` covers one of them **or** when the diff creates a file — the tool answers `new_files` for the files it added, and either half is enough. The rule list is the only source: keep no layer list here. `empty` means no file remains: there is nothing to review, say so and close — no ledger was opened.
 
 **Whether `perf` runs is a judgement**, and a **worker** subagent makes it: in its prompt `BASE`, the `tree` and the `files` the tool returned, the question — does the diff touch a hot path: rendering, polling, loop, query, serialisation, high-frequency flow? — and the **read-only** constraint, which no harness layer imposes on whoever has `Bash` (§4 of `contracts/orchestration.md`). It returns `{"perf_active": false, "why": "<one line>"}`. `--with perf` skips it; `--with arch-check` forces `arch` whatever the tool said.
 
@@ -147,7 +147,7 @@ first row describes.
 
 | Round | Active disciplines | Round range: `git diff <from> <to> -- <files>`, shaped as `skills/finder-prompt/SKILL.md` § *Rules* says |
 |---|---|---|
-| **1** | `bug` always; `arch`, `perf` and `dead` if scope activated them | `BASE` → the scope's `tree`, on its `files`: the whole diff, untracked files included |
+| **1** | `bug` always; `arch` when the scope made it active — a covering policy **or** a new file in the diff — and `perf` and `dead` if scope activated them | `BASE` → the scope's `tree`, on its `files`: the whole diff, untracked files included |
 | **≥2** | `bug` only | the previous round's `pre_apply_tree` → `post_apply_tree`, on its `touched` files: only what its applier wrote |
 
 `arch`, `perf` and `dead` judge a **form on the whole diff**: where a layer stands, which path is hot, which abstraction was already available elsewhere, which symbol nobody calls. Rerunning them on the lines a fix touched is not a more accurate review, it is an ill-asked question: they are done once, on the complete diff, when the form is still all visible. `bug` judges **lines**, and lines change every round: it is the only discipline carried back onto the delta, and the only one whose missed finding costs a regression. From round 2 the range is tree against tree, so the finder's target is what the fixes changed and nothing else; the whole files stay open to it as context. Round 1 costs as much as a complete pass, later rounds as much as a single finder on a handful of lines.
@@ -162,7 +162,7 @@ In each finder prompt put **only what changes**, already resolved:
 - the **round range** — `from`, `to` and the files, per the table above: `scope` returned them for round 1, the `round` action of the previous round for the others;
 - `work_root`, the resolved parameters, and the **effort** level of the cycle;
 - the **ledger path**: from round 2 the finder reads there the applied and discarded of previous rounds, and the `arch` finder hands it to the `layers` action;
-- for `arch`, the `arch_policies` the scope matched;
+- for `arch`, the `arch_policies` the scope matched, and the `new_files` when the diff creates files — the two halves, either of which makes `arch` active;
 - the **read-only** constraint, with these words: it modifies no files and runs no commands that write. Its contract already declares it, but §4 of `contracts/orchestration.md` asks to repeat it here: the `finder` role has whole `Bash`, the specifiers of its toolset do not restrict the content of a command, and a finder "correcting while there" does not appear among the applied and no later round reviews it.
 
 Finders do not see each other: it is deliberate, and it is the separation producing different findings instead of a single already self-convinced pass. Launch them in the **same** tool-call block to truly run them in parallel — in sequence only on backends `contracts/orchestration.md` §5 sequentialises.
@@ -170,8 +170,6 @@ Finders do not see each other: it is deliberate, and it is the separation produc
 **Sharding of large diffs.** At round 1, above an indicative threshold — more than two thousand added lines or more than thirty files — the `bug` finder splits into several subagents for coherent file groups (by layer or by flow), same prompt, each with its own subset of the files, launched together; their blocks reach the tool as `bug1`, `bug2`, …, and their findings merge before the applier. `arch`, `perf` and `dead` do not split: they judge the whole form. It is the reason the closing review of an autonomous cycle, arriving with the diff of a whole run, can still respect "read every added line in full".
 
 Each discipline has its own contract, which `skills/finder-prompt/SKILL.md` indicates and which declares **at home** its own finder mode. No native skill of the host is needed for the cycle to exist.
-
-When this review runs on a work item — `item` is known — the `arch` finder also opens `<folder>/2. blueprint.md` and reads its Target paths line if present: a scope file under `{code_root}` standing outside the declared targets is an `arch` finding at medium confidence, with `change` carrying either the move into a declared area or the brief update justifying the excursion. No blueprint, no Target paths line, or a naked argument — a base-ref or a commit under review: skip this check silently. It never creates a new finding class, and it enters `to_confirm` only as a true fork.
 
 **When the finders return, their blocks go to the tool**: `action: "findings"`, each block under its discipline. It validates every block, numbers every finding — `r<round>-<discipline>-<k>`, and `r<round>-check-<k>` for a fast check or a targeted test the previous round left red (the fast check's first, its ids unmoved) — and writes them in the round's findings file. **A finder not returning is a missed discipline, not an empty discipline**: two outcomes resembling each other — fewer findings — that nothing downstream can tell apart, because `arch` and `perf` never rerun. The rule is deterministic:
 
@@ -218,7 +216,7 @@ For the others only where the second failure ends changes, and each uses a field
 The round count is not decided before starting — it is decided by watching what the round just produced, and **it is asked, not judged here**: the `round` action asks the evaluator `question: "round"` on the `ledger` it just wrote, with your `rounds_cap`. The verdict is `continue` or one of the exits below; the evaluator owns the order and the arithmetic of these rules, and the merit verdict alone is yours:
 
 0. **Detected oscillation** → exit `oscillation`. It comes first because it is the only one able to hide behind another: the applier suppresses the oscillating fix, the applied drop to zero, and rule 1 would call a bouncing cycle a fixed point.
-1. **Zero applied fixes** → exit `fixed-point`, the clean exit.
+1. **Zero applied fixes** → exit `fixed-point` when the round discarded nothing, `discarded-only` when it discarded something (rule 1a): a round that closed nothing is not a fixed point, and `fixed-point` stays the clean exit — zero applied **and** zero discarded. Neither exit stops the commit: like `diminishing-returns`, both are declared in closing and the commit runs.
 2. **At least three severe fixes, or a fast check that comes back red, or a targeted test that comes back red** → another round, without discussing. A perimeter containing three real defects contained enough to still contain more, and you just rewrote it; a fix that does not pass the fast check, nor the targeted tests, is not delivered.
 3. **Otherwise, merit verdict** — yours, in `merit_why`, and it weighs **what** was applied, never how much:
    - **continue** if even a single fix has `on_previous_fix: true` — the evaluator applies this one itself, on the measured value: your corrections are regressing;
@@ -233,13 +231,14 @@ The first occurring holds, and you declare which:
 
 | Exit | When | In closing |
 |---|---|---|
-| `fixed-point` | the round applied zero fixes | — |
+| `fixed-point` | the round applied no fix and discarded none | — |
+| `discarded-only` | the round applied no fix and discarded something — it closed nothing | the discarded count |
 | `diminishing-returns` | merit verdict `stop` at rule 3 | the fixes that convinced you |
 | `oscillation` | a fix brings back an anchor a later fix on the same site had replaced — not `on_previous_fix`, the healthy case of a fix correcting another *moving forward* | both versions; nothing more is applied |
 | `rounds-truncated` | the explicit `--rounds N` cap | — you truncated by hand, it is not an anomaly |
 | `rounds-exhausted` | the guardrail of **6**, without `--rounds N` | the severe of the last round: an anomaly, not a budget |
 
-A diff correct at first shot exits at `fixed-point` after a single round. **The exit says why the cycle stopped, not that the delivery is healthy**: if `to_confirm` items with `blocking: true` remain, report them together with the exit, in prose and in the `blocking` field of the final block, and do not call that exit "clean". The commit does not run anyway (§ *Closing*).
+A diff correct at first shot exits at `fixed-point` after a single round. **The exit says why the cycle stopped, not that the delivery is healthy**: if `to_confirm` items with `blocking: true` remain, report them together with the exit, in prose and in the `blocking` field of the final block, and do not call that exit "clean". The commit does not run anyway (§ *Closing*). `discarded-only` runs the other way: it is declared in closing and the commit runs — the round closed nothing, and that is worth stating, not a reason to stop.
 
 ## After the cycle
 
@@ -295,7 +294,7 @@ When it runs, delegate it to a **worker** subagent fully reading `skills/commit/
    ```json
    {
      "rounds": 0,
-     "outcome": "fixed-point|diminishing-returns|oscillation|rounds-truncated|rounds-exhausted",
+     "outcome": "fixed-point|discarded-only|diminishing-returns|oscillation|rounds-truncated|rounds-exhausted",
      "disciplines_round_1": ["bug"],
      "missing_disciplines": [],
      "independence": "intact|lost",
