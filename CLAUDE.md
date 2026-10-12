@@ -1,4 +1,4 @@
-In questo repository sviluppiamo **Daiku**, un'estensione per Claude Code e Codex che implementa un agent loop. Rispondi sempre in italiano nelle chat. Tutti i file del workflow devono essere in italiano, ad eccezione della cartella del prodotto, `plugins\`, che deve essere sempre in inglese insieme a tutto il suo contenuto: il prodotto parla inglese, il cantiere che lo costruisce italiano.
+In questo repository sviluppiamo **Daiku**, un'estensione per Claude Code che implementa un agent loop. Rispondi sempre in italiano nelle chat. Tutti i file del workflow devono essere in italiano, ad eccezione della cartella del prodotto, `plugins\`, che deve essere sempre in inglese insieme a tutto il suo contenuto: il prodotto parla inglese, il cantiere che lo costruisce italiano.
 
 ## Comportamento
 Non chiedere mai permessi o conferme: lavora sempre in bypass, in autonomia, senza fermarti ad approvare.
@@ -19,7 +19,7 @@ destinazione — mai il permesso di sistemarlo.
 Fai solo quello che l'owner ti chiede, e niente iniziative oltre la richiesta. L'autonomia vale per
 *come* esegui un ordine, non per *cosa* decidi di fare: nessun passo in più che l'owner non ha chiesto.
 Vale soprattutto fuori da questo repository — la cache del plugin installato, i progetti ospiti, la
-configurazione degli host. Se un passo in più ti sembra utile, lo proponi in una riga e non lo esegui.
+configurazione dell'host. Se un passo in più ti sembra utile, lo proponi in una riga e non lo esegui.
 
 Più sessioni lavorano in questo repository in parallelo, e il working tree cambia sotto di te: file
 che appaiono, numeri che si spostano, righe di `git status` che spariscono. **Non segnalarlo mai.**
@@ -34,8 +34,8 @@ corregge nella stessa tornata, come dice *La memoria si aggiorna nella stessa to
 ## Questo file non fa parte dei prodotti
 
 `CLAUDE.md` è come si **sviluppa** Daiku, non è Daiku. Lo stesso vale per
-`.claude/`, `.vscode/` e tutto ciò che sta sotto `.docs/`. Restano in radice perché gli host
-li cercano lì, non perché appartengano a un prodotto.
+`.claude/`, `.vscode/` e tutto ciò che sta sotto `.docs/`. Restano in radice perché l'host
+li cerca lì, non perché appartengano a un prodotto.
 
 **In radice non entra nessun file di prodotto.** Ci stanno solo le sedi di sviluppo e una
 cartella, il cui **contenuto** è per intero la radice di `main`: il rilascio lo porta lì così com'è,
@@ -45,11 +45,10 @@ e nient'altro esce.
 |---|---|
 | `plugins/` | **Daiku** — il cui contenuto è la radice di `main`, il ramo di produzione, che è un marketplace |
 | `plugins/.claude-plugin/marketplace.json` | vetrina Claude Code, punta a `./daiku` |
-| `plugins/.agents/plugins/marketplace.json` | vetrina Codex, stessa destinazione |
-| `plugins/daiku/` | il pacchetto Daiku — ciò che gli host installano |
+| `plugins/daiku/` | il pacchetto Daiku — ciò che l'host installa |
 | `.docs/` | memoria, confronti, esempi, strumenti di sviluppo |
 | `.daiku/` | i parametri del **cantiere**, non del prodotto: le guardie di Daiku su questo repository, e sotto di sé le sedi dei lavori — `features/`, `studies/` e `handoffs/` |
-| `CLAUDE.md`, `.claude/`, `.vscode/`, `.gitignore`, `.gitattributes` | sviluppo, obbligati in radice dagli host e da git |
+| `CLAUDE.md`, `.claude/`, `.vscode/`, `.gitignore`, `.gitattributes` | sviluppo, obbligati in radice dall'host e da git |
 
 `.daiku/project.json` non è una sede di sviluppo come le altre: **è il gate delle guardie.** Il
 pacchetto è installato su ogni repository che l'host apre, ma non nega niente dove il progetto non
@@ -63,7 +62,7 @@ niente e i comandi del cantiere si scrivono su ordine dell'owner.
 Prima di aggiungere un file, decidi se serve a chi *usa* Daiku o a chi lo *costruisce*. Se
 serve a chi lo usa va sotto `plugins/`; se serve a chi lo costruisce, in `plugins/` non entra.
 Un file che il repository pubblico deve avere in
-radice — il README, il `.gitattributes`, le vetrine — sta nella radice della cartella del
+radice — il README, il `.gitattributes`, la vetrina — sta nella radice della cartella del
 prodotto, mai in quella di questo repository.
 
 **Qui Daiku è installato dal marketplace online**, `NicolaTomasoni/daiku`, sul ramo di produzione
@@ -104,7 +103,7 @@ il pubblico. Il cantiere e il prodotto sono i suoi due rami, e la copia di lavor
 
 **`develop` è il cantiere.** Porta tutto — il prodotto sotto `plugins/`, la ricognizione, i punti
 aperti, la memoria, gli esempi, queste istruzioni — ed è il ramo su cui si lavora. **Porta una
-versione, ed è una beta**: i due manifest dichiarano la versione di `main` stessa, marcata come beta
+versione, ed è una beta**: il manifest dichiara la versione di `main` stessa, marcata come beta
 con un contatore — `1.1.5-b.1` — scritto dopo un punto, perché `b10` verrebbe prima di `b9`. Non è
 un rilascio e nessun rilascio la legge: il numero di un rilascio si deriva da `main` e si scrive su
 `main`, dove questa viene sovrascritta. Serve perché il pacchetto si installa anche dall'albero di
@@ -113,8 +112,8 @@ sviluppo, e perché è quella dichiarazione a far muovere la copia installata; s
 `plugins/CHANGELOG.md` qui non esiste.
 
 **`main` è la produzione, ed è una linea di rilasci.** Ogni rilascio è un commit che porta il
-contenuto di `plugins/` alla radice del repository — le due vetrine, `daiku/`, il README, il
-`.gitattributes` — con la versione nei tre punti e la voce di changelog costruita dai messaggi del
+contenuto di `plugins/` alla radice del repository — la vetrina, `daiku/`, il README, il
+`.gitattributes` — con la versione nei due punti e la voce di changelog costruita dai messaggi del
 blocco. `main` **non è antenata di `develop`**, e niente di un rilascio torna indietro: un numero o
 una sezione di changelog che ricompaiano su `develop` sono un guasto, non un allineamento.
 
@@ -159,12 +158,12 @@ Non segnalarli a meno che non ti venda chiesto.
 
 ## Dove sta ogni cosa
 
-I fatti verificati sui due host — cosa offrono, cosa accettano e rifiutano, come si installa e si
-aggiorna un pacchetto — vivono in `.docs/memory/`, nelle memorie sugli host, con la prova eseguita
+I fatti verificati sull'host — cosa offre, cosa accetta e rifiuta, come si installa e si
+aggiorna un pacchetto — vivono in `.docs/memory/`, nelle memorie sull'host, con la prova eseguita
 e la data. Sono la base su cui poggiano le decisioni del pacchetto: si leggono prima di toccare
-manifest, vetrine, frontmatter di una skill o collocazione di un file.
+manifest, vetrina, frontmatter di una skill o collocazione di un file.
 
-I comandi di `.claude/commands/` sono scritti sulla forma di Daiku: leggono `plugins/daiku/`, lanciano i suoi validatori, rispettano le
+I comandi di `.claude/commands/` sono scritti sulla forma di Daiku: leggono `plugins/daiku/`, lanciano il suo validatore, rispettano le
 sue liste di copia.
 
 `.docs/memory/` è la memoria persistente del progetto, versionata. Non è il path predefinito:
@@ -265,28 +264,23 @@ non esiste: o gli si costruisce, o si toglie il divieto.
 
 ## Verificare il pacchetto Daiku
 
-Le due validazioni vanno passate entrambe, sullo stesso albero:
+La validazione del pacchetto è quella dell'host:
 
 ```bash
 claude plugin validate plugins/daiku
-python ~/.codex/skills/.system/plugin-creator/scripts/validate_plugin.py plugins/daiku
 ```
 
-La seconda richiede `pyyaml`. Non saltarla: i due validatori non coprono le stesse cose — è
-quello di Codex a rifiutare i campi di manifest non ammessi, ed è quello di Claude Code a
-segnalare le skill che si caricherebbero con i metadati vuoti.
-
-Nessuno dei due però guarda dentro il codice eseguibile del pacchetto: gli hook, tutti
+Il validatore però non guarda dentro il codice eseguibile del pacchetto: gli hook, tutti
 **fail-open** — davanti a un guasto tacciono ed escono `0`, quindi rotti e silenziosi si
 assomigliano — i cinque programmi di `plugins/daiku/architect/` e la scansione di `init`,
-`plugins/daiku/skills/init/scan.mjs`. La terza verifica è la loro, e vale come le altre due:
+`plugins/daiku/skills/init/scan.mjs`. La verifica del codice è la loro, e vale come la validazione:
 
 ```bash
 node plugins/daiku/hooks/self-check.mjs
 ```
 
 Lancia insieme i banchi di prova di tutto ciò che il pacchetto esegue — i moduli di
-`plugins/daiku/hooks/lib/`, il banco dei manifest degli host, i cinque programmi di
+`plugins/daiku/hooks/lib/`, il banco dei manifest, i cinque programmi di
 `plugins/daiku/architect/` e `skills/init/scan.mjs` — stampa il totale contato ed esce `1` al primo caso rosso: quanti
 banchi e quanti controlli siano lo dice la sua uscita, non questa riga. I banchi del ledger e del
 rilascio lavorano con Git vero su repository usa e getta nella cartella temporanea di sistema: vogliono
@@ -309,7 +303,7 @@ path interno che risolve, ogni blocco json parsabile, nessuna skill che nomina u
 d'apertura §5.1 dove serve, l'agente dal toolset ristretto, il vocabolario dei ruoli chiuso ai due
 di §1 — con totale contato ed uscita `1` al primo caso rosso. Il banco del controllo si lancia con `node .docs/tools/check-corpus.mjs --self-check`.
 
-Nessuno di questi guarda le **due vetrine** del repository pubblicato — la sola parte che il
+Nessuno di questi guarda la **vetrina** del repository pubblicato — la sola parte che il
 repository studiato ha rotto senza accorgersene, e l'unica il cui errore non si vede in locale ma
 solo in chi installa:
 
@@ -318,10 +312,9 @@ claude plugin validate plugins
 node .docs/tools/check-marketplace.mjs plugins
 ```
 
-La prima è il validatore dell'host sulla vetrina di Claude Code, e becca esattamente quel guasto:
-un manifest che il parser rifiuta. La seconda verifica entrambe le vetrine — che siano leggibili,
-che ogni voce risolva a una cartella vera dentro l'albero e che le due portino allo stesso
-pacchetto — e ha il suo banco, da lanciare accanto al controllo:
+La prima è il validatore dell'host sulla vetrina, e becca esattamente quel guasto:
+un manifest che il parser rifiuta. La seconda verifica la vetrina — che sia leggibile e che ogni
+voce risolva a una cartella vera dentro l'albero — e ha il suo banco, da lanciare accanto al controllo:
 
 ```bash
 node .docs/tools/check-marketplace.mjs --self-check

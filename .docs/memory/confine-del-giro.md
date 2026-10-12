@@ -4,7 +4,7 @@ description: "Il turno dell'owner che chiede lavoro si delega, mai si esegue nel
 metadata:
   node_type: memory
   type: project
-  modified: 2026-10-08T16:04:11.833Z
+  modified: 2026-10-12T12:13:14.832Z
   originSessionId: 715311ff-404d-46a6-a631-04f17ff013e9
 ---
 
@@ -43,16 +43,14 @@ nominare: «delega, o dichiara la cartella, o apri un'altra sessione» sono tre 
 gesto che non è sempre lo stesso errore. Il promemoria dice la regola a chi sta per romperla e lascia
 il giudizio dove il contratto l'ha già messo.
 
-**Il fatto sugli host su cui poggia, e da dove viene.** Un hook di plugin gira **anche** per i tool
+**Il fatto sull'host su cui poggia, e da dove viene.** Un hook di plugin gira **anche** per i tool
 di un subagent, e l'input porta `agent_id` **solo quando l'hook scatta dentro una chiamata di
 subagent**: è quel campo, e non `agent_type`, a distinguere un figlio dalla conversazione —
 `agent_type` c'è anche in una sessione avviata con `--agent`. Letto dalla reference dell'host
 (`code.claude.com/docs/en/hooks`, tabella *Common input fields*, e *Add context for Claude*;
 `code.claude.com/docs/en/sub-agents`, *Define hooks for subagents*), **30 settembre 2026**.
 **Non riprodotto su questa macchina**: il pacchetto installato è una copia, e un esperimento qui
-misurerebbe la versione in cache, non questa. Su **Codex** il modello non lo cabla — nessun
-`UserPromptSubmit`, nessun `agent_id` — quindi là non marca e non parla: la regola ha una sede sola,
-il §7 di `new-feature`.
+misurerebbe la versione in cache, non questa.
 
 **How to apply:** il banco è `node plugins/daiku/hooks/lib/run-advice.mjs --self-check`, e il totale
 dei banchi lo dice `node plugins/daiku/hooks/self-check.mjs`. Un caso del banco tiene la forma che

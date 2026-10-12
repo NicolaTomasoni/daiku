@@ -1,24 +1,20 @@
 ---
 name: init-riconciliazione
-description: "init non scrive solo ciò che manca: la scansione risponde con quattro liste e il rilancio ritira le sedi del layout vecchio e le chiavi che il contratto non nomina più"
+description: "init non scrive solo ciò che manca: la scansione risponde con più liste e il rilancio ritira le sedi del layout vecchio e le chiavi che il contratto non nomina più"
 metadata:
   node_type: memory
   type: project
   originSessionId: 77ada92a-4f7c-494a-b72f-d27ca84e5cc7
-  modified: 2026-10-04T10:13:32.686Z
+  modified: 2026-10-12T12:10:54.240Z
 ---
 
 Dal 4 ottobre 2026 la scansione di `init` (`skills/init/scan.mjs`) non risponde più con la sola
-`missing`: accanto le stanno `stale`, `legacy` e `params`, e le ultime tre non nominano cose da
+`missing`: accanto le stanno `legacy` e `params`, che non nominano cose da
 **creare** ma cose da **correggere**. La decisione sotto è una sola: **un pezzo che sta lì da una
 Daiku più vecchia è indietro quanto un pezzo che non c'è**, e nessun occhio distingue un file vecchio
 da uno giusto. Un rilancio che leggesse solo `missing` chiamerebbe «tutto pronto» un progetto dentro
 cui stanno ancora sedi che nessuno legge.
 
-- **`stale`** — su Codex soltanto, la copia della roba dell'host dentro il progetto (`.codex/`), che
-  il pacchetto lì non può portare: gli hook di `hooks/lib/` confrontati **byte per byte**, i ruoli
-  resi da `sync-host` per il marcatore della prima riga ([[script-versionati]]), e i file che il
-  pacchetto non porta più affatto.
 - **`legacy`** — le sedi che Daiku scriveva **prima** di `.daiku/` (`.claude/project.json`,
   `.claude/environment.json`, `.claude/orchestration.md`, `.claude/project-contract.md`,
   `.claude/hooks/contratti-post-edit.mjs`), più le voci di un settings file che puntano ancora a una
@@ -42,9 +38,5 @@ la scelta dell'owner: un valore che qualcuno ha messo resta dove sta. Una sede c
 ha lasciato e una chiave che il contratto non nomina più non sono scelte di nessuno, e restano solo
 per inerzia.
 
-**How to apply:** il marcatore `daiku:script` è la chiave dello `stale` di Codex — un ruolo senza
-marcatore ma col nome di un ruolo che il pacchetto porta è vecchio e `sync-host` lo rifà; un `.toml`
-senza marcatore **e** senza nome noto è un ruolo del progetto e resta dov'è, perché una
-riconciliazione che non chiude mai è peggio di una che tace su un file che nessuno ha chiesto di
-toccare. Tutto questo arriva al primo `/init` dopo l'aggiornamento del pacchetto, e `update.mjs` è il
-solo che dice che serve ([[script-versionati]]).
+**How to apply:** tutto questo arriva al primo `/init` dopo l'aggiornamento del pacchetto, e
+`update.mjs` è il solo che dice che serve ([[script-versionati]]).

@@ -1,11 +1,11 @@
 ---
 name: guardrail-nascono-spenti
-description: "la guardia nega sempre push, --no-verify e le firme di Claude o Codex, e solo il pool dei worktree, i canali e la sede dei ledger si dichiarano; ask-guard nega due gesti del giro, e nessun file; nessun hook esegue un file perché è appena comparso"
+description: "la guardia nega sempre push, --no-verify e le firme di Claude, e solo il pool dei worktree, i canali e la sede dei ledger si dichiarano; ask-guard nega due gesti del giro, e nessun file; nessun hook esegue un file perché è appena comparso"
 metadata: 
   node_type: memory
   type: project
   originSessionId: 7f30fa0d-9a97-482d-ba1b-c32231e0c9e1
-  modified: 2026-10-05T17:44:00.705Z
+  modified: 2026-10-12T12:14:09.642Z
 ---
 
 **Deciso il 19 settembre 2026, preparando gli hook per la distribuzione.** Un pacchetto si
@@ -17,7 +17,7 @@ niente e non leggono nemmeno la riga — questo resta. Con quel file, dal 21 set
 negano sempre, senza interruttore: `git push` e `git commit
 -n`/`--no-verify`. Dal 25 settembre 2026 nega sempre,
 senza interruttore, anche il `git commit` il cui messaggio accredita l'agente — un `Co-Authored-By`
-che nomina Claude o Codex, o una riga `Generated with` — in `-m`, `--trailer`, heredoc o file `-F`. I rami che restano spenti finché il progetto non li accende sono tre: il pool dei
+che nomina Claude, o una riga `Generated with` — in `-m`, `--trailer`, heredoc o file `-F`. I rami che restano spenti finché il progetto non li accende sono tre: il pool dei
 worktree, con `{worktree.pool}`; la guardia del ramo, con `channels.production` (dal 3 ottobre 2026: nega `git commit` e `git merge` mentre è attivo il ramo di produzione e `git checkout`/`git switch` verso di esso, e legge il ramo solo sulle righe che nominano git); e la guardia della review, con `{paths.review_state}` (dal 5 ottobre 2026: dove la sede dei ledger è dichiarata, nega `git commit` fuori da un ciclo di review — il commit è l'ultimo passo del ciclo — legge la sede solo su un `git commit`, e una sede che non risponde lascia passare). La rimozione ricorsiva che attraversa una junction di Windows non
 ha mai avuto interruttore: non è una policy ma un fatto del sistema operativo.
 
@@ -54,9 +54,8 @@ pacchetto — negava `git push` a chiunque, su qualunque repository, rimandando 
 `CLAUDE.md` che nel progetto ospite non esistono. Un diniego che compare senza essere stato chiesto
 è il motivo per cui un pacchetto si disinstalla, e la sua utilità non compensa mai quel primo
 istante. Sull'esecuzione: il post-edit lanciava `node <file> --self-check` sul `.mjs` appena
-scritto, cioè faceva partire codice che nessuno aveva ancora guardato, scavalcando sia la conferma
-che l'host chiede prima di un comando sia l'approvazione per hash che Codex pretende proprio per
-gli hook. Un hook che dice «lancia il banco» e uno che lo lancia da solo hanno lo stesso valore
+scritto, cioè faceva partire codice che nessuno aveva ancora guardato, scavalcando la conferma che
+l'host chiede prima di un comando. Un hook che dice «lancia il banco» e uno che lo lancia da solo hanno lo stesso valore
 diagnostico e un rischio molto diverso.
 
 Il 21 settembre 2026 l'owner ha ristretto questa decisione ai soli rami che dipendono davvero dal
@@ -69,9 +68,9 @@ dove un divieto può avere una sede deterministica, ce l'ha sempre. Fanno eccezi
 davvero dal progetto (oggi il pool dei worktree, la guardia del ramo e la guardia della review): quelli nascono **spenti**, con la loro chiave
 nel JSON, e nel banco un caso che prova che da spenti **non** negano. Ogni ramo ha la sua riga nella
 tabella di `plugins/daiku/hooks/README.md`, e i banchi di tutto ciò che il pacchetto esegue — i
-moduli di `hooks/lib/` con un banco, il banco dei manifest, i quattro programmi di `architect/` e i due
+moduli di `hooks/lib/` con un banco, il banco dei manifest, i cinque programmi di `architect/` e i due
 passi di `init` (`skills/init/scan.mjs` e `skills/init/branch.mjs`) — si lanciano insieme con `node plugins/daiku/hooks/self-check.mjs`, che somma i controlli e esce `1` al
-primo rosso: va aggiunto a ogni verifica di rilascio accanto ai due validatori. Il numero dei banchi
+primo rosso: va aggiunto a ogni verifica di rilascio accanto al validatore. Il numero dei banchi
 e dei controlli lo dice l'uscita dello strumento, non questo file.
 
 **La radice i hook la cercano, non la presumono.** `hooks/lib/project-root.mjs` non prende la radice

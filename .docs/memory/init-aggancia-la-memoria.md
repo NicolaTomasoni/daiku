@@ -1,18 +1,19 @@
 ---
 name: init-aggancia-la-memoria
-description: init crea la sede della memoria in ogni progetto, su entrambi gli host, e solo su Claude Code vi porta dentro la memoria dell'host — un corpus solo, due scrittori
+description: "init crea la sede della memoria in ogni progetto e vi porta dentro la memoria dell'host — un corpus solo, due scrittori"
 metadata:
+  node_type: memory
   type: project
+  originSessionId: 33614099-e150-45f7-99eb-7fe0113b9450
+  modified: 2026-10-12T12:12:55.466Z
 ---
 
-Dal 19 settembre 2026 `init` **porta la memoria dell'host dentro il repository** del progetto ospite,
-**su Claude Code soltanto**: ci apre `{memory.root}` con il suo indice, **sposta** lì i file che
+Dal 19 settembre 2026 `init` **porta la memoria dell'host dentro il repository** del progetto ospite:
+ci apre `{memory.root}` con il suo indice, **sposta** lì i file che
 l'agente aveva già scritto sotto `~/.claude/projects/<progetto>/memory/`, e scrive
-`autoMemoryEnabled` e `autoMemoryDirectory` in `.claude/settings.local.json`. Su **Codex** non porta
-niente: lì la memoria è `~/.codex/memories_1.sqlite`, un database consolidato dalle sessioni, e
-nessuna chiave ne sposta la sede. **Dal 2 ottobre 2026 la sede del corpus, invece, `init` la crea su
-entrambi gli host**, anche dove l'host non ci punta la propria memoria: il corpus è del metodo, e
-`update-memory` lo scrive a ogni commit.
+`autoMemoryEnabled` e `autoMemoryDirectory` in `.claude/settings.local.json`. **Dal 2 ottobre 2026 la
+sede del corpus, invece, `init` la crea su qualunque progetto che non ce l'ha**: il corpus è del
+metodo, e `update-memory` lo scrive a ogni commit.
 
 **Why:** la sede è **una sola** — `{memory.root}` — e da quel momento ha due scrittori che non si
 coordinano: l'host di sua iniziativa e `update-memory` a ogni commit. È la scelta dell'owner fra
@@ -24,8 +25,8 @@ commit è l'ultima delle sue sedi invece dell'unica ([[allineamento-a-ogni-modif
 
 **How to apply:** tre conseguenze che stanno in piedi solo insieme.
 
-- **`memory.root` e `memory.index` sono le uniche chiavi che `init` scrive sempre**, su entrambi
-  gli host e anche su un progetto che non aveva nessun corpus: lì la cartella non si rileva, si
+- **`memory.root` e `memory.index` sono le uniche chiavi che `init` scrive sempre**, anche su un
+  progetto che non aveva nessun corpus: lì la cartella non si rileva, si
   assegna. La §6 del contratto (ciò che il JSON non dichiara non esiste) non le copre — la sede della
   deroga è la §4.2 di `plugins/daiku/contracts/project-contract.md`.
 - **Il puntamento non si committa**, e il perché del vincolo è in [[memoria-nel-repo]]: vale

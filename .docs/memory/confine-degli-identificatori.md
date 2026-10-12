@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: feedback
   originSessionId: 126222c9-8135-4944-abbf-63c9ec0d2502
-  modified: 2026-09-22T11:51:40.315Z
+  modified: 2026-10-12T12:14:08.517Z
 ---
 
 Il 22 settembre 2026, tradotto `plugins/daiku/` in inglese, l'owner ha **ribaltato la Regola 1 di
@@ -28,7 +28,7 @@ Tutto il resto — variabili, funzioni, parametri, costanti, chiavi di oggetti i
 casi di prova — **si traduce con la prosa**, a una condizione sola: aggiorni ogni lettore nello
 stesso diff, e lo **provi** con le tre prove che la regola scrive accanto a sé (il `grep` del nome
 vecchio a vuoto su `plugins/` e `.claude/`; il banco degli hook verde **con lo stesso
-totale di prima**; i due validatori). Se non puoi fare tutte e tre, quel nome è di confine.
+totale di prima**; il validatore). Se non puoi fare tutte e tre, quel nome è di confine.
 
 **Why:** la vecchia regola sembrava prudente e non lo era. Proibiva anche le rinomine che nessuno
 può sbagliare — una variabile locale di `command-guard.mjs` la legge solo `command-guard.mjs` — e

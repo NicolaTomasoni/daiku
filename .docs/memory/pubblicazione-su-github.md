@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 69438169-0316-47c8-a4e8-3365650ee2cf
-  modified: 2026-10-09T15:56:22.442Z
+  modified: 2026-10-12T12:11:43.036Z
 ---
 
 **Dal 5 ottobre 2026 il repository è uno solo.** `NicolaTomasoni/daiku` su GitHub, privato finché
@@ -18,13 +18,13 @@ servizio — che esisteva perché il macchinario di pubblicazione ci copiava i f
 **ritirato**, e quel macchinario con lui. Il rilascio non ne ha bisogno: non si mette mai su
 production.
 
-`develop` **porta una beta**: i due manifest dichiarano la versione di `main` stessa, marcata con un
+`develop` **porta una beta**: il manifest dichiara la versione di `main` stessa, marcata con un
 contatore — `1.1.5-b.1` — scritto dopo un punto, perché `b10` verrebbe prima di `b9` in semver. Non è un rilascio e nessun rilascio la legge: il numero di
 un rilascio si deriva da `main` e si scrive su `main`, dove questa viene sovrascritta. Serve perché
 il pacchetto si installa anche dall'albero di sviluppo — il marketplace di questa macchina punta
 alla cartella di prodotto — ed è quella dichiarazione a far muovere la copia installata; sale quando
 sale la **forma** del pacchetto, cioè quando `init` avrebbe qualcosa da riportare nei progetti
-ospiti. Codex esige strict semver, quindi la chiave non può mancare, e `plugins/CHANGELOG.md` non
+ospiti. La versione è in semver stretto, quindi la chiave non può mancare, e `plugins/CHANGELOG.md` non
 esiste su `develop`. `main` porta versione e changelog, ed è **una linea di rilasci**: non è antenata
 di `develop`, e niente di un rilascio torna indietro.
 
@@ -47,9 +47,8 @@ nuovo copre tutta la storia finché non ne nasce uno con il trailer.
 **Il push non è della macchina.** `release` scrive il ref locale e si ferma; il push è il gesto
 manuale dell'owner — vedi [[push-solo-manuale]]. Un rilascio si chiude col push, non col nodo.
 
-**Why:** la forma breve `owner/repo` è quella che entrambi gli host accettano per un marketplace —
-`/plugin marketplace add owner/repo` su Claude Code, `codex plugin marketplace add owner/repo` su
-Codex — e vale solo per GitHub. Tenere due repository costringeva a copiare il prodotto da uno
+**Why:** la forma breve `owner/repo` è quella che l'host accetta per un marketplace —
+`/plugin marketplace add owner/repo` — e vale solo per GitHub. Tenere due repository costringeva a copiare il prodotto da uno
 all'altro a ogni rilascio, e la copia non è mai stata il problema: il problema era che Daiku non
 sapeva fare il rilascio da sé. Ora lo sa, e il cantiere è la sua prima prova.
 

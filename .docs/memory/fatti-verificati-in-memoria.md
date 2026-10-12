@@ -1,16 +1,18 @@
 ---
 name: fatti-verificati-in-memoria
-description: "I fatti verificati sugli host vivono nelle memorie, non in un documento di ricognizione: perché quel documento non si ricrea"
+description: "I fatti verificati sull'host vivono nelle memorie, non in un documento di ricognizione: perché quel documento non si ricrea"
 metadata:
+  node_type: memory
   type: feedback
+  originSessionId: 33614099-e150-45f7-99eb-7fe0113b9450
+  modified: 2026-10-12T12:13:15.944Z
 ---
 
 **Un fatto verificato va in una memoria di `.docs/memory/`, con il comando eseguito e la data. Non
 esiste un documento di ricognizione che li raccolga.** Deciso dall'owner il 29 settembre 2026: i
-fatti sui due host da quel giorno stanno nelle memorie — [[cosa-i-due-host-accettano]],
-[[cosa-codex-fa-allinstallazione]], [[installazione-e-versionamento]] e
-[[come-si-provano-i-fatti-sugli-host]] — e le sedi che li nominano sono `CLAUDE.md` e
-`plugins/daiku/skills/update-memory/SKILL.md`.
+fatti sull'host da quel giorno stanno nelle memorie — [[cosa-claude-code-accetta]],
+[[installazione-e-versionamento]] e [[come-si-provano-i-fatti-su-claude-code]] — e le sedi che li
+nominano sono `CLAUDE.md` e `plugins/daiku/skills/update-memory/SKILL.md`.
 
 **Why:** un documento unico che tiene insieme il verbale di ciò che si sapeva e i fatti del presente
 invecchia in metà, e chi lo cita lo cita per i fatti: si porta dietro le righe dell'altra metà — una

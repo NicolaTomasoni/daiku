@@ -5,13 +5,13 @@ metadata:
   node_type: memory
   type: project
   originSessionId: cb57e80e-86fe-473f-a2a8-05597ba47418
-  modified: 2026-09-20T17:23:00.584Z
+  modified: 2026-10-12T12:10:18.867Z
 ---
 
 Nel frontmatter di una `SKILL.md` i valori di `description` e `argument-hint` vanno **quotati con
 apice singolo** (l'apice interno si raddoppia). Quando il difetto fu trovato, il 18 settembre 2026,
-otto contratti su diciotto avevano YAML non valido; oggi i contratti sono diciotto e l'albero
-passa entrambi i validatori.
+otto contratti su diciotto avevano YAML non valido; l'albero
+passa il validatore.
 
 **Why:** i file nascevano come `commands/*.md`, e il parser dei comandi tollerava quello che
 quello delle skill rifiuta. Due difetti distinti: un valore non quotato che contiene `: ` chiude
@@ -25,14 +25,12 @@ runtime this skill loads with empty metadata (all frontmatter fields silently dr
 skill non sparisce, si carica senza descrizione, quindi il modello non la trova mai per
 pertinenza e nessuno capisce perché.
 
-Si verifica con `claude plugin validate <pacchetto>` e con il validatore Codex in
-`~/.codex/skills/.system/plugin-creator/scripts/validate_plugin.py` (vuole `pyyaml`).
-Entrambi lo prendono.
+Si verifica con `claude plugin validate <pacchetto>`, che lo prende.
 
-**Passare i validatori non vuol dire che la regola sia rispettata**, ed è il motivo per cui questa
+**Passare il validatore non vuol dire che la regola sia rispettata**, ed è il motivo per cui questa
 memoria esiste: un `argument-hint` non quotato che comincia con `[` è una **sequenza di flusso**
-YAML, quindi il valore si carica come lista invece che come stringa, e nessuno dei due validatori
-lo segnala perché una lista è YAML valido.
+YAML, quindi il valore si carica come lista invece che come stringa, e il validatore non lo segnala
+perché una lista è YAML valido.
 
 Al 19 settembre 2026 il pacchetto è **pulito**: tutti e diciassette i contratti hanno ogni valore
 di frontmatter quotato, verificato caricandoli uno per uno con `yaml.safe_load` e controllando che

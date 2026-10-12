@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 99901030-abdd-4caa-92ce-5d7a0a1dfbc2
-  modified: 2026-10-04T10:13:37.968Z
+  modified: 2026-10-12T12:11:33.311Z
 ---
 
 Dal 1 ottobre 2026 ogni script che `init` deposita — oggi solo `.daiku/update.mjs` — porta in testa
@@ -14,11 +14,6 @@ la riga `// daiku:script <version>`, **la versione del pacchetto che l'ha scritt
 `<package root>/.claude-plugin/plugin.json`: se non combaciano — o se la riga non c'è, che è come
 si legge uno script depositato da un `init` più vecchio — lo script è vecchio, e `init` lo ricrea
 **intero** dallo scheletro.
-
-**Lo stesso marcatore, nella forma `#`, sta in testa a ogni ruolo che `sync-host` rende** in
-`.codex/agents/*.toml` — ed è ciò che rende un ruolo misurabile: la scansione legge le due forme
-(`//` e `#`), e un ruolo il cui marcatore non è di questo pacchetto è un ruolo reso da uno più
-vecchio, che `init` lista e `sync-host` rifà ([[init-riconciliazione]]).
 
 **Why:** senza il marcatore un aggiornamento si fermava al pacchetto e lasciava il progetto con lo
 script della Daiku che non c'è più — ReforgIA ne aveva uno copiato a mano, e nessuna skill se ne
@@ -32,7 +27,7 @@ script che questo pacchetto ha scritto, che resta, e uno che non ha scritto, che
   di istruzioni ([[init-scrive-le-istruzioni]]), perché una voce di stash per ogni aggiornamento
   sarebbe solo rifiuto. La regola sta in *Step 5-bis* e in §8 di `contracts/project-contract.md`.
 - **La versione non si scrive in due posti.** Lo scheletro la porta come segnaposto `<version>`, e
-  il rilascio continua a bumpare i soli tre punti — i due manifest e il badge: una copia letterale
+  il rilascio continua a bumpare i soli due punti — il manifest e il badge: una copia letterale
   nello scheletro sarebbe una quarta sede che diverge, e `hooks/template-check.mjs` la rifiuta.
 - **Un segnaposto non riempito si vede.** Resterebbe `<version>` nella riga, che non è la versione
   del pacchetto: la scansione lo segnala come script vecchio, e *Step 6-bis* lo ripesca prima di

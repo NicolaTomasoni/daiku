@@ -5,13 +5,13 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 69438169-0316-47c8-a4e8-3365650ee2cf
-  modified: 2026-10-05T15:38:17.173Z
+  modified: 2026-10-12T12:11:31.088Z
 ---
 
 **Il confine fra cantiere e prodotto è il ramo, non un secondo repository** (dal 5 ottobre 2026,
 vedi [[pubblicazione-su-github]]). `develop` porta tutto — il prodotto, `.docs/`, `CLAUDE.md`,
 `.claude/`, `.daiku/`, `.vscode/` — e su `main` esce **il contenuto di `plugins/`**, portato alla
-radice del repository: le due vetrine, `daiku/`, il README, il `.gitattributes`, la licenza.
+radice del repository: la vetrina, `daiku/`, il README, il `.gitattributes`, la licenza.
 
 `plugins/` è quindi la cartella il cui **contenuto** è l'albero di `main`. Lo dichiara
 `release.source` in `.daiku/project.json`, ed è per questo che le chiavi `version.*` e `changelog`
@@ -20,8 +20,8 @@ quel prefisso.
 
 **Perché un ramo e non un `.gitignore`.** Di norma il filtro «cosa esce» non sta nel repo ma nel
 passo di impacchettamento — il campo `files` di un `package.json`, `MANIFEST.in` in Python — e
-allora un repo solo basta. Per Daiku quel passo **non esiste**: i marketplace di Claude Code e Codex
-clonano il repository invece di installare un pacchetto (`sparsePaths`: *«If omitted, the full
+allora un repo solo basta. Per Daiku quel passo **non esiste**: il marketplace di Claude Code
+clona il repository invece di installare un pacchetto (`sparsePaths`: *«If omitted, the full
 repository is cloned»*). Il repo *è* l'artefatto consegnato: il filtro non ha altro posto dove stare
 che in un albero diverso da quello di sviluppo, cioè in un altro ramo.
 

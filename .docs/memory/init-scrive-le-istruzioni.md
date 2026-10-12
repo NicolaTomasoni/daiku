@@ -5,11 +5,11 @@ metadata:
   node_type: memory
   type: project
   originSessionId: bb0219dd-76c8-4a09-bf9b-4cb040132a6e
-  modified: 2026-10-08T16:04:13.128Z
+  modified: 2026-10-12T12:10:56.446Z
 ---
 
-Dal 19 settembre 2026 `init` **scrive il file di istruzioni** del progetto ospite (`CLAUDE.md` o
-`AGENTS.md`), partendo da `templates/project/instructions.md` e compilandolo con quello che legge
+Dal 19 settembre 2026 `init` **scrive il file di istruzioni** del progetto ospite (`CLAUDE.md`),
+partendo da `templates/project/instructions.md` e compilandolo con quello che legge
 nel repository. Se il file esiste, lo riscrive conservando verbatim ciò che è di merito.
 
 **Why:** fino al giorno prima il contratto lo vietava, e con una motivazione che *non è stata
@@ -68,11 +68,10 @@ chiuderlo — dopo lo si ripesca con `git stash show -p stash@{n} -- "<path>"`, 
 `git show stash@{n}^3:"<path>"` per un file che era untracked — e quello che dice e il repository
 contraddice non si corregge in silenzio, si dichiara nel report.
 
-**La chiave è una per host, ed è scesa in `environment.json`.** Il file di istruzioni è di un host —
-`CLAUDE.md` e `AGENTS.md` sono due file diversi — quindi la chiave vive in
-`hosts.<host>.instructions_file` (§7 di `contracts/orchestration.md`), e le skill la citano così.
-`init` la tiene solo per gli host il cui file esiste davvero, e **il file dell'altro host non lo
-tocca e non lo chiude nello stash**: lo compila un `init` lanciato lì.
+**La chiave è per host, ed è scesa in `environment.json`.** Il file di istruzioni dell'host è
+`CLAUDE.md`, e la chiave che lo nomina vive in `hosts.<host>.instructions_file` (§7 di
+`contracts/orchestration.md`); `init` la tiene dove `CLAUDE.md` sta davvero nella radice tecnica, e le
+skill la citano così.
 
 **Il 29 settembre 2026 si è aggiunta la parte che mancava: il file si compila, non si accoda.**
 «Conservato verbatim» senza una regola di fusione produce, su un file scritto in un'altra lingua,

@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: f135a876-1ccd-4db0-99e7-6c7abee5c262
-  modified: 2026-10-08T09:15:43.736Z
+  modified: 2026-10-12T12:10:10.841Z
 ---
 
 **Il prodotto ha il concetto di canale** (dal 3 ottobre 2026, ridisegnato il 5). Un progetto che lo
@@ -60,9 +60,8 @@ perché una sezione nasce al rilascio e non torna indietro. Vedi [[pubblicazione
 forma della beta. Dove `channels.production` non è dichiarato non c'è rilascio, e `commit` resta
 l'unico che possa muovere il numero: continua a fare com'era.
 
-**Punti non provati.** Su **Codex** la guardia del ramo è una promessa: resta `[to verify]` se un
-hook di pacchetto giri davvero a runtime (`.daiku/studies/codex-hooks.md`). E va verificato che
-`init` e i suoi rilanci lascino sempre la copia principale sul ramo di sviluppo.
+**Punti non provati.** Va verificato che `init` e i suoi rilanci lascino sempre la copia principale
+sul ramo di sviluppo.
 
 Vedi [[punti-ingresso-prodotto]], [[guardrail-nascono-spenti]], [[valutatore-deterministico]] per
 gli altri programmi di `architect/`, e [[tre-livelli-di-parametro]] per la sede del valore.
