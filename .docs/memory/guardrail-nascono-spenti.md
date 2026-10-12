@@ -68,7 +68,7 @@ dove un divieto può avere una sede deterministica, ce l'ha sempre. Fanno eccezi
 davvero dal progetto (oggi il pool dei worktree, la guardia del ramo e la guardia della review): quelli nascono **spenti**, con la loro chiave
 nel JSON, e nel banco un caso che prova che da spenti **non** negano. Ogni ramo ha la sua riga nella
 tabella di `plugins/daiku/hooks/README.md`, e i banchi di tutto ciò che il pacchetto esegue — i
-moduli di `hooks/lib/` con un banco, il banco dei manifest, i cinque programmi di `architect/` e i due
+moduli di `hooks/lib/` con un banco, il banco dei manifest, i sette programmi di `architect/` e i due
 passi di `init` (`skills/init/scan.mjs` e `skills/init/branch.mjs`) — si lanciano insieme con `node plugins/daiku/hooks/self-check.mjs`, che somma i controlli e esce `1` al
 primo rosso: va aggiunto a ogni verifica di rilascio accanto al validatore. Il numero dei banchi
 e dei controlli lo dice l'uscita dello strumento, non questo file.
