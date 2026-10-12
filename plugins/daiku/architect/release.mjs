@@ -277,7 +277,7 @@ function messageWith(message, developmentSha) {
  * the caller passes `instructions_file`. `never` carries what the project itself adds, which is
  * the extension `new-project` asks it for.
  */
-const METHOD_FOOTPRINT = ['.daiku', '.claude', '.codex'];
+const METHOD_FOOTPRINT = ['.daiku', '.claude'];
 
 /**
  * The paths that never reach the published tree, as paths of the published tree — the `source`
@@ -577,7 +577,6 @@ function runBench(root) {
     sh(repo, ['config', 'user.email', 'bench@daiku']);
     sh(repo, ['config', 'user.name', 'bench']);
     write(join(repo, 'plugins/daiku/.claude-plugin/plugin.json'), '{\n  "name": "daiku",\n  "version": "0.0.0"\n}\n');
-    write(join(repo, 'plugins/daiku/.codex-plugin/plugin.json'), '{\n  "name": "daiku",\n  "version": "0.0.0"\n}\n');
     write(join(repo, 'plugins/README.md'), '![version](https://img.shields.io/badge/version-0.0.0-blue)\n');
     write(join(repo, 'plugins/daiku/skills/release/SKILL.md'), '# release\n');
     write(join(repo, 'cantiere.md'), '# the workshop\n');
@@ -591,8 +590,6 @@ function runBench(root) {
       spawnSync('git', ['read-tree', subtree], { cwd: repo, env });
       const blob = spawnSync('git', ['hash-object', '-w', '--stdin'], { cwd: repo, env, input: '{\n  "name": "daiku",\n  "version": "1.1.2"\n}\n', encoding: 'utf-8' }).stdout.trim();
       spawnSync('git', ['update-index', '--add', '--cacheinfo', `100644,${blob},daiku/.claude-plugin/plugin.json`], { cwd: repo, env });
-      const blob2 = spawnSync('git', ['hash-object', '-w', '--stdin'], { cwd: repo, env, input: '{\n  "name": "daiku",\n  "version": "1.1.2"\n}\n', encoding: 'utf-8' }).stdout.trim();
-      spawnSync('git', ['update-index', '--add', '--cacheinfo', `100644,${blob2},daiku/.codex-plugin/plugin.json`], { cwd: repo, env });
       const blob3 = spawnSync('git', ['hash-object', '-w', '--stdin'], { cwd: repo, env, input: '![version](https://img.shields.io/badge/version-1.1.2-blue)\n', encoding: 'utf-8' }).stdout.trim();
       spawnSync('git', ['update-index', '--add', '--cacheinfo', `100644,${blob3},README.md`], { cwd: repo, env });
       const blob4 = spawnSync('git', ['hash-object', '-w', '--stdin'], { cwd: repo, env, input: '# Changelog\n\n### 1.1.2 — 2026-10-01\n\n- Something.\n\n---\n', encoding: 'utf-8' }).stdout.trim();
@@ -637,7 +634,7 @@ function runBench(root) {
     source: 'plugins',
     version_file: 'plugins/daiku/.claude-plugin/plugin.json',
     version_field: 'version',
-    version_replicated_in: ['plugins/daiku/.codex-plugin/plugin.json', 'plugins/README.md'],
+    version_replicated_in: ['plugins/README.md'],
     changelog: 'plugins/CHANGELOG.md',
   }, extra);
 
@@ -664,7 +661,6 @@ function runBench(root) {
       check('release:the-subtree-becomes-the-root', tree.includes('daiku/.claude-plugin/plugin.json') && !tree.some((p) => p.startsWith('plugins/')), JSON.stringify(tree));
       check('release:it-does-not-publish-the-workshop', !tree.includes('cantiere.md'), JSON.stringify(tree));
       check('release:the-number-lands-in-the-version-file', fileAt(repo, 'main', 'daiku/.claude-plugin/plugin.json').includes('"1.1.3"'));
-      check('release:the-number-lands-in-the-replicated-file', fileAt(repo, 'main', 'daiku/.codex-plugin/plugin.json').includes('"1.1.3"'));
       check('release:the-number-lands-in-the-badge', fileAt(repo, 'main', 'README.md').includes('badge/version-1.1.3-'));
       const changelog = fileAt(repo, 'main', 'CHANGELOG.md');
       check('release:the-section-goes-under-the-title', changelog.indexOf('# Changelog') < changelog.indexOf('### 1.1.3'), changelog);
@@ -773,7 +769,6 @@ function runBench(root) {
       write(join(repo, '.daiku/features/x/0. problem.md'), '# x\n');
       write(join(repo, 'CLAUDE.md'), '# instructions\n');
       write(join(repo, '.claude/settings.json'), '{}\n');
-      write(join(repo, '.codex/hooks.json'), '{}\n');
       write(join(repo, 'docs/interni.md'), '# internal\n');
       sh(repo, ['add', '-A']);
       sh(repo, ['commit', '-qm', 'feat: nuovo']);
@@ -784,14 +779,14 @@ function runBench(root) {
         version: '2.0.1', section: '### 2.0.1 — 2026-10-05\n\n- Nuovo.\n\n---', message: 'release 2.0.1 — nuovo',
       });
       check('whole:without-source-the-tree-is-the-project', fileAt(repo, 'main', 'nuovo.js') === 'export const a = 1;\n', JSON.stringify(got));
-      check('whole:the-method-footprint-never-reaches-production', ['.daiku/project.json', '.daiku/features/x/0. problem.md', 'CLAUDE.md', '.claude/settings.json', '.codex/hooks.json'].every((p) => fileAt(repo, 'main', p) === null), sh(repo, ['ls-tree', '-r', '--name-only', 'main']).out);
+      check('whole:the-method-footprint-never-reaches-production', ['.daiku/project.json', '.daiku/features/x/0. problem.md', 'CLAUDE.md', '.claude/settings.json'].every((p) => fileAt(repo, 'main', p) === null), sh(repo, ['ls-tree', '-r', '--name-only', 'main']).out);
       check('whole:the-projects-own-exclusion-is-honoured', fileAt(repo, 'main', 'docs/interni.md') === null);
-      check('whole:the-instructions-file-is-excluded-by-its-declared-name', fileAt(repo, 'main', 'AGENTS.md') === null && fileAt(repo, 'develop', 'CLAUDE.md') === '# instructions\n');
+      check('whole:the-instructions-file-is-excluded-by-its-declared-name', fileAt(repo, 'main', 'CLAUDE.md') === null && fileAt(repo, 'develop', 'CLAUDE.md') === '# instructions\n');
       check('whole:the-status-says-what-will-be-kept-back', call(repo, {
         action: 'status', work_root: repo, development: 'develop', production: 'main',
         version_file: 'package.json', version_field: 'version', changelog: 'CHANGELOG.md',
         instructions_file: 'CLAUDE.md', never: ['docs/interni.md'],
-      }).never.join(' ') === '.daiku .claude .codex CLAUDE.md docs/interni.md');
+      }).never.join(' ') === '.daiku .claude CLAUDE.md docs/interni.md');
       check('whole:a-branch-tracking-nothing-is-declared-so', call(repo, {
         action: 'status', work_root: repo, development: 'develop', production: 'main',
         version_file: 'package.json', version_field: 'version', changelog: 'CHANGELOG.md',

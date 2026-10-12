@@ -36,7 +36,7 @@ a merge but the fact that it was built here, and nothing of it reaches developme
 
 **Production is the product, and the workshop is not the product.** What reaches it is the product
 of the project, never the seats the method deposited there: `.daiku/`, the instructions file, the
-folders `sync-host` writes, the memory root. That is not the project's to decide and this node does
+memory root. That is not the project's to decide and this node does
 not decide it either — the program holds the list and takes the paths off the tree — but the
 project **can extend it**, and `{release.never}` is where its own answer lives, the one
 `new-project` asked it for. Where the project declared a `{release.source}` the question is mostly

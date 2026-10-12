@@ -58,12 +58,12 @@ file but the invocation: the same contract is an **entry point** when you launch
 **internal contract** when a chain delegates to it. `research` is the collection that
 `new-feature` procures for itself when it needs it, with reordering delegated to `study`, and at the same time the command with which you request the notes yourself.
 
-**There are ten entry points, and it is not a number that grows on its own.** A contract is launched by
+**There are nine entry points, and it is not a number that grows on its own.** A contract is launched by
 hand only if it is the **entry point of a chain** — or, like `research` and `handoff`, the node that
 deposits a file and stops, which is a place a run legitimately begins — never because it is handy to
 have it around: what sits in the middle of a chain is reached by whoever opened it, and adding it here means
 opening a second way to get there, with different scope and permissions to keep aligned
-forever. The ten fall into two groups, which are not used at the same moments.
+forever. The nine fall into two groups, which are not used at the same moments.
 
 **The method — the everyday work:**
 
@@ -77,13 +77,12 @@ forever. The ten fall into two groups, which are not used at the same moments.
 | `handoff` | you are in the middle of a job and want to leave it to another agent: from the conversation you are in it writes the document carrying the problem, what was done, what is missing and the evidence — logs, reproduction, excerpts — **inlined**, because the reader reaches neither that conversation nor the project where the behaviour was observed. It **deposits the file and stops**: it opens no chain, resolves nothing and hands no work on |
 | `release` | the release of a project that declared its channels: it asks the version once on the block of commits accumulated since the last published release and writes it on production with its changelog section, replacing the release standing there for as long as nothing has pushed it. It never pushes; a working tree that is not empty is flushed first through the review cycle and its closing commit — and through `commit` for what that does not reach — and on a project that declared no channels it has nothing to release and says so |
 
-**Installation — three commands that are launched once per project**, and that no chain
+**Installation — two commands that are launched once per project**, and that no chain
 can reach because they run at the project's opening, outside a feature:
 
 | Entry point | Why |
 |---|---|
 | `init` | it is the first of all: it opens `.daiku/` on a project that does not have it, and until it runs no other contract has the values to work with |
-| `sync-host` | it carries guardrails and subagent roles into the host layer that cannot receive them from the package; `init` launches it on Codex as its last step, and it is re-launched on every update |
 | `new-project` | after `init` has assigned the seats, it writes the project's five founding documents from the package skeletons — the offer, the identity, the domain, the stack, the architecture — and is re-launched to realign them |
 
 Everything else — `decision-doc`, `blueprint`, `ship-feature`, `update-memory`, `execute`, `reconcile`,
@@ -100,9 +99,7 @@ That a host also exposes by name a contract not declared here is a convenience o
 not a declared invocability: what is declared is this section.
 
 On a host declaring `{hosts.<host>.skill_pointers}` a skill from these two tables is launched
-only if it has its own pointer there, and not all have one: those that do not remain
-reachable from hosts not declaring that key, which load the contracts
-directly from `skills/`. Adding the missing pointer, or that of an internal
+only if it has its own pointer there, and not all have one. Adding the missing pointer, or that of an internal
 contract needed by hand, is twelve lines — not another copy of the contract.
 
 ### A contract reachable in more than one way declares its modes at home
@@ -130,8 +127,7 @@ rebuilding the graph from the caller's prose.
 
 | Node | Invoked by | Receives already resolved | Returns | Re-delegates |
 |---|---|---|---|---|
-| `init` | owner | technical root, or nothing and the current directory applies | § *Report* of its file: one line saying the project is all set, or the steps that did not go through; one line saying it already was when § *Scan first* finds nothing missing — in the chat language | yes — `sync-host` on Codex, as its last step |
-| `sync-host` | owner, `init` on Codex | technical root, or nothing and the current directory applies | the report of § *Report* in its file: copied, hooked, not hooked, roles written, and the gestures left to the user | no |
+| `init` | owner | technical root, or nothing and the current directory applies | § *Report* of its file: one line saying the project is all set, or the steps that did not go through; one line saying it already was when § *Scan first* finds nothing missing — in the chat language | no |
 | `new-project` | owner | technical root, or nothing and the current directory applies | § *Report* of its file: one line per document — created, realigned, or skipped with its reason — in the chat language | no |
 | `new-feature` | owner | description of the feature or problem, in natural language | § *Outcome* of its file: the opened folder, the documents the chain produced and the delivery outcome | yes — per-area investigation, `research`, `decision-doc` twice, `blueprint` for the brief stop, and `ship-feature` as orchestrating child |
 | `decision-doc` | `new-feature` § *The study of decisions* and § *Incorporation* | problem folder, optional subset to analyse, the already written document, the material the request came with, the paths of the `research` notes and of the relevant memories, and on receiving the owner's answers by number | `0.5. strategic-study.md` or `1. decision-doc.md` on disk, with `0. problem.md` refined, and the block of § *The block you return* of its file | no |
@@ -180,7 +176,7 @@ An orchestrating skill launches every step as a **subagent in a fresh context**,
 inline in the conversation: that is what keeps the long chain inside a healthy context and what
 makes a step repeatable.
 
-How to launch, per host:
+How to launch:
 
 - **`claude`** — `Agent` tool, with `model` resolved per §2 and `subagent_type` chosen thus:
   `finder` for analysis-only steps that report findings (a review's finders), `Explore`
@@ -198,42 +194,19 @@ How to launch, per host:
   halfway. The absence of `Edit` and `Write` is truly enforced. `Bash`, instead, is there, with specifiers
   `Bash(git diff:*)`, `Bash(git log:*)`, `Bash(git grep:*)`, which **restrict** nothing: a
   finder runs `ls`, `cat`, `grep -rn` and any other line without a denial, and it has been seen
-  happening. For that half, read-only rests on the prompt as on a `prose` host, so **repeat the read-only constraint
-  in the prompt** — on every host, not only on those without a harness.
-- **`codex`** — the host's native subagent, with the model resolved per §2.
+  happening. For that half, read-only rests on the prompt, so **repeat the read-only constraint
+  in the prompt**.
 
-  **The role is called here as there.** `finder` also exists on Codex, as
-  `.codex/agents/finder.toml`, if `sync-host` has run on this project: same name, same
-  contract, different rendering. If it has not run, there is no role to name — the step starts
-  without one, and you declare it in the outcome.
-
-  **Naming it enforces nothing, though.** On this host there is no tool list to restrict, and
-  `sandbox_mode` inside a role file **restricts nothing**: a subagent carrying it writes
-  just the same. The role exists to get the contract to the child without you recopying it, not to
-  close it a door. The host's only real boundary is the **session** sandbox, which whoever launches
-  Codex chooses at startup and is not yours to choose.
-
-  The runtime wants the model in two different gestures, and it is a property of the host, not of the skill
-  that meets it: a step resolved to `{hosts.<host>.models.worker}` is launched **without passing
-  `model`**, so it inherits that model from the parent; a step resolved to
-  `{hosts.<host>.models.judge}` passes that model explicitly. For inheritance to hold, **the parent must already run on
-  `{hosts.<host>.models.worker}`**: if it does not, stop and ask to select it for this
-  session, with no fallback — an inherited judge in place of a worker exits with a contract identical to
-  a step run as it should be, and nothing downstream distinguishes the two.
-
-**The harness does not have the same depth on both hosts, and `{hosts.<host>.enforcement}` says which.**
+**The harness's depth is what `{hosts.<host>.enforcement}` declares.**
 `harness` means three things are active and enforce on their own: the `deny` of the permission rules,
 the hooks, and the **list** of tools an agent declares — an absent tool is a real boundary. It does not
 cover the **content** of a Bash command: a specifier such as `Bash(git diff:*)` describes
-an intention and does not enforce it, and an agent that has `Bash` has all of `Bash`. `prose` means that
-none of the three layers exists, and the invariants hold only because they are written — there nothing stops
-a `git push`, a removal crossing a junction or a finder that writes.
+an intention and does not enforce it, and an agent that has `Bash` has all of `Bash`.
 
-A single rule follows, valid everywhere: **a constraint that is not a tool's absence is repeated
-in the subagent's prompt** — on a `prose` host all of them, on a `harness` host those none of the
-three layers covers, starting with the read-only of whoever has `Bash`. And **you declare it in the outcome**:
-same contract and same words are not the same guarantees, and without that field nothing downstream can
-distinguish the two cases.
+A single rule follows: **a constraint the harness does not cover is repeated
+in the subagent's prompt**, starting with the read-only of whoever has `Bash`. And **you declare it in the outcome**:
+a constraint the harness enforces and one only the prompt states are not the same guarantee, and without that field nothing downstream can
+distinguish the two.
 
 Rules valid on every host:
 
@@ -352,9 +325,6 @@ to ask and stops there, as it declares a role without naming a model:
   what makes an option referable in the message above and in the discussion that may follow, and
   on a host where the answer is typed it is what the owner types. The owner may always
   answer outside the options, and that free answer **prevails**.
-- **`codex`**, and every host without a structured-question tool — the same list, numbered, in
-  chat, with the options as letters (`A` first, declared recommended) and the invitation to answer compactly (`1A, 2B, …`). The
-  content is identical: only the delivery changes.
 
 **The list is numbered, and it is asked whole.** The place of a question in its list **opens the
 question** — `k/N`, the question's own place and the length of the list the block returned — because
@@ -442,9 +412,9 @@ looked up, are §8 of `contracts/project-contract.md`.
 | `hosts.<host>.models.<role>` | the model of the role the skill declared for that step (§2) |
 | `hosts.<host>.models.judge` | model the judge role runs on for that host |
 | `hosts.<host>.models.worker` | model the worker role runs on for that host |
-| `hosts.<host>.instructions_file` | instructions file that host loads on every session — `CLAUDE.md` on Claude Code, `AGENTS.md` on Codex — at the technical root; a project carrying both declares both, and each skill reads the one of the host it runs on |
+| `hosts.<host>.instructions_file` | instructions file that host loads on every session — `CLAUDE.md` on Claude Code — at the technical root |
 | `hosts.<host>.skill_pointers` | folder where the host looks for the invocable skills' pointers; absent if the host requires none |
-| `hosts.<host>.enforcement` | `harness` if the host enforces with `deny`, hooks and a tool's **absence** — never a Bash command's content; `prose` if the invariants hold only because they are written (§4) |
+| `hosts.<host>.enforcement` | `harness` if the host enforces with `deny`, hooks and a tool's **absence** — never a Bash command's content (§4) |
 | `hosts.<host>.settings_file` | file where the host keeps the session's environment configuration |
 | `hosts.<host>.base_url_env` | name of the variable with which, in that file, the host points at the active backend; absent if the host does not switch |
 | `hosts.<host>.native_backend` | backend active when the host is not switched |

@@ -1,5 +1,5 @@
 /**
- * The project root, for a hook running on Claude Code **or** on Codex.
+ * The project root, for a hook running on Claude Code.
  *
  * The root is not a name: it is **the directory carrying `.daiku/project.json`**, which the
  * contract puts in the *technical root* — and the technical root is not the git root. A
@@ -30,9 +30,7 @@
  * None of the steps throws: a wrong root degrades, an exception here would switch the hook off.
  *
  * The git root is still read, but for what it is — the outermost directory that can belong to
- * this repository, the point where the climb stops. On Codex, which exports no project
- * variable (`CODEX_SESSION_ID`, `CODEX_THREAD_ID`, `CODEX_VERSION` and the rest name nothing of
- * the sort), the climb is the whole answer.
+ * this repository, the point where the climb stops.
  */
 
 import { spawnSync } from 'node:child_process';
@@ -156,7 +154,7 @@ export function projectRoot(overrides = {}) {
   const declared = env.CLAUDE_PROJECT_DIR || null;
   if (declared && carriesDaiku(declared, exists)) return resolve(declared);
 
-  // Everywhere else — Codex, which declares nothing — the root is not the git root.
+  // Where the host declares no root, the root is not the git root: the climb answers.
   const git = gitRoot(cwd, run);
   const found = closestDaiku(cwd, git, exists);
   if (found) return found;
@@ -229,11 +227,11 @@ function selfCheck() {
 
   // --- the climb: the technical root of a monorepo, inside a subfolder ---------
   check(
-    'Codex: a cwd inside the technical root finds it, not the git root',
+    'no declared root: a cwd inside the technical root finds it, not the git root',
     projectRoot({ env: {}, cwd: TECH, run: git(REPO), exists: fs(TECH_DAIKU) }) === resolve(TECH)
   );
   check(
-    'Codex: a cwd deeper inside climbs to the technical root',
+    'no declared root: a cwd deeper inside climbs to the technical root',
     projectRoot({ env: {}, cwd: `${TECH}/apps/backend/app`, run: git(REPO), exists: fs(TECH_DAIKU) }) === resolve(TECH)
   );
   check(

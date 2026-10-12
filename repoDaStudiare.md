@@ -57,11 +57,11 @@ Verificati tutti via API GitHub (esistenza reale). Esclusi i già studiati.
 
 ## Lettura dell'host
 
-- [openai/codex](https://github.com/openai/codex) — il secondo host di Daiku, dal sorgente
+- [openai/codex](https://github.com/openai/codex) — l'agent loop CLI di OpenAI, dal sorgente
 - [anthropics/claude-code](https://github.com/anthropics/claude-code) — issues e comportamento reale dell'host
 - [x1xhlol/system-prompts-and-models-of-ai-tools](https://github.com/x1xhlol/system-prompts-and-models-of-ai-tools) — system prompt reali, per capire cosa l'agente ha davvero in contesto
-- [NousResearch/hermes-agent](https://github.com/NousResearch/hermes-agent) — host autonomo self-hosted: `plugins/` con loader e uno **plugin-catalog** di manifest `.yaml` a submission aperta, skill sullo standard `agentskills.io`, subagent, cron, MCP e sette backend di esecuzione — il **terzo host candidato** dopo Claude Code e Codex
-- [earendil-works/pi](https://github.com/earendil-works/pi) — agent toolkit (agent loop, TUI, CLI): il **quarto host candidato**, con la sua suite di estensioni (`pi-acp`, `pi-mcp-adapter`)
+- [NousResearch/hermes-agent](https://github.com/NousResearch/hermes-agent) — host autonomo self-hosted: `plugins/` con loader e uno **plugin-catalog** di manifest `.yaml` a submission aperta, skill sullo standard `agentskills.io`, subagent, cron, MCP e sette backend di esecuzione — il **secondo host candidato** dopo Claude Code
+- [earendil-works/pi](https://github.com/earendil-works/pi) — agent toolkit (agent loop, TUI, CLI): il **terzo host candidato**, con la sua suite di estensioni (`pi-acp`, `pi-mcp-adapter`)
 - [badlogic/pi-skills](https://github.com/badlogic/pi-skills) — skill per pi **dichiarate compatibili con Claude Code e Codex CLI**: la prova che lo standard `SKILL.md` è già di tre host
 - [vastsa/PI-Desktop](https://github.com/vastsa/PI-Desktop) — host desktop per pi con marketplace proprio (`catalog.json`, id reverse-DNS): i plugin sono però pannelli, widget e tool da UI, non skill di metodo
 

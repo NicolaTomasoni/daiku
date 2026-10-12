@@ -87,7 +87,7 @@ of a file, the presence or absence of an area. Three prohibitions, in order of s
 | `channels.development` | name of the development branch, the one the work lives on; `init` writes it from its answer, and `release` and the merge of a delivery read it |
 | `channels.production` | name of the production branch, where the work does not commit and which advances only by a release. It is a **line of releases**: each one is a commit of its own carrying the development tree as it stood, the version and the changelog, so production is not development's ancestor and nothing of a release travels back — its presence is the switch of the branch guard (§4.1) |
 | `release.source` | folder of development whose **content** becomes production's tree, where the two sides do not have the same shape; absent where they do, and then production's tree is development's plus the version and the changelog. A release resolves `version.*` and `changelog` on production by taking this prefix off the front, which is what lets the keys be written once, in the shape of the project |
-| `release.never` | paths of the project that never reach production, **on top of the method's own footprint** — `.daiku/`, the instructions file, `.claude/`, `.codex/`, and the memory root — which no project declares and no release publishes. It is what `new-project` asks the project to personalise: a release writes the product, and what is a product is the project's answer |
+| `release.never` | paths of the project that never reach production, **on top of the method's own footprint** — `.daiku/`, the instructions file, `.claude/`, and the memory root — which no project declares and no release publishes. It is what `new-project` asks the project to personalise: a release writes the product, and what is a product is the project's answer |
 | `areas` | the set of declared areas; cited thus when a skill **enumerates** them instead of naming one (§5.3) |
 | `areas.<area>.paths` | the paths belonging to the area, each usable as a Git pathspec |
 | `areas.<area>.gate` | the area's gate command: lint, format, type-check, test and package build |
@@ -150,7 +150,7 @@ waits for the other: the host answers for what its own change has just made fals
 walks the whole perimeter again on the frozen diff. A corpus left behind between the two is read and
 believed by the next session exactly like a correct one.
 
-Two consequences, and neither is an installation detail.
+One consequence, and it is not an installation detail.
 
 **The pointing is not committed.** That key lives in `.claude/settings.local.json`, which belongs
 to that machine and stays out of the repository: a versioned file carrying it would declare one
@@ -158,11 +158,6 @@ machine's seat as the project's, and the error would show only in silence, on wh
 memory files are committed; the line telling the host to write them there is not. On a clone the memory falls back to the default **silently**, and no skill notices:
 `{memory.root}` is opened by path and found where it was. The remedy is to re-run `/init`
 on that machine.
-
-**On Codex there is nothing to declare.** There the agent's memory is not made of files but of a
-database in the home directory (`~/.codex/memories_1.sqlite`), consolidated from past sessions, and there is no
-key moving its location. `memory.root` remains the method's corpus, written by the
-skills and readable by anyone: it loses the second writer, not the job.
 
 It is also why `memory.root` and `memory.index` are the only keys `init` **always**
 writes, even on a project that had no corpus. §6 applies to everything else: here

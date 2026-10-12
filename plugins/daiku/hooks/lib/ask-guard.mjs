@@ -66,10 +66,9 @@
  *    the owner describing the problem, the slug derived from prose — is not seen as one, and its
  *    first batch is held to `1/N`. That the folder already exists is no proof: pointing at it is
  *    what tells a resume from an opening.
- *  - **Codex** has no `AskUserQuestion`: there this hook runs wired to nothing, and the rule's only
- *    seat is the contract. Same on a project without `.daiku/project.json`: the gate of §6 of
- *    `contracts/project-contract.md` comes before everything else, and without it this hook does not
- *    even read the mark.
+ *  - **A project that never opened Daiku.** The gate of §6 of `contracts/project-contract.md`
+ *    comes before everything else, and without `.daiku/project.json` this hook does not even read
+ *    the mark.
  *
  * Contract: **fail-open** on everything but its own two verdicts. Malformed stdin, unreadable state,
  * unreachable filesystem, any exception → silence and exit 0. The two verdicts are the refusals of a

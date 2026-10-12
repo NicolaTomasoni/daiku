@@ -28,14 +28,14 @@
  * so a non-empty `never_red` turns that bench red here even when `failed` is empty. The
  * evaluator's bench reports it; a bench that does not is read as before.
  *
- * Those five benches live beside their programs, in `architect/`, and are **not** replicated under `hooks/lib/`:
- * that folder is copied into the user's project by `sync-host`, and a verifier replicated
- * in every project is the duplication `contracts/project-contract.md` §8 condemns.
+ * Those five benches live beside their programs, in `architect/`, and are **not** replicated under
+ * `hooks/lib/`: a bench lives with the program it tests, and a second copy of a verifier is the
+ * duplication `contracts/project-contract.md` §8 condemns.
  *
- * It is not a hook and is never installed into a project: `sync-host` copies the contents of
- * `hooks/lib/`, and this file sits one level above. Even less does the evaluator land in a
- * project. Whoever tests an installed hook runs its `--self-check`, which is what the
- * post-edit report reminds them of.
+ * It is not a hook and is never copied into a project: this file sits one level above `hooks/lib/`,
+ * and the package carries both from where the host installed it. Even less does the evaluator land
+ * in a project. Whoever tests a hook runs its `--self-check`, which is what the post-edit report
+ * reminds them of.
  */
 
 import { spawnSync } from 'node:child_process';

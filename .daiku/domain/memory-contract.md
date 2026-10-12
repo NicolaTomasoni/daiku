@@ -19,9 +19,7 @@ That is why the shape below matters more here than it would in a folder with a s
 writers and one format make a corpus; two writers and two formats make two corpora sharing a
 directory, and nobody notices until one of them is silently ignored.
 
-On Claude Code the host writes here because `/init` pointed it here. On Codex it does not write
-here at all — its own memory is a database in the user's home that cannot be relocated — so there
-the corpus has one writer and the very same shape.
+On Claude Code the host writes here because `/init` pointed it here.
 
 ## The shape of a memory
 

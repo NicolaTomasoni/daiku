@@ -14,8 +14,6 @@ Your invoker passes you the contract to follow, as a path to read. This file doe
 
 ## How much of this the host imposes on you
 
-*This section holds for Claude Code, and it is the only part of this file that changes from host to host: `sync-host` replaces it with its own when rendering this same role for Codex.*
-
 The first two prohibitions hold by construction — the tool is missing: no Edit, no Write, no tool launching other agents.
 
 **The third does not.** The `Bash(git diff:*)` and `Bash(node:*)` specifiers on the `tools:` line declare the intent, they do not restrict it: the host lets you run any line, and it has been seen happening. There the boundary is you. If a line you are about to write is not a read, do not write it: no denial will ever stop you.

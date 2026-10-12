@@ -12,7 +12,6 @@
     "file": "plugins/daiku/.claude-plugin/plugin.json",
     "field": "version",
     "replicated_in": [
-      "plugins/daiku/.codex-plugin/plugin.json",
       "plugins/README.md"
     ]
   },

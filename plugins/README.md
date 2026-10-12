@@ -11,7 +11,6 @@
 <p align="center">
   <img alt="version 1.1.5-b.1" src="https://img.shields.io/badge/version-1.1.5--b.1-3b82f6?style=flat" /> <br>
   <a href="https://code.claude.com"><img alt="Claude Code" src="https://img.shields.io/badge/Claude_Code-D97757?style=flat&logo=claude&logoColor=white" /></a>
-  <a href="https://developers.openai.com/codex"><img alt="OpenAI Codex" src="https://img.shields.io/badge/OpenAI_Codex-000000?style=flat&logo=openai&logoColor=white" /></a>
 </p>
 
 > A bonsai does not grow at random: it grows in the right direction because somebody decided
@@ -22,7 +21,7 @@
 > **inside the architectural constraints you decided** — and Daiku forces them to respect
 > those constraints. Every contribution is checked, pruned,
 > re-checked. That way the project grows, feature after feature, **without losing its
-> shape**. Available for **Claude Code** and **Codex**.
+> shape**. Available for **Claude Code**.
 
 ## Why you will like it
 
@@ -47,16 +46,11 @@
 
 ## How to start
 
-**1. Install it** — once, on your host:
+**1. Install it** — once, on Claude Code:
 
 ```text
-# Claude Code
 claude plugin marketplace add NicolaTomasoni/daiku
 claude plugin install daiku@daiku
-
-# Codex
-codex plugin marketplace add NicolaTomasoni/daiku
-codex plugin add daiku@daiku
 ```
 
 It needs **Node.js 18 or later**. Without it the six hooks stay silent and the evaluator does not
@@ -71,21 +65,9 @@ carrying your instructions file, which is the repository root unless the code li
 
 It asks three things — the language for the chat, the one for commits, and the name of the development branch the work will live on — then writes
 everything in one run and answers `You're all set.` What your repository does not declare it leaves
-out, and the skills know how to work without it. On Codex it also installs protections and roles by
-itself. On Claude Code it leaves updates in place too: an update script and a VS Code task,
-`daiku: update` — run it from the editor and it shows you the version in place and asks before
-moving on.
-
-**3. On Codex only**, re-run after every update:
-
-```text
-/sync-host
-```
-
-It realigns protections and roles inside the project (on Claude Code there is nothing to do). Its
-last block is the one you must not skip: four gestures Codex asks of you — approve the changed
-hooks, trust the project, declare the pool, reopen the session. Skip them and Codex reports a clean
-install while no guardrail is active.
+out, and the skills know how to work without it. It also leaves updates in place: an update script
+and a VS Code task, `daiku: update` — run it from the editor and it shows you the version in place
+and asks before moving on.
 
 ## The commands, from simplest to largest
 

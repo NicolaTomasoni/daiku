@@ -83,10 +83,7 @@ report) resta un **worker**: non merita un ruolo terzo.
 | **giudice** | `sonnet` |
 | **worker** | `haiku` |
 
-È l'unica risoluzione ammessa, e avviene qui: la skill dichiara il ruolo e si ferma lì. Se
-un giorno questo corpus dovesse girare su un host che non permette di scegliere il modello di un
-subagent, il ruolo resta comunque dichiarato nel prompt, il passo gira sul modello di default, e
-lo si dichiara nell'esito: la sequenza e i contratti non cambiano.
+È l'unica risoluzione ammessa, e avviene qui: la skill dichiara il ruolo e si ferma lì.
 
 ## 3. Come si lancia un subagent
 
@@ -131,13 +128,13 @@ rende un passo ripetibile.
    nessuna memoria è pertinente, passi solo l'indice. È il canale per cui i fatti non deducibili
    dal repository raggiungono chi parte da zero.
 
-   **Documenti di riferimento.** Per un lavoro che tocca la forma del pacchetto, i due host o la
-   collocazione di un file, al prompt si aggiungono i path delle memorie che raccolgono i fatti sui
-   due host — `.docs/memory/cosa-i-due-host-accettano.md`, `.docs/memory/cosa-codex-fa-allinstallazione.md`,
-   `.docs/memory/installazione-e-versionamento.md`, `.docs/memory/come-si-provano-i-fatti-sugli-host.md` — e
+   **Documenti di riferimento.** Per un lavoro che tocca la forma del pacchetto, l'host o la
+   collocazione di un file, al prompt si aggiungono i path delle memorie che raccolgono i fatti
+   sull'host — `.docs/memory/installazione-e-versionamento.md`,
+   `.docs/memory/come-si-provano-i-fatti-su-claude-code.md` — e
    `PUNTI-APERTI.md` quando il lavoro rischia di decidere per conto proprio qualcosa che
-   è già in quella lista. Un subagent che non li ha riscopre a sue spese prove già eseguite sui
-   validatori reali, e nel caso peggiore chiude da solo una decisione che è dell'owner.
+   è già in quella lista. Un subagent che non li ha riscopre a sue spese prove già eseguite sul
+   validatore reale, e nel caso peggiore chiude da solo una decisione che è dell'owner.
 
 2. **Ritorno a contratto.** Ogni passo che alimenta una decisione a valle restituisce un blocco
    JSON con i campi che il **nodo** dichiara: si legge quello, non la prosa. Se il blocco manca o
@@ -220,7 +217,6 @@ comando:
 ```bash
 claude plugin validate plugins/daiku
 claude plugin validate plugins
-python ~/.codex/skills/.system/plugin-creator/scripts/validate_plugin.py plugins/daiku
 node plugins/daiku/hooks/self-check.mjs
 node .docs/tools/check-topology.mjs plugins/daiku
 node .docs/tools/check-marketplace.mjs plugins
@@ -231,10 +227,8 @@ Il corpus non è in questo elenco perché nessuno lo lancia a mano: lo impone il
 `daiku`** (`.daiku/project.json`), che la fase *Gate* di `daiku:review` esegue da sé su ogni consegna
 che tocca `plugins/daiku/`, e un rosso blocca il commit.
 
-**I due validatori vanno passati entrambi, sullo stesso albero, e la seconda riga non si salta**
-(`CLAUDE.md`, § *Verificare il pacchetto*): non coprono le stesse cose — è quello di Codex a
-rifiutare i campi di manifest non ammessi, ed è quello di Claude Code a segnalare le skill che si
-caricherebbero con i metadati vuoti.
+**La validazione dell'host non si salta** (`CLAUDE.md`, § *Verificare il pacchetto*): segnala le
+skill che si caricherebbero con i metadati vuoti.
 
 I banchi che `self-check.mjs` lancia sono a **totale contato**: ognuno esce con un JSON che porta
 `checks`, `passed` e `failed`, e il comando somma i `checks` di tutti. **Si riporta il numero di `checks`, non solo il verde**: un
@@ -277,7 +271,7 @@ rilievi a media e bassa confidenza sulle stesse righe entrano nel `gate_detail` 
 colore. Quelli su righe che il diff non ha toccato non sono di questo diff: se ne riporta solo il
 numero.
 
-**Quali comandi girano.** I due validatori e la topologia girano **sempre**, perché
+**Quali comandi girano.** La validazione dell'host e la topologia girano **sempre**, perché
 guardano l'albero intero. Il comando dei banchi gira **solo se il perimetro tocca
 `plugins/daiku/hooks/` o `plugins/daiku/architect/`**. Il `check-ignore` gira **solo se il diff ha introdotto file nuovi**.
 Il prompt audit gira **solo se il diff tocca testo per il modello sotto `plugins/daiku/`**.
@@ -292,17 +286,10 @@ verificatore `.docs/tools/check-topology.mjs` — Node senza dipendenze, radice 
 argomento — controlla che i nodi su disco siano tutti e soli le righe della tabella di §3 di
 `contracts/orchestration.md`, che ogni contratto passato a un subagent compaia fra i chiamanti
 della propria riga, e che ogni rimando `§ *X*` trovi davvero la sua intestazione. Vive fuori dal
-pacchetto, in `.docs/tools/`, e gira nel gate come i validatori. Ciò che non copre — un rimando
+pacchetto, in `.docs/tools/`, e gira nel gate come la validazione. Ciò che non copre — un rimando
 che esiste ma è attribuito al file sbagliato, uno schema di ritorno divergente fra nodo e
 chiamante — lo prende il finder del ciclo di `daiku:review`, ed è il motivo per cui la prima delle
 sue cinque famiglie è «rimandi che non risolvono».
-
-**Il validatore Codex, su questa macchina, potrebbe non partire.** Se esce
-`ModuleNotFoundError: No module named 'yaml'`, manca `pyyaml` (`python -m pip install pyyaml`):
-il gate è **rosso**, ed è il motivo giusto perché lo sia — `CLAUDE.md` dichiara quella validazione
-obbligatoria, e un gate che la salta per comodità certificherebbe un pacchetto che nessuno ha
-validato per Codex. Non è però un difetto del diff, e chi legge l'esito deve poterlo distinguere:
-si risolve con un'installazione, non con una consegna.
 
 ## 8. Il gruppo memoria/doc
 
@@ -312,7 +299,7 @@ memoria sono versionati come il prodotto, quindi c'è un indice in cui metterli 
 recuperarli.
 
 **I gruppi sono tre, e ognuno ha la sua sede**: codice (`plugins/`), memoria e documentazione
-(`CLAUDE.md`, `.docs/**`), versione (i due `plugin.json`). Li committa `daiku:commit`, che li
+(`CLAUDE.md`, `.docs/**`), versione (il `plugin.json`). Li committa `daiku:commit`, che li
 risolve sulle chiavi di `.daiku/project.json` — qui `commit.memory_prefix` è `docs(memoria)`.
 
 > **Il confine di git è questo, e non un altro.** Un contratto di questo corpus che dica che il suo

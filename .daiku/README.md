@@ -2,8 +2,8 @@
 
 Daiku is the method this project is built with. It is not a library and not a service: it is a
 corpus of **contracts** telling the agents working here *what* to do, in *what order*, inside the
-constraints this project declared. It runs on **Claude Code** and on **Codex**, and everything it
-needs lives in this folder.
+constraints this project declared. It runs on **Claude Code**, and everything it needs lives in
+this folder.
 
 This file is Daiku's own documentation, and it travels with the project: whoever is asked what
 Daiku is, what it can do or how to use it reads it here and answers from it, without leaving the
@@ -39,7 +39,6 @@ direction this project chose**. Three promises, each with a mechanism behind it.
 | `/release` | for a project that declared its two channels: it asks the version once on the block of commits accumulated since the last published release and writes it on production, replacing the release standing there for as long as nothing has pushed it — it never pushes |
 | `/init` | opens Daiku on a project: it writes this folder and the instructions file. Once per project, and again when the package carries a new skeleton |
 | `/new-project` | after `/init`, it writes the project's five founding documents — the offer, the identity, the domain, the stack, the architecture — from the package skeletons, at the paths the project declares |
-| `/sync-host` | on Codex only: it installs guardrails and roles inside the project, and it is re-run after every package update |
 
 ## How a job travels
 
@@ -97,9 +96,6 @@ thing by hand:
 claude plugin marketplace update daiku
 claude plugin update daiku@daiku
 ```
-
-On Codex, re-run `/sync-host` after every update: there the guardrails and the roles live inside the
-project, and only that command realigns them.
 
 The package, the full documentation and the released versions are in
 [`NicolaTomasoni/daiku`](https://github.com/NicolaTomasoni/daiku).

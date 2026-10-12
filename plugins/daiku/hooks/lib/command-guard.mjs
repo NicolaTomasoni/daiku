@@ -41,8 +41,8 @@
  *     while here the push is recognised even inside a wrapper, behind a `sudo` or
  *     queued after another command. Push stays a manual gesture of the owner. `--dry-run`
  *     is not: it pushes nothing.
- *  4. **A commit crediting the agent.** A `Co-Authored-By` trailer naming Claude or
- *     Codex, or a `Generated with` line, in the message — `-m`, `--trailer`, a heredoc
+ *  4. **A commit crediting the agent.** A `Co-Authored-By` trailer naming Claude, or a
+ *     `Generated with` line, in the message — `-m`, `--trailer`, a heredoc
  *     feeding `-F -`, or the file `-F` names. The history carries only whoever owns the work.
  *
  * **A project policy**, off until the JSON switches it on:
@@ -678,12 +678,12 @@ function branchGuard(line, cwd, env, ctx) {
 }
 
 /** A line of a commit message attributing the work to the agent that wrote it: a
- * `Co-Authored-By` trailer naming Claude or Codex — or their makers, which is how the
- * hosts sign it (`noreply@anthropic.com`) — and the `Generated with …` line they append.
+ * `Co-Authored-By` trailer naming Claude — or its maker, which is how the host signs it
+ * (`noreply@anthropic.com`) — and the `Generated with …` line it appends.
  * The `=` shape is the one `--trailer` accepts. */
 const AGENT_ATTRIBUTION = [
-  /co-authored-by\s*[:=][^\n]*\b(?:claude|codex|anthropic|openai|chatgpt)\b/i,
-  /generated (?:with|by)[^\n]*\b(?:claude|codex)\b/i,
+  /co-authored-by\s*[:=][^\n]*\b(?:claude|anthropic)\b/i,
+  /generated (?:with|by)[^\n]*\bclaude\b/i,
 ];
 
 /** The `-F`/`--file` values of a `git commit`: the message read from a file. `-` is
@@ -703,7 +703,7 @@ function messageFiles(args) {
   return files.filter((f) => f && f !== '-');
 }
 
-/** `git commit` whose message credits Claude or Codex, with no switch.
+/** `git commit` whose message credits Claude, with no switch.
  *
  * The message is read where it stands. The **whole line** is searched, not only the `-m`
  * values: a heredoc feeding `-F -` and a PowerShell here-string are part of the line and
@@ -732,7 +732,7 @@ function attributionGuard(line, cwd, env) {
   return {
     reason:
       'the commit message credits the agent that wrote the work — a `Co-Authored-By` ' +
-      'naming Claude or Codex, or a `Generated with` line: the history carries only ' +
+      'naming Claude, or a `Generated with` line: the history carries only ' +
       'whoever owns the work. Drop that line from the message and commit again. See ' +
       '`skills/commit/SKILL.md`, last paragraph.',
   };
@@ -1095,14 +1095,13 @@ const CASES = [
   ['clean bare git commit', 'git commit -m "docs: x"', ROOT_CWD, 'allow', ''],
   ['git add of a policy and the parameters together', 'git add .daiku/policies/area.md .daiku/project.json', ROOT_CWD, 'allow', ''],
 
-  // --- attribution: no commit credits Claude or Codex, in any shape of the message ----
+  // --- attribution: no commit credits Claude, in any shape of the message ------------
   ['undeclared attribution is still denied', 'git commit -m "feat: x" -m "Co-Authored-By: Claude <noreply@anthropic.com>"', ROOT_CWD, 'deny', 'credits the agent', CTX_BARE],
-  ['Co-Authored-By Codex in -m', 'git commit -m "fix: y" -m "Co-authored-by: Codex <codex@openai.com>"', ROOT_CWD, 'deny', 'credits the agent'],
   ['trailer in a Bash heredoc', "git commit -F - <<'EOF'\nfeat: x\n\n- one\n\nCo-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>\nEOF", ROOT_CWD, 'deny', 'credits the agent'],
   ['trailer in a PowerShell here-string', "git commit -m @'\nfeat: x\n\nCo-Authored-By: Claude <noreply@anthropic.com>\n'@", ROOT_CWD, 'deny', 'credits the agent'],
   ['--trailer with the = shape', 'git commit -m "x" --trailer "Co-authored-by=Claude <noreply@anthropic.com>"', ROOT_CWD, 'deny', 'credits the agent'],
   ['Generated with Claude Code', 'git commit -m "feat: x" -m "🤖 Generated with [Claude Code](https://claude.com/claude-code)"', ROOT_CWD, 'deny', 'credits the agent'],
-  ['the signature inside a wrapper', 'bash -c "git commit -m \'x\' -m \'Co-Authored-By: Codex\'"', ROOT_CWD, 'deny', 'credits the agent'],
+  ['the signature inside a wrapper', 'bash -c "git commit -m \'x\' -m \'Co-Authored-By: Claude\'"', ROOT_CWD, 'deny', 'credits the agent'],
   ['the signature in the -F file', 'git commit -F msg-signed.txt', ROOT_CWD, 'deny', 'credits the agent'],
   ['the signature in the --file= file', 'git commit --file=c:/dev/project/msg-signed.txt', ROOT_CWD, 'deny', 'credits the agent'],
   ['a clean -F file', 'git commit -F msg-clean.txt', ROOT_CWD, 'allow', ''],
@@ -1185,7 +1184,7 @@ const CASES = [
   // the enforcement surface and the Git gestures towards HEAD belong to the host
   // policy, not that they were forgotten here.
   ['the read perimeter belongs to the host policy', 'cat C:\\Windows\\System32\\drivers\\etc\\hosts', ROOT_CWD, 'allow', ''],
-  ['the hook surface belongs to system ACLs', 'echo x > .codex/hooks/command-guard.mjs', ROOT_CWD, 'allow', ''],
+  ['the hook surface belongs to system ACLs', 'echo x > .claude/hooks/command-guard.mjs', ROOT_CWD, 'allow', ''],
   ['git clean is not its business', 'git clean -fd', ROOT_CWD, 'allow', ''],
   ['git reset --hard is not its business', 'git reset --hard HEAD', ROOT_CWD, 'allow', ''],
 
@@ -1375,9 +1374,8 @@ async function main() {
   const cwd = (event && event.cwd) || ROOT;
   const line = input.command || '';
   if (!line.trim()) allow();
-  // The root resolves from the event cwd when the host does not declare it: on Codex it is
-  // the only handle, and a session opened in a subfolder must not lose its
-  // own `.daiku/` — see `project-root.mjs`.
+  // The root resolves from the event cwd when the host does not declare it, so a session
+  // opened in a subfolder does not lose its own `.daiku/` — see `project-root.mjs`.
   const root = projectRoot({ cwd });
   const outcome = safeDecide(line, cwd, REAL_ENV, loadContext(root, REAL_READS));
   if (outcome) deny(outcome.reason);
