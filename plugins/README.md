@@ -53,7 +53,7 @@ claude plugin marketplace add NicolaTomasoni/daiku
 claude plugin install daiku@daiku
 ```
 
-It needs **Node.js 18 or later**. Without it the six hooks stay silent and the evaluator does not
+It needs **Node.js 18 or later**. Without it the seven hooks stay silent and the evaluator does not
 start at all: since its verdict binds, a delivery stops instead of degrading.
 
 **2. Open it on a project** — once per project, from the project's **technical root**: the folder

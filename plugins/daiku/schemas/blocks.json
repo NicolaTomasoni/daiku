@@ -24,7 +24,7 @@
     "execute": {
       "producer": "skills/execute/SKILL.md § What you return",
       "required": ["ok", "note_review_path", "verify_detail", "checks", "red_proofs", "consumers_checked", "absence", "preflight", "detail"],
-      "optional": [],
+      "optional": ["payload"],
       "enums": {
         "red_proofs.against": ["base", "mutation"],
         "preflight.step": ["check_fast", "lint_fix", "test_targeted", "layers"],
@@ -35,7 +35,7 @@
     "finder": {
       "producer": "skills/finder-prompt/SKILL.md § The block you return",
       "required": ["findings"],
-      "optional": ["hypotheses"],
+      "optional": ["hypotheses", "payload"],
       "enums": {
         "findings.confidence": ["high", "medium", "low"]
       }
@@ -105,7 +105,7 @@
     "study": {
       "producer": "skills/study/SKILL.md § The block you return",
       "required": ["ok", "technology", "file", "studied_version", "latest_version", "date", "to_verify", "detail"],
-      "optional": [],
+      "optional": ["payload"],
       "enums": {}
     },
     "research": {
@@ -214,7 +214,7 @@
   },
   "params": {
     "producer": "contracts/project-contract.md §4 and contracts/orchestration.md §7",
-    "project_json": ["contract", "name", "repo_root", "code_root", "language.chat", "language.commit", "documents", "documents.product", "documents.brand", "documents.domain", "documents.stack", "documents.architecture", "changelog", "version.file", "version.field", "version.replicated_in", "paths.studies", "paths.features", "paths.handoffs", "paths.review_state", "memory.root", "memory.index", "commit.memory_prefix", "review.disciplines", "worktree.pool", "worktree.prefix", "worktree.max", "worktree.branch_prefix", "channels.development", "channels.production", "release.source", "release.never", "areas", "areas.<area>.paths", "areas.<area>.gate", "areas.<area>.check_fast", "areas.<area>.lint_fix", "areas.<area>.test_targeted", "areas.<area>.coverage"],
+    "project_json": ["contract", "name", "repo_root", "code_root", "language.chat", "language.commit", "documents", "documents.product", "documents.brand", "documents.domain", "documents.stack", "documents.architecture", "changelog", "version.file", "version.field", "version.replicated_in", "paths.studies", "paths.features", "paths.handoffs", "paths.review_state", "memory.root", "memory.index", "commit.memory_prefix", "review.disciplines", "worktree.pool", "worktree.prefix", "worktree.max", "worktree.branch_prefix", "subagent.prompt_cap", "subagent.payload_cap", "channels.development", "channels.production", "release.source", "release.never", "areas", "areas.<area>.paths", "areas.<area>.gate", "areas.<area>.check_fast", "areas.<area>.lint_fix", "areas.<area>.test_targeted", "areas.<area>.coverage"],
     "environment_json": ["contract", "default_host", "hosts", "backends", "hosts.<host>.models", "hosts.<host>.models.<role>", "hosts.<host>.models.judge", "hosts.<host>.models.worker", "hosts.<host>.instructions_file", "hosts.<host>.skill_pointers", "hosts.<host>.enforcement", "hosts.<host>.settings_file", "hosts.<host>.base_url_env", "hosts.<host>.native_backend", "backends.<backend>", "backends.<backend>.base_url", "backends.<backend>.sequential_fanout", "backends.<backend>.caveats", "write_roots", "prompt_dump_chars"],
     "contract_expected": {
       "project_json": 1,
