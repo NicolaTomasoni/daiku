@@ -1,12 +1,13 @@
-# The six hooks
+# The seven hooks
 
-Daiku ships six hooks. They do two different jobs: two **stop a gesture** before it happens,
-the other four never stop anything and only say what they know.
+Daiku ships seven hooks. They do two different jobs: two **stop a gesture** before it happens,
+the other five never stop anything and only say what they know.
 
 | Hook | Event | What it does |
 |---|---|---|
 | `lib/command-guard.mjs` | `PreToolUse` on `Bash`/`PowerShell` | denies seven gestures: four always, three only where the project declares them |
 | `lib/ask-guard.mjs` | `PreToolUse` on `AskUserQuestion` and on the subagent launch, `PostToolUse` on `AskUserQuestion`, `UserPromptSubmit` | keeps the ask of a run whole: refuses a decision ask whose questions carry no place in the list, refuses a batch that does not continue its list, and refuses the launch of a subagent while the ask is open — a delegation and never a file |
+| `lib/subagent-advice.mjs` | `SubagentStart`, and `PreToolUse` on the launch tools (`Agent`/`Task`) | says the run's one statement of concision to every subagent it starts — the return block stays whole, the prose around it is where length is spent — and names a launch prompt over the `subagent.prompt_cap` the project declares; **blocks nothing**, never touches the prompt |
 | `lib/contracts-post-edit.mjs` | `PostToolUse` on `Edit`/`Write` | after a write to the corpus — and to the sources a policy watches — reports faults that would not fail on their own |
 | `lib/run-advice.mjs` | `UserPromptSubmit`, and `PreToolUse` on the write tools | marks the session a run was opened in and states the run's rule once — adding the size of the prompt and the seats that exist for it where the prompt is over the `prompt_dump_chars` the project declares; at a write that conversation makes outside the seats the run owns it repeats the rule — and blocks nothing |
 | `lib/session-advice.mjs` | `SessionStart` | at startup, says whether Daiku is halfway opened and whether work was left in flight |
@@ -22,7 +23,7 @@ The policy an agent cannot remove lives in the host's **managed settings**: abov
 every other source, and unwritable by an unelevated process. A hook does not override them — the
 documentation says so explicitly: a hook's decision does not override a permission rule.
 
-These five sit below that line and cover something else: **distraction**. Gestures that
+These seven sit below that line and cover something else: **distraction**. Gestures that
 cost lost work and that no prefix rule can recognise, because that rule
 matches the start of a line and does not enter `sh -c`.
 
@@ -84,6 +85,17 @@ question is the form that section fixes for it — the option labels opening wit
 label of `A` closing with `(recommended)` — so `init`'s two languages and `new-project`'s interview
 pass through untouched.
 
+**`subagent-advice` denies nothing either, and it is not a branch of this table.** At
+`SubagentStart` it hands the started child the run's one statement of concision — the JSON block a
+step returns stays whole, and the prose around it is where a report grows — and at `PreToolUse` on
+the launch tools (`Agent`/`Task`) it names a prompt over the `subagent.prompt_cap` the project
+declares, in `additionalContext` and **never** as a decision: no `permissionDecision`, no
+`updatedInput`, the prompt goes out untouched. It is the control the *path, not transcription* rule
+of `contracts/orchestration.md` §4 did not have — a measure with no denial, because the two facts
+of a child's prompt are the size of its head and whether a path would have carried the same.
+Where the project declares no `subagent.prompt_cap` it stays silent about size rather than
+picking a threshold.
+
 **`stop-advice` gives two notices, and neither denies anything.** The first is the ledger of a
 cycle that died open, and it belongs to the session that worked in it. The second speaks when the
 trace shows the session **writing under `{code_root}` and nothing under `{memory.root}`**, with no
@@ -128,7 +140,7 @@ a YAML frontmatter silently emptying is a fault even for whoever does not have D
 
 ## They degrade open, and that is why they have a bench
 
-All five are **fail-open**: malformed stdin, missing file, unreachable disk, exception →
+All seven are **fail-open**: malformed stdin, missing file, unreachable disk, exception →
 silent and exit `0`. A guard breaking the turn costs more than it protects.
 
 The price is declared: **a broken hook is indistinguishable from one with nothing to say.**
@@ -143,13 +155,13 @@ node hooks/lib/command-guard.mjs --self-check   # one only
 The first exits `1` on the first red: the command for a CI and to run before a
 release, next to the two package validators.
 
-They are the six above, `lib/project-root.mjs`, the five programs of `architect/` — the
-evaluator, the review's ledger tool, the worktree pool, the merge reconciliation and the
-release — the two steps of `init`, `skills/init/scan.mjs` and `skills/init/branch.mjs`, and the
-bench of the host manifest beside this file: the last eight outside `lib/`. They are the only benches here whose programs **fail
-loudly**: the six hooks stay silent on a fault — `ask-guard` on everything but its two verdicts —
+They are the seven above, `lib/project-root.mjs`, the seven programs of `architect/` — the
+evaluator, the review's ledger tool, the worktree pool, the merge reconciliation, the
+release, the run's cost measure and the reduced view — the two steps of `init`, `skills/init/scan.mjs` and `skills/init/branch.mjs`, and the
+bench of the host manifest beside this file: the last ten outside `lib/`. They are the only benches here whose programs **fail
+loudly**: the seven hooks stay silent on a fault — `ask-guard` on everything but its two verdicts —
 so a total that drops is the only sign a bench stopped running, and that sign is worth exactly as
-much for the five programs, whose silence stops a delivery. The ledger
+much for the seven programs, whose silence stops a delivery. The ledger
 tool's bench runs real Git on throwaway repositories under the system temp directory, so it
 needs `git` on the `PATH`.
 
@@ -178,7 +190,7 @@ written through its `rule()`.
 
 ## Node and nothing else
 
-The six hooks are `.mjs` files run with `node`, dependency-free: no `package.json`, no
+The seven hooks are `.mjs` files run with `node`, dependency-free: no `package.json`, no
 module to install. On a project where `node` is not on the `PATH` they do not start — and since
 the host does not stop a turn for a failing hook, the result is silence. When a project
 has no Node, these guardrails are absent: a requirement, not a graceful degradation.

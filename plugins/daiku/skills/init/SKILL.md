@@ -87,7 +87,7 @@ If the user does not answer — because you are running inside a chain, or becau
 
 ### 1. The guardrails travel with the package
 
-Hooks and subagents are carried by the package and update themselves: do **not** hook those six hooks a second time from `.claude/settings.json`, because the package already hooks them and every guard would run twice. The only thing you write under `.claude/` is two keys in `settings.local.json`, and they are at *Step 7*: together they turn the host's own memory on and point it inside the repository, and there is no other way to tell the host.
+Hooks and subagents are carried by the package and update themselves: do **not** hook those seven hooks a second time from `.claude/settings.json`, because the package already hooks them and every guard would run twice. The only thing you write under `.claude/` is two keys in `settings.local.json`, and they are at *Step 7*: together they turn the host's own memory on and point it inside the repository, and there is no other way to tell the host.
 
 You never ask on which host you run: there is one, and it is where you are running. The two languages and the development branch of *Step 0* are the only thing you ask.
 

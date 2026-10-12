@@ -33,6 +33,17 @@
             "statusMessage": "Decision ask boundary"
           }
         ]
+      },
+      {
+        "matcher": "Agent|Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/lib/subagent-advice.mjs\"",
+            "timeout": 10,
+            "statusMessage": "Subagent head and concision"
+          }
+        ]
       }
     ],
     "PostToolUse": [
@@ -67,6 +78,18 @@
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/lib/session-advice.mjs\"",
             "timeout": 10,
             "statusMessage": "Daiku status for this project"
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/lib/subagent-advice.mjs\"",
+            "timeout": 10,
+            "statusMessage": "Subagent head and concision"
           }
         ]
       }

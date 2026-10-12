@@ -51,6 +51,8 @@ If one of the first four is missing, **do not choose it yourself and do not ask 
 
 7. **Already judged findings** (from the second round on): the ledger holds the discarded of previous rounds with the reason. Do not repropose them, except for new evidence that the reason was wrong — in that case say so explicitly in the description.
 
+8. **When content must cross, it crosses bounded.** A finder hands no child a content, but its own block may carry the findings: where it does, they travel within `{subagent.payload_cap}` — a **deterministic view** of the scope beside the **path of the whole original** the caller gave, never a summary written by a model (`contracts/orchestration.md` §4, *Delegation*) — and the block declares the size in its `payload` field (`{bytes, lines}`).
+
 ## The block you return
 
 **The schema is this, and it is the only one.** The contract of your discipline does not redeclare it: it adds the `confidence` scale and says what to write inside `symbol`, `change` and `description`, which is the only thing changing between one discipline and the next.
@@ -58,9 +60,11 @@ If one of the first four is missing, **do not choose it yourself and do not ask 
 Only the block, without a prose report. With zero findings write `{"findings": []}`.
 
 ```json
-{"findings": [{"file": "<path>", "line": 0, "symbol": "<Class.method | function | module | Component>", "confidence": "high|medium|low", "change": "<the concrete fix, for high and medium>", "description": "<...>"}], "hypotheses": [{"file": "<path>", "symbol": "<Class.method | function | module | Component>", "description": "<the hypothesis and the measurement it lacks>"}]}
+{"findings": [{"file": "<path>", "line": 0, "symbol": "<Class.method | function | module | Component>", "confidence": "high|medium|low", "change": "<the concrete fix, for high and medium>", "description": "<...>"}], "hypotheses": [{"file": "<path>", "symbol": "<Class.method | function | module | Component>", "description": "<the hypothesis and the measurement it lacks>"}], "payload": {"bytes": 0, "lines": 0}}
 ```
 
 **`hypotheses` carries what is not a finding.** A discipline that meets an impact which, to justify itself, would need a measurement or a benchmark — a hypothetical impact — puts it here instead of in `findings`: an array of `{file, symbol, description}`, where `description` holds the hypothesis and the measurement it lacks. The field is optional and empty when there is none; the applier does not process it, and a round counts no finding for it. `{"findings": []}` stays a valid block.
+
+**`payload` measures the content the block carried**, where the findings are handed over in the block and not behind a path: `{bytes, lines}`, both non-negative integers. Where the caller is given a path instead, the field is **absent** — `contracts/orchestration.md` §4, *Delegation*.
 
 The `confidence` scale is declared by the contract of your discipline, in its *Finder mode*: use it, not one of yours. Confidence is your estimate, not a permission — the applier reverifies every finding before applying it, so a finding verified at low confidence is information, a silenced finding is not.

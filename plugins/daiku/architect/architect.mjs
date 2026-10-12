@@ -905,6 +905,34 @@ function valuesAt(value, path) {
 }
 
 /**
+ * The `payload` field a block carries when its step handed a child — or returned — a **content**
+ * and not a path: `{bytes, lines}`, both non-negative integers, **absent** where the step passed
+ * only a path (`contracts/orchestration.md` §4, *Delegation*). It is the measure the reduced view
+ * of `architect/view.mjs` stands beside, and the shape every block whose step delivers content
+ * declares. A `payload` absent changes nothing — the field exists only for what crossed.
+ */
+function payloadFaults(value) {
+  if (!('payload' in value) || value.payload === null) return [];
+  const payload = value.payload;
+  if (!rule('payload.object', !!payload && typeof payload === 'object' && !Array.isArray(payload))) {
+    return ['payload is not an object — it is {bytes, lines}, or absent where the step passed only a path'];
+  }
+  const wrong = [];
+  for (const key of ['bytes', 'lines']) {
+    const got = payload[key];
+    if (!rule('payload.values', Number.isInteger(got) && got >= 0)) {
+      wrong.push(`payload.${key} must be a non-negative integer, got ${JSON.stringify(got)}`);
+    }
+  }
+  for (const key of Object.keys(payload)) {
+    if (!rule('payload.fields', key === 'bytes' || key === 'lines')) {
+      wrong.push(`payload.${key} is not a field of the measure — it is {bytes, lines}`);
+    }
+  }
+  return wrong;
+}
+
+/**
  * What the prose of a producer says and `blocks.json` cannot: required keys and enums are
  * data, an order of option ids is a rule. One entry per block whose prose carries one.
  */
@@ -1027,6 +1055,7 @@ const SHAPES = {
         wrong.push(`preflight has no ${step} row: each of the four quick checks is run or declared skipped`);
       }
     }
+    wrong.push(...payloadFaults(value));
     return wrong;
   },
   // skills/decision-doc/SKILL.md § The block you return, skills/new-feature/SKILL.md § 7, and
@@ -1228,8 +1257,12 @@ const SHAPES = {
     value.findings.forEach((finding, at) => {
       if (!rule('finder.finding-on-a-file', !!finding && nonEmpty(finding.file))) wrong.push(`findings[${at}].file is missing: a finding stands on a file`);
     });
+    wrong.push(...payloadFaults(value));
     return wrong;
   },
+  // skills/study/SKILL.md § The block you return: the notes file is passed by path, and where the
+  // block carried content instead the `payload` field says how much.
+  study: (value) => payloadFaults(value),
 };
 
 function askBlock(input, root) {
@@ -2127,6 +2160,31 @@ const CASES = [
   { id: 'block:execute-a-quick-check-never-run', cites: { file: 'skills/execute/SKILL.md', section: 'Principles' },
     input: { question: 'block', name: 'execute', block: EX_BLOCK({ preflight: EX_BLOCK().preflight.filter((row) => row.step !== 'layers') }) },
     expect: { verdict: 'invalid', blockers_include: 'preflight has no layers row' } },
+  /* --- the `payload` measure: contracts/orchestration.md § 4, *Delegation* --- */
+  { id: 'block:execute-with-payload', cites: { file: 'skills/execute/SKILL.md', section: 'What you return' },
+    input: { question: 'block', name: 'execute', block: EX_BLOCK({ payload: { bytes: 100, lines: 5 } }) },
+    expect: { verdict: 'valid' } },
+  { id: 'block:execute-without-payload-stays-valid', cites: { file: 'skills/execute/SKILL.md', section: 'What you return' },
+    input: { question: 'block', name: 'execute', block: EX_BLOCK() },
+    expect: { verdict: 'valid' } },
+  { id: 'block:execute-payload-negative', cites: { file: 'contracts/orchestration.md', section: '4. Delegation' },
+    input: { question: 'block', name: 'execute', block: EX_BLOCK({ payload: { bytes: -1, lines: 5 } }) },
+    expect: { verdict: 'invalid', blockers_include: 'payload.bytes' } },
+  { id: 'block:execute-payload-extra-field', cites: { file: 'contracts/orchestration.md', section: '4. Delegation' },
+    input: { question: 'block', name: 'execute', block: EX_BLOCK({ payload: { bytes: 1, lines: 1, when: 'now' } }) },
+    expect: { verdict: 'invalid', blockers_include: 'payload.when' } },
+  { id: 'block:execute-payload-not-an-object', cites: { file: 'contracts/orchestration.md', section: '4. Delegation' },
+    input: { question: 'block', name: 'execute', block: EX_BLOCK({ payload: 100 }) },
+    expect: { verdict: 'invalid', blockers_include: 'payload is not an object' } },
+  { id: 'block:finder-with-payload', cites: { file: 'skills/finder-prompt/SKILL.md', section: 'The block you return' },
+    input: { question: 'block', name: 'finder', block: { findings: [], payload: { bytes: 12, lines: 2 } } },
+    expect: { verdict: 'valid' } },
+  { id: 'block:study-with-payload', cites: { file: 'skills/study/SKILL.md', section: 'The block you return' },
+    input: { question: 'block', name: 'study', block: { ok: true, technology: 'x', file: 'a.md', studied_version: '1', latest_version: '1', date: '2026-10-12', to_verify: [], detail: '', payload: { bytes: 8, lines: 1 } } },
+    expect: { verdict: 'valid' } },
+  { id: 'block:study-payload-malformed', cites: { file: 'skills/study/SKILL.md', section: 'The block you return' },
+    input: { question: 'block', name: 'study', block: { ok: true, technology: 'x', file: 'a.md', studied_version: '1', latest_version: '1', date: '2026-10-12', to_verify: [], detail: '', payload: { bytes: 8 } } },
+    expect: { verdict: 'invalid', blockers_include: 'payload.lines' } },
 
   /* --- question: block — skills/decision-doc/SKILL.md § The block you return, skills/new-feature/SKILL.md § 7 --- */
   { id: 'block:decision-doc-technical', cites: { file: 'skills/decision-doc/SKILL.md', section: 'The block you return' },

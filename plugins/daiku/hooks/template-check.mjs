@@ -58,6 +58,7 @@ const KNOWN_EVENTS = [
   'Stop',
   'Notification',
   'UserPromptSubmit',
+  'SubagentStart',
   'SubagentStop',
   'PreCompact',
 ];

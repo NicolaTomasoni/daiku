@@ -50,6 +50,7 @@ Goal: make the file clear, ordered, without duplicates — without losing a sing
 - Respect the runtime constraints that `{hosts.<host>.instructions_file}` declares, and in any case: **no whole-filesystem searches**; every file access stays inside the project and the `{paths.studies}/` folder.
 - **Do not commit** and do not push: the command produces only the received file, reordered.
 - Work autonomously end to end on the received file, without asking for confirmation.
+- **When content must cross, it crosses bounded.** Where this step hands a child a content and not a path, it stays within `{subagent.payload_cap}` — a **deterministic reduced view** of the artefact beside the **path of the whole original**, never a summary written by a model (`contracts/orchestration.md` §4, *Delegation*); where its own block carries content, its `payload` field (`{bytes, lines}`) says how much.
 
 ## The block you return
 
@@ -62,11 +63,14 @@ Goal: make the file clear, ordered, without duplicates — without losing a sing
   "latest_version": "<the latest release found, same as the previous one if the project is up to date>",
   "date": "<collection date>",
   "to_verify": ["<the points marked [to verify] in the md>"],
+  "payload": {"bytes": 0, "lines": 0},
   "detail": "<if ok=false, why: missing or empty file, incomplete input — never collection causes>"
 }
 ```
 
 `to_verify` is the inventory of the gaps the sources did not close: whoever opens the file finds them there, marked `[to verify]`.
+
+`payload` is the measure of the content this block carried, where it carried content and not a path: `{bytes, lines}`, both non-negative integers. Where the step handed the file by its path the field is **absent** — `contracts/orchestration.md` §4, *Delegation*.
 
 ## Final output
 
