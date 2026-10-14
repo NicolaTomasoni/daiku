@@ -19,7 +19,7 @@ keeps its own life.
 ## The two sides
 
 **Development carries a beta, and no changelog.** `{version.file}` stands there holding the number
-production carries now, marked as a beta with a counter — `1.1.5-b.1`. The counter goes **after a
+production carries now, marked as a beta with a counter — `1.1.6-b.2`. The counter goes **after a
 dot and is numeric**: `b.7`, never `b7`, which as
 an alphanumeric identifier semver orders `b10` before `b9`. The beta is not a release, and no
 release ever reads it: a release derives its number from production's own and writes it on
@@ -103,7 +103,7 @@ saying so, and stop — §6 of `contracts/project-contract.md`, no fallback and 
    return `released: false` with `detail` saying there is nothing to release, and stop.
 
 4. **Ask the version, once, on the block.** From `current_version`, ask the owner **major**,
-   **minor** or **patch** with `AskUserQuestion` — one question, three options, in the chat
+   **minor** or **patch** with the structured question of § *Ask the owner* of `contracts/orchestration.md` — one question, three options, in the chat
    language, the recommended first. The answer is the increment; the new number is derived from
    `current_version`. Because this node runs in the conversation, the channel to the owner exists —
    it is the whole reason the question lives here and not inside a subagent.

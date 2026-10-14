@@ -41,7 +41,7 @@
  *     while here the push is recognised even inside a wrapper, behind a `sudo` or
  *     queued after another command. Push stays a manual gesture of the owner. `--dry-run`
  *     is not: it pushes nothing.
- *  4. **A commit crediting the agent.** A `Co-Authored-By` trailer naming Claude, or a
+ *  4. **A commit crediting the agent.** A `Co-Authored-By` trailer naming an agent, or a
  *     `Generated with` line, in the message — `-m`, `--trailer`, a heredoc
  *     feeding `-F -`, or the file `-F` names. The history carries only whoever owns the work.
  *
@@ -678,12 +678,18 @@ function branchGuard(line, cwd, env, ctx) {
 }
 
 /** A line of a commit message attributing the work to the agent that wrote it: a
- * `Co-Authored-By` trailer naming Claude — or its maker, which is how the host signs it
- * (`noreply@anthropic.com`) — and the `Generated with …` line it appends.
+ * `Co-Authored-By` trailer naming an agent, or the `Generated with …` line it appends.
+ * The list is not only Claude — Claude and its maker (`noreply@anthropic.com`) — because
+ * another host signs the same way, and the history must carry only whoever owns the work:
+ * opencode writes `Co-Authored-By: opencode <noreply@opencode.ai>` and
+ * `🤖 Generated with [opencode]`, Codex writes `Co-Authored-By: Codex <noreply@openai.com>`
+ * and `Generated with Codex.`, Copilot the same `Co-Authored-By` shape. The list stays a
+ * list of agents: the trailer itself is the standard attribution and a `Co-Authored-By`
+ * naming no agent is a human co-author, which stays allowed.
  * The `=` shape is the one `--trailer` accepts. */
 const AGENT_ATTRIBUTION = [
-  /co-authored-by\s*[:=][^\n]*\b(?:claude|anthropic)\b/i,
-  /generated (?:with|by)[^\n]*\bclaude\b/i,
+  /co-authored-by\s*[:=][^\n]*\b(?:claude|anthropic|opencode|codex|openai|copilot)\b/i,
+  /generated (?:with|by)[^\n]*\b(?:claude|opencode|codex|copilot)\b/i,
 ];
 
 /** The `-F`/`--file` values of a `git commit`: the message read from a file. `-` is
@@ -732,7 +738,7 @@ function attributionGuard(line, cwd, env) {
   return {
     reason:
       'the commit message credits the agent that wrote the work — a `Co-Authored-By` ' +
-      'naming Claude, or a `Generated with` line: the history carries only ' +
+      'naming an agent, or a `Generated with` line: the history carries only ' +
       'whoever owns the work. Drop that line from the message and commit again. See ' +
       '`skills/commit/SKILL.md`, last paragraph.',
   };
@@ -1101,6 +1107,9 @@ const CASES = [
   ['trailer in a PowerShell here-string', "git commit -m @'\nfeat: x\n\nCo-Authored-By: Claude <noreply@anthropic.com>\n'@", ROOT_CWD, 'deny', 'credits the agent'],
   ['--trailer with the = shape', 'git commit -m "x" --trailer "Co-authored-by=Claude <noreply@anthropic.com>"', ROOT_CWD, 'deny', 'credits the agent'],
   ['Generated with Claude Code', 'git commit -m "feat: x" -m "🤖 Generated with [Claude Code](https://claude.com/claude-code)"', ROOT_CWD, 'deny', 'credits the agent'],
+  ['another host: the opencode trailer is denied', 'git commit -m "feat: x" -m "Co-Authored-By: opencode <noreply@opencode.ai>"', ROOT_CWD, 'deny', 'credits the agent'],
+  ['another host: the opencode Generated with line is denied', 'git commit -m "feat: x" -m "🤖 Generated with [opencode](https://opencode.ai)"', ROOT_CWD, 'deny', 'credits the agent'],
+  ['another host: the Codex trailer is denied', 'git commit -m "feat: x" -m "Co-authored-by: Codex <noreply@openai.com>"', ROOT_CWD, 'deny', 'credits the agent'],
   ['the signature inside a wrapper', 'bash -c "git commit -m \'x\' -m \'Co-Authored-By: Claude\'"', ROOT_CWD, 'deny', 'credits the agent'],
   ['the signature in the -F file', 'git commit -F msg-signed.txt', ROOT_CWD, 'deny', 'credits the agent'],
   ['the signature in the --file= file', 'git commit --file=c:/dev/project/msg-signed.txt', ROOT_CWD, 'deny', 'credits the agent'],

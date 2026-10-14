@@ -197,6 +197,22 @@ How to launch:
   happening. For that half, read-only rests on the prompt, so **repeat the read-only constraint
   in the prompt**.
 
+- **`opencode`** — the `subagent` tool, whose parameter `agent` carries the **name** of the agent to
+  run, the file name in `.opencode/agents/`: the step's role is chosen by that name and not by a
+  type list. `finder` for analysis-only steps that report findings, `explore` for search only,
+  `general` for everything else — that is, for steps that must write. The model is not chosen per
+  step: a subagent inherits the primary's model unless its own file declares one, so §2's resolution
+  lands on that file. Several independent `subagent` calls in the **same** message run concurrently,
+  which is how a round's fan-out stays parallel.
+
+  The package's one **role**, `finder`, is rendered for this host at `agents/opencode/finder.md`,
+  with `mode: subagent` — the key defaults to `all`, so an agent that does not declare it is
+  selectable as a primary too — and with `edit` and the delegation permission denied at `*`. There
+  the read-only is a **real** boundary in the same sense §4 gives `harness`: a `*` deny takes the
+  tool — `edit`, `write`, `patch`, and the delegation tool itself — away from the model. What no
+  permission covers is a **shell command's content**: the shell stays, because the contract's reads
+  need it, so **repeat the read-only constraint in the prompt** there too.
+
 **The harness's depth is what `{hosts.<host>.enforcement}` declares.**
 `harness` means three things are active and enforce on their own: the `deny` of the permission rules,
 the hooks, and the **list** of tools an agent declares — an absent tool is a real boundary. It does not
@@ -302,6 +318,17 @@ delegated step is a **leaf**, and the longest path in the graph stays four level
 `new-feature → research → study`. A node that realises it wants to delegate, and is not one of these, is doing
 someone else's work: return to contract and let whoever called it decide.
 
+**On `opencode` the host caps the nesting, and the cap reaches Daiku's chains.** The key
+`experimental.subagent_depth` defaults to `1`, which lets a primary launch a subagent but stops that
+subagent from launching another — so at the default **no chain that delegates twice composes**:
+`review → finder`, `research → study`, `commit → update-memory` and `new-feature → decision-doc` all
+ask the project to raise the key to `2`, and the four-level path `new-feature → ship-feature →
+review → finder` asks for at least `3`; at `0` no launch happens at all. The key is **experimental**
+and lives under `experimental` in `opencode.json`, so a project that declares nothing keeps the
+default `1`. The graph above is unchanged by this: it says *who may re-delegate*, the host says *how
+deep that may go*, and a longer chain on a project that has not raised the key is a step that does
+not compose there — its depth is a value in the parameters, not a rule rewritten here.
+
 **Degradation has two rungs, not one.** A step whose yield depends on the children's **independence**
 — the finders of a `/review` round — does not degrade to
 *inline*: it degrades first to **sequential subagents**, which is already the normal case on backends with
@@ -337,12 +364,20 @@ to ask and stops there, as it declares a role without naming a model:
   on a host where the answer is typed it is what the owner types. The owner may always
   answer outside the options, and that free answer **prevails**.
 
+- **`opencode`** — the `question` tool, one call carrying the whole list in its `questions` array,
+  one entry per decision, with `header` as the decision's short label, `options` the two-to-four
+  choices — each `label` opening with its id, `A — <text>`, and `(recommended)` closing the label of
+  `A` — and the option's `description` carrying what it entails. The answers come back as **arrays
+  of labels**, in the order asked, and the tool appends its own "type your own answer" entry: do not
+  add one. The tool fixes no ceiling of four, so the whole list is asked in a single call, however
+  long. The owner may always answer outside the options, and that free answer **prevails**.
+
 **The list is numbered, and it is asked whole.** The place of a question in its list **opens the
 question** — `k/N`, the question's own place and the length of the list the block returned — because
-four questions per call is the ceiling of the tool and not of the list. A list longer than that is
-asked in **consecutive calls, in the same turn**, from `1/N` to `N/N`, and the ask is closed only
-when the last card has been asked: the cards after the ceiling are not a second thought, they are
-the same act. `hooks/lib/ask-guard.mjs` is the seat holding the run to it — it refuses a decision ask
+four questions per call is the ceiling of `AskUserQuestion` and not of the list: the number says how
+long the list is, on every host. On `claude`, a list longer than four is asked in **consecutive
+calls, in the same turn**, from `1/N` to `N/N`, and the ask is closed only when the last card has
+been asked: the cards after the ceiling are not a second thought, they are the same act. `hooks/lib/ask-guard.mjs` is the seat holding the run to it — it refuses a decision ask
 whose questions carry no place, refuses a batch that does not continue its list, and refuses the
 **launch of a subagent** (§4) while the ask is open, that launch being how the run reaches the work
 that answers the decisions. And a message of the owner closes the ask as it closes everything: their
@@ -423,7 +458,7 @@ looked up, are §8 of `contracts/project-contract.md`.
 | `hosts.<host>.models.<role>` | the model of the role the skill declared for that step (§2) |
 | `hosts.<host>.models.judge` | model the judge role runs on for that host |
 | `hosts.<host>.models.worker` | model the worker role runs on for that host |
-| `hosts.<host>.instructions_file` | instructions file that host loads on every session — `CLAUDE.md` on Claude Code — at the technical root |
+| `hosts.<host>.instructions_file` | instructions file that host loads on every session — `CLAUDE.md` on Claude Code, `AGENTS.md` on opencode — at the technical root |
 | `hosts.<host>.skill_pointers` | folder where the host looks for the invocable skills' pointers; absent if the host requires none |
 | `hosts.<host>.enforcement` | `harness` if the host enforces with `deny`, hooks and a tool's **absence** — never a Bash command's content (§4) |
 | `hosts.<host>.settings_file` | file where the host keeps the session's environment configuration |

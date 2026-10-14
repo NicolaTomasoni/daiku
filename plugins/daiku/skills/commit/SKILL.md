@@ -2,6 +2,9 @@
 name: 'commit'
 argument-hint: '[file..., optional — default: everything changed in the code perimeter]'
 description: 'Creates commits following the project convention — always aligns memory and documentation to the staged diff first by delegating to update-memory, then separate commits (code, memory/doc), never pushing. Version and changelog are not its business where the project declared its channels: they live on production and `release` writes them'
+# Claude Code's permission surface for this skill, ignored where the host reads no such key. The
+# delegation tool is per host — `Agent` here, `subagent` on opencode — declared in §4 of
+# contracts/orchestration.md: this line names one host's tool and is not the contract.
 allowed-tools: Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(git show:*), Bash(git add:*), Bash(git commit:*), Read, Edit, Agent
 ---
 

@@ -277,7 +277,7 @@ function messageWith(message, developmentSha) {
  * the caller passes `instructions_file`. `never` carries what the project itself adds, which is
  * the extension `new-project` asks it for.
  */
-const METHOD_FOOTPRINT = ['.daiku', '.claude'];
+const METHOD_FOOTPRINT = ['.daiku', '.claude', '.opencode'];
 
 /**
  * The paths that never reach the published tree, as paths of the published tree — the `source`
@@ -769,6 +769,7 @@ function runBench(root) {
       write(join(repo, '.daiku/features/x/0. problem.md'), '# x\n');
       write(join(repo, 'CLAUDE.md'), '# instructions\n');
       write(join(repo, '.claude/settings.json'), '{}\n');
+      write(join(repo, '.opencode/opencode.json'), '{}\n');
       write(join(repo, 'docs/interni.md'), '# internal\n');
       sh(repo, ['add', '-A']);
       sh(repo, ['commit', '-qm', 'feat: nuovo']);
@@ -779,14 +780,14 @@ function runBench(root) {
         version: '2.0.1', section: '### 2.0.1 — 2026-10-05\n\n- Nuovo.\n\n---', message: 'release 2.0.1 — nuovo',
       });
       check('whole:without-source-the-tree-is-the-project', fileAt(repo, 'main', 'nuovo.js') === 'export const a = 1;\n', JSON.stringify(got));
-      check('whole:the-method-footprint-never-reaches-production', ['.daiku/project.json', '.daiku/features/x/0. problem.md', 'CLAUDE.md', '.claude/settings.json'].every((p) => fileAt(repo, 'main', p) === null), sh(repo, ['ls-tree', '-r', '--name-only', 'main']).out);
+      check('whole:the-method-footprint-never-reaches-production', ['.daiku/project.json', '.daiku/features/x/0. problem.md', 'CLAUDE.md', '.claude/settings.json', '.opencode/opencode.json'].every((p) => fileAt(repo, 'main', p) === null), sh(repo, ['ls-tree', '-r', '--name-only', 'main']).out);
       check('whole:the-projects-own-exclusion-is-honoured', fileAt(repo, 'main', 'docs/interni.md') === null);
       check('whole:the-instructions-file-is-excluded-by-its-declared-name', fileAt(repo, 'main', 'CLAUDE.md') === null && fileAt(repo, 'develop', 'CLAUDE.md') === '# instructions\n');
       check('whole:the-status-says-what-will-be-kept-back', call(repo, {
         action: 'status', work_root: repo, development: 'develop', production: 'main',
         version_file: 'package.json', version_field: 'version', changelog: 'CHANGELOG.md',
         instructions_file: 'CLAUDE.md', never: ['docs/interni.md'],
-      }).never.join(' ') === '.daiku .claude CLAUDE.md docs/interni.md');
+      }).never.join(' ') === '.daiku .claude .opencode CLAUDE.md docs/interni.md');
       check('whole:a-branch-tracking-nothing-is-declared-so', call(repo, {
         action: 'status', work_root: repo, development: 'develop', production: 'main',
         version_file: 'package.json', version_field: 'version', changelog: 'CHANGELOG.md',
