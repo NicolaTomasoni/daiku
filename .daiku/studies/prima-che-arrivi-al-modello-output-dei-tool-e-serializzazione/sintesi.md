@@ -87,7 +87,6 @@
 - **Entry point o contratto interno.** Se i nodi nuovi (la riduzione dei payload, la miniera delle sessioni) diventino contratti interni o entry point — `contracts/orchestration.md` §3 dice che i dieci non crescono da soli.
 - **Il comando di rimozione.** Se accompagnare `init` con un `daiku: remove` che ripristina le aggiunte a `.claude/settings.local.json` e al task di VS Code, oppure lasciare la simmetria com'è oggi.
 - **La parità Codex.** La riduzione con `updatedToolOutput` e il governo del lancio del subagent vivono solo su Claude Code: se cercare una parità, o dichiarare la asimmetria come si fa oggi.
-- **La contabilità dell'adozione.** La misura delle occasioni perse di rtk-ai/rtk si sovrappone alla feature `contabilita-contesto-runtime` già abbozzata nel cantiere: fondere o tenere separate.
 
 ## Limiti
 

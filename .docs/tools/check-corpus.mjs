@@ -26,7 +26,10 @@
  * 5. nessuna skill (`skills/<nome>/SKILL.md`) nomina un modello (`opus`, `sonnet`, `haiku`);
  * 6. ogni skill che cita una chiave porta la riga d'apertura §5.1, `init` esentata;
  * 7. ogni `agents/*.md` ha `name`, `description` e `tools`, il `tools` è ristretto, e il `name`
- *    compare fra i `subagent_type` di §4 di `orchestration.md`.
+ *    compare fra i `subagent_type` di §4 di `orchestration.md`; e ogni host che porta una resa
+ *    (`agents/<host>/<ruolo>.md`) rende **ogni** ruolo reso in `agents/`, con la `description` che
+ *    l'host legge, `mode: subagent` e il diniego di `edit` — la resa di un ruolo non è una sede
+ *    fuori dai controlli.
  * 8. la parola in grassetto con cui una skill dichiara il ruolo di un passo è uno dei ruoli che §1 di
  *    `orchestration.md` dichiara nella sua tabella — il vocabolario si legge da lì, non si ricopia:
  *    una regola documentata dentro un code span o un fence non è una dichiarazione.
@@ -325,6 +328,7 @@ function verifica(root) {
   const mdFiles = files.filter((f) => f.endsWith('.md'));
   const skillFiles = mdFiles.filter((f) => /[\\/]skills[\\/][^\\/]+[\\/]SKILL\.md$/.test(f));
   const agentFiles = mdFiles.filter((f) => /[\\/]agents[\\/][^\\/]+\.md$/.test(f) && !/[\\/]skills[\\/]/.test(f));
+  const hostAgentFiles = mdFiles.filter((f) => /[\\/]agents[\\/][^\\/]+[\\/][^\\/]+\.md$/.test(f) && !/[\\/]skills[\\/]/.test(f));
 
   /* 1 — nessun carattere di controllo. */
   {
@@ -427,7 +431,8 @@ function verifica(root) {
     check('c6', problemi.length === 0, problemi.join('; '));
   }
 
-  /* 7 — agent e `subagent_type` si nominano a vicenda, toolset ristretto. */
+  /* 7 — agent e `subagent_type` si nominano a vicenda, toolset ristretto; ogni host servito rende
+   *     ogni ruolo, e la sua resa lo dichiara subagent e gli nega la scrittura. */
   {
     const problemi = [];
     let tipi = [];
@@ -446,6 +451,30 @@ function verifica(root) {
         if (vietati.length) problemi.push(`${f}: tools riammette ${vietati.join(', ')}`);
       }
       if (name && !tipi.includes(name)) problemi.push(`${f}: name '${name}' non è fra i subagent_type di §4`);
+    }
+    /* Una resa per host — `agents/<host>/<ruolo>.md` — porta la forma che quell'host legge: la
+     * `description`, il ruolo dichiarato subagent (sull'host che lo richiede il default è `all`, e
+     * un finder selezionabile come primario non è il ruolo), e la scrittura negata. Un host che
+     * porta una resa le porta tutte: un ruolo reso per un host e assente per l'altro è la parità
+     * rotta, non una resa mancante. */
+    const ruoli = new Set();
+    for (const f of agentFiles) {
+      const n = campo(frontmatter(leggiTesto(f)), 'name');
+      if (n) ruoli.add(n);
+    }
+    const perHost = new Map();
+    for (const f of hostAgentFiles) {
+      const m = f.match(/[\\/]agents[\\/]([^\\/]+)[\\/]([^\\/]+)\.md$/);
+      if (!perHost.has(m[1])) perHost.set(m[1], new Set());
+      perHost.get(m[1]).add(m[2]);
+      if (!ruoli.has(m[2])) problemi.push(`${f}: '${m[2]}' non è un ruolo reso in agents/`);
+      const fm = frontmatter(leggiTesto(f));
+      if (!campo(fm, 'description')) problemi.push(`${f}: la resa non porta description`);
+      if (campo(fm, 'mode') !== 'subagent') problemi.push(`${f}: la resa non dichiara \`mode: subagent\``);
+      if (campo(fm, 'edit') !== 'deny') problemi.push(`${f}: la resa non nega \`edit\``);
+    }
+    for (const [host, nomi] of perHost) {
+      for (const n of ruoli) if (!nomi.has(n)) problemi.push(`agents/${host}/: manca la resa del ruolo '${n}'`);
     }
     check('c7', problemi.length === 0, problemi.join('; '));
   }
@@ -649,6 +678,19 @@ function runSelfCheck() {
       '---\ndescription: x\ntools: Read\n---\n\nBody.\n'));
     caso('name-estraneo-rosso', 'c7', true, (r) => scrivi(join(r, 'agents/finder.md'),
       '---\nname: estraneo\ndescription: x\ntools: Read\n---\n\nBody.\n'));
+
+    // 7 — la resa di un ruolo per un altro host: sta dentro il controllo, non accanto.
+    const resa = (fm) => (r) => scrivi(join(r, 'agents/opencode/finder.md'), `---\n${fm}\n---\n\nBody.\n`);
+    caso('host-resa-valida-verde', 'c7', false,
+      resa('description: x\nmode: subagent\npermission:\n  edit: deny\n  subagent: deny'));
+    caso('host-resa-senza-mode-rosso', 'c7', true,
+      resa('description: x\npermission:\n  edit: deny'));
+    caso('host-resa-che-non-nega-edit-rosso', 'c7', true,
+      resa('description: x\nmode: subagent\npermission:\n  edit: allow'));
+    caso('host-resa-senza-description-rosso', 'c7', true,
+      resa('mode: subagent\npermission:\n  edit: deny'));
+    caso('host-resa-di-ruolo-non-reso-rosso', 'c7', true, (r) => scrivi(join(r, 'agents/opencode/estraneo.md'),
+      '---\ndescription: x\nmode: subagent\npermission:\n  edit: deny\n---\n\nBody.\n'));
 
     // 8 — vocabolario dei ruoli.
     caso('ruolo-dei-due-verde', 'c8', false, (r) => scrivi(join(r, 'skills/ruoli/SKILL.md'),

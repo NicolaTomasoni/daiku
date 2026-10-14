@@ -48,9 +48,12 @@ di un subagent, e l'input porta `agent_id` **solo quando l'hook scatta dentro un
 subagent**: è quel campo, e non `agent_type`, a distinguere un figlio dalla conversazione —
 `agent_type` c'è anche in una sessione avviata con `--agent`. Letto dalla reference dell'host
 (`code.claude.com/docs/en/hooks`, tabella *Common input fields*, e *Add context for Claude*;
-`code.claude.com/docs/en/sub-agents`, *Define hooks for subagents*), **30 settembre 2026**.
-**Non riprodotto su questa macchina**: il pacchetto installato è una copia, e un esperimento qui
-misurerebbe la versione in cache, non questa.
+`code.claude.com/docs/en/sub-agents`, *Define hooks for subagents*), **30 settembre 2026**, e
+**riprodotto su questa macchina il 12 ottobre 2026**: un plugin usa-e-getta caricato con
+`--plugin-dir` e `--setting-sources project` — quindi senza toccare il pacchetto installato né la
+configurazione dell'owner — ha fatto scattare il proprio hook **dentro** il subagent, con `agent_id`
+e `agent_type` presenti nell'input. La prova, col comando e la data, sta in
+`.daiku/studies/claude-code-hooks.md` §19.
 
 **How to apply:** il banco è `node plugins/daiku/hooks/lib/run-advice.mjs --self-check`, e il totale
 dei banchi lo dice `node plugins/daiku/hooks/self-check.mjs`. Un caso del banco tiene la forma che

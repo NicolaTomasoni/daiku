@@ -1,6 +1,6 @@
 ---
 name: guardrail-nascono-spenti
-description: "la guardia nega sempre push, --no-verify e le firme di Claude, e solo il pool dei worktree, i canali e la sede dei ledger si dichiarano; ask-guard nega due gesti del giro, e nessun file; nessun hook esegue un file perché è appena comparso"
+description: "la guardia nega sempre push, --no-verify e le firme di un agente, su qualunque host, e solo il pool dei worktree, i canali e la sede dei ledger si dichiarano; ask-guard nega due gesti del giro, e nessun file; nessun hook esegue un file perché è appena comparso"
 metadata: 
   node_type: memory
   type: project
@@ -17,7 +17,8 @@ niente e non leggono nemmeno la riga — questo resta. Con quel file, dal 21 set
 negano sempre, senza interruttore: `git push` e `git commit
 -n`/`--no-verify`. Dal 25 settembre 2026 nega sempre,
 senza interruttore, anche il `git commit` il cui messaggio accredita l'agente — un `Co-Authored-By`
-che nomina Claude, o una riga `Generated with` — in `-m`, `--trailer`, heredoc o file `-F`. I rami che restano spenti finché il progetto non li accende sono tre: il pool dei
+che nomina Claude o un altro agente (`opencode`, `Codex`, `Copilot`), o una riga `Generated with` —
+in `-m`, `--trailer`, heredoc o file `-F`. I rami che restano spenti finché il progetto non li accende sono tre: il pool dei
 worktree, con `{worktree.pool}`; la guardia del ramo, con `channels.production` (dal 3 ottobre 2026: nega `git commit` e `git merge` mentre è attivo il ramo di produzione e `git checkout`/`git switch` verso di esso, e legge il ramo solo sulle righe che nominano git); e la guardia della review, con `{paths.review_state}` (dal 5 ottobre 2026: dove la sede dei ledger è dichiarata, nega `git commit` fuori da un ciclo di review — il commit è l'ultimo passo del ciclo — legge la sede solo su un `git commit`, e una sede che non risponde lascia passare). La rimozione ricorsiva che attraversa una junction di Windows non
 ha mai avuto interruttore: non è una policy ma un fatto del sistema operativo.
 

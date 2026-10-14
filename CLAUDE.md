@@ -48,16 +48,18 @@ e nient'altro esce.
 | `plugins/daiku/` | il pacchetto Daiku — ciò che l'host installa |
 | `.docs/` | memoria, confronti, esempi, strumenti di sviluppo |
 | `.daiku/` | i parametri del **cantiere**, non del prodotto: le guardie di Daiku su questo repository, e sotto di sé le sedi dei lavori — `features/`, `studies/` e `handoffs/` |
+| `PRODUCT.md`, `BRAND.md`, `DOMAIN.md`, `STACK.md`, `ARCHITECTURE.md` | i documenti fondativi del cantiere, dichiarati in `documents.*` |
 | `CLAUDE.md`, `.claude/`, `.vscode/`, `.gitignore`, `.gitattributes` | sviluppo, obbligati in radice dall'host e da git |
 
 `.daiku/project.json` non è una sede di sviluppo come le altre: **è il gate delle guardie.** Il
 pacchetto è installato su ogni repository che l'host apre, ma non nega niente dove il progetto non
 ha dichiarato di aver aperto Daiku — e senza di esso, qui, `git push` non lo fermerebbe nessuno.
 Le sue chiavi dichiarano le sedi che il cantiere usa davvero: il codice è `plugins/`, le sedi dei
-lavori sono `.daiku/features`, `.daiku/studies` e `.daiku/handoffs`, la memoria è `.docs/memory` e i ledger dei giri
-di review sono `.docs/runtime/review`. Fuori da quelle sedi
-non entra un file **nuovo** — in radice, e in `.claude/`: è voluto, perché in radice non entra
-niente e i comandi del cantiere si scrivono su ordine dell'owner.
+lavori sono `.daiku/features`, `.daiku/studies` e `.daiku/handoffs`, la memoria è `.docs/memory`, i ledger dei giri
+di review sono `.docs/runtime/review` e i documenti fondativi sono i cinque `PRODUCT.md`,
+`BRAND.md`, `DOMAIN.md`, `STACK.md` e `ARCHITECTURE.md` in radice. Fuori da quelle sedi
+non entra un file **nuovo** — in radice, e in `.claude/`: è voluto, perché in radice stanno solo le
+sedi dichiarate e i comandi del cantiere si scrivono su ordine dell'owner.
 
 Prima di aggiungere un file, decidi se serve a chi *usa* Daiku o a chi lo *costruisce*. Se
 serve a chi lo usa va sotto `plugins/`; se serve a chi lo costruisce, in `plugins/` non entra.
@@ -104,7 +106,7 @@ il pubblico. Il cantiere e il prodotto sono i suoi due rami, e la copia di lavor
 **`develop` è il cantiere.** Porta tutto — il prodotto sotto `plugins/`, la ricognizione, i punti
 aperti, la memoria, gli esempi, queste istruzioni — ed è il ramo su cui si lavora. **Porta una
 versione, ed è una beta**: il manifest dichiara la versione di `main` stessa, marcata come beta
-con un contatore — `1.1.5-b.1` — scritto dopo un punto, perché `b10` verrebbe prima di `b9`. Non è
+con un contatore — `1.1.6-b.2` — scritto dopo un punto, perché `b10` verrebbe prima di `b9`. Non è
 un rilascio e nessun rilascio la legge: il numero di un rilascio si deriva da `main` e si scrive su
 `main`, dove questa viene sovrascritta. Serve perché il pacchetto si installa anche dall'albero di
 sviluppo, e perché è quella dichiarazione a far muovere la copia installata; sale quando sale la

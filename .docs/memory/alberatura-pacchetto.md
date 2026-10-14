@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 48eaa498-ed6e-4a36-847d-3f8fa95f7f21
-  modified: 2026-10-12T12:13:13.710Z
+  modified: 2026-10-14T12:39:29.566Z
 ---
 
 Il repo ospita il prodotto Daiku. Il repository è **uno solo** — `NicolaTomasoni/daiku` su GitHub,
@@ -25,7 +25,7 @@ vetrina.
 |---|---|---|
 | `skills/` | i **22 contratti** del metodo, uno per cartella; accanto alla `SKILL.md` di `init` sta `scan.mjs`, il programma che misura cosa manca sul disco prima che `init` scriva, col banco che `hooks/self-check.mjs` lancia | l'host |
 | `contracts/` | `orchestration.md`, `project-contract.md` | le skill li aprono per path; non sono skill loro stessi |
-| `agents/` | `finder` — l'unico subagent a toolset ristretto | Claude Code |
+| `agents/` | `finder` — l'unico subagent a toolset ristretto — con **una resa per host**: la radice per Claude Code (frontmatter `name`/`description`/`tools`), `agents/opencode/` per opencode (`description`, `mode: subagent`, i permessi che negano `edit`); il controllo del corpus impone che ogni host renda **ogni** ruolo | l'host |
 | `hooks/` | il wiring `hooks.json`, i **sette hook** in `lib/` e i **due moduli** che importano (`project-root.mjs`, `daiku-config.mjs`); accanto, fuori da `lib/`, `self-check.mjs`, `template-check.mjs` e `README.md`, che sono di chi sviluppa il pacchetto e non si trasportano | Claude Code |
 | `architect/` | `architect.mjs`: il **valutatore deterministico** — risponde a undici domande meccaniche e tiene l'ordine della catena; `ledger.mjs`: lo **strumento lato disco della review** — legge Git, scrive il ledger e chiede i verdetti al valutatore; `pool.mjs`: il **lato disco del pool dei worktree**; `reconcile.mjs`: il **lato disco della riconciliazione del merge**; `release.mjs`: il **lato disco del rilascio** — costruisce l'albero di production dallo sviluppo su un indice usa-e-getta e muove il ref, senza mettersi mai su production; `cost.mjs`: la **misura deterministica del costo di un giro** — conta da disco le quattro voci (testa, invocazioni, ritorno, sempre-caricato) e vi aggiunge i token dove il ledger li riporta; `view.mjs`: la **vista ridotta deterministica** che un passo consegna a un figlio quando un path non basta — righe intere sotto il tetto dichiarato, col path dell'originale nel marker. Ciascuno col suo banco, che `hooks/self-check.mjs` lancia (vedi [[valutatore-deterministico]], [[pool-worktree]], [[canali-e-promozione]], [[costo-di-un-giro]]) | l'agente, che li invoca: non sono hook, nessun `hooks.json` li nomina, e non si installano in un progetto |
 | `schemas/` | `blocks.json`: lo specchio controllabile dei blocchi di ritorno — la prosa del nodo resta normativa | i controlli scritti a mano e gli umani che scrivono i nodi |
@@ -43,8 +43,9 @@ registra su `<repo>/plugins`, non sulla radice del repo.
 
 ## 2. Lo sviluppo *obbligato* a stare in radice
 
-Non si possono spostare: l'host e git li cercano lì e basta. Oltre a questi, in radice ci sono
-solo `.gitignore` e `.gitattributes` del repository di sviluppo.
+Non si possono spostare: l'host e git li cercano lì e basta. Oltre a questi, in radice il cantiere
+tiene i suoi documenti — i punti aperti, i nuovi sviluppi e i cinque documenti fondativi — e i
+`.gitignore` e `.gitattributes` del repository di sviluppo.
 
 - **`CLAUDE.md`** — le istruzioni per chi sviluppa Daiku. Non è Daiku.
 - **`.claude/`** — come si lavora *su* Daiku, non come Daiku funziona. Dentro c'è:

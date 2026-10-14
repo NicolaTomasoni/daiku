@@ -7,6 +7,13 @@
     "chat": "it",
     "commit": "en"
   },
+  "documents": {
+    "product": "PRODUCT.md",
+    "brand": "BRAND.md",
+    "domain": "DOMAIN.md",
+    "stack": "STACK.md",
+    "architecture": "ARCHITECTURE.md"
+  },
   "changelog": "plugins/CHANGELOG.md",
   "version": {
     "file": "plugins/daiku/.claude-plugin/plugin.json",

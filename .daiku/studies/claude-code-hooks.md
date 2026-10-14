@@ -1,30 +1,33 @@
 # Claude Code hooks — appunti operativi di sviluppo
 
-> **Versione in uso nel progetto: 2.1.276** (`claude --version`, 2026-10-03). Ultima pubblicata: **2.1.288** (release GitHub `anthropics/claude-code`, 2026-10-02). Data di raccolta: **2026-10-03**.
-> Modello mentale dello studio: **vince la versione in uso (2.1.276)**. La documentazione canonica (`https://code.claude.com/docs/en/hooks`) riflette **l'ultima versione**; ciò che appartiene a versioni più recenti è segnalato. Ciò che non è confermato è marcato `[to verify]`, con cosa manca.
+> **Versione in uso: 2.1.296** — estensione VSCode `anthropic.claude-code-2.1.296-win32-x64`, il cui binario nativo è ciò che l'host esegue (il pacchetto npm `@anthropic-ai/claude-code` presente su questa macchina dichiara 2.1.276). Ultima pubblicata: **v2.1.296** (release GitHub `anthropics/claude-code`, 2026-10-09): la versione in uso **coincide con l'ultima**.
+> **Il corpo si compone di due raccolte e di una sperimentazione sull'host**, e ognuna data i propri fatti. La **prima raccolta (2026-10-03)** poggia sulla versione allora in uso, la **2.1.276** (contro la 2.1.288 allora ultima); l'**estensione (2026-10-12)** poggia sulla **2.1.296** e risponde a cinque domande puntuali sulla sostituzione dell'output di un tool; la **sperimentazione (2026-10-12)** poggia anch'essa sulla **2.1.296** e risponde a cinque domande sulla consegna di `additionalContext` a un subagent, con l'esito **provato eseguendo l'host** e non leggendo la documentazione. Dove una sezione dichiara la "versione in uso", si riferisce alla versione della raccolta da cui proviene il fatto; dove il fatto appartiene a una versione diversa da quella della raccolta, la soglia è indicata.
+> Modello mentale dello studio: **vince la versione in uso (2.1.296)**. La documentazione canonica (`https://code.claude.com/docs/en/hooks`) riflette **l'ultima versione**; ciò che appartiene a versioni più recenti è segnalato. Ciò che non è confermato è marcato `[to verify]` (prima raccolta) o `[non documentato]` (estensione), con cosa manca; nella sperimentazione `[provato]`/`[non provato]`, col comando e la data.
 > Nota sul cutoff del modello: le firme, i nomi di campo e i JSON qui sotto sono copiati **verbatim** dalle pagine recuperate (o da artefatti di prima parte reali), mai dalla memoria del modello.
 > Radice tecnica: `C:/dev/daiku-workspace/daiku-dev` → `{paths.studies}` = `.daiku/studies`.
 > `documents.stack` e `documents.architecture` **non sono dichiarati** in `.daiku/project.json`: la nota non ha quindi un ancoraggio al progetto oltre a questo. Assenza dichiarata, non supplita.
 
 ## Indice
 
-1. **Meta e sorgenti** — convenzioni della nota, fonti primarie e di terza parte.
-2. **Concetti e modello mentale** — modello di versione, i 33 eventi, la forma JSON.
+1. **Meta e sorgenti** — convenzioni della nota, fonti delle due raccolte.
+2. **Concetti e modello mentale** — modello di versione, i 33 eventi, la forma JSON annidata.
 3. **Setup e quickstart** — dove si configurano i hook (scope e merge), la forma JSON di base.
 4. **Eventi e campi `hookSpecificOutput`** — tabella dei 33 eventi; riscrittura del contenuto.
 5. **`matcher` — forma esatta** — pattern, regole, tabella per evento, esempi JSON.
 6. **`additionalContext` — consegna del contesto a Claude** — eventi, punto d'inserimento, cap, persistenza.
 7. **Codici d'uscita, precedenza e decisione** — exit 0/1/2, tabella per evento, precedenza, output universale.
-8. **Forme di configurazione: plugin e settings** — `hooks/hooks.json`, chiave `hooks` del manifest, frontmatter.
+8. **Sostituire l'output di un tool: `updatedToolOutput`** — contratto, forme per tool, interferenze, limiti.
 9. **Tipi di handler e campi** — cinque tipi, campi comuni e specifici.
 10. **Placeholder, variabili d'ambiente ed exec/shell form** — `${...}`, env var, le due forme.
 11. **Timeout e hook asincroni** — default, comportamento allo scadere, `async`/`asyncRewake`.
-12. **Input comune su stdin** — campi comuni, campi subagent, esempio.
+12. **Input comune su stdin** — campi comuni, campi subagent, esempi (anche l'input di `PostToolUse`).
 13. **`transcript_path` e la forma del transcript** — path, storage, JSONL, strutture osservate.
-14. **Sicurezza, diagnosi e validazione** — controlli amministrativi, debug, validazione del manifest.
-15. **Sintesi delle marcature di versione** — tabella soglie/stato.
-16. **Avvio di slash-command o skill** — le tre strade, l'assenza di un evento dedicato.
-17. **Nota di chiusura sulla versione in uso**.
+14. **Forme di configurazione: plugin, settings, frontmatter** — `hooks/hooks.json`, chiave `hooks` del manifest, frontmatter di skill/subagent.
+15. **Sicurezza, diagnosi e validazione** — controlli amministrativi, debug, validazione del manifest.
+16. **Soglie di versione e changelog** — tabelle delle raccolte 2026-10-03 e 2026-10-12.
+17. **Nota di chiusura della prima raccolta (2026-10-03)**.
+18. **Avvio di slash-command o skill** — le tre strade, l'assenza di un evento dedicato.
+19. **Consegna di `additionalContext` a un subagent: `SubagentStart` di plugin vs `PreToolUse`** — l'esperimento sull'host, le cinque risposte, le prove.
 
 ### Mappa dei nomi
 
@@ -36,14 +39,17 @@ Per ogni nome ricorrente, la sezione dove sta la definizione completa.
 | `matcher` | §5 |
 | `additionalContext` | §6 |
 | `exit 0` / `exit 1` / `exit 2`, `continue`, `stopReason` | §7 |
-| `hooks/hooks.json`, frontmatter di skill/subagent | §8 |
+| `updatedToolOutput`, `updatedMCPToolOutput`, forme d'uscita per tool | §8 |
 | `type` (`command`/`http`/`mcp_tool`/`prompt`/`agent`), `if`, `statusMessage`, `once` | §9 |
 | `${CLAUDE_PROJECT_DIR}`, `${CLAUDE_PLUGIN_ROOT}`, `${CLAUDE_PLUGIN_DATA}`, `${user_config.*}` | §10 |
 | `async`, `asyncRewake` | §11 |
-| `session_id`, `prompt_id`, `cwd`, `transcript_path`, `permission_mode`, `effort`, `agent_id`, `agent_type` | §12 |
+| `session_id`, `prompt_id`, `cwd`, `transcript_path`, `scratchpad_dir`, `permission_mode`, `effort`, `agent_id`, `agent_type` | §12 |
 | Transcript `.jsonl` | §13 |
-| `claude plugin validate`, `/hooks`, debug log | §14 |
-| `UserPromptExpansion`, tool `Skill`, `SubagentStart` | §16 |
+| `hooks/hooks.json`, frontmatter di skill/subagent | §14 |
+| `claude plugin validate`, `/hooks`, debug log | §15 |
+| `UserPromptExpansion`, tool `Skill`, `SubagentStart` | §18 |
+| `SubagentStart` di plugin: consegna del contesto, campi del payload, cap | §19 |
+| `PreToolUse.additionalContext` dentro un subagent | §19 |
 
 ---
 
@@ -51,9 +57,10 @@ Per ogni nome ricorrente, la sezione dove sta la definizione completa.
 
 Convenzioni di questa nota:
 - `verbatim` = copiato dalla fonte, non riscritto.
-- `[to verify]` = la fonte non lo conferma, o è più recente della versione in uso.
+- `[to verify]` = la fonte non lo conferma, o è più recente della versione della raccolta che lo dichiara (marcatore della prima raccolta, 2026-10-03).
+- `[non documentato]` = la fonte pubblica tace (marcatore dell'estensione, 2026-10-12, che risponde a cinque domande puntuali, Q1–Q5, sulla sostituzione dell'output di un tool).
 
-Fonti primarie recuperate (2026-10-03):
+Fonti primarie recuperate (2026-10-03) — prima raccolta, base **2.1.276**:
 - https://code.claude.com/docs/en/hooks (riferimento; la pagina arriva troncata via fetch, dopo la sezione `InstructionsLoaded`)
 - https://code.claude.com/docs/en/hooks-guide
 - https://code.claude.com/docs/en/sessions (`transcript_path`, storage dei transcript)
@@ -66,11 +73,24 @@ Fonti primarie recuperate (2026-10-03):
 - Artefatto di prima parte locale: transcript `.jsonl` reali prodotti da Claude Code **2.1.276** sotto `C:\Users\tomas\.claude\projects\c--dev-daiku-workspace-daiku-dev\`
 - Terza parte (usata solo dove marcato): issue https://github.com/anthropics/claude-code/issues/16538 ; mirror https://github.com/xiaolai/anthropic-docs
 
+Fonti primarie recuperate (2026-10-12) — estensione, base **2.1.296**:
+- https://code.claude.com/docs/en/hooks (pagina di riferimento, ~268k caratteri: la sezione `PostToolUse decision control` sta fra i ~100000 e i ~200000 caratteri)
+- https://code.claude.com/docs/en/hooks-guide
+- https://code.claude.com/docs/en/tools-reference
+- https://code.claude.com/docs/en/checkpointing
+- https://code.claude.com/docs/en/ide-integrations
+- Changelog ufficiale: https://raw.githubusercontent.com/anthropics/claude-code/main/CHANGELOG.md
+- Artefatto di prima parte su disco: `C:\Users\tomas\.vscode\extensions\anthropic.claude-code-2.1.296-win32-x64\resources\native-binary\claude.exe`
+- `d.ts` di prima parte: `C:\nvm4w\nodejs\node_modules\@anthropic-ai\claude-code\sdk-tools.d.ts` (pacchetto npm **2.1.276**: indietro di 20 patch rispetto all'estensione 2.1.296 in uso — da riconfermare contro l'host che gira)
+- Terza parte (usata solo dove marcato): `anthropics/claude-code` #97278 (aperta), #59160 (chiusa), #96742 (aperta)
+
 ---
 
 ## 2. Concetti e modello mentale
 
-**Modello mentale applicato.** La fonte canonica riflette **l'ultima versione 2.1.288**, non la 2.1.276 in uso. Nelle versioni **2.1.277 → 2.1.288** non risulta introdotto alcun *nuovo* evento hook: le voci sono correzioni a hook esistenti. Le note di **2.1.277, 2.1.279 e 2.1.280 non sono state recuperate** (pagina releases troncata). Quanto segue va inteso come comportamento **atteso anche sulla 2.1.276**, ma i punti marcati `[to verify]` vanno confermati sulla versione in uso.
+> Prima raccolta (2026-10-03), base **2.1.276**.
+
+**Modello mentale applicato.** La fonte canonica riflette **l'ultima versione 2.1.288**, non la 2.1.276 allora in uso. Nelle versioni **2.1.277 → 2.1.288** non risulta introdotto alcun *nuovo* evento hook: le voci sono correzioni a hook esistenti. Le note di **2.1.277, 2.1.279 e 2.1.280 non sono state recuperate** (pagina releases troncata). Quanto segue va inteso come comportamento **atteso anche sulla 2.1.276**, ma i punti marcati `[to verify]` vanno confermati sulla versione in uso.
 
 I hook si configurano in una struttura JSON a tre livelli di annidamento (verbatim):
 
@@ -86,7 +106,7 @@ La doc dichiara **33 eventi**. Da `https://code.claude.com/docs/en/hooks` (tabel
 
 `SessionStart`, `Setup`, `UserPromptSubmit`, `UserPromptExpansion`, `PreToolUse`, `PermissionRequest`, `PermissionDenied`, `PostToolUse`, `PostToolUseFailure`, `PostToolBatch`, `Notification`, `MessageDisplay`, `SubagentStart`, `SubagentStop`, `TaskCreated`, `TaskCompleted`, `Stop`, `StopFailure`, `TeammateIdle`, `InstructionsLoaded`, `ConfigChange`, `CwdChanged`, `DirectoryAdded`, `FileChanged`, `WorktreeCreate`, `WorktreeRemove`, `PreCompact`, `PostCompact`, `PreModelSwitch`, `PostModelSwitch`, `Elicitation`, `ElicitationResult`, `SessionEnd`.
 
-Nessun nome contiene "Skill" o "Command": non esiste `SkillStart`, `SkillInvoked`, `SlashCommandStart`, `CommandStart` o simili. L'unico evento con prefisso `Start` è `SubagentStart`, ed è ristretto ai subagent.
+Nessun nome contiene "Skill" o "Command": non esiste `SkillStart`, `SkillInvoked`, `SlashCommandStart`, `CommandStart` o simili. L'unico evento con prefisso `Start` è `SubagentStart`, ed è ristretto ai subagent. (Conseguenze per l'avvio di skill/comandi: §18.)
 
 ---
 
@@ -186,12 +206,13 @@ La doc dichiara **33 eventi** (elenco piatto in §2.1). Qui: nome esatto, quando
 
 ### 4.1 Riscrittura del contenuto e `hookSpecificOutput`
 
-Dettagli verbatim sulla riscrittura del contenuto:
+Dettagli verbatim sulla riscrittura del contenuto — **sede canonica della lista**; §8.1 vi rimanda:
 
-> `PreToolUse`: `updatedInput` directly under `hookSpecificOutput` replaces a tool's arguments before it runs.
-> `PermissionRequest`: `updatedInput` inside the `decision` object.
-> `PostToolUse`: `updatedToolOutput` replaces the tool's result.
-> `UserPromptSubmit`: can't replace the prompt; it only injects `additionalContext` alongside it.
+> A few events can also rewrite content rather than only allow or block it:
+> * `PreToolUse`: `updatedInput` directly under `hookSpecificOutput` replaces a tool's arguments before it runs.
+> * `PermissionRequest`: `updatedInput` inside the `decision` object.
+> * `PostToolUse`: `updatedToolOutput` replaces the tool's result.
+> * `UserPromptSubmit`: can't replace the prompt; it only injects `additionalContext` alongside it.
 
 `hookSpecificOutput` in generale:
 
@@ -336,7 +357,7 @@ Due matcher RegExp su tool MCP:
 }
 ```
 
-Un esempio di hook con `matcher` nel frontmatter di una skill è in §8.3.
+Un esempio di hook con `matcher` nel frontmatter di una skill è in §14.3.
 
 ---
 
@@ -344,7 +365,7 @@ Un esempio di hook con `matcher` nel frontmatter di una skill è in §8.3.
 
 Fonte canonica: https://code.claude.com/docs/en/hooks (recuperata 2026-10-03). Modello mentale: comportamento documentato per la **2.1.276**; le differenze che appartengono a versioni più recenti (fino a 2.1.288) sono marcate.
 
-`additionalContext` vive **dentro** l'oggetto `hookSpecificOutput` — che richiede sempre il campo `hookEventName` impostato al nome dell'evento — e non è un campo universale.
+`additionalContext` vive **dentro** l'oggetto `hookSpecificOutput` — che richiede sempre il campo `hookEventName` impostato al nome dell'evento (§4.1) — e non è un campo universale.
 
 ### 6.1 Con quali eventi è disponibile
 
@@ -407,7 +428,7 @@ Verbatim (sezione JSON output):
 > * **Over the limit**: Claude Code saves the output to a file in the session directory and replaces it with the file path and a preview of up to the first 2,000 characters. Unlike that Bash ceiling, **this cap has no setting or environment variable to raise it**.
 > * **Reading the file**: Claude Code doesn't ask Claude to read the file, so keep anything Claude must always see within the cap.
 
-Confermato: `additionalContext`, `systemMessage`, `initialUserMessage` e stdout in chiaro sono **misurati ciascuno a parte**, non sommati. La cap **non è alzabile**. Se un valore supera i 10.000 caratteri, Claude Code scrive il testo in un file nella session directory e passa a Claude il path col preview fino ai primi 2.000 caratteri.
+Confermato: `additionalContext`, `systemMessage`, `initialUserMessage` e stdout in chiaro sono **misurati ciascuno a parte**, non sommati. La cap **non è alzabile**. Se un valore supera i 10.000 caratteri, Claude Code scrive il testo in un file nella session directory e passa a Claude il path col preview fino ai primi 2.000 caratteri. (Applicazione a `updatedToolOutput`: §8.4.)
 
 ### 6.6 Quando viene scartato
 
@@ -445,7 +466,7 @@ Per istruzioni che non cambiano mai, la doc preferisce `CLAUDE.md` ("It loads wi
 
 ### 6.9 Note di versione
 
-- In uso: **2.1.276**. Ultima pubblicata: **2.1.288**.
+- In uso nella raccolta: **2.1.276**. Ultima pubblicata allora: **2.1.288**.
 - Tra 2.1.282 e 2.1.288 il changelog cita correzioni agli hook ma **nessuna** che alteri la semantica di `additionalContext`.
 - `[to verify: le versioni 2.1.276–2.1.281 non sono recuperabili dal changelog via WebFetch (troncato); non confermabile se `PostModelSwitch`, `PostToolBatch` o la cap a 10.000 caratteri esistessero già nella 2.1.276]`.
 
@@ -453,7 +474,7 @@ Per istruzioni che non cambiano mai, la doc preferisce `CLAUDE.md` ("It loads wi
 
 ## 7. Codici d'uscita, precedenza e decisione
 
-> Versione in uso dichiarata dal progetto: **2.1.276**. Ultima pubblicata: **2.1.288** (2026-10-02). Dove una regola è legata a una soglia di versione la soglia è indicata; dove una soglia supera 2.1.276 il fatto è marcato come **più recente della versione in uso**.
+> Prima raccolta (2026-10-03). Versione in uso dichiarata: **2.1.276**. Ultima pubblicata allora: **2.1.288** (2026-10-02). Dove una regola è legata a una soglia di versione la soglia è indicata; dove una soglia supera 2.1.276 il fatto è marcato come **più recente della versione in uso**.
 
 ### 7.1 Campi universali dell'output
 
@@ -602,77 +623,125 @@ Il precedente tra exit 2 e JSON: `exit 2` batte qualunque `permissionDecision`, 
 
 ---
 
-## 8. Forme di configurazione: plugin e settings
+## 8. Sostituire l'output di un tool: `updatedToolOutput`
 
-### 8.1 Forma plugin — `hooks/hooks.json`
+> Estensione (2026-10-12), base **2.1.296**. Approfondimento su cinque domande puntuali (Q1–Q5): dove la fonte pubblica tace, la risposta è `[non documentato]`. Le soglie di versione dei campi qui trattati sono tabellate in §16.2; l'input specifico di `PostToolUse` è in §12.4.
 
-Verbatim:
+### 8.1 Il campo nel contratto pubblico (Q1)
 
-> Define plugin hooks in `hooks/hooks.json` with an optional top-level `description` field. When a plugin is enabled, its hooks merge with your user and project hooks.
+**Sì.** `updatedToolOutput` è documentato nella pagina di riferimento degli hook, § *PostToolUse decision control*. Tabella dei campi (verbatim):
 
-Esempio verbatim (wrapper `hooks`, `description` top-level, exec form con `args: []`):
+> | Field | Description |
+> | :- | :- |
+> | `decision` | `"block"` adds the `reason` next to the tool result. Claude still sees the original output; to replace it, use `updatedToolOutput` |
+> | `reason` | Explanation shown to Claude when `decision` is `"block"` |
+> | `additionalContext` | String added to Claude's context alongside the tool result. See [Add context for Claude](#add-context-for-claude) |
+> | `classifierContext` | Short note about this call's result for the [auto mode] classifier rather than for Claude. … Requires Claude Code v2.1.236 or later |
+> | `updatedToolOutput` | Replaces the tool's output with the provided value before it is sent to Claude. The value must match the tool's output shape |
+> | `updatedMCPToolOutput` | Replaces the output for [MCP tools] only. Prefer `updatedToolOutput`, which works for all tools |
+
+La collocazione di `updatedToolOutput` nella lista delle riscritture di contenuto è verbatim in §4.1. La guida alla redazione (verbatim):
+
+> For redaction or transformation use cases, intercept at `PreToolUse` for outbound tool inputs and `PostToolUse` for inbound tool results.
+
+**Cosa NON è nel contratto pubblico.** La doc nomina il campo, la sua semantica di sostituzione e il requisito «must match the tool's output shape», ma **non pubblica lo schema per-tool** (le forme di `Read`, `Grep`, `Glob`, `Edit`, `Write`: §8.2) né la regola esatta di validazione. La sostituzione e la sua validazione di forma sono quindi **documentate in prosa**, con un solo esempio (il `Bash`), mentre le forme effettive sono reperibili solo nell'artefatto di prima parte (il `d.ts` e il binario).
+
+### 8.2 Quali tool, quali forme d'uscita, e cosa succede se la forma non combacia (Q2)
+
+**Quali tool.** `updatedToolOutput` «works for all tools»; `updatedMCPToolOutput` è la variante **solo-MCP**, che la doc stessa sconsiglia («Prefer `updatedToolOutput`»).
+
+**Cosa succede se la forma non combacia.** Warning verbatim dalla doc:
+
+> `updatedToolOutput` only changes what Claude sees. The tool has already run by the time the hook fires, so any files written, commands executed, or network requests sent have already taken effect. Telemetry such as OpenTelemetry tool spans and analytics events also captures the original output before the hook runs. To prevent or modify a tool call before it runs, use a `PreToolUse` hook instead.
+>
+> The replacement value must match the tool's output shape. Built-in tools return structured objects rather than plain strings. For example, `Bash` returns an object with `stdout`, `stderr`, `interrupted`, and `isImage` fields. For built-in tools, a value that doesn't match the tool's output schema is ignored and the original output is used. MCP tool output is passed through without schema validation. Stripping error details that Claude needs can cause it to proceed on a false assumption.
+
+Quindi: **tool interni** → se la forma non combacia, la sostituzione è **ignorata in silenzio** e resta l'originale; **tool MCP** → nessuna validazione di schema, il valore passa così com'è. La trappola dichiarata: togliere dettagli d'errore che servono può far procedere il modello su un'assunzione falsa.
+
+Esempio verbatim (sostituzione di un output `Bash`, forma a quattro campi):
 
 ```json
 {
-  "description": "Automatic code formatting",
-  "hooks": {
-    "PostToolUse": [
-      {
-        "matcher": "Write|Edit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/format.sh",
-            "args": [],
-            "timeout": 30
-          }
-        ]
-      }
-    ]
+  "hookSpecificOutput": {
+    "hookEventName": "PostToolUse",
+    "additionalContext": "Additional information for Claude",
+    "updatedToolOutput": {
+      "stdout": "[redacted]",
+      "stderr": "",
+      "interrupted": false,
+      "isImage": false
+    }
   }
 }
 ```
 
-Da plugins/components: il file va in `hooks/hooks.json` alla radice del plugin, "under a top-level `\"hooks\"` key, in the same shape as the `hooks` object in `settings.json`. That lets you copy an existing settings hook in unchanged." Gli hook del plugin si registrano quando la sessione carica il plugin, senza attendere l'invocazione di una sua skill/comando.
+**Le forme effettive per-tool.** Solo `Bash` è esemplificato nella doc pubblica. Le forme qui sotto vengono dal `d.ts` di prima parte `C:\nvm4w\nodejs\node_modules\@anthropic-ai\claude-code\sdk-tools.d.ts` (pacchetto npm **2.1.276**: **indietro di 20 patch** rispetto all'estensione 2.1.296 in uso — vanno riconfermate contro l'host che gira). Non sono contratto pubblico: il `d.ts` è generato, cambia fra versioni e non nomina affatto gli hook.
 
-Chiave `hooks` del manifest (plugins/manifest-reference): accetta un path a file `.json`, un oggetto inline, o un array che mescola i due. "A hooks file wraps the event map in a top-level `\"hooks\"` key … A file that contains only the event map, without that wrapper, fails to load. An inline object is the event map itself, with no wrapper." Claude Code fonde quanto dichiarato con `hooks/hooks.json` quando il file esiste.
+| Tool | Forma dell'output (verbatim dal d.ts) | Righe |
+|---|---|---|
+| `Bash` | `export interface BashOutput` — `stdout: string`, `stderr: string`, `rawOutputPath?: string`, `interrupted: boolean`, più facoltativi (`isImage?`, `backgroundTaskId?`, `timedOutAfterMs?`, `persistedOutputPath?`, `persistedOutputSize?`, `returnCodeInterpretation?`, `staleReadFileStateHint?`, `gitOperation?`, …) | 3267–3372 |
+| `Read` | `export type FileReadOutput =` — unione discriminata su `type`: ramo `"text"` con oggetto `file { filePath; content; numLines; startLine; totalLines; truncatedByTokenCap? }`, ramo `"image"` con `file { base64; type; originalSize; dimensions? }` | 208–… |
+| `Grep` | `export interface GrepOutput { mode?; numFiles; filenames; content?; numLines?; numMatches?; totalFiles?; totalLines?; appliedLimit?; appliedOffset? }` | 3526–3537 |
+| `Glob` | `export interface GlobOutput { durationMs; numFiles; filenames; truncated; totalMatches?; countIsComplete? }` — **soli metadati**: nessun testo da comprimere | 3500–3525 |
+| `Edit` | `export interface FileEditOutput { filePath; oldString; newString; originalFile; structuredPatch[]; userModified; replaceAll; gitDiff?; staged? }` | 3400–3451 |
+| `Write` | `export interface FileWriteOutput { type: "create" \| "update"; filePath; content; structuredPatch[]; originalFile; gitDiff?; userModified?; staged? }` | 3452–3499 |
 
-### 8.2 Forma `settings.json`
+Tipo `Bash` verbatim (estratto):
 
-In un file di impostazioni la chiave top-level è `hooks`, e dentro stanno gli eventi; tre livelli di annidamento: (1) l'[hook event], es. `PreToolUse` o `Stop`; (2) un [matcher group]; (3) uno o più [hook handler]. Esempio verbatim in §3.2.
-
-### 8.3 Frontmatter di skill e subagent
-
-Esempio di frontmatter di skill (verbatim):
-
-```yaml
----
-name: secure-operations
-description: Perform operations with security checks
-hooks:
-  PreToolUse:
-    - matcher: "Bash"
-      hooks:
-        - type: command
-          command: "./scripts/security-check.sh"
----
+```ts
+export interface BashOutput {
+  /** The standard output of the command */
+  stdout: string;
+  /** The standard error output of the command */
+  stderr: string;
+  /** Path to raw output file for large MCP tool outputs */
+  rawOutputPath?: string;
+  /** Whether the command was interrupted */
+  interrupted: boolean;
+  /** Flag to indicate if stdout contains image data */
+  isImage?: boolean;
+  // …
+  /** Path to the persisted full output in tool-results dir (set when output is too large for inline) */
+  persistedOutputPath?: string;
+  /** Total size of the output in bytes (set when output is too large for inline) */
+  persistedOutputSize?: number;
+  // …
+}
 ```
 
-Riga frontmatter `hooks`, verbatim da `https://code.claude.com/docs/en/skills`:
+**Corroborazione dal binario 2.1.296** (prova su disco, `grep -a` sulle stringhe di `claude.exe`): la stringa di log della validazione di forma recita «`updatedToolOutput that does not match `…`'s output shape: reason=`…` detailChars=`…» e termina «`'s output shape; using original output.`» — cioè il binario conferma il ripiego silenzioso sull'originale. Il binario porta anche lo schema Zod del campo: `updatedToolOutput:oe().optional().describe("Replaces the tool output before it is sent to the model")` e `updatedMCPToolOutput:…describe("Replaces the output for MCP tools only. Prefer updatedToolOutput, which works for all tools")`.
 
-> | `hooks` | No | Hooks that Claude Code registers when the skill is invoked and keeps running for the rest of the session. |
+### 8.3 Interferenza con altre funzioni documentate (Q4)
 
-Note su skill/subagent (verbatim):
+**(a) Il tracciamento dei file cambiati che l'host deriva da `Bash`.** Esiste ed è documentato — e il nome è `bashEditDiff`. Verbatim dalla doc (§ `PostToolUse`):
 
-> **Subagent hooks**: Claude Code runs them only while that subagent is running and removes them when it finishes. Claude Code converts a `Stop` hook here to `SubagentStop`, the event it fires when a subagent completes.
+> When a Bash command changes files in a Git repository, Claude Code can record what changed. It records the changes in every permission mode when the `bashEditDiffEnabled` setting turns recording on; … Otherwise it records them only in auto mode and `bypassPermissions` mode, and only when Claude Code directs Claude to edit files through Bash. Set `bashEditDiffEnabled` to `false` to turn the recording off. Background commands and read-only commands carry no diff.
+>
+> Your `PostToolUse` hook then receives the changed files in `tool_response.bashEditDiff`. … Requires Claude Code v2.1.269 or later.
 
-> **Skill hooks**: Claude Code registers them when you or Claude invoke the skill and keeps running them for the rest of the session, on turns after the skill's own turn as well. To have Claude Code remove a hook after its first successful run instead, set `once: true` on it.
+Campi del blocco `bashEditDiff` (verbatim): `changedFiles` (path assoluti, max 200), `files` (diff di max 5 file), `moreFiles`, `unavailable`, `skipped`, `shared`. Caveat dichiarato: «The list is best effort and in public beta. Claude Code can miss a change, include a file that another process changed at the same time, or stop at its size limits. The field shape may change. Use the list to find what to review, not to enforce a policy.»
+**Interferenza con la sostituzione: `[non documentato]`.** Il diff è calcolato a monte (via git) e consegnato **dentro `tool_response`**, che l'hook riceve comunque; il Warning su `updatedToolOutput` nomina solo la telemetria (OpenTelemetry/analytics), **non** `bashEditDiff`. La forma di sostituzione dichiarata per `Bash` (§8.2) non contiene alcun campo `bashEditDiff`. Che il rimpiazzo tocchi il tracciamento è `[non documentato]`.
+Nota: il checkpoint/file-history **non** deriva da `Bash` — la doc `checkpointing` è esplicita («Checkpointing does not track files modified by Bash commands … Only direct file edits made through Claude's file editing tools are tracked»).
 
-### 8.4 Cosa si fonde e cosa resta separato
+**(b) Le diagnosi dell'IDE dell'estensione VSCode.** La doc di prima parte le documenta solo come **tool MCP a richiesta** (`mcp__ide__getDiagnostics`, e dal pannello chat `mcp__claude-vscode__getDiagnostics`, «Claude Code v2.1.285 or later»), e parla in generale di «diagnostic sharing»: `https://code.claude.com/docs/en/ide-integrations`. Che vengano **iniettate automaticamente sul `PostToolUse` di `Edit`** (blocco `<ide_diagnostics>` nel tool result) è affermato **solo da issue di terze parti** (`anthropics/claude-code` #59160 chiusa, #96742 aperta), non dalla doc. **Che la sostituzione dell'output interferisca con le diagnosi iniettate è `[non documentato]`** da ogni fonte.
 
-- Plugin abilitato → i suoi hook si fondono con user e project hooks.
-- `hooks/hooks.json` e la chiave `hooks` del manifest caricano entrambi; il manifest si fonde col file.
-- Frontmatter di **agent di plugin**: `hooks`, `permissionMode`, `mcpServers`, `initialPrompt` sono **ignorati** — "An agent file can't add hooks or MCP servers on its own". Il campo `once: true` è onorato **solo** per hook dichiarati nel frontmatter di una skill, ignorato nei settings file e nel frontmatter di un agent.
+**(c) Il path dell'output grezzo che un esito di `Bash` può portarsi dietro.** Il **comportamento** è documentato (doc `tools-reference`, § *Output limits*): quando l'output supera la soglia inline, «past that, the path of a file saved to the session directory and truncated past 64 MiB, plus a preview of up to the first 2,000 characters, and Claude reads or searches the file when it needs the rest». Ma **il nome di un campo che porti quel path non è documentato**: nella forma d'uscita di `Bash` dichiarata per gli hook (`stdout`, `stderr`, `interrupted`, `isImage`, §8.2) il path **non c'è** — è **testo dentro l'output**. Il `d.ts` lo espone come `rawOutputPath?` (commento: «Path to raw output file for large MCP tool outputs») e come `persistedOutputPath?`+`persistedOutputSize?` («set when output is too large for inline»): **campi dell'artefatto di prima parte, non del contratto pubblico** → `[non documentato]` nella doc.
+Conseguenza operativa: una sostituzione `Bash` con la forma a quattro campi **sopprime** il riferimento al file grezzo; non esiste un campo strutturato documentato da preservare al suo posto.
+
+### 8.4 Limiti dichiarati: dimensione, timeout, comando fallito (Q5)
+
+**Dimensione.** La cap documentata è: «A hook's `additionalContext`, `systemMessage`, and `initialUserMessage` strings, and its plain stdout, are capped at 10,000 characters», con ricaduta su file + preview quando la si supera, e «this cap has no setting or environment variable to raise it» (§6.5). **`updatedToolOutput` NON è nominato in quella cap** → nessun limite di dimensione **documentato** sulla stringa sostitutiva; il vincolo dichiarato resta **la forma** (§8.2). Se una sostituzione enorme sia comunque limitata è `[non documentato]`.
+
+**Timeout.** Default per tipo: `command`/`http`/`mcp_tool` = **600 secondi (10 minuti)**, **non ridotto** su `PostToolUse` (le riduzioni a 30s/10s riguardano `UserPromptSubmit`, `PreModelSwitch`, `PostModelSwitch`, `MessageDisplay`; default completi in §9 e §11). Regola generale allo scadere (verbatim): «Apart from a command hook you run with `async: true`, Claude Code cancels a `command`, `http`, or `mcp_tool` hook that reaches its `timeout`, discarding the hook's output, so on most events a timed-out hook renders no decision.» ⇒ un hook di sostituzione andato in timeout **non sostituisce nulla**.
+
+**Comando fallito (uscita diversa da zero) — provato sull'host.** `PostToolUse` scatta «after a tool call **succeeds**»; `PostToolUseFailure` «after a tool call **fails**». La doc definisce il fallimento come «the tool threw an error, or an MCP tool returned an error result», lasciando ambiguo il caso di un `Bash` che esce non-zero. La prova (2026-10-12) lo scioglie: con un hook sui due eventi, matcher `Bash`, in una cartella temporanea isolata:
+
+- comando `exit 5` → registra **`POSTTOOLUSEFAILURE`**;
+- comando `echo ok` → registra **`POSTTOOLUSE`**.
+
+Quindi un comando `Bash` che esce **diverso da zero** viene classificato come **tool fallito**: passa da **`PostToolUseFailure`**, non da `PostToolUse`. Di conseguenza **`updatedToolOutput` non si applica a un comando fallito** (è un campo di `PostToolUse`, e `PostToolUseFailure` non lo accetta — i suoi campi `hookSpecificOutput` sono solo `additionalContext`; vedi §4 e la richiesta di feature ancora aperta `anthropics/claude-code#97278` «Let PostToolUseFailure hooks replace the error output the model sees», **terza parte**). Una build o una suite che fallisce produce quindi output **non comprimibile** con questo meccanismo: proprio il caso in cui l'output è più grande.
+
+**Altre limitazioni dichiarate.** Dalla guida hook: «`PostToolUse` hooks can't undo actions since the tool has already executed.» E il Warning già citato (§8.2): la sostituzione cambia solo ciò che vede il modello, non ciò che è avvenuto, e la telemetria cattura l'output originale prima dell'hook.
 
 ---
 
@@ -820,7 +889,7 @@ Comportamento allo scadere (verbatim):
 
 ### 11.1 Hook asincroni (`async: true`)
 
-Confermato verbatim (campi `command`): `async` = «runs in the background without blocking»; `asyncRewake` = «runs in the background and wakes Claude on exit code 2. The hook's stderr, or stdout if stderr is empty, is shown to Claude as a system reminder so it can react to a long-running background failure».
+Confermato verbatim (campi `command`, §9): `async` = «runs in the background without blocking»; `asyncRewake` = «runs in the background and wakes Claude on exit code 2. The hook's stderr, or stdout if stderr is empty, is shown to Claude as a system reminder so it can react to a long-running background failure».
 
 Confermato: il `timeout` **non è imposto** su un command hook con `async: true` — «Claude Code doesn't enforce it on a command hook you run with `async: true`».
 
@@ -829,6 +898,8 @@ Confermato: il `timeout` **non è imposto** su un command hook con `async: true`
 ---
 
 ## 12. Input comune su stdin
+
+### 12.1 Campi comuni
 
 Ogni hook riceve su stdin i campi comuni (verbatim dalla tabella *Common input fields*):
 
@@ -843,14 +914,18 @@ Ogni hook riceve su stdin i campi comuni (verbatim dalla tabella *Common input f
 | `effort` | Object with a `level` field holding the effort level in effect when the hook runs: `"low"`, `"medium"`, `"high"`, `"xhigh"`, or `"max"`. … The level is also available to hook commands and the Bash tool as the `$CLAUDE_EFFORT` environment variable. |
 | `hook_event_name` | Name of the event that fired |
 
-In subagent / con `--agent`, due campi in più (verbatim):
+### 12.2 Campi in subagent / con `--agent`
+
+Due campi in più (verbatim):
 
 | Field | Description |
 | :- | :- |
 | `agent_id` | Unique identifier for the subagent. Present only when the hook fires inside a subagent call. |
 | `agent_type` | Agent name (for example, `"Explore"` or `"security-reviewer"`). Present when the session uses `--agent` or the hook fires inside a subagent. |
 
-Esempio di stdin per un `PreToolUse` (verbatim):
+### 12.3 Esempio di stdin per `PreToolUse`
+
+Verbatim:
 
 ```json
 {
@@ -872,7 +947,30 @@ Esempio di stdin per un `PreToolUse` (verbatim):
 }
 ```
 
-I canali: «Command hooks receive JSON data via stdin and communicate results through exit codes, stdout, and stderr. HTTP hooks receive the same JSON as the POST request body and communicate results through the HTTP response body.»
+### 12.4 Input specifico di `PostToolUse`
+
+**Nomi esatti documentati nell'input di `PostToolUse`:** `tool_input` (argomenti), **`tool_response` (il risultato)**, `tool_use_id`, `duration_ms`, più i campi comuni (`session_id`, `prompt_id`, `transcript_path`, `cwd`, `scratchpad_dir`, `permission_mode`, `effort`, `hook_event_name`, §12.1) e, nei subagent, `agent_id`/`agent_type` (§12.2). Esempio verbatim dell'input `PostToolUse`:
+
+```json
+{
+  "session_id": "abc123",
+  "transcript_path": "/Users/.../.claude/projects/.../00893aaf-19fa-41d2-8238-13269b9b3ca0.jsonl",
+  "cwd": "/Users/...",
+  "permission_mode": "default",
+  "hook_event_name": "PostToolUse",
+  "tool_name": "Write",
+  "tool_input": { "file_path": "/path/to/file.txt", "content": "file content" },
+  "tool_response": { "filePath": "/path/to/file.txt", "type": "create" },
+  "tool_use_id": "toolu_01ABC123...",
+  "duration_ms": 12
+}
+```
+
+(Soglie di versione di questi campi — `scratchpad_dir`, `duration_ms`, `tool_response`, e l'evento `PostToolUseFailure` — in §16.2.)
+
+### 12.5 Canali
+
+«Command hooks receive JSON data via stdin and communicate results through exit codes, stdout, and stderr. HTTP hooks receive the same JSON as the POST request body and communicate results through the HTTP response body.»
 
 ---
 
@@ -1007,9 +1105,83 @@ Quindi per il tool `Read` l'input contiene **`file_path`** (confermato, ed è un
 
 ---
 
-## 14. Sicurezza, diagnosi e validazione
+## 14. Forme di configurazione: plugin, settings, frontmatter
 
-### 14.1 Controlli amministrativi
+### 14.1 Forma plugin — `hooks/hooks.json`
+
+Verbatim:
+
+> Define plugin hooks in `hooks/hooks.json` with an optional top-level `description` field. When a plugin is enabled, its hooks merge with your user and project hooks.
+
+Esempio verbatim (wrapper `hooks`, `description` top-level, exec form con `args: []`):
+
+```json
+{
+  "description": "Automatic code formatting",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/format.sh",
+            "args": [],
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+Da plugins/components: il file va in `hooks/hooks.json` alla radice del plugin, "under a top-level `\"hooks\"` key, in the same shape as the `hooks` object in `settings.json`. That lets you copy an existing settings hook in unchanged." Gli hook del plugin si registrano quando la sessione carica il plugin, senza attendere l'invocazione di una sua skill/comando.
+
+Chiave `hooks` del manifest (plugins/manifest-reference): accetta un path a file `.json`, un oggetto inline, o un array che mescola i due. "A hooks file wraps the event map in a top-level `\"hooks\"` key … A file that contains only the event map, without that wrapper, fails to load. An inline object is the event map itself, with no wrapper." Claude Code fonde quanto dichiarato con `hooks/hooks.json` quando il file esiste.
+
+### 14.2 Forma `settings.json`
+
+In un file di impostazioni la chiave top-level è `hooks`, e dentro stanno gli eventi; tre livelli di annidamento: (1) l'[hook event], es. `PreToolUse` o `Stop`; (2) un [matcher group]; (3) uno o più [hook handler]. Esempio verbatim in §3.2.
+
+### 14.3 Frontmatter di skill e subagent
+
+Esempio di frontmatter di skill (verbatim):
+
+```yaml
+---
+name: secure-operations
+description: Perform operations with security checks
+hooks:
+  PreToolUse:
+    - matcher: "Bash"
+      hooks:
+        - type: command
+          command: "./scripts/security-check.sh"
+---
+```
+
+Riga frontmatter `hooks`, verbatim da `https://code.claude.com/docs/en/skills`:
+
+> | `hooks` | No | Hooks that Claude Code registers when the skill is invoked and keeps running for the rest of the session. |
+
+Note su skill/subagent (verbatim):
+
+> **Subagent hooks**: Claude Code runs them only while that subagent is running and removes them when it finishes. Claude Code converts a `Stop` hook here to `SubagentStop`, the event it fires when a subagent completes.
+
+> **Skill hooks**: Claude Code registers them when you or Claude invoke the skill and keeps running them for the rest of the session, on turns after the skill's own turn as well. To have Claude Code remove a hook after its first successful run instead, set `once: true` on it.
+
+### 14.4 Cosa si fonde e cosa resta separato
+
+- Plugin abilitato → i suoi hook si fondono con user e project hooks.
+- `hooks/hooks.json` e la chiave `hooks` del manifest caricano entrambi; il manifest si fonde col file.
+- Frontmatter di **agent di plugin**: `hooks`, `permissionMode`, `mcpServers`, `initialPrompt` sono **ignorati** — "An agent file can't add hooks or MCP servers on its own". Il campo `once: true` è onorato **solo** per hook dichiarati nel frontmatter di una skill, ignorato nei settings file e nel frontmatter di un agent.
+
+---
+
+## 15. Sicurezza, diagnosi e validazione
+
+### 15.1 Controlli amministrativi
 
 Avvertenza sui codici di uscita: **§7.2.2** ("If your hook is meant to enforce a policy, use `exit 2`").
 
@@ -1021,13 +1193,13 @@ Controlli amministrativi (verbatim):
 - `httpHookAllowedEnvVars`: «when defined, Claude Code interpolates only the environment variables on that list into hook headers».
 - Workspace trust: «Frontmatter hooks in a project skill follow the workspace trust rule; project subagent frontmatter hooks run only after you accept the workspace trust dialog. A `-p` session doesn't count.»
 
-Hooks da settings, managed policy e plugin **girano anche dentro i subagent**, con `agent_id` e `agent_type` fra i campi comuni di input (§12).
+Hooks da settings, managed policy e plugin **girano anche dentro i subagent**, con `agent_id` e `agent_type` fra i campi comuni di input (§12.2).
 
-### 14.2 Limite d'ambiente
+### 15.2 Limite d'ambiente
 
 «On macOS and Linux, command hooks run in their own session without a controlling terminal. The hook process and any child processes can't open `/dev/tty`…». Per parlare all'utente: `systemMessage` in output JSON o `terminalSequence`.
 
-### 14.3 Diagnosi
+### 15.3 Diagnosi
 
 - `/hooks` — «Type `/hooks` in Claude Code to open a read-only browser for your configured hooks. The list labels each hook with where it comes from, such as user settings, project settings, local settings, a plugin, or the current session.» `All events` in fondo elenca anche gli eventi senza hook configurati.
 - `Ctrl+O` apre la vista transcript; i hook riusciti non mostrano nulla di default.
@@ -1035,13 +1207,15 @@ Hooks da settings, managed policy e plugin **girano anche dentro i subagent**, c
 - Errori tipici: «Hook not firing» (matcher case-sensitive), «Hook error in output» (exit code inatteso, `command not found` → usare `${CLAUDE_PROJECT_DIR}` o `"args": []`), «Hook JSON has no effect» (output prima del JSON, o campo al livello sbagliato — es. `permissionDecision` va dentro `hookSpecificOutput`).
 - Disattivare: `"disableAllHooks": true` nei settings (rispetta la gerarchia managed); una singola voce si rimuove solo cancellandola dal file.
 
-### 14.4 Validazione del manifest
+### 15.4 Validazione del manifest
 
 `claude plugin validate` è il controllo autorevole del manifest. Nota di versione: i controlli sugli entry MCP del manifest "require Claude Code v2.1.281 or later"; il controllo dei path di `outputStyles`, `lspServers`, `monitors`, `themes` "requires Claude Code v2.1.283 or later" — **più recenti della versione in uso (2.1.276)**; su 2.1.276 quegli stessi campi possono produrre un warning `Unknown field` e far fallire una run `--strict`. `[to verify: comportamento effettivo di questi due controlli sulla 2.1.276 installata, non testato qui]`.
 
 ---
 
-## 15. Sintesi delle marcature di versione
+## 16. Soglie di versione e changelog
+
+### 16.1 Prima raccolta (2026-10-03), base 2.1.276
 
 | Fatto documentato | Soglia | Stato su 2.1.276 |
 |---|---|---|
@@ -1052,25 +1226,49 @@ Hooks da settings, managed policy e plugin **girano anche dentro i subagent**, c
 | Campi directory-listing senza warning in `validate` | "v2.1.281 or later" | **più recente** |
 | Controllo path `outputStyles`/`lspServers`/`monitors`/`themes` | "v2.1.283 or later" | **più recente** |
 
+### 16.2 Estensione (2026-10-12), base 2.1.296
+
+| Campo/evento | Versione introdotta | Fonte (verbatim) | Stato su 2.1.296 |
+|---|---|---|---|
+| `updatedToolOutput` | **2.1.121** (per *tutti* i tool; prima era solo-MCP) | Changelog ufficiale `## 2.1.121`: «PostToolUse hooks can now replace tool output for all tools via `hookSpecificOutput.updatedToolOutput` (previously MCP-only)» | Presente |
+| `updatedMCPToolOutput` | `[non documentato]` (esisteva già prima di 2.1.121; il changelog lo cita solo come «previously MCP-only») | Changelog `## 2.1.121`; doc attuale senza soglia | Presente |
+| `tool_response` (input) | `[non documentato]` — la doc lo nomina senza soglia di versione | Doc `### PostToolUse input`: «The input includes both `tool_input`, the arguments sent to the tool, and `tool_response`, the result it returned.» | Presente |
+| `scratchpad_dir` (input comune) | **v2.1.257 o successiva** | Doc `### Common input fields`: «… Requires Claude Code v2.1.257 or later» | Presente |
+| `classifierContext` | **v2.1.236 o successiva** | Doc `#### PostToolUse decision control`: «Requires Claude Code v2.1.236 or later» | Presente |
+| `duration_ms` (input) | **2.1.119** | Changelog `## 2.1.119`: «Hooks: `PostToolUse` and `PostToolUseFailure` hook inputs now include `duration_ms` (tool execution time, excluding permission prompts and PreToolUse hooks)» | Presente |
+| evento `PostToolUseFailure` | `[non documentato]` nel changelog della CLI; prima menzione ufficiale nello **SDK Python 0.1.26** (cli 2.1.27), prodotto distinto | SDK changelog `## 0.1.26`: «PostToolUseFailure hook event … Updated bundled Claude CLI to version 2.1.27» | Presente |
+
+Punti non chiusi: `updatedMCPToolOutput` (introduzione non datata), `tool_response` (versione non dichiarata) e l'evento `PostToolUseFailure` (nessuna soglia nel changelog della CLI) → `[non documentato]`.
+
 ---
 
-## 16. Avvio di slash-command o skill
+## 17. Nota di chiusura della prima raccolta (2026-10-03)
 
-### 16.1 Risposta esplicita: NO
+La versione **in uso in questa raccolta** (2.1.276) era **12 release indietro** rispetto all'ultima pubblicata allora (2.1.288). Emerso dalle fonti, in sintesi:
+
+- Nessuna prova che tra 2.1.277 e 2.1.288 sia stato introdotto un **nuovo evento hook**: le voci recuperate sono correzioni.
+- **Più recenti della 2.1.276**: i controlli MCP e sui path di `claude plugin validate` (v2.1.281 / v2.1.283).
+- Da confermare **sulla 2.1.276** (marcature `[to verify]` sparse nella nota, raccolte da `study` nel blocco finale): esistenza/campi di `UserPromptExpansion`, consegna di `additionalContext` su `PreToolUse`, campi di `additionalContext` su `PostToolBatch`/`PostModelSwitch`, cap a 10.000 caratteri, stabilità dello schema del transcript.
+
+---
+
+## 18. Avvio di slash-command o skill
+
+### 18.1 Risposta esplicita: NO
 
 Non esiste alcun evento dedicato all'avvio di una skill o di uno slash-command. Gli eventi documentati sono la «user-typed command expansion» (`UserPromptExpansion`, il più vicino a un avvio di slash-command), l'invocazione di una skill **da parte del modello** (osservabile solo come tool call `Skill`), e l'avvio di un **subagent** (`SubagentStart`). Nessuno dei tre si chiama "start di skill/slash-command".
 
-### 16.2 Nessun evento si chiama "skill start" o "command start"
+### 18.2 Nessun evento si chiama "skill start" o "command start"
 
 L'elenco completo dei **33** eventi è in §2.1. Nessun nome contiene "Skill" o "Command": non esiste `SkillStart`, `SkillInvoked`, `SlashCommandStart`, `CommandStart` o simili. L'unico evento con prefisso `Start` è `SubagentStart`, ed è ristretto ai subagent.
 
-### 16.3 `UserPromptExpansion` — il più vicino a un "avvio di slash-command"
+### 18.3 `UserPromptExpansion` — il più vicino a un "avvio di slash-command"
 
 Riga "When it fires" e campi `hookSpecificOutput` in §4; riga di `matcher` in §5 (`command name | your skill or command names`), che filtra cioè sul **nome del comando/skill** (senza `/` iniziale).
 
 **Comportamento**: è bloccante (exit code 2 = "Blocks the expansion"), supporta `decision: "block"` + `reason`, e il suo plain-text stdout viene aggiunto come contesto che Claude vede; il suo `additionalContext` viene iniettato «alongside the submitted prompt» (§6).
 
-**Campi ricevuti** — oltre ai campi comuni (`session_id`, `transcript_path`, `cwd`, `hook_event_name`, `permission_mode`, §12), riceve i campi specifici (da una copia verbatim della doc, `https://github.com/xiaolai/anthropic-docs` → `skills/claude-code/SKILL-hooks.md` — **fonte di terza parte**):
+**Campi ricevuti** — oltre ai campi comuni (`session_id`, `transcript_path`, `cwd`, `hook_event_name`, `permission_mode`, §12.1), riceve i campi specifici (da una copia verbatim della doc, `https://github.com/xiaolai/anthropic-docs` → `skills/claude-code/SKILL-hooks.md` — **fonte di terza parte**):
 
 - `expansion_type` — `"slash_command"` per skill/comandi custom, oppure `"mcp_prompt"` per i prompt di un server MCP;
 - `command_name` — il nome della skill/comando espanso (es. `"example-skill"`);
@@ -1080,7 +1278,7 @@ Riga "When it fires" e campi `hookSpecificOutput` in §4; riga di `matcher` in �
 
 `[to verify: i campi specifici di `UserPromptExpansion` provengono da un mirror di terza parte, non da code.claude.com]`.
 
-### 16.4 Le tre strade, distinte esplicitamente
+### 18.4 Le tre strade, distinte esplicitamente
 
 | Causa dell'avvio | Evento osservabile | Match su |
 |---|---|---|
@@ -1096,13 +1294,13 @@ Riga "When it fires" e campi `hookSpecificOutput` in §4; riga di `matcher` in �
 
 Il matcher è il `name` del frontmatter dell'agente (o l'identificatore plugin-scoped `my-plugin:db-agent`); il campo che l'hook riceve è `agent_type`. I subagent sono avviati tramite il **tool `Agent`** (in v2.1.63 il Task tool è stato rinominato Agent). Non esiste alcun evento `TaskStarted`. `[to verify: la rinominazione Task→Agent in v2.1.63]`.
 
-### 16.5 I "skill hooks" nel frontmatter NON sono un avvio
+### 18.5 I "skill hooks" nel frontmatter NON sono un avvio
 
-Le formule verbatim di **Subagent hooks** e **Skill hooks** sono in §8.3.
+Le formule verbatim di **Subagent hooks** e **Skill hooks** sono in §14.3.
 
 Chiarimento: qui il *momento* dell'invocazione della skill fa da **innesco per la registrazione** di hook dichiarati nella skill stessa. **Non è un hook che segnala l'avvio**: è un hook che la skill porta con sé e che poi continua a girare su eventi *successivi*. Per i subagent vale l'opposto: i loro frontmatter hook vivono solo durante l'esecuzione del subagent e uno `Stop` lì dentro diventa `SubagentStop`.
 
-### 16.6 Conclusione
+### 18.6 Conclusione
 
 - **Nessun evento dedicato all'avvio di skill/slash-command esiste.** La lista ufficiale dei 33 eventi non ne contiene uno con nome "skill start"/"command start"; l'unico `*Start` è `SubagentStart`.
 - Le alternative sono tre, e vanno scelte in base a *chi* innesca l'avvio:
@@ -1111,14 +1309,89 @@ Chiarimento: qui il *momento* dell'invocazione della skill fa da **innesco per l
   - **subagent** → `SubagentStart` (matcher = `agent_type`).
 - I **skill hooks** in frontmatter non colmano il vuoto: si *registrano* all'invocazione ma non emettono un evento "la skill è partita".
 
-**Nota di versione.** `UserPromptExpansion` è documentato nella doc attuale; **non è confermato che l'evento esistesse già nella versione in uso nel progetto (2.1.276)** — l'ultima pubblicata è 2.1.288 `[to verify: se `UserPromptExpansion` era presente ed equivalente in 2.1.276]`. Il resto (assenza di un evento skill/command-start, `SubagentStart`, `PreToolUse:Skill`, skill hooks in frontmatter) è stabile nella doc corrente.
+**Nota di versione.** `UserPromptExpansion` è documentato nella doc attuale; **non è confermato che l'evento esistesse già nella versione in uso nella prima raccolta (2.1.276)** — l'ultima pubblicata allora era 2.1.288 `[to verify: se `UserPromptExpansion` era presente ed equivalente in 2.1.276]`. Il resto (assenza di un evento skill/command-start, `SubagentStart`, `PreToolUse:Skill`, skill hooks in frontmatter) è stabile nella doc corrente.
 
 ---
 
-## 17. Nota di chiusura sulla versione in uso
+## 19. Consegna di `additionalContext` a un subagent — esperimento sull'host (2026-10-12, base 2.1.296)
 
-La versione in uso (2.1.276) è **12 release indietro** rispetto all'ultima pubblicata (2.1.288). Emerso dalle fonti, in sintesi:
+> Sperimentazione (2026-10-12), base **2.1.296**. Non è lettura di documentazione: ogni risposta è **provata eseguendo l'host**, col comando e la data, o dichiarata **`[non provato]`**. Chiude la domanda: per parlare a un subagent, la leva di contesto va in un hook `SubagentStart` **definito in un plugin** (sede **B**), o in una sede **provata** come `PreToolUse` (sede **A**)?
 
-- Nessuna prova che tra 2.1.277 e 2.1.288 sia stato introdotto un **nuovo evento hook**: le voci recuperate sono correzioni.
-- **Più recenti della 2.1.276**: i controlli MCP e sui path di `claude plugin validate` (v2.1.281 / v2.1.283).
-- Da confermare **sulla 2.1.276** (marcature `[to verify]` sparse nella nota, raccolte da `study` nel blocco finale): esistenza/campi di `UserPromptExpansion`, consegna di `additionalContext` su `PreToolUse`, campi di `additionalContext` su `PostToolBatch`/`PostModelSwitch`, cap a 10.000 caratteri, stabilità dello schema del transcript.
+### 19.1 Montaggio — usa-e-getta, fuori dalla configurazione dell'owner
+
+Plugin minimo (`plugin.json` + `hooks/hooks.json`) e progetto minimo in una cartella temporanea, caricati per-sessione con `--plugin-dir`; **nessuna scrittura** in `~/.claude/settings.json`, in `.claude/settings.json` del repository, nella cache dei plugin installati o nei progetti ospiti. Gli hook sono in **exec form** (`command: "node"`, `args: ["…/hook.js"]`), così da girare identici su Windows:
+
+```json
+{
+  "hooks": {
+    "SubagentStart": [
+      { "hooks": [ { "type": "command", "command": "node", "args": ["${CLAUDE_PLUGIN_ROOT}/hook.js"], "timeout": 15 } ] }
+    ],
+    "PreToolUse": [
+      { "matcher": "", "hooks": [ { "type": "command", "command": "node", "args": ["${CLAUDE_PLUGIN_ROOT}/hook.js"], "timeout": 15 } ] }
+    ],
+    "PostToolUse": [
+      { "matcher": "", "hooks": [ { "type": "command", "command": "node", "args": ["${CLAUDE_PLUGIN_ROOT}/hook.js"], "timeout": 15 } ] }
+    ]
+  }
+}
+```
+
+`hook.js` appende a un log ogni input ricevuto e restituisce su stdout, per evento, un `additionalContext` distinto: `SubagentStart` → `DAIKU-SAHEAD-CANARY-ZEBRA7` + 11.000 `x` + `DAIKU-SATAIL-CANARY-MOOSE9`; `PreToolUse` → `DAIKU-PRETOOL-CANARY-OTTER3`; `PostToolUse` → `DAIKU-POSTTOOL-CANARY-LYNX5`. Il subagent (`probe`, via `--agents`) riporta ogni stringa `DAIKU-` del suo contesto **prima** di ogni tool, poi esegue una volta `bash: echo probe-done`, poi riporta di nuovo, e infine scrive il resoconto su file. Comando:
+
+```bash
+claude.exe -p "<prompt del padre che avvia il subagent probe>" \
+  --plugin-dir <plugin> --agents <agents.json> \
+  --permission-mode bypassPermissions --setting-sources project \
+  --output-format stream-json --verbose --forward-subagent-text
+```
+
+`--setting-sources project` tiene fuori i settings utente, quindi sul corpo dell'esperimento non gira nessun hook del plugin installato dall'owner. Host: binario nativo dell'estensione in uso, **2.1.296** (`anthropic.claude-code-2.1.296-win32-x64`; `claude.exe --version` → `2.1.296`). Cartella temporanea rimossa a fine esperimento.
+
+### 19.2 Q1 — un hook `SubagentStart` di un plugin consegna il testo al subagent? **`[provato]` Sì.**
+
+L'issue `anthropics/claude-code#16538` (plugin `SessionStart` che non consegna `additionalContext`) **non si estende a `SubagentStart`** su questa versione. Prove (2026-10-12):
+
+- il log dell'hook registra che `SubagentStart` è scattato, dal plugin: `SubagentStart | agent_id=afd86ebfb7affacd8 | agent_type=probe`;
+- il subagent, **nel suo primissimo messaggio** — prima di qualunque tool — riporta `DAIKU-SAHEAD-CANARY-ZEBRA7` (la testa del testo iniettato). Nel **suo** transcript il testo compare come attachment `hook_additional_context` (hookName `SubagentStart`), agganciato al turno-task.
+
+`[non provato]` che `SessionStart` da plugin resti rotto su 2.1.296: non testato qui, la domanda riguardava `SubagentStart`.
+
+### 19.3 Q2 — una sede provata dentro un subagent, e un hook di plugin gira davvero lì? **`[provato]` Sì (entrambe).**
+
+La premessa di Q2 («se Q1 è no») non ricorre, ma le due sotto-domande hanno risposta:
+
+- un hook dichiarato in `hooks/hooks.json` di un plugin **gira anche dentro un subagent**, con `agent_id` e `agent_type` presenti. Log (2026-10-12): `PreToolUse | agent_id=a23f0987a87165394 | agent_type=probe | tool=Bash`, poi `PostToolUse` idem, poi `PreToolUse`/`PostToolUse | tool=Write` — tutti con lo stesso `agent_id`;
+- `PreToolUse.additionalContext` **consegna al subagent** il testo accanto al risultato del tool. Nel transcript del subagent l'attachment `hook_additional_context` (hookName `PreToolUse:Bash`, contenuto `DAIKU-PRETOOL-CANARY-OTTER3`) sta **prima** del `tool_result`; il subagent lo riporta nella fase 3 della sua relazione, insieme a `DAIKU-POSTTOOL-CANARY-LYNX5`.
+
+### 19.4 Q3 — il testo arriva prima del primo prompt del subagent?
+
+Il testo è nel contesto del subagent **già al suo primo turno di modello**, prima che produca qualsiasi risposta `[provato]`: il suo primo messaggio lo contiene. Nel transcript, però, l'attachment del contesto è **annidato sul messaggio-task** (`user: "Begin"` → `hook_success SubagentStart` → `hook_additional_context SubagentStart`), cioè **dopo** il task, non prima. La formula della doc «at the start of the conversation, before the first prompt» va quindi letta come **«prima che il subagent risponda»**, non «prima che il task gli sia consegnato»; oltre questo, se il testo sia inserito immediatamente prima o insieme al task nel prompt di modello **non è osservabile** dall'esterno `[non provato]`.
+
+### 19.5 Q4 — la cap di 10.000 caratteri vale anche su `SubagentStart`? **`[provato]` Sì.**
+
+Con un `additionalContext` di ~11.000 caratteri, il subagent ha visto **solo** la testa (`DAIKU-SAHEAD-…ZEBRA7`) seguita da una lunga coda di `x`, e **nessuna** `MOOSE9` (il tail): il testo consegnato era una **preview**. Il transcript del subagent lo conferma alla lettera — il valore consegnato è stato sostituito con (verbatim):
+
+```
+<persisted-output>
+Output too large (10.8KB). Full output saved to: C:\Users\…\tool-results\hook-302de950-50fb-4c61-a31c-ef62d2e53c90-1-additionalContext.txt
+
+Preview (first 2KB):
+DAIKU-SAHEAD-CANARY-ZEBRA7 xxxxxx…
+```
+
+Il file `…-additionalContext.txt` (11.054 byte) contiene il testo **intero**, tail incluso. Coerente con la §6.5: la stringa oltre i 10.000 caratteri viene scritta in un file della session directory e sostituita con il path e una preview dei primi ~2.000 caratteri. Conseguenza operativa: un contesto per il subagent va tenuto **entro i 10.000 caratteri**, o il subagent ne vede solo la preview.
+
+### 19.6 Q5 — i campi del payload di `SubagentStart` da plugin
+
+Un hook `SubagentStart` definito in un plugin riceve (chiavi osservate, verbatim, 2026-10-12):
+
+```
+session_id, transcript_path, cwd, prompt_id, agent_id, agent_type, hook_event_name
+```
+
+Il `session_id` è quello della sessione **padre** `[provato]`: coincide con il `session_id` della sessione principale (`3537b103-1bc5-45cc-b9ea-182dbbe42146` in entrambe le viste). `agent_id` e `agent_type` sono presenti (il tipo è il nome dell'agente, `probe`).
+
+### 19.7 Conclusione — la sede B è utilizzabile
+
+Un hook `SubagentStart` **definito in un plugin** consegna davvero `additionalContext` al subagent su **2.1.296** `[provato]`: la sede **B** funziona, con la stessa cap degli altri eventi (10.000 caratteri per stringa, oltre i quali scatta la persistenza su file). In alternativa, la sede **A** `PreToolUse.additionalContext` consegna anch'essa dentro un subagent — ma **dopo** la prima chiamata di tool, non prima della prima richiesta.

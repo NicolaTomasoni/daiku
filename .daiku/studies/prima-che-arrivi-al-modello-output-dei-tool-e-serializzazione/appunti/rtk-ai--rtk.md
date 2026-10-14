@@ -65,8 +65,8 @@ Nessuna.
   famiglia comprime l'output (git, test, build, lint, container, cloud…), con quattro strategie, una
   DSL TOML a 8 stadi più filtri Rust nativi, e le guardie già citate (salto dell'output strutturato,
   dei redirect, `exclude_commands`, fail-open).
-- **Proposta:** è la feature `compressione-output-comandi` già abbozzata nel cantiere, e rtk ne è
-  un'istanza in produzione. Atterra in `plugins/daiku/hooks/lib/*.mjs` più una voce
+- **Proposta:** una capacità nuova, di cui rtk è un'istanza in produzione. Atterra in
+  `plugins/daiku/hooks/lib/*.mjs` più una voce
   `PreToolUse`/`PostToolUse` su `Bash` in `plugins/daiku/hooks/hooks.json`, col banco in
   `hooks/self-check.mjs`. Da rtk portare: (a) il **registro unico di regole** — gli hook delegati,
   una sola fonte (`rules.rs`); (b) la **tabella di famiglie** con le quattro strategie; (c) le
@@ -126,8 +126,7 @@ Nessuna.
 - **Proposta:** un programma in `plugins/daiku/architect/` che legge la trascrizione dell'host e
   riporta adozione e occasioni perse di B1, consumato da un hook esistente (`stop-advice.mjs`) o
   esposto da un comando, restando fedele alla regola di Daiku «un numero esiste solo se l'host l'ha
-  riportato» (mai stimato). Costo medio. Si sovrappone alla feature già abbozzata
-  `contabilita-contesto-runtime`: da rtk il delta è il `discover` sulle sessioni passate.
+  riportato» (mai stimato). Costo medio. Da rtk il delta è il `discover` sulle sessioni passate.
 
 ## Evidenza
 
@@ -161,6 +160,3 @@ Nessuna.
   regole.
 - Le 82 292 stelle sono il valore riportato dall'API al momento della lettura; non ho elementi per
   giudicarlo.
-- Esiste nel cantiere una feature abbozzata (`compressione-output-comandi`) che copre già il
-  meccanismo di B1 e parte di B2; non ho potuto decidere se questa corsa debba riusarla come sede o
-  se il suo stato sia cambiato.
