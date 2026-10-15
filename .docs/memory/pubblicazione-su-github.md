@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 69438169-0316-47c8-a4e8-3365650ee2cf
-  modified: 2026-10-12T12:11:43.036Z
+  modified: 2026-10-15T10:34:35.000Z
 ---
 
 **Dal 5 ottobre 2026 il repository è uno solo.** `NicolaTomasoni/daiku` su GitHub, privato finché
@@ -18,15 +18,17 @@ servizio — che esisteva perché il macchinario di pubblicazione ci copiava i f
 **ritirato**, e quel macchinario con lui. Il rilascio non ne ha bisogno: non si mette mai su
 production.
 
-`develop` **porta una beta**: il manifest dichiara la versione di `main` stessa, marcata con un
-contatore — `1.1.6-b.2` — scritto dopo un punto, perché `b10` verrebbe prima di `b9` in semver. Non è un rilascio e nessun rilascio la legge: il numero di
-un rilascio si deriva da `main` e si scrive su `main`, dove questa viene sovrascritta. Serve perché
-il pacchetto si installa anche dall'albero di sviluppo — il marketplace di questa macchina punta
-alla cartella di prodotto — ed è quella dichiarazione a far muovere la copia installata; sale quando
-sale la **forma** del pacchetto, cioè quando `init` avrebbe qualcosa da riportare nei progetti
-ospiti. La versione è in semver stretto, quindi la chiave non può mancare, e `plugins/CHANGELOG.md` non
-esiste su `develop`. `main` porta versione e changelog, ed è **una linea di rilasci**: non è antenata
-di `develop`, e niente di un rilascio torna indietro.
+`develop` **porta una beta**: il manifest dichiara il numero che `main` porta, marcato con un
+contatore — `b.2` — scritto dopo un punto, perché `b10` verrebbe prima di `b9` in semver. A
+muoverla è però un commit di sviluppo e **non il rilascio**: la beta sale quando sale la **forma**
+del pacchetto, cioè quando `init` avrebbe qualcosa da riportare nei progetti ospiti, quindi fra un
+rilascio e il commit che la sposta la sua base resta indietro di una versione. Non è un rilascio e
+nessun rilascio la legge: il numero di un rilascio si deriva da `main` e si scrive su `main`, dove
+questa viene sovrascritta. Serve perché il pacchetto si installa anche dall'albero di sviluppo — il
+marketplace di questa macchina punta alla cartella di prodotto — ed è quella dichiarazione a far
+muovere la copia installata. La versione è in semver stretto, quindi la chiave non può mancare, e
+`plugins/CHANGELOG.md` non esiste su `develop`. `main` porta versione e changelog, ed è **una linea
+di rilasci**: non è antenata di `develop`, e niente di un rilascio torna indietro.
 
 **I rilasci li fa Daiku stesso**, con la skill `release` del pacchetto e il programma
 `plugins/daiku/architect/release.mjs`. Il comando `/rilascia-daiku` e i due script PowerShell non
