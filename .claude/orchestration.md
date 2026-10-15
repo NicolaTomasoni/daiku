@@ -17,17 +17,11 @@ Nessuno dei due alberi aggiorna l'altro: il prodotto si modifica solo sotto `plu
 l'unico albero distribuito, e questo corpus non si allinea a lui per copia (`CLAUDE.md`, § *Prodotto
 e cantiere*).
 
-**Due differenze di forma rispetto al prodotto, decise per questo repo e non negoziabili qui:**
+**Una differenza di forma rispetto al prodotto, decisa per questo repo e non negoziabile qui:**
 
 - **Niente parametri.** I contratti di questo corpus non leggono un file di parametri: ogni path,
   ogni comando e ogni modello sono **scritti per esteso** dentro il contratto che li usa. Una graffa
   in un contratto di questo corpus è un refuso.
-- **Niente worktree.** Il prodotto consegna ogni feature su un worktree di un pool. Qui si lavora
-  sul **branch corrente dell'albero principale**: è l'owner ad aprire un branch, se vuole isolare
-  una consegna. **La regola non ha una motivazione scritta**, ed è dichiarato qui perché non la si
-  scambi per una dimenticanza: a un worktree di questo repository non mancherebbe niente —
-  conterrebbe anche `CLAUDE.md`, `.docs/` e questo corpus, che il repository traccia come il
-  prodotto. La decisione è dell'owner.
 
 ## Le sedi di questo progetto
 
@@ -205,11 +199,10 @@ sono **sempre** sequenziali: non sono serializzabili altrimenti, e qui la workin
 
 ## 7. Il gate di questo progetto
 
-È l'unico posto in cui il gate di questo repository è scritto, e lo esegue **chi sta per committare
-una modifica alla forma del pacchetto** — sempre `daiku:release`, a ogni rilascio, e a mano prima
-di una consegna che tocca manifest, contratti o hook. Il ciclo di `daiku:review` ha
-il proprio gate, che è il valutatore deterministico del prodotto (`plugins/daiku/architect/`), e
-non questo.
+Lo esegue **chi sta per committare una modifica alla forma del pacchetto** — sempre `daiku:release`,
+a ogni rilascio, e a mano prima di una consegna che tocca manifest, contratti o hook. Il ciclo di
+`daiku:review` ha il proprio gate, che è il valutatore deterministico del prodotto
+(`plugins/daiku/architect/`), e non questo.
 
 Si esegue dalla radice del repository, in quest'ordine, e si riporta l'esito **reale** di ciascun
 comando:
