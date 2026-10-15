@@ -772,8 +772,7 @@ function askRound(input) {
   const red = (current.check_fast || []).filter((entry) => entry.status === 'red').map((entry) => entry.area);
   const redTests = (current.check_tests || []).filter((entry) => entry.status === 'red').map((entry) => entry.area);
   let why;
-  if (severe >= 3) why = `rule 2: ${severe} severe fixes in round ${n}`;
-  else if (!rule('round.fast-check-green', !red.length && !redTests.length)) {
+  if (!rule('round.fast-check-green', !red.length && !redTests.length)) {
     const parts = [];
     if (red.length) parts.push(`the fast check is red on ${red.join(', ')}`);
     if (redTests.length) parts.push(`the targeted tests are red on ${redTests.join(', ')}`);
@@ -1915,9 +1914,9 @@ const CASES = [
   { id: 'round:rule-0-a-declared-oscillation-the-ledger-does-not-confirm', cites: { file: 'skills/review/SKILL.md', section: 'The two signals are verified, not accepted' },
     input: { question: 'round', rounds_cap: null, ledger: LEDGER([ROUND([], [{ file: 'a.mjs', symbol: 'f', current_anchor: 'x = 1', previous_anchor: 'x = 2' }])]) },
     expect: { verdict: 'fixed-point' } },
-  { id: 'round:rule-2-three-severe', cites: { file: 'skills/review/SKILL.md', section: 'When to run another round' },
+  { id: 'round:the-severe-count-is-not-a-trigger', cites: { file: 'skills/review/SKILL.md', section: 'When to run another round' },
     input: { question: 'round', rounds_cap: null, ledger: LEDGER([ROUND([FIX('a.mjs', 'f', '1', true), FIX('a.mjs', 'g', '2', true), FIX('b.mjs', 'h', '3', true)])]) },
-    expect: { verdict: 'continue' } },
+    expect: { verdict: 'merit' } },
   { id: 'round:rule-3-on-a-previous-fix', cites: { file: 'skills/review/SKILL.md', section: 'When to run another round' },
     input: { question: 'round', rounds_cap: null, ledger: LEDGER([ROUND([FIX('a.mjs', 'f', '1')]), ROUND([FIX('a.mjs', 'f', '2', false, true)])]) },
     expect: { verdict: 'continue' } },
@@ -1930,9 +1929,9 @@ const CASES = [
   { id: 'round:rule-3-merit-continue', cites: { file: 'skills/review/SKILL.md', section: 'When to run another round' },
     input: { question: 'round', rounds_cap: null, merit: 'continue', ledger: LEDGER([ROUND([FIX('a.mjs', 'f', '1')])]) },
     expect: { verdict: 'continue' } },
-  { id: 'round:merit-does-not-override-a-mechanical-rule', cites: { file: 'skills/review/SKILL.md', section: 'When to run another round' },
+  { id: 'round:merit-decides-over-three-severe', cites: { file: 'skills/review/SKILL.md', section: 'When to run another round' },
     input: { question: 'round', rounds_cap: null, merit: 'stop', ledger: LEDGER([ROUND([FIX('a.mjs', 'f', '1', true), FIX('a.mjs', 'g', '2', true), FIX('b.mjs', 'h', '3', true)])]) },
-    expect: { verdict: 'continue' } },
+    expect: { verdict: 'diminishing-returns' } },
   { id: 'round:exit-rounds-truncated', cites: { file: 'skills/review/SKILL.md', section: 'Exits' },
     input: { question: 'round', rounds_cap: 2, ledger: LEDGER([ROUND([FIX('a.mjs', 'f', '1')]), ROUND([FIX('a.mjs', 'f', '2', false, true)])]) },
     expect: { verdict: 'rounds-truncated' } },
