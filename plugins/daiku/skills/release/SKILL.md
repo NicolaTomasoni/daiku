@@ -19,7 +19,7 @@ keeps its own life.
 ## The two sides
 
 **Development carries a beta, and no changelog.** `{version.file}` stands there holding the number
-production carries now, marked as a beta with a counter — `1.2.2-b.2`. The counter goes **after a
+production carries now, marked as a beta with a counter — `1.2.2-b.3`. The counter goes **after a
 dot and is numeric**: `b.7`, never `b7`, which as
 an alphanumeric identifier semver orders `b10` before `b9`. The beta is not a release, and no
 release ever reads it: a release derives its number from production's own and writes it on
