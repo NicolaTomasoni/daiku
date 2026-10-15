@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: f135a876-1ccd-4db0-99e7-6c7abee5c262
-  modified: 2026-10-12T12:10:10.841Z
+  modified: 2026-10-15T09:39:20.000Z
 ---
 
 **Il prodotto ha il concetto di canale** (dal 3 ottobre 2026, ridisegnato il 5). Un progetto che lo
@@ -44,14 +44,25 @@ rilascio che nessun upstream porta) il rilascio lo **sostituisce**: i commit nuo
 quella versione invece di aprirne una. `action: "dry"` fa tutto tranne muovere il ref. Non pusha
 mai: [[push-solo-manuale]].
 
-**Il rilascio non parte da un albero sporco, e non lo rifiuta: lo pulisce** (dall'8 ottobre
-2026). Un rilascio porta l'albero di sviluppo **come i suoi commit lo tengono**, quindi il lavoro
-che sta nella worktree e in nessun commit uscirebbe dal rilascio senza che nessuno se ne accorga.
-`release` non lo scarta e non lo stash-a: lo fa passare per il ciclo di review col suo commit di
-chiusura — ed è così il **solo nodo che lancia `review` da fuori una consegna** — più un secondo
-`commit` per i path che quel ciclo non raggiunge; `architect/release.mjs` **rifiuta** un albero
-ancora non pulito, così un rilascio che non ha pulito non scrive niente. Release resta **atomico**:
-la pulizia non è una catena da ordinare (vedi [[valutatore-deterministico]]).
+Al **primo giro** chiede anche quali path non devono mai raggiungere production e registra la
+risposta in `release.never`, dentro `.daiku/project.json`. Quel record **lo committa il nodo stesso
+su `develop`** (`action: "record"`, stessa plumbing del rilascio: indice usa-e-getta, `commit-tree`,
+`update-ref`), perché lasciarlo non committato bloccherebbe **ogni rilascio successivo** al passo 1:
+un albero sporco di quel solo file non apre nessun ciclo di review — sotto `{code_root}` non
+differisce niente, lo scope torna vuoto, nessun ledger — e senza ledger la guardia nega il
+`git commit` che lo chiuderebbe.
+
+**Il rilascio non parte da un albero sporco: lo chiede, e solo la risposta decide** (la pulizia
+dall'8 ottobre 2026, la domanda dal 15). Un rilascio porta l'albero di sviluppo **come i suoi commit
+lo tengono**, quindi il lavoro che sta nella worktree e in nessun commit uscirebbe dal rilascio
+senza che nessuno se ne accorga. La domanda è il **primo atto** del giro, prima che parta qualunque
+subagent, perché la pulizia automatica costa un ciclo di review intero mentre il commit dell'owner
+dal suo terminale — che nessuna guardia copre — costa un minuto: `A` ferma il rilascio e lo lascia
+committare a lui, `B` lo fa pulire al nodo, che è il **solo nodo che lancia `review` da fuori una
+consegna** — ciclo di review col suo commit di chiusura, più un secondo `commit` per i path che quel
+ciclo non raggiunge. Senza canale verso l'owner vale `B`, e `detail` dice che la domanda non è stata
+posta. `architect/release.mjs` **rifiuta** un albero ancora non pulito, così un rilascio che non ha
+pulito non scrive niente (vedi [[valutatore-deterministico]]).
 
 **`commit` non scrive più versione né changelog dove i canali sono dichiarati.** Non è una
 conseguenza automatica della chiave: su `develop` la versione è una **beta** che si muove quando
