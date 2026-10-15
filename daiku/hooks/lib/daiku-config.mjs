@@ -1,12 +1,12 @@
 /**
  * Daiku's context on this project, read from `.daiku/project.json`.
  *
- * It exists because five of the six hooks need the same two facts — **did this
+ * It exists because six of the seven hooks need the same two facts — **did this
  * project open Daiku?** and **what did it declare?** — and because the answer cannot
  * sit hard-wired inside a hook: a package installed on a host runs on *every*
  * repository that host opens, including ones Daiku has never seen.
  *
- * Hence the rule governing four of the six hooks — `session-advice` excepted, which reports a
+ * Hence the rule governing five of the seven hooks — `session-advice` excepted, which reports a
  * `.daiku/` left halfway:
  *
  * > **Without `.daiku/project.json` the guards stay silent.** Not a degradation: the
@@ -38,7 +38,16 @@ const ABSENT = Object.freeze({
   writeRoots: Object.freeze([]),
   promptDumpChars: null,
   channels: null,
+  promptCap: null,
+  payloadCap: null,
 });
+
+/** A declared cap: a positive integer, or `null` for anything else — zero, negative, a string, a
+ *  missing key (§6 of the contract, applied to a hook: what the JSON does not declare does not
+ *  exist, and a value that is not a positive integer is *not declared*). */
+function positiveInt(value) {
+  return typeof value === 'number' && Number.isFinite(value) && value > 0 ? Math.floor(value) : null;
+}
 
 /** A path from the JSON, resolved against the technical root (§3 of the contract). */
 function resolvePath(value, root) {
@@ -88,6 +97,7 @@ export function loadContext(root, reads = REAL_READS) {
 
     const declared = json.guardrails;
     const channels = json.channels && typeof json.channels === 'object' ? json.channels : null;
+    const subagent = json.subagent && typeof json.subagent === 'object' ? json.subagent : null;
     const environment = readEnvironment(root, reads);
     return {
       present: true,
@@ -103,6 +113,11 @@ export function loadContext(root, reads = REAL_READS) {
       memoryRoot: resolvePath(json.memory && json.memory.root, root),
       writeRoots: environment.writeRoots,
       promptDumpChars: environment.promptDumpChars,
+      // The two caps of the `subagent` group. `prompt_cap` is the ceiling on the characters of a
+      // subagent's prompt, `payload_cap` the ceiling on the content a step hands a child. Both a
+      // positive integer, or `null` — a group absent, or a member that is not one, declares nothing.
+      promptCap: positiveInt(subagent && subagent.prompt_cap),
+      payloadCap: positiveInt(subagent && subagent.payload_cap),
       // The two branch names of the channels group. `production` is the switch of the branch
       // guard of `command-guard.mjs`; `development` names the branch the work lives on. A group
       // absent, or a member that is not a non-empty string, contributes `null`.
@@ -196,6 +211,8 @@ export function fakeContext(fields = {}) {
     memoryRoot: seat(fields.memoryRoot),
     writeRoots: Array.isArray(fields.writeRoots) ? fields.writeRoots.map(seat).filter(Boolean) : [],
     promptDumpChars: typeof fields.promptDumpChars === 'number' && fields.promptDumpChars > 0 ? Math.floor(fields.promptDumpChars) : null,
+    promptCap: positiveInt(fields.promptCap),
+    payloadCap: positiveInt(fields.payloadCap),
     channels: fields.channels || null,
   };
 }

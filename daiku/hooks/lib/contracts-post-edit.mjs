@@ -36,9 +36,9 @@
  *
  * **And it runs nothing.** Point 4 does not launch `node <file> --self-check` on the freshly
  * written `.mjs`: starting a file *because it appeared* means running code nobody has reviewed yet,
- * bypassing both the confirmation the host asks before launching a command and the hash approval
- * Codex demands precisely for hooks. A hook that says "run the bench" and a hook that runs it alone
- * have the same diagnostic value and a very different risk perimeter.
+ * bypassing the confirmation the host asks before launching a command. A hook that says "run the
+ * bench" and a hook that runs it alone have the same diagnostic value and a very different risk
+ * perimeter.
  *
  * No gate on `.daiku/`, and that is deliberate: this hook denies nothing to anybody, and a
  * YAML frontmatter silently emptying is a fault even for whoever does not have Daiku.
@@ -79,17 +79,16 @@ export function plan(rel) {
   // markdown and have nothing to say on a `.mjs`.
   //
   // The perimeter is **any** `hooks/` folder inside the root, with or without `lib/`,
-  // because the real seats are three: `.codex/hooks/`
-  // in the Codex guest project, `hooks/lib/` in a package under development,
-  // `.claude/hooks/` in a project hooking the guards on its own. On Claude Code,
-  // with Daiku installed as a package, the guards are not in the project at all: they run
-  // from the cache, where nobody rewrites them — the case where this branch rightly stays silent.
+  // because the real seats are two: `hooks/lib/` in a package under development,
+  // `.claude/hooks/` in a project hooking the guards on its own. With Daiku installed as a
+  // package, the guards are not in the project at all: they run from the cache, where nobody
+  // rewrites them — the case where this branch rightly stays silent.
   if (/(^|\/)hooks\/(lib\/)?[A-Za-z0-9_.-]+\.mjs$/.test(rel)) {
     return [{ label: `test bench for ${rel.split('/').pop()}`, type: 'reminder', target: rel }];
   }
 
   // The frontmatter of a contract, wherever it lives: the installed package, `.claude/`,
-  // `.codex/`, or a project skill.
+  // or a project skill.
   if (/(^|\/)SKILL\.md$/.test(rel)) {
     return [{ label: 'contract frontmatter', type: 'frontmatter', target: rel }];
   }
@@ -128,7 +127,7 @@ export function frontmatter(text) {
 
 /**
  * Findings on a `SKILL.md` frontmatter. Looks for the two shapes that empty the metadata
- * without failing, plus the two keys the two hosts' validators demand.
+ * without failing, plus the two keys the host's validator demands.
  */
 export function frontmatterFindings(text) {
   const block = frontmatter(text);
@@ -175,9 +174,9 @@ export function frontmatterFindings(text) {
 
   for (const required of ['name', 'description']) {
     if (!seen.has(required)) {
-      findings.push(`missing \`${required}\`: both hosts' validators demand it`);
+      findings.push(`missing \`${required}\`: the host's validator demands it`);
     } else if (!seen.get(required) && !blockScalars.has(required)) {
-      findings.push(`\`${required}\` is empty: both hosts' validators reject it`);
+      findings.push(`\`${required}\` is empty: the host's validator rejects it`);
     }
   }
 
@@ -374,9 +373,6 @@ function runStep(step, root, env) {
       `trusting it, and read the total:`,
       '',
       `    node ${step.target} --self-check`,
-      '',
-      `On Codex that file asks for approval again: trust is recorded on the hash,`,
-      `and until you grant it the hook is skipped.`,
     ];
   }
 
@@ -459,7 +455,6 @@ function selfCheck() {
   // --- the perimeter: what triggers what ---------------------------------------
   const typesOf = (rel) => plan(rel).map((p) => p.type).join(',');
   check('a project SKILL.md triggers frontmatter', typesOf('.claude/skills/review/SKILL.md') === 'frontmatter');
-  check('a Codex SKILL.md triggers frontmatter', typesOf('.codex/skills/review/SKILL.md') === 'frontmatter');
   check('a package SKILL.md triggers frontmatter', typesOf('plugins/daiku/skills/review/SKILL.md') === 'frontmatter');
   check('project.json triggers the JSON check', typesOf('.daiku/project.json') === 'json');
   check('environment.json triggers the JSON check', typesOf('.daiku/environment.json') === 'json');
@@ -468,7 +463,6 @@ function selfCheck() {
     typesOf('.daiku/environment.local.json') === 'json'
   );
   check('an area rule triggers its frontmatter', typesOf('.daiku/policies/backend.md') === 'policy');
-  check('a Codex guard recalls its own bench', typesOf('.codex/hooks/command-guard.mjs') === 'reminder');
   check('a Claude guard recalls its own bench', typesOf('.claude/hooks/command-guard.mjs') === 'reminder');
   check('a package guard in development too', typesOf('plugins/daiku/hooks/lib/command-guard.mjs') === 'reminder');
   check('and also the module the guards import', typesOf('plugins/daiku/hooks/lib/daiku-config.mjs') === 'reminder');
@@ -643,11 +637,10 @@ function selfCheck() {
       throw new Error('nobody must read a .mjs just to remember to test it');
     },
   };
-  const reminder = report('.codex/hooks/command-guard.mjs', R, withoutDisk);
+  const reminder = report('.claude/hooks/command-guard.mjs', R, withoutDisk);
   check('rewriting a guard produces the reminder', !!reminder && reminder.includes('--self-check'));
   check('the reminder names the file to test', !!reminder && reminder.includes('command-guard.mjs'));
   check('the reminder says why: a broken hook stays silent', !!reminder && reminder.includes('fail-open'));
-  check('the reminder recalls the Codex approval', !!reminder && reminder.includes('hash'));
   check(
     'no environment can run anything: there is no launcher',
     typeof REAL_ENV.run === 'undefined'

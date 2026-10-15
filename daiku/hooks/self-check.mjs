@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 /**
- * The test benches of the six hooks, of the five programs in `architect/` and of `init`'s scan
+ * The test benches of the seven hooks, of the seven programs in `architect/` and of `init`'s scan
  * (`skills/init/scan.mjs`), in a single shot.
  *
  * `node hooks/self-check.mjs` from the package root. Exits `0` if every case is
  * green, `1` on the first red, and prints the **counted** total — the sum of what the benches
  * really ran, not a number written here.
  *
- * It exists because six hooks are six ways of staying silent — `ask-guard` silent on
+ * It exists because seven hooks are seven ways of staying silent — `ask-guard` silent on
  * everything but its two verdicts — and a fault in one of them is indistinguishable from
  * silence until somebody runs its bench. A single command makes that move repeatable before a
  * release, in a CI, or after touching a file several of them import.
@@ -16,11 +16,13 @@
  * does not fail open, it fails loudly, and its verdict binds — so a case it does not cover
  * is a delivery that stops, not a wrong verdict. That is why it is launched here too and
  * not only by hand: the promise «the benches run together» is worth more, not less, for the
- * one program whose silence stops work. The other four are `architect/ledger.mjs`, the review's
+ * one program whose silence stops work. The other six are `architect/ledger.mjs`, the review's
  * disk side, `architect/pool.mjs`, the worktree pool's, `architect/reconcile.mjs`, the merge
- * reconciliation's, and `architect/release.mjs`, the release's, which fail loudly for the same
- * reason
- * and whose benches run real Git on throwaway repositories under the system temp directory.
+ * reconciliation's, `architect/release.mjs`, the release's, `architect/cost.mjs`, the run's
+ * deterministic measure, and `architect/view.mjs`, the reduced view a step hands a child. All six
+ * fail loudly for the same reason; the benches of the first four run real Git on throwaway
+ * repositories under the system temp directory, while those of `cost.mjs` and `view.mjs` run on a
+ * simulated filesystem.
  *
  * **A check nobody saw fail counts as red.** A bench whose rules can be enumerated reports,
  * beside `{checks, passed, failed}`, a `never_red` list: the rules no fixture of its own ever
@@ -28,14 +30,14 @@
  * so a non-empty `never_red` turns that bench red here even when `failed` is empty. The
  * evaluator's bench reports it; a bench that does not is read as before.
  *
- * Those five benches live beside their programs, in `architect/`, and are **not** replicated under `hooks/lib/`:
- * that folder is copied into the user's project by `sync-host`, and a verifier replicated
- * in every project is the duplication `contracts/project-contract.md` §8 condemns.
+ * Those seven benches live beside their programs, in `architect/`, and are **not** replicated under
+ * `hooks/lib/`: a bench lives with the program it tests, and a second copy of a verifier is the
+ * duplication `contracts/project-contract.md` §8 condemns.
  *
- * It is not a hook and is never installed into a project: `sync-host` copies the contents of
- * `hooks/lib/`, and this file sits one level above. Even less does the evaluator land in a
- * project. Whoever tests an installed hook runs its `--self-check`, which is what the
- * post-edit report reminds them of.
+ * It is not a hook and is never copied into a project: this file sits one level above `hooks/lib/`,
+ * and the package carries both from where the host installed it. Even less does the evaluator land
+ * in a project. Whoever tests a hook runs its `--self-check`, which is what the post-edit report
+ * reminds them of.
  */
 
 import { spawnSync } from 'node:child_process';
@@ -80,7 +82,7 @@ function benches() {
   for (const name of names) {
     found.push({ label: name, file: join(LIB, name), args: ['--self-check'] });
   }
-  for (const program of ['architect.mjs', 'ledger.mjs', 'pool.mjs', 'reconcile.mjs', 'release.mjs']) {
+  for (const program of ['architect.mjs', 'ledger.mjs', 'pool.mjs', 'reconcile.mjs', 'release.mjs', 'cost.mjs', 'view.mjs']) {
     const file = join(ROOT, 'architect', program);
     try {
       readFileSync(file);

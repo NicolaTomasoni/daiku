@@ -46,7 +46,7 @@
  *    document the session wrote is not a folder the session worked in. A ledger is this
  *    session's when the session touched its `item` or, on a review launched by hand on a bare
  *    base-ref where `item` is `null`, one of its `scope_files`.
- *  - **What if there is no trace?** Some hosts hand the hook none. The notice is then
+ *  - **What if there is no trace?** The event may carry none. The notice is then
  *    **silent**: which session a ledger belongs to would be a guess, and a guess is worth
  *    less than silence, exactly as an undeclared state folder is.
  *
@@ -139,9 +139,8 @@ const HERE = dirname(fileURLToPath(import.meta.url));
  * not declare — so each file the review leaves carries **exactly** these ten, the empty ones
  * included, from the scope on: only the values change between the first round and the exit.
  *
- * They are copied here rather than read from the schema at run time because on Codex this file
- * is installed **alone** in `.codex/hooks/` (`skills/sync-host` copies `hooks/lib/`), with no
- * `schemas/` beside it: a hook that cannot recognise a ledger would stay silent forever. The
+ * They are copied here rather than read from the schema at run time: recognising a ledger needs
+ * nothing but the ledger itself, so the guard keeps working whatever sits beside it, and the
  * bench ties the copy back to the schema it mirrors.
  */
 const LEDGER_FIELDS = [
@@ -679,7 +678,7 @@ function announcedSet(entries) {
  * `session_id`. `null` when the event carries neither, and then the mark is simply not
  * written: silence is the fallback, never a guess at a shared path.
  *
- * **Never the project.** The six hooks write nothing inside the repository; a folder of
+ * **Never the project.** The seven hooks write nothing inside the repository; a folder of
  * Daiku's own there would be one more seat to keep, and a hook that writes where it guards
  * is a hook that has to be guarded itself.
  */
@@ -1350,9 +1349,9 @@ function selfCheck() {
 
   // --- the form the hook recognises mirrors the schema -------------------------
   // The one read this bench makes on disk: `schemas/blocks.json` is the seat declaring the
-  // ledger's form, and the list copied in this file must move with it. It is not reachable from
-  // an installed copy — on Codex `sync-host` carries `hooks/lib/` alone — and the case is then
-  // red on purpose: a bench that cannot tie the form to its schema is not checking it.
+  // ledger's form, and the list copied in this file must move with it. Where that file is not
+  // beside this one the case is red on purpose: a bench that cannot tie the form to its schema
+  // is not checking it.
   let mirrored = null;
   try {
     mirrored = JSON.parse(readFileSync(join(HERE, '..', '..', 'schemas', 'blocks.json'), 'utf-8')).ledger.required;

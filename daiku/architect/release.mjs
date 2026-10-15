@@ -273,11 +273,12 @@ function messageWith(message, developmentSha) {
  * published them would ship the workshop — the parameters, the memory of the agent, the hooks and
  * the roles — to whoever installs the product, and nothing downstream would ever notice.
  *
- * The file of instructions is the fourth, and it is not here because its name is a host parameter:
- * the caller passes `instructions_file`. `never` carries what the project itself adds, which is
- * the extension `new-project` asks it for.
+ * The instructions file is among them under both default names, whichever host the project
+ * runs on: the caller still passes `instructions_file` for a file carrying another name.
+ * `never` carries what the project itself adds, which is the extension `release` asks it for
+ * on its first run.
  */
-const METHOD_FOOTPRINT = ['.daiku', '.claude', '.codex'];
+const METHOD_FOOTPRINT = ['.daiku', '.claude', '.opencode', 'CLAUDE.md', 'AGENTS.md'];
 
 /**
  * The paths that never reach the published tree, as paths of the published tree — the `source`
@@ -537,13 +538,107 @@ function actRelease(input, dry) {
   }
 }
 
+/**
+ * The record of the first run's answer, committed on development by the node itself.
+ *
+ * `release.never` is a project parameter and the answer that fills it arrives at the first
+ * release — after the release step, once production has moved. The skill writes the file, and
+ * leaving it modified in the working tree is not something the tree survives: a working tree
+ * carrying that one file opens no review cycle, because nothing under `{code_root}` differs and
+ * the scope comes back empty, so no ledger exists and the command guard denies the `git commit`
+ * that would close it. The file would stay modified forever and **every later release would stop
+ * at step 1**. So the record is committed here, the way production is written: a throwaway index,
+ * `write-tree`, `commit-tree`, `update-ref` — no `git commit`, and the branch guard stays whole.
+ *
+ * The write stays the skill's, and this is where it is checked: a file that does not parse, or a
+ * `release.never` that is not a list of paths, is a record that would enter history wrong and be
+ * read wrong by every release after it.
+ */
+function actRecord(input) {
+  const cwd = resolve(text(input, 'work_root'));
+  if (!existsSync(cwd)) fail(`work_root ${JSON.stringify(input.work_root)} does not exist`);
+  const development = text(input, 'development');
+  const path = devPath(input, 'path');
+  const message = text(input, 'message');
+
+  const developmentSha = revOf(cwd, development);
+  if (!developmentSha) fail(`the development branch ${development} does not exist: there is nothing to record on`);
+
+  const file = join(cwd, path);
+  if (!existsSync(file)) fail(`the parameter file ${path} is not there`);
+  const content = readFileSync(file, 'utf-8');
+
+  let parsed;
+  try {
+    parsed = JSON.parse(content);
+  } catch (error) {
+    fail(`${path} is not valid JSON (${error.message}): the record cannot be committed`);
+  }
+  const never = isObject(parsed) && isObject(parsed.release) ? parsed.release.never : undefined;
+  if (!Array.isArray(never) || !never.every(nonEmpty)) {
+    fail(`${path} carries no release.never as a list of paths: the record cannot be committed`);
+  }
+
+  // The blob the repository would stage for this content, filters and all — the bytes `git add`
+  // writes. `hash-object --stdin` alone applies no filter, so a working file whose line endings
+  // the repository normalises would enter the tree raw while the real index, put back in step
+  // below, would hold the normalised bytes: HEAD and the index would disagree and the tree would
+  // stay dirty, the very state this record exists to remove. The path is what selects the filters.
+  const blob = git(cwd, ['hash-object', '-w', '--path', path, '--stdin'], { input: content }).trim();
+
+  // The same answer recorded twice is not a second commit, and a release run twice puts one record
+  // in the history, not two. What the branch carries is the blob, so the blob is what is compared:
+  // the same content, filtered the same way, is the same record.
+  if (gitTry(cwd, ['rev-parse', '--verify', '--quiet', `${developmentSha}:${path}`]) === blob) {
+    return answer({
+      ok: true,
+      action: 'record',
+      recorded: false,
+      path,
+      development,
+      previous_sha: developmentSha,
+      development_sha: developmentSha,
+      never,
+      detail: `${path} already carries this record on ${development}: nothing was committed.`,
+    });
+  }
+
+  const dir = mkdtempSync(join(tmpdir(), 'daiku-release-record-'));
+  const index = join(dir, 'index');
+  const env = { GIT_INDEX_FILE: index };
+  try {
+    git(cwd, ['read-tree', developmentSha], { env });
+    git(cwd, ['update-index', '--add', '--cacheinfo', `100644,${blob},${path}`], { env });
+    const tree = git(cwd, ['write-tree'], { env }).trim();
+    const commit = git(cwd, ['commit-tree', tree, '-p', developmentSha, '-m', message], { env }).trim();
+    git(cwd, ['update-ref', `refs/heads/${development}`, commit, developmentSha]);
+    // The real index is put back in step with the branch it now names: without this the file would
+    // read as modified against a `HEAD` that already carries it, and the tree would still be dirty.
+    git(cwd, ['add', '--', path]);
+    return answer({
+      ok: true,
+      action: 'record',
+      recorded: true,
+      path,
+      development,
+      previous_sha: developmentSha,
+      development_sha: commit,
+      never,
+      detail: `the record was written on ${development} as ${commit.slice(0, 7)}, keeping back ${never.length ? never.join(', ') : 'nothing'}.`,
+    });
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
 function dispatch(input, root) {
   if (!isObject(input)) fail('stdin must be one JSON object');
   const action = input.action;
   if (action === 'status') return actStatus(input);
   if (action === 'release') return actRelease(input, false);
   if (action === 'dry') return actRelease(input, true);
-  fail(`unknown action ${JSON.stringify(action)}: expected "status", "dry" or "release"`);
+  if (action === 'record') return actRecord(input);
+  fail(`unknown action ${JSON.stringify(action)}: expected "status", "dry", "release" or "record"`);
 }
 
 /* ------------------------------------------------------------------------- *
@@ -577,7 +672,6 @@ function runBench(root) {
     sh(repo, ['config', 'user.email', 'bench@daiku']);
     sh(repo, ['config', 'user.name', 'bench']);
     write(join(repo, 'plugins/daiku/.claude-plugin/plugin.json'), '{\n  "name": "daiku",\n  "version": "0.0.0"\n}\n');
-    write(join(repo, 'plugins/daiku/.codex-plugin/plugin.json'), '{\n  "name": "daiku",\n  "version": "0.0.0"\n}\n');
     write(join(repo, 'plugins/README.md'), '![version](https://img.shields.io/badge/version-0.0.0-blue)\n');
     write(join(repo, 'plugins/daiku/skills/release/SKILL.md'), '# release\n');
     write(join(repo, 'cantiere.md'), '# the workshop\n');
@@ -591,8 +685,6 @@ function runBench(root) {
       spawnSync('git', ['read-tree', subtree], { cwd: repo, env });
       const blob = spawnSync('git', ['hash-object', '-w', '--stdin'], { cwd: repo, env, input: '{\n  "name": "daiku",\n  "version": "1.1.2"\n}\n', encoding: 'utf-8' }).stdout.trim();
       spawnSync('git', ['update-index', '--add', '--cacheinfo', `100644,${blob},daiku/.claude-plugin/plugin.json`], { cwd: repo, env });
-      const blob2 = spawnSync('git', ['hash-object', '-w', '--stdin'], { cwd: repo, env, input: '{\n  "name": "daiku",\n  "version": "1.1.2"\n}\n', encoding: 'utf-8' }).stdout.trim();
-      spawnSync('git', ['update-index', '--add', '--cacheinfo', `100644,${blob2},daiku/.codex-plugin/plugin.json`], { cwd: repo, env });
       const blob3 = spawnSync('git', ['hash-object', '-w', '--stdin'], { cwd: repo, env, input: '![version](https://img.shields.io/badge/version-1.1.2-blue)\n', encoding: 'utf-8' }).stdout.trim();
       spawnSync('git', ['update-index', '--add', '--cacheinfo', `100644,${blob3},README.md`], { cwd: repo, env });
       const blob4 = spawnSync('git', ['hash-object', '-w', '--stdin'], { cwd: repo, env, input: '# Changelog\n\n### 1.1.2 — 2026-10-01\n\n- Something.\n\n---\n', encoding: 'utf-8' }).stdout.trim();
@@ -637,7 +729,7 @@ function runBench(root) {
     source: 'plugins',
     version_file: 'plugins/daiku/.claude-plugin/plugin.json',
     version_field: 'version',
-    version_replicated_in: ['plugins/daiku/.codex-plugin/plugin.json', 'plugins/README.md'],
+    version_replicated_in: ['plugins/README.md'],
     changelog: 'plugins/CHANGELOG.md',
   }, extra);
 
@@ -664,7 +756,6 @@ function runBench(root) {
       check('release:the-subtree-becomes-the-root', tree.includes('daiku/.claude-plugin/plugin.json') && !tree.some((p) => p.startsWith('plugins/')), JSON.stringify(tree));
       check('release:it-does-not-publish-the-workshop', !tree.includes('cantiere.md'), JSON.stringify(tree));
       check('release:the-number-lands-in-the-version-file', fileAt(repo, 'main', 'daiku/.claude-plugin/plugin.json').includes('"1.1.3"'));
-      check('release:the-number-lands-in-the-replicated-file', fileAt(repo, 'main', 'daiku/.codex-plugin/plugin.json').includes('"1.1.3"'));
       check('release:the-number-lands-in-the-badge', fileAt(repo, 'main', 'README.md').includes('badge/version-1.1.3-'));
       const changelog = fileAt(repo, 'main', 'CHANGELOG.md');
       check('release:the-section-goes-under-the-title', changelog.indexOf('# Changelog') < changelog.indexOf('### 1.1.3'), changelog);
@@ -754,6 +845,73 @@ function runBench(root) {
       check('dirty:the-release-goes-through-once-the-tree-is-clean-again', clean.released === true, JSON.stringify(clean));
     }
 
+    /* --- the record of the first run's answer --------------------------- */
+    {
+      const repo = fixture('record');
+      const project = join(repo, '.daiku/project.json');
+      write(project, '{\n  "contract": 1,\n  "release": {\n    "source": "plugins",\n    "never": []\n  }\n}\n');
+      sh(repo, ['add', '-A']);
+      sh(repo, ['commit', '-qm', 'chore: the parameters']);
+      const before = sh(repo, ['rev-parse', 'develop']).out;
+      const mainBefore = sh(repo, ['rev-parse', 'main']).out;
+      const record = (extra = {}) => call(repo, Object.assign({
+        action: 'record', work_root: repo, development: 'develop',
+        path: '.daiku/project.json', message: 'chore(daiku): record the paths the release keeps back',
+      }, extra));
+
+      // An answer identical to what the branch already carries is not a commit.
+      check('record:an-answer-already-on-the-branch-is-not-a-commit', (() => {
+        const got = record();
+        return got.ok === true && got.recorded === false && sh(repo, ['rev-parse', 'develop']).out === before;
+      })());
+
+      write(project, '{\n  "contract": 1,\n  "release": {\n    "source": "plugins",\n    "never": ["docs/interni"]\n  }\n}\n');
+      const got = record();
+      check('record:the-file-is-committed-on-development', got.ok === true && got.recorded === true && got.development_sha !== before, JSON.stringify(got));
+      check('record:the-record-is-on-the-branch', (fileAt(repo, 'develop', '.daiku/project.json') || '').includes('"never"'), fileAt(repo, 'develop', '.daiku/project.json'));
+      check('record:the-commit-carries-that-path-alone', sh(repo, ['show', '--name-only', '--format=', 'develop']).out === '.daiku/project.json', sh(repo, ['show', '--name-only', '--format=', 'develop']).out);
+      check('record:the-working-tree-is-left-clean', sh(repo, ['status', '--porcelain']).out === '', sh(repo, ['status', '--porcelain']).out);
+      check('record:production-is-not-touched', sh(repo, ['rev-parse', 'main']).out === mainBefore, sh(repo, ['rev-parse', 'main']).out);
+      check('record:the-same-answer-again-writes-nothing', (() => {
+        const again = record();
+        return again.recorded === false && sh(repo, ['rev-parse', 'develop']).out === got.development_sha;
+      })());
+      write(project, '{ not json\n');
+      const broken = record();
+      check('record:a-file-that-does-not-parse-is-refused', broken.ok === false && /not valid JSON/.test(broken.error), JSON.stringify(broken));
+      check('record:a-refusal-writes-nothing', sh(repo, ['rev-parse', 'develop']).out === got.development_sha, sh(repo, ['rev-parse', 'develop']).out);
+      write(project, '{\n  "contract": 1,\n  "release": {\n    "source": "plugins"\n  }\n}\n');
+      const absent = record();
+      check('record:a-file-without-the-record-is-refused', absent.ok === false && /release\.never/.test(absent.error), JSON.stringify(absent));
+      const gone = record({ path: '.daiku/nothing.json' });
+      check('record:a-parameter-file-that-is-not-there-is-refused', gone.ok === false && /is not there/.test(gone.error), JSON.stringify(gone));
+    }
+
+    /* --- the record where the working file is not the bytes the repository holds - */
+    {
+      // A host that normalises line endings — `core.autocrlf=true`, the default on Windows — with
+      // no `.gitattributes` saying otherwise: the working file is CRLF, the blob LF. The record
+      // must write the blob through the path's filters, or HEAD and the index disagree and the
+      // tree stays dirty — the very state the record exists to remove, and one the next run would
+      // not repair.
+      const repo = fixture('record-normalised');
+      sh(repo, ['config', 'core.autocrlf', 'true']);
+      const project = join(repo, '.daiku/project.json');
+      write(project, '{\n  "contract": 1,\n  "release": {\n    "source": "plugins",\n    "never": []\n  }\n}\n');
+      sh(repo, ['add', '-A']);
+      sh(repo, ['commit', '-qm', 'chore: the parameters']);
+      write(project, '{\r\n  "contract": 1,\r\n  "release": {\r\n    "source": "plugins",\r\n    "never": ["docs/interni"]\r\n  }\r\n}\r\n');
+      const rec = () => call(repo, {
+        action: 'record', work_root: repo, development: 'develop',
+        path: '.daiku/project.json', message: 'chore(daiku): record',
+      });
+      const one = rec();
+      const status = sh(repo, ['status', '--porcelain']).out;
+      check('record:a-file-the-repository-normalises-leaves-the-tree-clean', one.recorded === true && status === '', `recorded=${one.recorded} status=${JSON.stringify(status)}`);
+      const again = rec();
+      check('record:and-the-same-answer-again-is-still-no-commit', again.recorded === false, JSON.stringify(again));
+    }
+
     /* --- a whole tree, no `source` -------------------------------------- */
     {
       const repo = join(dir, 'whole');
@@ -772,8 +930,9 @@ function runBench(root) {
       write(join(repo, '.daiku/project.json'), '{\n  "contract": 1\n}\n');
       write(join(repo, '.daiku/features/x/0. problem.md'), '# x\n');
       write(join(repo, 'CLAUDE.md'), '# instructions\n');
+      write(join(repo, 'AGENTS.md'), '# instructions\n');
       write(join(repo, '.claude/settings.json'), '{}\n');
-      write(join(repo, '.codex/hooks.json'), '{}\n');
+      write(join(repo, '.opencode/opencode.json'), '{}\n');
       write(join(repo, 'docs/interni.md'), '# internal\n');
       sh(repo, ['add', '-A']);
       sh(repo, ['commit', '-qm', 'feat: nuovo']);
@@ -784,14 +943,14 @@ function runBench(root) {
         version: '2.0.1', section: '### 2.0.1 — 2026-10-05\n\n- Nuovo.\n\n---', message: 'release 2.0.1 — nuovo',
       });
       check('whole:without-source-the-tree-is-the-project', fileAt(repo, 'main', 'nuovo.js') === 'export const a = 1;\n', JSON.stringify(got));
-      check('whole:the-method-footprint-never-reaches-production', ['.daiku/project.json', '.daiku/features/x/0. problem.md', 'CLAUDE.md', '.claude/settings.json', '.codex/hooks.json'].every((p) => fileAt(repo, 'main', p) === null), sh(repo, ['ls-tree', '-r', '--name-only', 'main']).out);
+      check('whole:the-method-footprint-never-reaches-production', ['.daiku/project.json', '.daiku/features/x/0. problem.md', 'CLAUDE.md', 'AGENTS.md', '.claude/settings.json', '.opencode/opencode.json'].every((p) => fileAt(repo, 'main', p) === null), sh(repo, ['ls-tree', '-r', '--name-only', 'main']).out);
       check('whole:the-projects-own-exclusion-is-honoured', fileAt(repo, 'main', 'docs/interni.md') === null);
-      check('whole:the-instructions-file-is-excluded-by-its-declared-name', fileAt(repo, 'main', 'AGENTS.md') === null && fileAt(repo, 'develop', 'CLAUDE.md') === '# instructions\n');
+      check('whole:both-instructions-names-are-excluded-by-default', fileAt(repo, 'main', 'CLAUDE.md') === null && fileAt(repo, 'main', 'AGENTS.md') === null && fileAt(repo, 'develop', 'CLAUDE.md') === '# instructions\n');
       check('whole:the-status-says-what-will-be-kept-back', call(repo, {
         action: 'status', work_root: repo, development: 'develop', production: 'main',
         version_file: 'package.json', version_field: 'version', changelog: 'CHANGELOG.md',
         instructions_file: 'CLAUDE.md', never: ['docs/interni.md'],
-      }).never.join(' ') === '.daiku .claude .codex CLAUDE.md docs/interni.md');
+      }).never.join(' ') === '.daiku .claude .opencode CLAUDE.md AGENTS.md docs/interni.md');
       check('whole:a-branch-tracking-nothing-is-declared-so', call(repo, {
         action: 'status', work_root: repo, development: 'develop', production: 'main',
         version_file: 'package.json', version_field: 'version', changelog: 'CHANGELOG.md',

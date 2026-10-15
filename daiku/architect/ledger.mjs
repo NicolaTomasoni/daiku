@@ -146,6 +146,18 @@ function changedFiles(cwd, from, to, codeRoot, pathspecs) {
   return out.split('\0').filter(Boolean).map(local).sort();
 }
 
+/**
+ * The files the diff **creates** — `--diff-filter=A`, the second half of what makes `arch` active
+ * beside the policy coverage: a diff that opens new files introduces a form no policy can already
+ * cover. Same localisation and ordering as `changedFiles`; the state is the whole point, so the
+ * `--diff-filter` is what this one carries and `changedFiles` does not.
+ */
+function createdFiles(cwd, from, to, codeRoot, pathspecs) {
+  const local = localizer(cwd);
+  const out = git(cwd, ['diff', '--name-only', '--diff-filter=A', '-z', '--no-renames', from, to, '--', ...(pathspecs || [pathspecOf(codeRoot)])]);
+  return out.split('\0').filter(Boolean).map(local).sort();
+}
+
 function unquote(path) {
   if (!path.startsWith('"')) return path;
   return path
@@ -437,6 +449,8 @@ function validateLog(log, schemas) {
           for (const key of Object.keys(row.confidence)) if (!CONFIDENCE_LEVELS.includes(key)) wrong.push(`${where}.confidence.${key} is not a confidence level`);
         }
       }
+      if (!Number.isInteger(row.closed) || row.closed < 0) wrong.push(`${where}.closed must be a non-negative integer`);
+      if (!Number.isInteger(row.discarded) || row.discarded < 0) wrong.push(`${where}.discarded must be a non-negative integer`);
     });
   }
   for (const [path, domain] of Object.entries(spec.enums || {})) {
@@ -586,8 +600,13 @@ function actScope(input, root) {
   const tree = snapshot(cwd, codeRoot);
   let files = changedFiles(cwd, base, tree, codeRoot);
   if (input.paths.length) files = files.filter((file) => input.paths.some((path) => under(file, path)));
+  let newFiles = createdFiles(cwd, base, tree, codeRoot);
+  if (input.paths.length) newFiles = newFiles.filter((file) => input.paths.some((path) => under(file, path)));
   const matched = policiesOf(resolve(policies)).filter((policy) => policy.paths.some((pattern) => files.some((file) => covers(pattern, file))));
-  const found = { base, tree, files, arch_active: matched.length > 0, arch_policies: matched.map((policy) => policy.file) };
+  // `arch` is active when a policy covers a scope file **or** the diff creates a file: a new file is
+  // a form no policy can already cover. `new_files` carries the created ones, for the finder.
+  const archActive = matched.length > 0 || newFiles.length > 0;
+  const found = { base, tree, files, new_files: newFiles, arch_active: archActive, arch_policies: matched.map((policy) => policy.file) };
   if (!files.length) {
     return answer({ action: 'scope', verdict: 'empty', ...found, detail: 'no file under code_root differs from the base: there is nothing to review, and no ledger was opened.' });
   }
@@ -613,8 +632,8 @@ function actScope(input, root) {
   return answer({
     action: 'scope', ledger: slashed(path), verdict: 'scoped', ...found,
     detail: reviewed
-      ? `review of the commit ${reviewed.commit.slice(0, 7)}: ${files.length} files differ from its first parent under code_root, untracked ones included; arch is ${matched.length ? 'active' : 'inactive'}.`
-      : `${files.length} files differ from ${base.slice(0, 7)} under code_root, untracked ones included; arch is ${matched.length ? 'active' : 'inactive'}.`,
+      ? `review of the commit ${reviewed.commit.slice(0, 7)}: ${files.length} files differ from its first parent under code_root, untracked ones included; arch is ${archActive ? 'active' : 'inactive'}.`
+      : `${files.length} files differ from ${base.slice(0, 7)} under code_root, untracked ones included; arch is ${archActive ? 'active' : 'inactive'}.`,
   });
 }
 
@@ -645,14 +664,22 @@ function actFindings(input, root) {
       discipline: match[1], attempts, valid: verdict.verdict === 'valid', blockers: verdict.blockers,
       returned: !!block && typeof block === 'object' && !Array.isArray(block),
       findings: verdict.verdict === 'valid' ? block.findings : [],
+      // `hypotheses` is not a finding — it is what a finder could not justify without a measurement.
+      // The findings file is internal form (no schema validates it), and keeping it here lets it
+      // survive a resumption and reach the report, which reads this action's answer.
+      hypotheses: verdict.verdict === 'valid' && Array.isArray(block.hypotheses) ? block.hypotheses : [],
     };
   }
   const order = (key) => `${['bug', 'arch', 'perf', 'dead'].indexOf(FINDER_KEY.exec(key)[1])}${key.padStart(8, '0')}`;
   const findings = [];
+  const hypotheses = [];
   const prefix = closing ? 't' : `r${n}`;
   for (const key of Object.keys(state.keys).sort((a, b) => order(a).localeCompare(order(b)))) {
     state.keys[key].findings.forEach((finding, at) => {
       findings.push({ finding_id: `${prefix}-${key}-${at + 1}`, discipline: state.keys[key].discipline, ...finding });
+    });
+    (state.keys[key].hypotheses || []).forEach((hypothesis) => {
+      hypotheses.push({ discipline: state.keys[key].discipline, ...hypothesis });
     });
   }
   if (!closing && n > 1) {
@@ -679,7 +706,7 @@ function actFindings(input, root) {
   const missing = [...new Set(keys.filter(([, entry]) => !entry.valid && entry.attempts === 2).map(([, entry]) => entry.discipline))];
   return answer({
     action: 'findings', ledger: slashed(path), verdict: relaunch.length ? 'relaunch' : 'ready',
-    findings_file: slashed(file), count: findings.length, finding_ids: findings.map((finding) => finding.finding_id), relaunch, missing,
+    findings_file: slashed(file), count: findings.length, finding_ids: findings.map((finding) => finding.finding_id), relaunch, missing, hypotheses,
     detail: relaunch.length
       ? `relaunch ${relaunch.join(', ')} once: ${keys.filter(([k]) => relaunch.includes(k)).map(([k, e]) => (e.returned ? `${k} with what the validation said: ${e.blockers.join('; ')}` : `${k} with the identical prompt — it did not come back`)).join(' | ')}`
       : `${findings.length} findings numbered in ${slashed(file)}${missing.length ? `; missed disciplines: ${missing.join(', ')}` : ''}.`,
@@ -1075,6 +1102,13 @@ function actLog(input, root) {
   });
 }
 
+/** The discipline an id carries: `r<round>-<discipline>[<shard>]-<k>`. A `check` id matches nothing. */
+const FINDING_DISCIPLINE = /^r\d+-(bug|arch|perf|dead)\d*-\d+$/;
+function disciplineOfFindingId(id) {
+  const match = typeof id === 'string' ? FINDING_DISCIPLINE.exec(id) : null;
+  return match ? match[1] : null;
+}
+
 /** One row of the log: a discipline, in a round of a ledger, as the disk holds it. */
 function logRow(record, round, discipline) {
   const file = findingsPath(record.path, round.n);
@@ -1100,9 +1134,15 @@ function logRow(record, round, discipline) {
       }
     }
   }
+  // The round's outcomes for this discipline: how many findings it closed (the round's `applied`)
+  // and how many it discarded, the discipline read from each id. A round that produced nothing reads
+  // zero for both, not null: only the findings file's absence is null.
+  const outcomesOf = (list) =>
+    (Array.isArray(list) ? list : []).filter((item) => item && disciplineOfFindingId(item.finding_id) === discipline).length;
   return {
     ledger: record.name, base: record.ledger.base, item: record.ledger.item, round: round.n,
     discipline, state: returned ? 'returned' : lost ? 'lost' : 'not-launched', findings, confidence,
+    closed: outcomesOf(round.applied), discarded: outcomesOf(round.discarded),
   };
 }
 
@@ -1269,6 +1309,15 @@ function runBench(root) {
       put(join(fx.policies, 'README.md'), '# Area policies\n\npaths:\n  - "src/**"\n\n---\n\n```markdown\n---\npaths:\n  - "src/**"\n---\n```\n');
       const got = scopeOf(fx);
       check('scope:arch-inactive-when-no-policy-covers', got.arch_active === false, JSON.stringify(got.arch_policies));
+      check('scope:arch-inactive-when-nothing-new-and-no-policy', got.arch_active === false && JSON.stringify(got.new_files) === '[]', JSON.stringify(got.new_files));
+      const born = fixture('scope-arch-new');
+      put(join(born.cwd, 'src', 'new.js'), 'export const n = 1;\n');
+      put(join(born.policies, 'lib.md'), '---\npaths: ["lib/**"]\n---\n# Lib\n');
+      const created = scopeOf(born);
+      check('scope:arch-active-when-the-diff-creates-a-new-file', created.arch_active === true && JSON.stringify(created.new_files) === '["src/new.js"]', JSON.stringify(created.new_files));
+      put(join(born.policies, 'web.md'), '---\npaths: ["src/**"]\n---\n# Web\n');
+      const covered = scopeOf(born, { state_dir: join(born.dir, 'state2') });
+      check('scope:a-new-file-and-a-covering-policy-both-keep-arch-active', covered.arch_active === true, JSON.stringify(covered.arch_policies));
       put(join(fx.policies, 'inline.md'), '---\npaths: ["src/*.js"]\n---\n# Inline\n');
       const again = scopeOf(fx, { state_dir: join(fx.dir, 'state2') });
       check('scope:an-inline-paths-list-is-read', again.arch_active === true, JSON.stringify(again.arch_policies));
@@ -1308,6 +1357,18 @@ function runBench(root) {
       check('scope:the-first-commit-scopes-every-file-under-code-root', JSON.stringify(got.files) === '["src/a.js","src/b.js"]', JSON.stringify(got.files));
       const areas = call({ action: 'areas', ledger: got.ledger, ...fx.base(), project: fx.project, from: 'base' });
       check('scope:the-first-commit-runs-the-round-against-that-base', areas.verdict === 'touched' && areas.files.includes('src/a.js'), JSON.stringify(areas.files));
+    });
+
+    /* --- hypotheses: not findings, but preserved on disk and returned --- */
+    attempt('findings-hypotheses', () => {
+      const fx = fixture('hypotheses');
+      put(join(fx.cwd, 'src', 'new.js'), 'export const n = 1;\n');
+      const scope = scopeOf(fx);
+      const hypothesis = { file: 'src/new.js', symbol: 'n', description: 'x — measure with a benchmark' };
+      const got = call({ action: 'findings', ledger: scope.ledger, blocks: { perf: { findings: [], hypotheses: [hypothesis] } } });
+      check('findings:hypotheses-come-back-in-the-answer', got.verdict === 'ready' && got.count === 0 && JSON.stringify(got.hypotheses) === JSON.stringify([{ discipline: 'perf', ...hypothesis }]), JSON.stringify(got.hypotheses));
+      const state = readJson(findingsPath(scope.ledger, 1), 'the findings file');
+      check('findings:hypotheses-survive-on-disk', JSON.stringify(state.keys.perf.hypotheses) === JSON.stringify([hypothesis]), JSON.stringify(state.keys.perf));
     });
 
     /* --- the cycle: findings, round, on_previous_fix, fast check, cost --- */
@@ -1802,6 +1863,35 @@ function runBench(root) {
         JSON.stringify(r9.ledgers) === JSON.stringify([l9]),
         JSON.stringify(r9)
       );
+
+      /* the round's outcomes: closed and discarded, counted by the discipline of each id */
+      const c10 = container('outcomes');
+      const l10 = 'review-ledger-aaaaaaa-000000.json';
+      c10.write(l10, ledger({
+        rounds: [round(1, {
+          disciplines: ['bug', 'perf'],
+          applied: [{ finding_id: 'r1-bug-1' }, { finding_id: 'r1-bug-2' }],
+          discarded: [{ finding_id: 'r1-perf-1' }],
+        })],
+      }));
+      c10.write('review-ledger-aaaaaaa-000000.round-1.findings.json', findings({ bug: key('bug', true, []), perf: key('perf', true, []) }));
+      const r10 = c10.run();
+      const b10 = rowOf(r10, l10, 'bug');
+      const p10 = rowOf(r10, l10, 'perf');
+      check(
+        'log:a-row-counts-the-closed-and-discarded-by-discipline',
+        !!b10 && b10.closed === 2 && b10.discarded === 0 && !!p10 && p10.closed === 0 && p10.discarded === 1,
+        JSON.stringify(r10.rows)
+      );
+
+      /* a round with no outcomes reads zero, not null */
+      const c11 = container('no-outcomes');
+      const l11 = 'review-ledger-bbbbbbb-000000.json';
+      c11.write(l11, ledger({ rounds: [round(1)] }));
+      c11.write('review-ledger-bbbbbbb-000000.round-1.findings.json', findings({ bug: key('bug', true, []) }));
+      const r11 = c11.run();
+      const b11 = rowOf(r11, l11, 'bug');
+      check('log:a-round-with-no-outcomes-reads-zero', !!b11 && b11.closed === 0 && b11.discarded === 0, JSON.stringify(r11.rows));
 
       refused('log:state-dir-is-required', { action: 'log' }, 'state_dir is required');
       refused('log:an-unreadable-folder-is-refused', { action: 'log', state_dir: join(home, 'log', 'absent') }, 'absent');

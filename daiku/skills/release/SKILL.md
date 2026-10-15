@@ -1,6 +1,6 @@
 ---
 name: 'release'
-description: 'Promotes the development branch onto production, once per release: the version lives on production and never on development, the release writes it there with the changelog section built from the block of commits accumulated since the last published release, and replaces the release standing on production for as long as nothing has pushed it. A working tree that is not empty is flushed first, through the review cycle and its closing commit, because a release carries the development tree as its commits hold it. It never pushes — the push stays a manual gesture of the owner. On a project that declared no channels it has nothing to promote and says so.'
+description: 'Promotes the development branch onto production, once per release: the version lives on production and never on development, the release writes it there with the changelog section built from the block of commits accumulated since the last published release, and replaces the release standing on production for as long as nothing has pushed it. On its first run it asks which paths never reach production with proposed lists and records them in `.daiku/project.json`. A working tree that is not empty is the first question of the run — the owner commits it, or the release flushes it through the review cycle and its closing commit — because a release carries the development tree as its commits hold it. It never pushes — the push stays a manual gesture of the owner. On a project that declared no channels it has nothing to promote and says so.'
 argument-hint: '[technical root, optional — default: current directory]'
 ---
 
@@ -19,7 +19,7 @@ keeps its own life.
 ## The two sides
 
 **Development carries a beta, and no changelog.** `{version.file}` stands there holding the number
-production carries now, marked as a beta with a counter — `1.1.5-b.1`. The counter goes **after a
+production carries now, marked as a beta with a counter — `1.1.6-b.2`. The counter goes **after a
 dot and is numeric**: `b.7`, never `b7`, which as
 an alphanumeric identifier semver orders `b10` before `b9`. The beta is not a release, and no
 release ever reads it: a release derives its number from production's own and writes it on
@@ -35,11 +35,11 @@ stood at that moment plus the version and the changelog. What makes a release tr
 a merge but the fact that it was built here, and nothing of it reaches development.
 
 **Production is the product, and the workshop is not the product.** What reaches it is the product
-of the project, never the seats the method deposited there: `.daiku/`, the instructions file, the
-folders `sync-host` writes, the memory root. That is not the project's to decide and this node does
+of the project, never the seats the method deposited there: `.daiku/`, `CLAUDE.md` and `AGENTS.md`
+under either name, the memory root. That is not the project's to decide and this node does
 not decide it either — the program holds the list and takes the paths off the tree — but the
 project **can extend it**, and `{release.never}` is where its own answer lives, the one
-`new-project` asked it for. Where the project declared a `{release.source}` the question is mostly
+this node asks for on its first run (§ *First run*). Where the project declared a `{release.source}` the question is mostly
 moot, because nothing outside that folder is read; where it did not — the ordinary project, whose
 product is the whole tree — the footprint is the whole difference between publishing a product and
 publishing the workshop. Read `never` in the status before releasing: it is what stays behind.
@@ -64,6 +64,51 @@ run every command with `git -C "<technical root>"`.
 out, and it refuses to run while a working copy holds it — a copy holding a branch this node moves
 would be left describing a commit that is no longer there. Close that copy and relaunch.
 
+## First run
+
+**Applies only where `{release.never}` is absent.** A present key — even an empty list — means
+this question was already asked: never ask it again. An absent key means the first run has not
+asked yet, and this run asks.
+
+Ask the owner with the structured question of § *Ask the owner* of `contracts/orchestration.md`
+— one question, `1/1`, in `{language.chat}`, options `A` first and recommended — and make proposals. Before asking, derive up to two proposed lists from the tree in
+front of you, leading with notes folders that are actually there — `docs/` and its subfolders,
+or similar — and then top-level folders reading as internal (drafts, local tooling): only paths
+that exist. Never the method's own footprint (`.daiku/`, `CLAUDE.md` and `AGENTS.md`, the host's
+own configuration folder, `{memory.root}`), which the program keeps back without being told and
+the proposals do not repeat. Where the project declared a
+`{release.source}`, say so in one line in the message above the question: nothing outside that
+folder is published anyway, and the answer only matters inside it.
+
+The options carry the proposals: `A` the recommended list (the internal seats you found, or none
+where the tree shows none), `B` the other side (none where `A` lists paths, your second list
+where it does not) — two options, three where two genuinely different lists stand. The message
+above the question names the footprint and what each option keeps back; the question itself stays
+bare. The owner may always answer outside the options, in prose with their own folders, and that
+free answer prevails.
+
+What the owner chose or wrote you normalise to paths, deterministically: `/` separators, no leading
+`./`, no trailing `/`, empty and `.` dropped; absolute paths dropped and declared; entries the
+method footprint already covers dropped, because storing them would duplicate what the program
+already does; duplicates dropped and the rest sorted. Where there is nobody to ask — a chained
+run, a session with no interactive channel — invent nothing and write nothing: proceed with the
+method footprint alone, declare it in `detail`, and the next run asks again.
+
+The normalised list is used for **this** release — passed as `never` to `architect/release.mjs`
+in steps 2 and 6 of § *The step* — and recorded for every later one: after the release step, write it
+into `.daiku/project.json` under `release.never`, creating the `release` object where missing and
+touching no other key, in the file's own indentation with its trailing newline. An answer of
+nothing to keep back is recorded as `[]`, which is what stops the next run asking again. Then run
+`architect/release.mjs` with `action: "record"`, `path` at that file and a `message` in
+`{language.commit}`: **the node commits the record itself**, on `{channels.development}`, the way it
+writes production — a throwaway index, `write-tree`, `commit-tree`, `update-ref`, no `git commit` —
+so the working tree is left clean and `detail` says what was recorded. Leaving the file uncommitted
+is not a state the tree survives: a working tree carrying that one file opens no review cycle,
+because nothing under `{code_root}` differs and the scope comes back empty, no ledger exists and the
+command guard denies the commit that would close it — so the next release would stop at step 1, and
+the one after it too. The enforcement stays the program's — `architect/release.mjs` takes those
+paths off the tree — and this section is the prose seat of that ban.
+
 ## The step
 
 **Applies only if `{channels.development}` and `{channels.production}` are declared.** Where either
@@ -76,16 +121,28 @@ saying so, and stop — §6 of `contracts/project-contract.md`, no fallback and 
 
    `git status --porcelain` must then be empty, and a release never starts from a tree that is not:
    it carries the development tree **as its commits hold it**, so work standing in the tree and in
-   no commit would be left out of the release without anybody noticing. Where it is not empty you do
-   not stop and you do not discard it — you **flush it** (§ *Flushing the working tree*) — and only
-   then read the ground again. A tree still not empty there is `released: false`, with the paths
-   left standing named in `detail`.
+   no commit would be left out of the release without anybody noticing. **Where it is not empty you
+   ask the owner, and you ask before anything else runs** — the paths one by one, and the two roads
+   with what each costs — because the flush below is a whole review cycle, and a working tree the
+   owner commits in their own terminal costs a minute. The question is the **first act** of the run:
+   put after the chain has started, it asks about a cost already paid.
+
+   - **`A` — stop, and the owner commits.** Return `released: false` with the paths named in
+     `detail`, and the run is relaunched once they are committed. This is the recommended road: the
+     work is theirs and they know what it is, their terminal is behind no guard, and the release
+     that follows takes its own three minutes.
+   - **`B` — flush it here.** The release makes the tree clean itself, as § *Flushing the working
+     tree* says, and goes on.
+
+   Where there is nobody to ask — a chained run, a session with no interactive channel — road `B`
+   is taken, and `detail` says the question was not asked. A tree still not empty after the flush is
+   `released: false`, with the paths left standing named in `detail`.
 
 2. **Measure.** Run `architect/release.mjs` with `action: "status"`, passing the root, the two
    branches and the release's own keys — `{release.source}`, `{version.file}`,
    `{version.field}`, `{version.replicated_in}`, `{changelog}`, `{hosts.<host>.instructions_file}`
-   and the paths that never reach production: `{release.never}` where declared, plus
-   `{memory.root}`. It answers with the development tip,
+   and the paths that never reach production: `{release.never}` where declared, plus the list
+   § *First run* just collected where it asked, plus `{memory.root}`. It answers with the development tip,
    where production stands, `current_version` — the number production carries now — `never`, the
    paths it will keep back, and the three things you need:
    - **`anchor`** — the development sha the last *published* release carried, or `null` where there
@@ -103,7 +160,7 @@ saying so, and stop — §6 of `contracts/project-contract.md`, no fallback and 
    return `released: false` with `detail` saying there is nothing to release, and stop.
 
 4. **Ask the version, once, on the block.** From `current_version`, ask the owner **major**,
-   **minor** or **patch** with `AskUserQuestion` — one question, three options, in the chat
+   **minor** or **patch** with the structured question of § *Ask the owner* of `contracts/orchestration.md` — one question, three options, in the chat
    language, the recommended first. The answer is the increment; the new number is derived from
    `current_version`. Because this node runs in the conversation, the channel to the owner exists —
    it is the whole reason the question lives here and not inside a subagent.
@@ -135,6 +192,12 @@ saying so, and stop — §6 of `contracts/project-contract.md`, no fallback and 
    It records the development sha it carried in the commit itself, as a `Development:` trailer:
    that is where the next release's block starts.
 
+   **Where § *First run* asked, this is also where the answer is recorded.** The normalised list
+   goes into `.daiku/project.json` under `release.never`, and `architect/release.mjs` runs again
+   with `action: "record"` — which commits that file on `{channels.development}` with the plumbing,
+   as the release writes production. It is a step of its own and not a `git commit`: the node's own
+   write, and the tree is left clean.
+
    **`action: "dry"` runs all of it and moves no ref.** Same keys, same answer, plus `would_be` —
    the commit it would write — where `release` gives `production_sha`. Use it when the owner wants
    to see the release before it exists, and when in doubt about which case you are in: the dry run
@@ -145,7 +208,8 @@ saying so, and stop — §6 of `contracts/project-contract.md`, no fallback and 
 
 ## Flushing the working tree — **worker** role
 
-**The tree is made clean before anything is measured, and this is the only way it is made clean.**
+**Road `B` of step 1, and the whole of it.** Where the owner chose to have the release make the
+tree clean, this is how.
 The work is not discarded and not stashed: it enters history through the cycle that reads it, which
 is the only door a commit has here — the command guard denies `git commit` outside a review cycle.
 And the release does not trust this step to have happened: `architect/release.mjs` refuses a working
@@ -187,4 +251,7 @@ mirrors, where this file stays normative on divergence:
   (or `null`);
 - `detail` always says what happened, and on `released: false` says which of the cases it was:
   no channels declared, the copy not on the development branch, a working copy holding production,
-  uncommitted work the cycle could not flush, or nothing to release.
+  uncommitted work left to the owner's own commit, uncommitted work the cycle could not flush, or
+  nothing to release. Where § *First run* asked,
+  it also says which exclusions were recorded in `.daiku/project.json` — or that there was nobody
+  to ask and the next run asks again.

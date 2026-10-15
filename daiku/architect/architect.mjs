@@ -87,7 +87,6 @@ import { fileURLToPath } from 'node:url';
  */
 const GRAPH = {
   init: ['owner'],
-  'sync-host': ['owner', 'init'],
   'new-project': ['owner'],
   'new-feature': ['owner'],
   'decision-doc': ['new-feature'],
@@ -184,7 +183,7 @@ const MUTUALLY_EXCLUSIVE = ['1. decision-doc.md', '5. review-report.md'];
 
 /** The verdict domains, taken verbatim from the contracts that already use them. */
 const GATES = ['green', 'red'];
-const EXITS = ['fixed-point', 'diminishing-returns', 'oscillation', 'rounds-truncated', 'rounds-exhausted'];
+const EXITS = ['fixed-point', 'discarded-only', 'diminishing-returns', 'oscillation', 'rounds-truncated', 'rounds-exhausted'];
 const DECISIONS = ['GREEN_COMMITTED', 'GREEN_WITH_POST_DECISIONS', 'BLOCKED_NO_COMMIT'];
 const MERITS = ['continue', 'stop'];
 /** The quick checks of `skills/execute/SKILL.md` § *Principles* 8; the bench holds it equal to `schemas/blocks.json`. */
@@ -751,6 +750,17 @@ function askRound(input) {
     });
   }
   const divergence = declared ? ` The applier declared ${declared} oscillations the ledger does not confirm: annotate the deviation.` : '';
+  // Rule 1a comes before rule 1: a round that applied zero fixes but discarded some closed nothing,
+  // and calling it a fixed point would report "the diff was correct at first shot" for a perimeter
+  // that spent a whole round without closing anything. `fixed-point` stays the clean exit — zero
+  // applied **and** zero discarded. It does not stop the commit: like `diminishing-returns` it is
+  // declared in closing and the commit runs.
+  if (rule('round.discarded-only', !current.applied.length && Array.isArray(current.discarded) && current.discarded.length > 0)) {
+    return block({
+      verdict: 'discarded-only',
+      detail: `rule 1a: round ${n} applied zero fixes and discarded ${current.discarded.length} — the round closed nothing. Exit discarded-only.${divergence}`,
+    });
+  }
   if (!current.applied.length) {
     return block({ verdict: 'fixed-point', detail: `rule 1: round ${n} applied zero fixes. Exit fixed-point.${divergence}` });
   }
@@ -895,6 +905,34 @@ function valuesAt(value, path) {
 }
 
 /**
+ * The `payload` field a block carries when its step handed a child — or returned — a **content**
+ * and not a path: `{bytes, lines}`, both non-negative integers, **absent** where the step passed
+ * only a path (`contracts/orchestration.md` §4, *Delegation*). It is the measure the reduced view
+ * of `architect/view.mjs` stands beside, and the shape every block whose step delivers content
+ * declares. A `payload` absent changes nothing — the field exists only for what crossed.
+ */
+function payloadFaults(value) {
+  if (!('payload' in value) || value.payload === null) return [];
+  const payload = value.payload;
+  if (!rule('payload.object', !!payload && typeof payload === 'object' && !Array.isArray(payload))) {
+    return ['payload is not an object — it is {bytes, lines}, or absent where the step passed only a path'];
+  }
+  const wrong = [];
+  for (const key of ['bytes', 'lines']) {
+    const got = payload[key];
+    if (!rule('payload.values', Number.isInteger(got) && got >= 0)) {
+      wrong.push(`payload.${key} must be a non-negative integer, got ${JSON.stringify(got)}`);
+    }
+  }
+  for (const key of Object.keys(payload)) {
+    if (!rule('payload.fields', key === 'bytes' || key === 'lines')) {
+      wrong.push(`payload.${key} is not a field of the measure — it is {bytes, lines}`);
+    }
+  }
+  return wrong;
+}
+
+/**
  * What the prose of a producer says and `blocks.json` cannot: required keys and enums are
  * data, an order of option ids is a rule. One entry per block whose prose carries one.
  */
@@ -1017,6 +1055,7 @@ const SHAPES = {
         wrong.push(`preflight has no ${step} row: each of the four quick checks is run or declared skipped`);
       }
     }
+    wrong.push(...payloadFaults(value));
     return wrong;
   },
   // skills/decision-doc/SKILL.md § The block you return, skills/new-feature/SKILL.md § 7, and
@@ -1218,8 +1257,12 @@ const SHAPES = {
     value.findings.forEach((finding, at) => {
       if (!rule('finder.finding-on-a-file', !!finding && nonEmpty(finding.file))) wrong.push(`findings[${at}].file is missing: a finding stands on a file`);
     });
+    wrong.push(...payloadFaults(value));
     return wrong;
   },
+  // skills/study/SKILL.md § The block you return: the notes file is passed by path, and where the
+  // block carried content instead the `payload` field says how much.
+  study: (value) => payloadFaults(value),
 };
 
 function askBlock(input, root) {
@@ -1662,6 +1705,9 @@ const CASES = [
   { id: 'decision:row-6-green', cites: { file: 'skills/ship-feature/SKILL.md', section: '4. Decision' },
     input: { question: 'decision', review_outcome: GREEN() },
     expect: { verdict: 'GREEN_COMMITTED', blockers: [] } },
+  { id: 'decision:discarded-only-does-not-block', cites: { file: 'skills/ship-feature/SKILL.md', section: '4. Decision' },
+    input: { question: 'decision', review_outcome: GREEN({ outcome: 'discarded-only' }) },
+    expect: { verdict: 'GREEN_COMMITTED', blockers: [] } },
   { id: 'decision:every-blocking-condition', cites: { file: 'skills/ship-feature/SKILL.md', section: '4. Decision' },
     input: { question: 'decision', review_outcome: GREEN({ gate: 'red', outcome: 'oscillation', missing_disciplines: ['perf'], to_confirm: [{ file: 'a.mjs', class: 'bug', blocking: true, scenario: 'x' }] }) },
     expect: { verdict: 'BLOCKED_NO_COMMIT', blockers_length_at_least: 4 } },
@@ -1681,6 +1727,9 @@ const CASES = [
   /* --- question: closing — skills/review/SKILL.md § Closing, the six conditions --- */
   { id: 'closing:all-six-hold', cites: { file: 'skills/review/SKILL.md', section: 'Closing' },
     input: { question: 'closing', review_outcome: GREEN({ oscillation: 0 }), ledger: { base: 'abc1234', item: 'x/y', rounds: [], outcome: 'fixed-point', coverage: 'no-tests-needed', gate: 'green', gate_detail: 'ok' } },
+    expect: { verdict: 'commit', blockers: [] } },
+  { id: 'ask:closing-accepts-discarded-only', cites: { file: 'skills/review/SKILL.md', section: 'Closing' },
+    input: { question: 'closing', review_outcome: GREEN({ oscillation: 0, outcome: 'discarded-only' }), ledger: { base: 'abc1234', item: 'x/y', rounds: [], outcome: 'discarded-only', coverage: 'no-tests-needed', gate: 'green', gate_detail: 'ok' } },
     expect: { verdict: 'commit', blockers: [] } },
   { id: 'closing:condition-blocking-item', cites: { file: 'skills/review/SKILL.md', section: 'Closing' },
     input: { question: 'closing', review_outcome: GREEN({ oscillation: 0, to_confirm: [{ file: 'a.mjs', blocking: true, scenario: 'x' }] }), ledger: { base: 'abc1234', item: 'x/y', rounds: [], outcome: 'fixed-point', coverage: 'no-tests-needed', gate: 'green', gate_detail: 'ok' } },
@@ -1839,6 +1888,15 @@ const CASES = [
   { id: 'round:rule-1-fixed-point', cites: { file: 'skills/review/SKILL.md', section: 'When to run another round' },
     input: { question: 'round', rounds_cap: null, ledger: LEDGER([ROUND([])]) },
     expect: { verdict: 'fixed-point' } },
+  { id: 'round:rule-1-discarded-only', cites: { file: 'skills/review/SKILL.md', section: 'When to run another round' },
+    input: { question: 'round', rounds_cap: null, ledger: LEDGER([ROUND([], [], { discarded: [{ finding_id: 'r1-perf-1' }] })]) },
+    expect: { verdict: 'discarded-only' } },
+  { id: 'round:discarded-only-does-not-hide-an-applied-fix', cites: { file: 'skills/review/SKILL.md', section: 'When to run another round' },
+    input: { question: 'round', rounds_cap: null, merit: 'stop', ledger: LEDGER([ROUND([FIX('a.mjs', 'f', '1')], [], { discarded: [{ finding_id: 'r1-perf-1' }] })]) },
+    expect: { verdict: 'diminishing-returns' } },
+  { id: 'round:discarded-only-yields-to-a-measured-oscillation', cites: { file: 'skills/review/SKILL.md', section: 'When to run another round' },
+    input: { question: 'round', rounds_cap: null, ledger: LEDGER([ROUND([FIX('a.mjs', 'f', 'x = 1')]), ROUND([FIX('a.mjs', 'f', 'x = 2')]), ROUND([], [], { discarded: [{ finding_id: 'r3-bug-1' }], oscillation: [{ file: 'a.mjs', symbol: 'f', current_anchor: 'x = 1', previous_anchor: 'x = 2' }] })]) },
+    expect: { verdict: 'oscillation' } },
   { id: 'round:rule-0-a-suppressed-fix-beats-the-fixed-point', cites: { file: 'skills/review/SKILL.md', section: 'When to run another round' },
     input: { question: 'round', rounds_cap: null, ledger: LEDGER([ROUND([FIX('a.mjs', 'f', 'x = 1')]), ROUND([FIX('a.mjs', 'f', 'x = 2')]), ROUND([], [{ file: 'a.mjs', symbol: 'f', current_anchor: 'x = 1', previous_anchor: 'x = 2' }])]) },
     expect: { verdict: 'oscillation', blockers_include: 'a.mjs f' } },
@@ -2102,6 +2160,31 @@ const CASES = [
   { id: 'block:execute-a-quick-check-never-run', cites: { file: 'skills/execute/SKILL.md', section: 'Principles' },
     input: { question: 'block', name: 'execute', block: EX_BLOCK({ preflight: EX_BLOCK().preflight.filter((row) => row.step !== 'layers') }) },
     expect: { verdict: 'invalid', blockers_include: 'preflight has no layers row' } },
+  /* --- the `payload` measure: contracts/orchestration.md § 4, *Delegation* --- */
+  { id: 'block:execute-with-payload', cites: { file: 'skills/execute/SKILL.md', section: 'What you return' },
+    input: { question: 'block', name: 'execute', block: EX_BLOCK({ payload: { bytes: 100, lines: 5 } }) },
+    expect: { verdict: 'valid' } },
+  { id: 'block:execute-without-payload-stays-valid', cites: { file: 'skills/execute/SKILL.md', section: 'What you return' },
+    input: { question: 'block', name: 'execute', block: EX_BLOCK() },
+    expect: { verdict: 'valid' } },
+  { id: 'block:execute-payload-negative', cites: { file: 'contracts/orchestration.md', section: '4. Delegation' },
+    input: { question: 'block', name: 'execute', block: EX_BLOCK({ payload: { bytes: -1, lines: 5 } }) },
+    expect: { verdict: 'invalid', blockers_include: 'payload.bytes' } },
+  { id: 'block:execute-payload-extra-field', cites: { file: 'contracts/orchestration.md', section: '4. Delegation' },
+    input: { question: 'block', name: 'execute', block: EX_BLOCK({ payload: { bytes: 1, lines: 1, when: 'now' } }) },
+    expect: { verdict: 'invalid', blockers_include: 'payload.when' } },
+  { id: 'block:execute-payload-not-an-object', cites: { file: 'contracts/orchestration.md', section: '4. Delegation' },
+    input: { question: 'block', name: 'execute', block: EX_BLOCK({ payload: 100 }) },
+    expect: { verdict: 'invalid', blockers_include: 'payload is not an object' } },
+  { id: 'block:finder-with-payload', cites: { file: 'skills/finder-prompt/SKILL.md', section: 'The block you return' },
+    input: { question: 'block', name: 'finder', block: { findings: [], payload: { bytes: 12, lines: 2 } } },
+    expect: { verdict: 'valid' } },
+  { id: 'block:study-with-payload', cites: { file: 'skills/study/SKILL.md', section: 'The block you return' },
+    input: { question: 'block', name: 'study', block: { ok: true, technology: 'x', file: 'a.md', studied_version: '1', latest_version: '1', date: '2026-10-12', to_verify: [], detail: '', payload: { bytes: 8, lines: 1 } } },
+    expect: { verdict: 'valid' } },
+  { id: 'block:study-payload-malformed', cites: { file: 'skills/study/SKILL.md', section: 'The block you return' },
+    input: { question: 'block', name: 'study', block: { ok: true, technology: 'x', file: 'a.md', studied_version: '1', latest_version: '1', date: '2026-10-12', to_verify: [], detail: '', payload: { bytes: 8 } } },
+    expect: { verdict: 'invalid', blockers_include: 'payload.lines' } },
 
   /* --- question: block — skills/decision-doc/SKILL.md § The block you return, skills/new-feature/SKILL.md § 7 --- */
   { id: 'block:decision-doc-technical', cites: { file: 'skills/decision-doc/SKILL.md', section: 'The block you return' },
@@ -2239,6 +2322,12 @@ const CASES = [
   { id: 'block:finder-a-finding-without-its-file', cites: { file: 'skills/finder-prompt/SKILL.md', section: 'The block you return' },
     input: { question: 'block', name: 'finder', block: { findings: [{ line: 3, symbol: 'f', confidence: 'high', change: 'x', description: 'y' }] } },
     expect: { verdict: 'invalid', blockers_include: 'findings[0].file' } },
+  { id: 'block:finder-with-hypotheses-is-valid', cites: { file: 'skills/finder-prompt/SKILL.md', section: 'The block you return' },
+    input: { question: 'block', name: 'finder', block: { findings: [], hypotheses: [{ file: 'a.mjs', symbol: 'f', description: 'x' }] } },
+    expect: { verdict: 'valid' } },
+  { id: 'block:finder-without-hypotheses-stays-valid', cites: { file: 'skills/finder-prompt/SKILL.md', section: 'The block you return' },
+    input: { question: 'block', name: 'finder', block: { findings: [] } },
+    expect: { verdict: 'valid' } },
   { id: 'block:ship-feature-merge-with-dirty-paths', cites: { file: 'skills/ship-feature/SKILL.md', section: '6b. Merge' },
     input: { question: 'block', name: 'ship-feature-merge', block: { merged: false, merge_sha: null, conflicts: [], dirty_paths: ['plugins/daiku/skills/ship-feature/SKILL.md'], detail: 'the working tree holds the path uncommitted' } },
     expect: { verdict: 'valid', blockers: [] } },

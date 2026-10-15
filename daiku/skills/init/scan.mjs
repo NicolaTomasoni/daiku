@@ -22,28 +22,18 @@
  *  - `.daiku/README.md`, Daiku's own documentation, deposited beside the parameters;
  *  - the host's instructions file, carrying the marker line `init` leaves in it;
  *  - `{memory.root}` and its index;
- *  - on Claude Code, the two memory keys in `.claude/settings.local.json`, and no memory file
- *    left in the host's default folder under `~/.claude/projects/`;
- *  - on Codex, the host layer under `.codex/` — the folder itself, which an installation that
- *    never ran `sync-host` does not have;
+ *  - the two memory keys in `.claude/settings.local.json`, and no memory file left in the host's
+ *    default folder under `~/.claude/projects/`;
  *  - the `.gitignore` lines: the machine's files, `{paths.review_state}` and — where it stands
  *    inside the repository — `{worktree.pool}`, ignored by **the repository's own** `.gitignore`
  *    — a global excludes file or `.git/info/exclude` is one machine's, and a clone carries none of
  *    it — and `.daiku/` and the memory corpus not ignored.
  *
- * **And three lists beside `missing`, because a piece that has stood there since an older Daiku is
+ * **And two lists beside `missing`, because a piece that has stood there since an older Daiku is
  * as much an artefact behind as a piece that is not there at all** — and no eye tells an old file
  * from a right one. This is what a relaunch after a package update reads to know what to correct,
  * and it is the reason the answer is not a single list:
  *
- *  - `stale`: on Codex the host layer is a **copy** inside the project, since the package can carry
- *    neither hooks nor roles there — and a copy that is not the file the package carries today is
- *    behind. It stands at the **repository** root, where `sync-host` writes it. Byte comparison for
- *    `hooks/lib/`, which are copies; for the rendered roles the `daiku:script` marker of the first
- *    line, and — where nobody marked them — whether the package carries a role of that name, which
- *    is what `sync-host` rewrites by. A `.toml` with neither is the project's own role and is not
- *    listed: a report that never closes is worse than one that stays silent. Files the package no
- *    longer carries at all are behind too.
  *  - `legacy`: the seats Daiku wrote **before** `.daiku/` and does not write any more, plus the
  *    entries of a settings file still pointing at one of them — removing the file without that
  *    line would leave a hook that starts nothing.
@@ -56,9 +46,9 @@
  * first run. Telling that needs reading the repository, and this program reads only what `init`
  * wrote.
  *
- *   node <package-root>/skills/init/scan.mjs <technical-root> <claude|codex>
- *       one JSON object on stdout — `{fresh, missing: [...], stale: [...], legacy: [...],
- *       params: [...]}`, every entry `{id, step, detail}` — exit 0.
+ *   node <package-root>/skills/init/scan.mjs <technical-root>
+ *       one JSON object on stdout — `{fresh, missing: [...], legacy: [...], params: [...]}`,
+ *       every entry `{id, step, detail}` — exit 0.
  *       Bad arguments: exit 2.
  *
  *   node <package-root>/skills/init/scan.mjs --self-check
@@ -81,13 +71,11 @@ const PACKAGE = join(HERE, '..', '..');
 
 /** The marker `templates/project/instructions.md` leaves at the bottom of the file. */
 const MARKER = '<!-- daiku:instructions';
-/** The marker `init` leaves at the top of every script it deposits — and `sync-host` at the top of
- * every role it renders — holding the package version that wrote it. The skeletons carry it with
- * `<version>`, which `init` fills on the copy; the two comment forms are the two file langs the
- * package deposits, a `.mjs` and a `.toml`. */
-const SCRIPT_MARKER = /^\s*(?:\/\/|#)\s*daiku:script\s+(\S+)/m;
+/** The marker `init` leaves at the top of every script it deposits, holding the package version
+ * that wrote it. The skeletons carry it with `<version>`, which `init` fills on the copy. */
+const SCRIPT_MARKER = /^\s*\/\/\s*daiku:script\s+(\S+)/m;
 const TASK_LABEL = 'daiku: update';
-const DEFAULT_INSTRUCTIONS = { claude: 'CLAUDE.md', codex: 'AGENTS.md' };
+const DEFAULT_INSTRUCTIONS = 'CLAUDE.md';
 
 /** The seats Daiku wrote before it moved under `.daiku/`, and does not write any more. Each is a
  * file of Daiku's — a copy of a contract, or a parameter pair — standing at a seat nothing reads:
@@ -162,15 +150,12 @@ export function markedVersion(text) {
 }
 
 /** The version this package carries, out of its own manifest: the one a script it deposits must
- * declare. Either host's manifest answers, and `null` where neither does — a package unable to
- * say which version it is cannot call a script old, and stays silent. */
+ * declare. A package unable to say which version it is cannot call a script old, and stays silent
+ * (`null`). */
 export function packageVersion(disk, packageRoot) {
-  for (const folder of ['.claude-plugin', '.codex-plugin']) {
-    const manifest = readJson(disk, join(packageRoot, folder, 'plugin.json'));
-    const version = manifest && manifest.version;
-    if (typeof version === 'string' && version.trim()) return version.trim();
-  }
-  return null;
+  const manifest = readJson(disk, join(packageRoot, '.claude-plugin', 'plugin.json'));
+  const version = manifest && manifest.version;
+  return typeof version === 'string' && version.trim() ? version.trim() : null;
 }
 
 /**
@@ -196,6 +181,15 @@ function fromRoot(root, value) {
   if (typeof value !== 'string' || !value.trim()) return null;
   const cleaned = value.trim().replace(/\\/g, '/');
   return isAbsolute(cleaned) || /^[A-Za-z]:/.test(cleaned) ? resolve(cleaned) : resolve(root, cleaned);
+}
+
+/** The instructions file the environment declares, out of its `hosts` entries: the first that names
+ * one. Where it names none, `DEFAULT_INSTRUCTIONS` answers. */
+function declaredInstructionsFile(env) {
+  const hosts =
+    env && env.hosts && typeof env.hosts === 'object' && !Array.isArray(env.hosts) ? Object.values(env.hosts) : [];
+  const found = hosts.map((h) => h && h.instructions_file).find((v) => typeof v === 'string' && v.trim());
+  return found ? found.trim() : null;
 }
 
 /** Relative to the repository root, forward slashes: the form `git check-ignore` takes. */
@@ -264,14 +258,13 @@ function leftoverHostMemory(disk, root) {
  * The scan
  * ------------------------------------------------------------------------- */
 
-export function scan(rootIn, host, disk = REAL, packageRoot = PACKAGE) {
+export function scan(rootIn, disk = REAL, packageRoot = PACKAGE) {
   const root = resolve(rootIn);
   const daiku = join(root, '.daiku');
   const projectFile = join(daiku, 'project.json');
-  if (!disk.exists(projectFile)) return { fresh: true, missing: [], stale: [], legacy: [], params: [] };
+  if (!disk.exists(projectFile)) return { fresh: true, missing: [], legacy: [], params: [] };
 
   const missing = [];
-  const stale = [];
   const legacy = [];
   const params = [];
   const miss = (id, step, detail) => missing.push({ id, step, detail });
@@ -323,12 +316,11 @@ export function scan(rootIn, host, disk = REAL, packageRoot = PACKAGE) {
   const labelled = new RegExp(`"label"\\s*:\\s*"${TASK_LABEL}"`);
   if (tasks === null || !labelled.test(tasks)) miss('update-task', '5-bis', `.vscode/tasks.json — task "${TASK_LABEL}"`);
 
-  // The instructions file of this host, with the marker. The environment pair of §8: the first file
-  // that exists **and parses** wins, taken whole — a local file that does not parse is skipped and the
+  // The instructions file, with the marker. The environment pair of §8: the first file that
+  // exists **and parses** wins, taken whole — a local file that does not parse is skipped and the
   // shared one is read, and the built-in default is only the fallback when neither names the key.
   const env = readJson(disk, localEnv) || readJson(disk, sharedEnv) || {};
-  const declared = env.hosts && env.hosts[host] && env.hosts[host].instructions_file;
-  const instructionsName = typeof declared === 'string' && declared.trim() ? declared.trim() : DEFAULT_INSTRUCTIONS[host];
+  const instructionsName = declaredInstructionsFile(env) || DEFAULT_INSTRUCTIONS;
   const instructions = readText(disk, join(root, instructionsName));
   if (instructions === null || !instructions.includes(MARKER)) miss('instructions', '6', instructionsName);
 
@@ -344,24 +336,12 @@ export function scan(rootIn, host, disk = REAL, packageRoot = PACKAGE) {
     }
   }
 
-  // Claude Code only: the host memory pointed inside, and nothing left in its default folder.
-  if (host === 'claude') {
-    const settings = readJson(disk, join(root, '.claude', 'settings.local.json'));
-    const pointed = settings && 'autoMemoryEnabled' in settings && 'autoMemoryDirectory' in settings;
-    if (!pointed) miss('host-memory', '7', '.claude/settings.local.json — autoMemoryEnabled, autoMemoryDirectory');
-    const leftover = leftoverHostMemory(disk, root);
-    if (leftover.length) miss('memory-move', '7', `${leftover.length} file(s) in the host's default memory folder`);
-  }
-
-  // Codex only: the host layer is a copy inside the project, because the package can carry there
-  // neither hooks nor roles. It stands at the **repository** root and not at the technical one —
-  // `sync-host` writes it from `git rev-parse --show-toplevel`, because the hooks climb to the git
-  // root and in a monorepo that is an ancestor of the technical root. Where Git does not answer,
-  // the technical root is the fallback: a wrong guess there lists nothing, which is the safe side.
-  const codex = join(disk.toplevel(root) || root, '.codex');
-  if (host === 'codex' && !disk.exists(codex)) {
-    miss('host-layer', '9', '.codex/ — the hooks and the roles of this host, deposited by sync-host');
-  }
+  // The host memory pointed inside, and nothing left in its default folder.
+  const settings = readJson(disk, join(root, '.claude', 'settings.local.json'));
+  const pointed = settings && 'autoMemoryEnabled' in settings && 'autoMemoryDirectory' in settings;
+  if (!pointed) miss('host-memory', '7', '.claude/settings.local.json — autoMemoryEnabled, autoMemoryDirectory');
+  const leftover = leftoverHostMemory(disk, root);
+  if (leftover.length) miss('memory-move', '7', `${leftover.length} file(s) in the host's default memory folder`);
 
   const relTo = (p) => relative(root, p).replace(/\\/g, '/');
 
@@ -369,7 +349,7 @@ export function scan(rootIn, host, disk = REAL, packageRoot = PACKAGE) {
   // is not one the project chose to keep — it is one a Daiku older than `.daiku/` left behind, and
   // nothing reads it today.
   for (const [seat, was] of RETIRED) {
-    if (disk.exists(join(root, seat))) behind(legacy, `retired:${seat}`, '9-bis', `${seat} — ${was}`);
+    if (disk.exists(join(root, seat))) behind(legacy, `retired:${seat}`, '9', `${seat} — ${was}`);
   }
   // And the entries still pointing at one. Removing the file without its line would leave a hook
   // configured against a path that no longer exists: fail-open, it starts nothing and says nothing,
@@ -380,60 +360,7 @@ export function scan(rootIn, host, disk = REAL, packageRoot = PACKAGE) {
     if (text === null) continue;
     for (const [retired] of RETIRED) {
       if (text.includes(retired)) {
-        behind(legacy, `retired-pointing:${seat}:${retired}`, '9-bis', `${seat} — an entry pointing at ${retired}`);
-      }
-    }
-  }
-
-  // The copies of the host layer, on the host that has them: byte for byte for the hooks, which are
-  // copies of `hooks/lib/`; the marker of the first line for the roles, whose text is rendered from
-  // an `agents/*.md` and cannot be compared with it. A file the package no longer carries at all is
-  // behind too, and for the same reason — `sync-host` removes it.
-  if (host === 'codex') {
-    const carried = (folder) => {
-      try {
-        return disk.list(folder);
-      } catch {
-        return [];
-      }
-    };
-    const lib = join(packageRoot, 'hooks', 'lib');
-    const hooks = join(codex, 'hooks');
-    const named = new Set(carried(lib));
-    for (const name of named) {
-      const source = readText(disk, join(lib, name));
-      const copy = readText(disk, join(hooks, name));
-      if (copy === null || source === null) continue;
-      if (copy !== source) behind(stale, `host-copy:${name}`, '9', `.codex/hooks/${name} — not the file this package carries`);
-    }
-    for (const name of carried(hooks)) {
-      if (name.endsWith('.mjs') && !named.has(name)) {
-        behind(stale, `host-copy-left:${name}`, '9', `.codex/hooks/${name} — this package does not carry it any more`);
-      }
-    }
-    // A role is behind in two cases, and no third. **Its marker names another package** — it was
-    // rendered before this one. **It carries no marker and the package carries a role of that
-    // name** — it was rendered by a `sync-host` older than the marker, and that skill rewrites by
-    // name, so a step here converges. A `.toml` with neither is the user's own role, which
-    // `sync-host` leaves where it is: listing it would keep the project *not all set* for ever, and
-    // a reconciliation that never closes is worse than one that stays silent about a file nobody
-    // asked it to touch.
-    const roles = join(codex, 'agents');
-    const rendered = new Set(
-      carried(join(packageRoot, 'agents'))
-        .filter((name) => name.endsWith('.md'))
-        .map((name) => `${name.slice(0, -3)}.toml`)
-    );
-    for (const name of carried(roles)) {
-      if (!name.endsWith('.toml')) continue;
-      const stamped = markedVersion(readText(disk, join(roles, name)));
-      const byMarker = stamped !== null && current && stamped !== current;
-      const byAbsence = stamped === null && rendered.has(name);
-      if (byMarker || byAbsence) {
-        const why = stamped
-          ? `rendered by Daiku ${stamped}, this package is ${current}`
-          : 'rendered by a sync-host older than the marker';
-        behind(stale, `host-role:${name}`, '9', `.codex/agents/${name} — ${why}`);
+        behind(legacy, `retired-pointing:${seat}:${retired}`, '9', `${seat} — an entry pointing at ${retired}`);
       }
     }
   }
@@ -452,7 +379,7 @@ export function scan(rootIn, host, disk = REAL, packageRoot = PACKAGE) {
     if (!allowed) continue;
     for (const key of Object.keys(declared)) {
       if (!allowed.has(key)) {
-        behind(params, `param:${relTo(file)}:${key}`, '9-bis', `${relTo(file)} — ${key}, which the contract no longer names`);
+        behind(params, `param:${relTo(file)}:${key}`, '9', `${relTo(file)} — ${key}, which the contract no longer names`);
       }
     }
   }
@@ -470,7 +397,7 @@ export function scan(rootIn, host, disk = REAL, packageRoot = PACKAGE) {
       const rel = toRepo(top, pool);
       if (rel && !rel.startsWith('..') && !isAbsolute(rel)) out.push(pool);
     }
-    if (host === 'claude') out.push(join(root, '.claude', 'settings.local.json'));
+    out.push(join(root, '.claude', 'settings.local.json'));
     const keep = [projectFile];
     if (memoryRoot) keep.push(join(memoryRoot, basename(String(memory.index || 'MEMORY.md'))));
     const all = [...out, ...keep].map((p) => toRepo(top, p));
@@ -486,7 +413,7 @@ export function scan(rootIn, host, disk = REAL, packageRoot = PACKAGE) {
     }
   }
 
-  return { fresh: false, missing, stale, legacy, params };
+  return { fresh: false, missing, legacy, params };
 }
 
 /* ------------------------------------------------------------------------- *
@@ -527,7 +454,7 @@ function fakeDisk(files, extra = {}) {
   };
 }
 
-/** A project `init` fully opened, on Claude Code. */
+/** A project `init` fully opened. */
 function complete() {
   return {
     [`${PKG}/.claude-plugin/plugin.json`]: JSON.stringify({ name: 'daiku', version: VERSION }),
@@ -539,12 +466,6 @@ function complete() {
         environment_json: ['contract', 'hosts', 'hosts.<host>.instructions_file'],
       },
     }),
-    // The hooks the package carries: on Codex these are the source of the copies in the project.
-    [`${PKG}/hooks/lib/run-advice.mjs`]: '// the package hook\n',
-    [`${PKG}/hooks/lib/command-guard.mjs`]: '// the package hook\n',
-    // And the roles, which `sync-host` renders by name: the name is what tells a role of ours from
-    // a role of the project's when neither carries a marker.
-    [`${PKG}/agents/finder.md`]: '---\nname: finder\n---\n',
     [`${PKG}/templates/project/domain/README.md`]: '#',
     [`${PKG}/templates/project/domain/commit-convention.md`]: '#',
     [`${PKG}/templates/project/domain/memory-contract.md`]: '#',
@@ -583,40 +504,40 @@ function selfCheck() {
   const ids = (result) => result.missing.map((m) => m.id);
 
   check('no project.json: fresh, nothing listed', (() => {
-    const r = scan(T, 'claude', fakeDisk({}), PKG);
+    const r = scan(T, fakeDisk({}), PKG);
     return r.fresh === true && r.missing.length === 0;
   })());
 
-  const full = scan(T, 'claude', fakeDisk(complete()), PKG);
+  const full = scan(T, fakeDisk(complete()), PKG);
   check('a fully opened project: nothing missing', full.fresh === false && full.missing.length === 0);
   check(
     'a fully opened project: nothing behind either',
-    full.stale.length === 0 && full.legacy.length === 0 && full.params.length === 0
+    full.legacy.length === 0 && full.params.length === 0
   );
 
   const cases = [
-    ['missing update script', without(complete(), `${T}/.daiku/update.mjs`), 'claude', 'update-script'],
-    ['an update script written by an older package', { ...complete(), [`${T}/.daiku/update.mjs`]: '// daiku:script 1.0.7\n' }, 'claude', 'update-script'],
-    ['an update script an older init left without a marker', { ...complete(), [`${T}/.daiku/update.mjs`]: '//\n' }, 'claude', 'update-script'],
-    ['missing tasks.json', without(complete(), `${T}/.vscode/tasks.json`), 'claude', 'update-task'],
-    ['tasks.json without the daiku task', { ...complete(), [`${T}/.vscode/tasks.json`]: '{"tasks":[{"label":"build"}]}' }, 'claude', 'update-task'],
-    ['instructions without the marker', { ...complete(), [`${T}/CLAUDE.md`]: '# Project\n' }, 'claude', 'instructions'],
-    ['a domain default missing', without(complete(), `${T}/.daiku/domain/memory-contract.md`), 'claude', 'domain:memory-contract.md'],
-    ['policies README missing', without(complete(), `${T}/.daiku/policies/README.md`), 'claude', 'policies-readme'],
-    ['Daiku\'s own README missing', without(complete(), `${T}/.daiku/README.md`), 'claude', 'daiku-readme'],
-    ['environment missing', without(complete(), `${T}/.daiku/environment.json`), 'claude', 'environment'],
-    ['memory index missing', { ...without(complete(), `${T}/memory/MEMORY.md`), [`${T}/memory/auth.md`]: '#' }, 'claude', 'memory-index'],
-    ['host memory not pointed', without(complete(), `${T}/.claude/settings.local.json`), 'claude', 'host-memory'],
-    ['host memory left in the default folder', { ...complete(), 'C:/Users/me/.claude/projects/C--work-repo-src/memory/a.md': '#' }, 'claude', 'memory-move'],
+    ['missing update script', without(complete(), `${T}/.daiku/update.mjs`), 'update-script'],
+    ['an update script written by an older package', { ...complete(), [`${T}/.daiku/update.mjs`]: '// daiku:script 1.0.7\n' }, 'update-script'],
+    ['an update script an older init left without a marker', { ...complete(), [`${T}/.daiku/update.mjs`]: '//\n' }, 'update-script'],
+    ['missing tasks.json', without(complete(), `${T}/.vscode/tasks.json`), 'update-task'],
+    ['tasks.json without the daiku task', { ...complete(), [`${T}/.vscode/tasks.json`]: '{"tasks":[{"label":"build"}]}' }, 'update-task'],
+    ['instructions without the marker', { ...complete(), [`${T}/CLAUDE.md`]: '# Project\n' }, 'instructions'],
+    ['a domain default missing', without(complete(), `${T}/.daiku/domain/memory-contract.md`), 'domain:memory-contract.md'],
+    ['policies README missing', without(complete(), `${T}/.daiku/policies/README.md`), 'policies-readme'],
+    ['Daiku\'s own README missing', without(complete(), `${T}/.daiku/README.md`), 'daiku-readme'],
+    ['environment missing', without(complete(), `${T}/.daiku/environment.json`), 'environment'],
+    ['memory index missing', { ...without(complete(), `${T}/memory/MEMORY.md`), [`${T}/memory/auth.md`]: '#' }, 'memory-index'],
+    ['host memory not pointed', without(complete(), `${T}/.claude/settings.local.json`), 'host-memory'],
+    ['host memory left in the default folder', { ...complete(), 'C:/Users/me/.claude/projects/C--work-repo-src/memory/a.md': '#' }, 'memory-move'],
   ];
-  for (const [name, files, host, id] of cases) {
-    const r = scan(T, host, fakeDisk(files), PKG);
+  for (const [name, files, id] of cases) {
+    const r = scan(T, fakeDisk(files), PKG);
     check(`${name}: listed as ${id}`, ids(r).includes(id));
     check(`${name}: nothing else listed`, ids(r).length === 1);
   }
 
   const localEnv = { ...without(complete(), `${T}/.daiku/environment.json`), [`${T}/.daiku/environment.local.json`]: '{"contract":1}' };
-  check('the machine environment file counts', !ids(scan(T, 'claude', fakeDisk(localEnv), PKG)).includes('environment'));
+  check('the machine environment file counts', !ids(scan(T, fakeDisk(localEnv), PKG)).includes('environment'));
 
   // The pair of §8: the first file that exists **and parses** wins, taken whole. A local file that
   // does not parse is skipped and the shared one is read — its non-standard name is honoured, and the
@@ -630,12 +551,8 @@ function selfCheck() {
   };
   check(
     'a local file that does not parse is skipped, the shared one names the instructions file',
-    !ids(scan(T, 'claude', fakeDisk(unreadableLocal), PKG)).includes('instructions')
+    !ids(scan(T, fakeDisk(unreadableLocal), PKG)).includes('instructions')
   );
-
-  const codex = scan(T, 'codex', fakeDisk({ ...without(complete(), `${T}/.claude/settings.local.json`), [`${T}/AGENTS.md`]: `${MARKER} -->` }), PKG);
-  check('on Codex the host memory is not checked', !ids(codex).includes('host-memory'));
-  check('on Codex the instructions file is AGENTS.md', !ids(codex).includes('instructions'));
 
   const globalOnly = fakeDisk(complete(), {
     checkIgnore: () =>
@@ -643,13 +560,13 @@ function selfCheck() {
       '.gitignore:4:.dev-runtime/\tsrc/.dev-runtime/review\n' +
       'C:/Users/me/.config/git/ignore:3:**/.claude/settings.local.json\tsrc/.claude/settings.local.json\n',
   });
-  check('a path only the global excludes file covers is missing', ids(scan(T, 'claude', globalOnly, PKG)).includes('gitignore-out:src/.claude/settings.local.json'));
+  check('a path only the global excludes file covers is missing', ids(scan(T, globalOnly, PKG)).includes('gitignore-out:src/.claude/settings.local.json'));
 
   const daikuIgnored = fakeDisk(complete(), {
     checkIgnore: (top, paths) =>
       fakeDisk({}).checkIgnore(top, paths) + '.gitignore:9:.daiku/\tsrc/.daiku/project.json\n',
   });
-  check('an ignored .daiku/ is missing', ids(scan(T, 'claude', daikuIgnored, PKG)).includes('gitignore-in:src/.daiku/project.json'));
+  check('an ignored .daiku/ is missing', ids(scan(T, daikuIgnored, PKG)).includes('gitignore-in:src/.daiku/project.json'));
 
   // The delivery-worktree pool: inside the repository it is ignored like the review state; declared
   // outside it, `.gitignore` is not asked about it at all.
@@ -670,15 +587,15 @@ function selfCheck() {
     '.daiku-worktrees',
     () => fakeDisk({}).checkIgnore() + '.gitignore:6:.daiku-worktrees\tsrc/.daiku-worktrees\n'
   );
-  check('a pool inside the repository and ignored: nothing missing', scan(T, 'claude', pooled, PKG).missing.length === 0);
+  check('a pool inside the repository and ignored: nothing missing', scan(T, pooled, PKG).missing.length === 0);
 
   const poolUnignored = withPool('.daiku-worktrees', () => fakeDisk({}).checkIgnore());
-  const poolMissing = ids(scan(T, 'claude', poolUnignored, PKG));
+  const poolMissing = ids(scan(T, poolUnignored, PKG));
   check('a pool inside the repository and not ignored: listed', poolMissing.includes('gitignore-out:src/.daiku-worktrees'));
   check('a pool inside the repository and not ignored: nothing else listed', poolMissing.length === 1);
 
   const poolOutside = withPool('../../pool-outside', () => fakeDisk({}).checkIgnore());
-  const outsideMissing = ids(scan(T, 'claude', poolOutside, PKG));
+  const outsideMissing = ids(scan(T, poolOutside, PKG));
   check('a pool outside the repository: `.gitignore` is not asked about it', outsideMissing.length === 0);
   check(
     'a pool outside the repository: nothing is listed for it',
@@ -686,15 +603,14 @@ function selfCheck() {
   );
 
   const gitDown = fakeDisk(complete(), { checkIgnore: () => null });
-  check('git that does not answer: fail-open, nothing listed', scan(T, 'claude', gitDown, PKG).missing.length === 0);
+  check('git that does not answer: fail-open, nothing listed', scan(T, gitDown, PKG).missing.length === 0);
 
-  const noManifest = scan(T, 'claude', fakeDisk(without(complete(), `${PKG}/.claude-plugin/plugin.json`)), PKG);
+  const noManifest = scan(T, fakeDisk(without(complete(), `${PKG}/.claude-plugin/plugin.json`)), PKG);
   check('a package that does not say which version it is: no script called old', noManifest.missing.length === 0);
 
   // --- what is behind, and not only what is missing ---------------------------
 
   const lists = (r) => ({
-    stale: r.stale.map((entry) => entry.id),
     legacy: r.legacy.map((entry) => entry.id),
     params: r.params.map((entry) => entry.id),
   });
@@ -707,15 +623,15 @@ function selfCheck() {
     [`${T}/.claude/settings.json`]:
       '{ "hooks": { "PostToolUse": [ { "command": "node .claude/hooks/contratti-post-edit.mjs" } ] } }',
   };
-  const retired = lists(scan(T, 'claude', fakeDisk(oldLayout), PKG));
+  const retired = lists(scan(T, fakeDisk(oldLayout), PKG));
   check('a seat of the old layout is listed', retired.legacy.includes('retired:.claude/project.json'));
   check('two seats are two entries', retired.legacy.includes('retired:.claude/hooks/contratti-post-edit.mjs'));
   check(
     'an entry pointing at a retired file is listed',
     retired.legacy.includes('retired-pointing:.claude/settings.json:.claude/hooks/contratti-post-edit.mjs')
   );
-  check('a seat of the old layout is not a missing piece', scan(T, 'claude', fakeDisk(oldLayout), PKG).missing.length === 0);
-  check('a project of the current layout lists no retired seat', lists(scan(T, 'claude', fakeDisk(complete()), PKG)).legacy.length === 0);
+  check('a seat of the old layout is not a missing piece', scan(T, fakeDisk(oldLayout), PKG).missing.length === 0);
+  check('a project of the current layout lists no retired seat', lists(scan(T, fakeDisk(complete()), PKG)).legacy.length === 0);
 
   // A key the contract no longer names, and one it still does.
   const withKey = (key) => ({
@@ -729,9 +645,9 @@ function selfCheck() {
   });
   check(
     'a key the contract no longer names is listed',
-    lists(scan(T, 'claude', fakeDisk(withKey('tech_doc')), PKG)).params.includes('param:.daiku/project.json:tech_doc')
+    lists(scan(T, fakeDisk(withKey('tech_doc')), PKG)).params.includes('param:.daiku/project.json:tech_doc')
   );
-  check('a key the contract still names is not', lists(scan(T, 'claude', fakeDisk(withKey('name')), PKG)).params.length === 0);
+  check('a key the contract still names is not', lists(scan(T, fakeDisk(withKey('name')), PKG)).params.length === 0);
   const envKey = {
     ...complete(),
     [`${T}/.daiku/environment.json`]: JSON.stringify({
@@ -742,73 +658,7 @@ function selfCheck() {
   };
   check(
     'the environment is asked too',
-    lists(scan(T, 'claude', fakeDisk(envKey), PKG)).params.includes('param:.daiku/environment.json:temp_dir')
-  );
-
-  // The host layer of Codex: copies inside the project, compared with what the package carries.
-  const codexFiles = { ...without(complete(), `${T}/.claude/settings.local.json`), [`${T}/AGENTS.md`]: `${MARKER} -->` };
-  check('on Codex a host layer that is not there is missing', ids(scan(T, 'codex', fakeDisk(codexFiles), PKG)).includes('host-layer'));
-  check(
-    'on Claude Code there is no host layer to ask about',
-    !ids(scan(T, 'claude', fakeDisk(complete()), PKG)).includes('host-layer')
-  );
-  // The layer stands at the **repository** root, `TOP`, while the technical root is `T`: a fixture
-  // that put it under `T` would be a layer the scan does not see, and that is the point of the
-  // first two checks here.
-  const installed = {
-    ...codexFiles,
-    [`${TOP}/.codex/hooks.json`]: '{}',
-    [`${TOP}/.codex/hooks/run-advice.mjs`]: '// the package hook\n',
-    [`${TOP}/.codex/hooks/command-guard.mjs`]: '// the package hook\n',
-    [`${TOP}/.codex/hooks/old-guard.mjs`]: '// gone from the package\n',
-    [`${TOP}/.codex/agents/finder.toml`]: `# daiku:script ${VERSION} — generated by sync-host\n`,
-  };
-  check('on Codex a host layer at the repository root is seen', !ids(scan(T, 'codex', fakeDisk(installed), PKG)).includes('host-layer'));
-  check(
-    'a host layer at the technical root alone is not the layer',
-    ids(scan(T, 'codex', fakeDisk({ ...codexFiles, [`${T}/.codex/hooks.json`]: '{}' }), PKG)).includes('host-layer')
-  );
-  const copies = lists(scan(T, 'codex', fakeDisk(installed), PKG));
-  check('an identical copy is not behind', !copies.stale.includes('host-copy:run-advice.mjs'));
-  check(
-    'a copy that is not the package file is behind',
-    lists(scan(T, 'codex', fakeDisk({ ...installed, [`${TOP}/.codex/hooks/run-advice.mjs`]: '// changed\n' }), PKG)).stale.includes(
-      'host-copy:run-advice.mjs'
-    )
-  );
-  check('a copy the package no longer carries is behind', copies.stale.includes('host-copy-left:old-guard.mjs'));
-  check('a role rendered by this package is not behind', !copies.stale.includes('host-role:finder.toml'));
-  check(
-    'a role rendered by an older package is behind',
-    lists(
-      scan(T, 'codex', fakeDisk({ ...installed, [`${TOP}/.codex/agents/finder.toml`]: '# daiku:script 1.0.7 — generated\n' }), PKG)
-    ).stale.includes('host-role:finder.toml')
-  );
-  // The two halves of the rule for a role nobody marked, asserted in one case so it goes red if the
-  // condition goes back to flagging every unmarked role: the package carries a role of that name, or
-  // it is the project's own role and `sync-host` leaves it alone. Each half alone stays green either
-  // way, so it is the pair that guards the rule.
-  const s = lists(
-    scan(
-      T,
-      'codex',
-      fakeDisk({
-        ...installed,
-        [`${TOP}/.codex/agents/finder.toml`]: '# generated\n',
-        [`${TOP}/.codex/agents/mine.toml`]: '# my own role\n',
-      }),
-      PKG
-    )
-  ).stale;
-  check(
-    'a role nobody marked is behind only when this package carries it',
-    s.includes('host-role:finder.toml') && !s.includes('host-role:mine.toml')
-  );
-  check(
-    "a role of the project's own is not behind",
-    lists(scan(T, 'codex', fakeDisk({ ...installed, [`${TOP}/.codex/agents/mine.toml`]: '# my own role\n' }), PKG)).stale.includes(
-      'host-role:mine.toml'
-    ) === false
+    lists(scan(T, fakeDisk(envKey), PKG)).params.includes('param:.daiku/environment.json:temp_dir')
   );
 
   // The two helpers alone.
@@ -818,7 +668,6 @@ function selfCheck() {
 
   // The marker alone.
   check('marker: the version is read', markedVersion('// daiku:script 1.0.8 — note\n') === '1.0.8');
-  check('marker: the `#` form of a rendered role is read too', markedVersion('# daiku:script 1.0.8 — generated\n') === '1.0.8');
   check('marker: a file without it declares nothing', markedVersion('// hello\n') === null);
   // `init` filling the copy in badly — the placeholder left in — is caught as an old script.
   check('marker: the unfilled placeholder is not the package version', markedVersion('// daiku:script <version>\n') !== VERSION);
@@ -858,11 +707,11 @@ function invokedDirectly() {
 if (invokedDirectly()) {
   const argv = process.argv.slice(2);
   if (argv[0] === '--self-check') process.exit(selfCheck());
-  const [root, host] = argv;
-  if (!root || !['claude', 'codex'].includes(host)) {
-    process.stderr.write('usage: node scan.mjs <technical-root> <claude|codex>\n       node scan.mjs --self-check\n');
+  const [root] = argv;
+  if (!root) {
+    process.stderr.write('usage: node scan.mjs <technical-root>\n       node scan.mjs --self-check\n');
     process.exit(2);
   }
-  process.stdout.write(JSON.stringify(scan(root, host)) + '\n');
+  process.stdout.write(JSON.stringify(scan(root)) + '\n');
   process.exit(0);
 }

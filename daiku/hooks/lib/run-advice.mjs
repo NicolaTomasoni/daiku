@@ -42,8 +42,7 @@
  * carries `agent_id` **only when the hook fires inside a subagent call** — the host's own reference
  * says so in as many words, and `agent_type` is the wrong field to test because a session started
  * with `--agent` carries it too (verified on the host reference, 2026-09-30). Absent, the call is
- * the conversation's; present, it is a child's, and a child doing the work is the whole point. A
- * host that carries no such field is a host where this notice never fires.
+ * the conversation's; present, it is a child's, and a child doing the work is the whole point.
  *
  * **The mark never lands in the repository.** It goes where the session keeps its own scratch — the
  * `scratchpad_dir` of the event, or the OS temporary directory keyed by `session_id` where the host
@@ -64,9 +63,6 @@
  *  - **The degradation of §4 point 4** of `contracts/orchestration.md`: where delegation is
  *    unavailable a chain runs its steps inline, and a step running inline *is* the conversation
  *    writing. There the reminder is the only thing speaking, which is what a reminder is for.
- *  - **Codex**, whose template wires neither of the two events and whose write event carries no
- *    `agent_id`: there nothing is marked and nothing is said, and the rule's only seat is
- *    `skills/new-feature/SKILL.md`.
  *
  * **The text is written as a fact, not as an order** — the host's reference says a notice shaped
  * like an out-of-band system instruction trips the reader's defences, and this package's own

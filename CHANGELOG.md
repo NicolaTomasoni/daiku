@@ -1,5 +1,16 @@
 # Changelog
 
+### 1.2.0 — 2026-10-15
+
+- **The product serves a single host, and the second marketplace is gone.** `Codex` is dropped: the `sync-host` skill and the host layer it wrote are deleted, the Codex manifest, the second marketplace and the hook template leave with them, the Codex agent metadata comes off every skill, and the entry points go from ten to nine. The `hosts` map stays, with its single entry.
+- **The package is rendered for `opencode`.** The structured question and the delegation tool are named per host in the contracts and no longer in the skills; the finder role is rendered for opencode with edit and delegation denied; and `.opencode` joins the method footprint, so the host's own folder never reaches production. The command guard denies another host's attribution trailer.
+- **A run's cost is measured from disk and the content crossing is bounded.** `architect/cost.mjs` measures the four voices of a run, `architect/view.mjs` hands a reduced deterministic view where a path is not enough, and a new hook names an over-cap prompt and states concision while denying nothing. `subagent.prompt_cap` and `subagent.payload_cap` are declared in the contract, and the payload measure enters the `execute`, finder and `study` blocks.
+- **`release` asks which paths never reach production, and records the answer.** On its first run it puts the question to the owner with proposed lists and writes the answer into `.daiku/project.json` as `release.never`, committing that record on the development branch with the plumbing so the working tree is left clean. `CLAUDE.md` and `AGENTS.md` are kept back under either name.
+- **A working tree that is not clean is the first question of a release.** The owner commits it in their own terminal, or the release flushes it through the review cycle and its closing commit — and the question comes before anything else runs, because the flush is a whole cycle while the owner's own commit costs a minute.
+- **A round that applies nothing and discards something exits as such**, and the log counts closed and discarded findings per discipline. `arch` is activated when the diff creates new files, beside policy coverage; the Target paths check moves from the round to the Memory phase; and `perf`'s low-confidence impacts travel as hypotheses in the finder block.
+
+---
+
 ### 1.1.6 — 2026-10-09
 
 - **The beta on the development branch carries production's own number.** `release` § *The two sides* declares it: the manifest holds exactly the number production carries, marked as a beta with a counter — the base follows production, the counter moves within it, and that declaration is what moves the installed copy. The rule is the one the whole release machinery reads, so a project declaring its channels derives the beta from the version it just published and not from one a patch ahead.

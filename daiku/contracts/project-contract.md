@@ -76,7 +76,7 @@ of a file, the presence or absence of an area. Three prohibitions, in order of s
 | `paths.features` | folder hosting the working folders, one per problem, with the method's numbered files inside — and, beside them, the feature catalogue: one folder per feature, one file per study contributing to it; under `.daiku/` |
 | `paths.handoffs` | folder of the handoff documents, one file per job left to another agent, each carrying the problem, what was done, what is missing and the evidence inlined; under `.daiku/`, like the two keys above it |
 | `paths.review_state` | folder of the run's out-of-version-control state: a review's ledger, and the worktree pool's registry (`worktree-pool.json`, written by `architect/pool.mjs`); it stands **inside the repository tree**, under the technical root, but **outside version control** — a `.gitignore` line excludes it — and it is **never under `.daiku/`**, which is versioned (§8); stable, not session-scoped |
-| `memory.root` | root of the persistent memory corpus, inside the repository (§8); on Claude Code it is also the folder where the host writes its own memory (§4.2) |
+| `memory.root` | root of the persistent memory corpus, inside the repository (§8); on Claude Code it is also the folder where the host writes its own memory (§4.2), and on a host that keeps no such seat — opencode — it is the corpus alone |
 | `memory.index` | index file of the corpus, the one read first |
 | `commit.memory_prefix` | prefix of the memory-and-documentation commit message |
 | `review.disciplines` | the disciplines the review cycle runs at round 1, among `bug`, `arch`, `perf` and `dead`; declared, they are the whole set — the scope and the judgements add nothing; absent, `bug` runs and the other three are decided on the diff |
@@ -84,10 +84,12 @@ of a file, the presence or absence of an area. Three prohibitions, in order of s
 | `worktree.prefix` | prefix of the pool worktrees' names, followed by the number (`1`..`worktree.max`) |
 | `worktree.max` | maximum number of pool worktrees: never one more, never an off-convention name |
 | `worktree.branch_prefix` | branch prefix of each worktree, followed by its name |
+| `subagent.prompt_cap` | maximum characters of the prompt an orchestrator hands a subagent, read on the launch tools (`PreToolUse` on `Agent`/`Task`); over it the subagent-advice hook of the package **says so** and changes nothing — no `permissionDecision`, no `updatedInput`. A positive integer; absent, zero, negative or non-numeric reads as *not declared* (§6), and the hook stays silent |
+| `subagent.payload_cap` | maximum bytes of the content a step hands a child when a path is not enough, in bytes or lines; the rule and the deterministic reduced view live in §4 of `contracts/orchestration.md`. A positive integer; absent or invalid reads as *not declared* |
 | `channels.development` | name of the development branch, the one the work lives on; `init` writes it from its answer, and `release` and the merge of a delivery read it |
 | `channels.production` | name of the production branch, where the work does not commit and which advances only by a release. It is a **line of releases**: each one is a commit of its own carrying the development tree as it stood, the version and the changelog, so production is not development's ancestor and nothing of a release travels back — its presence is the switch of the branch guard (§4.1) |
 | `release.source` | folder of development whose **content** becomes production's tree, where the two sides do not have the same shape; absent where they do, and then production's tree is development's plus the version and the changelog. A release resolves `version.*` and `changelog` on production by taking this prefix off the front, which is what lets the keys be written once, in the shape of the project |
-| `release.never` | paths of the project that never reach production, **on top of the method's own footprint** — `.daiku/`, the instructions file, `.claude/`, `.codex/`, and the memory root — which no project declares and no release publishes. It is what `new-project` asks the project to personalise: a release writes the product, and what is a product is the project's answer |
+| `release.never` | paths of the project that never reach production, **on top of the method's own footprint** — `.daiku/`, `CLAUDE.md` and `AGENTS.md` under either name, the host's own configuration folder (`.claude/` on Claude Code, `.opencode/` on opencode), and the memory root — which no project declares and no release publishes. It is what `release` asks the owner on its first run and writes into this file: absent means not yet asked, `[]` means asked and nothing to keep back |
 | `areas` | the set of declared areas; cited thus when a skill **enumerates** them instead of naming one (§5.3) |
 | `areas.<area>.paths` | the paths belonging to the area, each usable as a Git pathspec |
 | `areas.<area>.gate` | the area's gate command: lint, format, type-check, test and package build |
@@ -137,32 +139,31 @@ denial stays whole and the release is a write the guard has nothing to say about
 ### 4.2 The key the host reads
 
 `memory.root` has a second reader that is neither a skill nor a hook: it is **the host**, on Claude
-Code, where the memory the agent writes for itself is a folder of files and its location is declared
-with `autoMemoryDirectory`. `init` points it there, and from that moment that corpus has two writers
-— the session, which realigns in the same work whatever its change has made false (and, on Claude
-Code, the host it runs in, keeping what it noticed mid-session), and `update-memory` on every
-commit's diff — and a single location, **versioned together with the code**. It is why this folder sits inside
-the repository and not beside it: a memory that does not enter a diff is re-read by nobody, corrected
-by nobody and dies with the laptop it was born on.
+Code alone, where the memory the agent writes for itself is a folder of files and its location is
+declared with `autoMemoryDirectory`. `init` points it there, and from that moment that corpus has
+two writers on that host — the session, which realigns in the same work whatever its change has made
+false (and, on Claude Code, the host it runs in, keeping what it noticed mid-session), and
+`update-memory` on every commit's diff — and a single location, **versioned together with the
+code**. **A host with no such seat — opencode — has no second reader here**: there the corpus is
+written by the session and by `update-memory` alone, and nothing points anywhere. It is why this
+folder sits inside the repository and not beside it: a memory that does not enter a diff is re-read
+by nobody, corrected by nobody and dies with the laptop it was born on.
 
-**And the two are not substitutes, because a modification owes the pass in the same work.** Neither
-waits for the other: the host answers for what its own change has just made false, the commit's step
-walks the whole perimeter again on the frozen diff. A corpus left behind between the two is read and
-believed by the next session exactly like a correct one.
+**And the writers are not substitutes, because a modification owes the pass in the same work.** Neither
+waits for the other: the host — where it has the seat — answers for what its own change has just made
+false, the commit's step walks the whole perimeter again on the frozen diff. A corpus left behind
+between the two is read and believed by the next session exactly like a correct one.
 
-Two consequences, and neither is an installation detail.
+One consequence, and it is not an installation detail.
 
 **The pointing is not committed.** That key lives in `.claude/settings.local.json`, which belongs
 to that machine and stays out of the repository: a versioned file carrying it would declare one
-machine's seat as the project's, and the error would show only in silence, on whoever clones. The
+machine's seat as the project's, and the error would show only in silence, on whoever clones. That
+seat is Claude Code's; a host with no pointing to make — opencode — has none, and loses nothing,
+because `{memory.root}` is opened by path wherever it stands. The
 memory files are committed; the line telling the host to write them there is not. On a clone the memory falls back to the default **silently**, and no skill notices:
 `{memory.root}` is opened by path and found where it was. The remedy is to re-run `/init`
 on that machine.
-
-**On Codex there is nothing to declare.** There the agent's memory is not made of files but of a
-database in the home directory (`~/.codex/memories_1.sqlite`), consolidated from past sessions, and there is no
-key moving its location. `memory.root` remains the method's corpus, written by the
-skills and readable by anyone: it loses the second writer, not the job.
 
 It is also why `memory.root` and `memory.index` are the only keys `init` **always**
 writes, even on a project that had no corpus. §6 applies to everything else: here
@@ -269,9 +270,10 @@ convention, fine until it bothers you, does.
 And there is a second, narrower case: a role whose answer **must exist from day one
 because more than one writer already writes on the same thing**. That is `memory-contract.md`: on Claude Code
 the `{memory.root}` corpus has two writers as soon as `init` finishes — the host on its own initiative and
-`update-memory` on every commit (§4.2) — and an undeclared form does not stay indeterminate, it becomes
-two forms in the same folder. There the default does not anticipate a user choice: it spares them
-having to make it before writing their first memory.
+`update-memory` on every commit (§4.2) — and on a host with no host-writer seat, like opencode, the
+session and `update-memory` are still more than one writer on the same folder. An undeclared form
+does not stay indeterminate: it becomes two forms in the same folder. There the default does not
+anticipate a user choice: it spares them having to make it before writing their first memory.
 
 #### Area policies are found by paths, and may carry layers
 
@@ -402,7 +404,9 @@ Beside them stand the **scripts `init` deposits**, `update.mjs` first: it is cop
 `templates/project/` together with the `daiku: update` task of `.vscode/tasks.json` that runs it —
 it reads the version in place, refreshes the `daiku` marketplace, shows the version in place beside
 the one the catalogue is carrying, asks whether to update, and on a yes updates the package on
-Claude Code. It is no parameter — no skill and no hook reads it.
+Claude Code. **That path is Claude Code's alone**: its two commands are `claude plugin`'s, and a
+host with no catalogue — opencode — has nothing there for them to refresh. It is no parameter — no
+skill and no hook reads it.
 
 And it is **not the project's file**, which is why it is the one thing under `.daiku/` that `init`
 rewrites. Each script carries the marker `daiku:script <version>` at its top, holding the version of

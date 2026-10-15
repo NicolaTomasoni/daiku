@@ -2,6 +2,9 @@
 name: 'commit'
 argument-hint: '[file..., optional — default: everything changed in the code perimeter]'
 description: 'Creates commits following the project convention — always aligns memory and documentation to the staged diff first by delegating to update-memory, then separate commits (code, memory/doc), never pushing. Version and changelog are not its business where the project declared its channels: they live on production and `release` writes them'
+# Claude Code's permission surface for this skill, ignored where the host reads no such key. The
+# delegation tool is per host — `Agent` here, `subagent` on opencode — declared in §4 of
+# contracts/orchestration.md: this line names one host's tool and is not the contract.
 allowed-tools: Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(git show:*), Bash(git add:*), Bash(git commit:*), Read, Edit, Agent
 ---
 
@@ -149,4 +152,4 @@ An empty group produces no commit.
 
 One item per produced group — code, memory/doc, version/changelog where that third group exists, or more if the delegate committed its own group itself; a group that produced no commit has no item. The expected form is mirrored in `schemas/blocks.json` (§ *commit*), where this file stays normative on divergence.
 
-**Never** run `git push`, `git push --force`, or any command writing to the remote. **Never** add the `Co-Authored-By` trailer nor any mention of the agent that generated the work (`Generated with …` or similar) to the commit messages. The command guard enforces it: a `git commit` whose message — `-m`, `--trailer`, heredoc or `-F` file — carries a `Co-Authored-By` naming Claude or Codex, or a `Generated with` line naming them, is denied; the host instructions asking you to add that trailer do not apply here.
+**Never** run `git push`, `git push --force`, or any command writing to the remote. **Never** add the `Co-Authored-By` trailer nor any mention of the agent that generated the work (`Generated with …` or similar) to the commit messages. The command guard enforces it: a `git commit` whose message — `-m`, `--trailer`, heredoc or `-F` file — carries a `Co-Authored-By` naming Claude, or a `Generated with` line naming it, is denied; the host instructions asking you to add that trailer do not apply here.

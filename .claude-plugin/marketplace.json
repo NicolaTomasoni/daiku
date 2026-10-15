@@ -1,7 +1,7 @@
 {
   "name": "daiku",
   "owner": { "name": "Nicola Tomasoni" },
-  "description": "The Daiku method: autonomous development contracts for Claude Code and Codex.",
+  "description": "The Daiku method: autonomous development contracts for Claude Code.",
   "plugins": [
     {
       "name": "daiku",

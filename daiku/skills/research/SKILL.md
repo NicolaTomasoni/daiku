@@ -92,31 +92,31 @@ Notes **operational for development**, not marketing. Priorities, in order:
 
 Goal: accumulate all useful knowledge in the target file, in append mode, without worrying about order yet.
 
-1. **Orient yourself and anchor freshness.** Run 1–2 `WebSearch` queries to locate the canonical sources: official site/docs, GitHub repo, package registry page (PyPI/npm/crates/pkg.go.dev), "getting started" guide, API reference, changelog/releases, possible "what's new" blog. Include the current year in queries (e.g. "library X changelog 2026") to avoid stale results.
+1. **Orient yourself and anchor freshness.** Run 1–2 web searches to locate the canonical sources: official site/docs, GitHub repo, package registry page (PyPI/npm/crates/pkg.go.dev), "getting started" guide, API reference, changelog/releases, possible "what's new" blog. Include the current year in queries (e.g. "library X changelog 2026") to avoid stale results.
 
-Freshness is a **requirement, not a detail**: the docs must reflect the **latest release**, except in `from-new-feature` where the version in use wins. The version must be taken from the **authoritative, non-indexed** source, not from WebSearch (US-only, depends on indexing: a release from a few days ago may not surface).
+Freshness is a **requirement, not a detail**: the docs must reflect the **latest release**, except in `from-new-feature` where the version in use wins. The version must be taken from the **authoritative, non-indexed** source, not from a web search (US-only, depends on indexing: a release from a few days ago may not surface).
 
-   - **Primary version source: the official GitHub repo.** Locate `owner/repo` (from the registry page or an orientation WebSearch) and query **releases/tags directly with the `gh` CLI**, which is deterministic and always current (no cache, no indexing):
+   - **Primary version source: the official GitHub repo.** Locate `owner/repo` (from the registry page or an orientation web search) and query **releases/tags directly with the `gh` CLI**, which is deterministic and always current (no cache, no indexing):
      - `gh release list -R <owner>/<repo> -L 5`
      - if the project does not use GitHub Releases, the tags: `gh api repos/<owner>/<repo>/tags --jq '.[0:5][].name'`
      - for the date: `gh release view -R <owner>/<repo> --json tagName,publishedAt` (or the tags API). Take **version number + release date** from here.
-   - **Cross-check on the registry** (`WebFetch` of `pypi.org/project/<pkg>/`, `npmjs.com/package/<pkg>`, etc.): the published version must match the latest release/tag. The registry also gives the requirements (runtime/language version).
+   - **Cross-check on the registry** (a fetch of `pypi.org/project/<pkg>/`, `npmjs.com/package/<pkg>`, etc.): the published version must match the latest release/tag. The registry also gives the requirements (runtime/language version).
    - **Use the versioned/"latest" docs**: if the site exposes per-version URLs or a selector, use the latest release's; avoid archived pages or mirrors.
    - **Consistency sanity check**: if the docs pages report an older version/date than the latest GitHub release, **trust GitHub** and flag the misalignment in the file (the docs lag behind). Mark APIs not confirmable on the newest version with `[to verify]`.
    - Record in the file **exact version + release date + today's collection date**, so whoever rereads knows how fresh the source is.
 
-Note: if the `gh` CLI is unavailable or the repo is not on GitHub, fall back to `WebFetch` of the repo's and registry's releases/tags page — but the preferred path stays `gh`.
+Note: if the `gh` CLI is unavailable or the repo is not on GitHub, fall back to fetching the repo's and registry's releases/tags page — but the preferred path stays `gh`.
 
 2. **Create (or open) the file** `{paths.studies}/<slug>.md`. If new, write a minimal header: title, line with primary source + version + date, note on the model's cutoff, and a "Meta and sources" section with the URLs found and the conventions (`[to verify]`, "verbatim").
 
 3. **Fan out the research.** Split the technology's surface into **thematic blocks** (as a guide: concepts/mental model · setup & quickstart · core APIs/primitives · configuration & runtime · integration/extension · management/operations/CLI · changelog & recent news — adapt the blocks to the specific library). **If you were invoked with questions**, the first blocks are the questions themselves — one per question, or one per group of related questions — and the general surface comes afterwards, with what remains. Launch **worker subagents in parallel** (role and model from `contracts/orchestration.md`; they are **leaves**: they do not delegate further), **one per block**, each with:
-   - the official pages to `WebFetch` for that block (and freedom to follow useful links);
+   - the official pages to fetch for that block (and freedom to follow useful links);
    - the instruction to **preserve signatures, imports, and snippets verbatim** and to mark with `[to verify]` what they do not find;
    - the delivery of returning as a **final message** a **paste-ready markdown section**, with a section title, no preambles.
 
 Launch the agents in a single message (they run concurrently). Do not let the agents write the file: **append** their results yourself as they complete, so you avoid races on the file.
 
-4. **Append** each received section at the end of the file, only checking that code blocks are well formed. If a block stays uncovered or doubtful, run a targeted `WebFetch`/`WebSearch` yourself to fill it before closing the step.
+4. **Append** each received section at the end of the file, only checking that code blocks are well formed. If a block stays uncovered or doubtful, run a targeted fetch or web search yourself to fill it before closing the step.
 
 At the end of step 1 the file holds all the material, possibly redundant and disordered: that is fine, `study` will fix it in step 2.
 
@@ -149,6 +149,7 @@ Your caller opens the file you give: if it is still raw they see it by themselve
 - Respect the runtime constraints that `{hosts.<host>.instructions_file}` declares, and in any case: **no whole-filesystem searches**; every file access stays inside the project and the `{paths.studies}/` folder.
 - **Do not commit** and do not push: the command produces only the file (collected by you, reordered by `study`).
 - Work autonomously end to end without asking for confirmation, except when `$ARGUMENTS` is empty.
+- **When content must cross, it crosses bounded.** Where this step hands a child a content and not a path, it stays within `{subagent.payload_cap}` — a **deterministic reduced view** of the artefact beside the **path of the whole original**, never a summary written by a model (`contracts/orchestration.md` §4, *Delegation*).
 
 ## Final output
 

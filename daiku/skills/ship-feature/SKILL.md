@@ -1,6 +1,7 @@
 ---
 name: 'ship-feature'
 description: 'Internal contract of new-feature — the delivery of one feature from the already resolved decision-doc to the commit: worktree, brief, execution, review rounds, decision, memory and documentation alignment, the three commits, merge and report. It orchestrates its own phases delegating each to a subagent, and it is opened by new-feature § Delivery, never on its own.'
+user-invocable: false
 ---
 
 You are the **engine** of the delivery of a single feature: the sequence — brief → execution → review rounds → decision → memory/documentation update → commit (up to three groups: feature, then doc/memory, then version) → merge → cleanup → report — you orchestrate **it**, delegating each phase to a subagent according to `contracts/orchestration.md`. There is no script doing it in your place.
@@ -54,7 +55,7 @@ Two roots, two roles, passed to every phase already resolved:
 
 Read `contracts/orchestration.md`: roles, host, how a subagent launches, concurrency. Each phase below declares its own role (**judge** or **worker**) and you resolve the model with the rule of its §2 — never from here.
 
-**And before the first phase, prove the evaluator runs.** It is the move `sync-host` already makes on the hook benches — try before hooking, not after the first fault. The proof is the first question this delivery needs anyway (`order`, in § *The evaluator*): if it comes back, the evaluator runs and the sequence is known; **if it does not, the delivery does not start**. The verdict binds, so a delivery started on an evaluator that does not answer breaks where it is least visible. The diagnosis tells two causes apart and they are not the same thing: **the environment** — `node` not on the `PATH`, the fix on the user's side — and **the package** — a malformed input, or a case the bench does not cover, which is a defect of Daiku and is declared as such.
+**And before the first phase, prove the evaluator runs.** It is the move the hook benches already make — try before hooking, not after the first fault. The proof is the first question this delivery needs anyway (`order`, in § *The evaluator*): if it comes back, the evaluator runs and the sequence is known; **if it does not, the delivery does not start**. The verdict binds, so a delivery started on an evaluator that does not answer breaks where it is least visible. The diagnosis tells two causes apart and they are not the same thing: **the environment** — `node` not on the `PATH`, the fix on the user's side — and **the package** — a malformed input, or a case the bench does not cover, which is a defect of Daiku and is declared as such.
 
 ## The evaluator
 
@@ -99,15 +100,11 @@ by `skills/new-feature/SKILL.md` § *7. Decisions are asked in chat*.
 A key a question needs and does not find is a loud failure, never a guessed value.
 
 **The root is a path relative to the package** — the folder containing `skills/`, `contracts/` and
-`architect/`, **two levels above this file** — in the same form `init` and `sync-host` already use:
-it holds on both hosts, while an environment path variable exists only on one of the two. The two
-hosts hand it over differently and both notations are written here because of it, because it is the
-most exposed assumption of this design. On **Claude Code** the host substitutes its path variables
-(`${CLAUDE_PLUGIN_ROOT}`, `${CLAUDE_SKILL_DIR}`) inside the text of a `SKILL.md`, so the command can
-name the root directly. On **Codex** the host hands the skill the **absolute path of its own
-`SKILL.md`** and nothing else: there the climb of the two levels is done **by you**, and it is an
-instruction, not a fact of the harness. Getting it wrong is contained: the command does not start
-and it is visible, instead of starting and looking in the wrong place.
+`architect/`, **two levels above this file** — in the same form `init` already uses: a
+package-relative path holds wherever the skills run, where an environment path variable would not.
+The host substitutes its path variables (`${CLAUDE_PLUGIN_ROOT}`, `${CLAUDE_SKILL_DIR}`) inside the
+text of a `SKILL.md`, so the command can name the root directly. Getting it wrong is contained: the
+command does not start and it is visible, instead of starting and looking in the wrong place.
 
 **The block it returns** is the one `schemas/blocks.json` § *architect* declares, and that is its
 only copy: this file cites it and does not restate it. It always carries all eleven fields —
