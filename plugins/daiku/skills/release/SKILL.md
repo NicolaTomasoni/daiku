@@ -19,7 +19,7 @@ keeps its own life.
 ## The two sides
 
 **Development carries a beta, and no changelog.** `{version.file}` stands there holding the number
-production carries now, marked as a beta with a counter — `1.2.0-b.1`. The counter goes **after a
+production carries now, marked as a beta with a counter — `1.2.2-b.2`. The counter goes **after a
 dot and is numeric**: `b.7`, never `b7`, which as
 an alphanumeric identifier semver orders `b10` before `b9`. The beta is not a release, and no
 release ever reads it: a release derives its number from production's own and writes it on
@@ -227,7 +227,7 @@ tree that is not clean, so a release that arrived here without flushing writes n
   `{hosts.<host>.instructions_file}`, the founding documents (`documents.*`) and `.daiku/policies/`.
   What neither the cycle nor its closing commit reaches is delegated to a second subagent fully
   running `skills/commit/SKILL.md`, with those paths named one by one. It commits in the window the
-  first has just opened — the guard leaves the commit open for fifteen minutes after a cycle closes
+  first has just opened — the guard leaves the commit open for an hour after a cycle closes
   green, and the two run one after the other. Where the cycle opened no ledger — nothing under
   `{code_root}` differs from the base — there is no window at all, and this work stays where it is:
   it is then the tree that decides, and the release stops.

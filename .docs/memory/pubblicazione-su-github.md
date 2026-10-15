@@ -19,7 +19,7 @@ servizio — che esisteva perché il macchinario di pubblicazione ci copiava i f
 production.
 
 `develop` **porta una beta**: il manifest dichiara il numero che `main` porta, marcato con un
-contatore — `1.2.0-b.1` — scritto dopo un punto, perché `b10` verrebbe prima di `b9` in semver. A
+contatore — `1.2.2-b.2` — scritto dopo un punto, perché `b10` verrebbe prima di `b9` in semver. A
 muoverla è però un commit di sviluppo e **non il rilascio**: la beta sale quando sale la **forma**
 del pacchetto, cioè quando `init` avrebbe qualcosa da riportare nei progetti ospiti, quindi fra un
 rilascio e il commit che la sposta la sua base resta indietro di una versione. Non è un rilascio e
