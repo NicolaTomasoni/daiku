@@ -77,19 +77,20 @@ const SCRIPT_MARKER = /^\s*\/\/\s*daiku:script\s+(\S+)/m;
 const TASK_LABEL = 'daiku: update';
 const DEFAULT_INSTRUCTIONS = 'CLAUDE.md';
 
-/** The seats Daiku wrote before it moved under `.daiku/`, and does not write any more. Each is a
- * file of Daiku's — a copy of a contract, or a parameter pair — standing at a seat nothing reads:
- * today's readers open `.daiku/` and never look here. `init` retires them, and the settings files
- * below are read for the entries still pointing at one.
+/** The seats Daiku wrote before it moved under `.daiku/`, and does not write any more: the
+ * parameter pair a reader may still open, and the script a settings entry may still start. `init`
+ * retires them, and the settings files below are read for the entries still pointing at one.
  *
- * The list is the whole of what Daiku ever deposited at the old seats. A seat is added here when
- * the layout moves, never removed: what is retired stays retired, and a project opened by an older
- * Daiku may still carry the oldest of them. */
+ * **A seat in this list is retired by the name standing there, never by reading the file, and what
+ * earns a seat its place in the list is the kind of thing that stands there.** A parameter pair is
+ * machinery a reader opens and a script is machinery a settings entry starts; a copy of a contract
+ * is a document, and a document carries no mark of who wrote it — at `.claude/<name>.md` a file the
+ * project wrote for itself is, to any program, the same file as a copy Daiku left behind, and
+ * retiring that path on its own name would stash the project's document. That is why the document
+ * seats are not in the list. */
 export const RETIRED = Object.freeze([
   ['.claude/project.json', 'the parameters, at the seat Daiku used before `.daiku/`'],
   ['.claude/environment.json', 'the environment, at the seat Daiku used before `.daiku/`'],
-  ['.claude/orchestration.md', 'a copy of `contracts/orchestration.md`'],
-  ['.claude/project-contract.md', 'a copy of `contracts/project-contract.md`'],
   ['.claude/hooks/contratti-post-edit.mjs', 'a copy of `hooks/lib/contracts-post-edit.mjs`'],
 ]);
 
@@ -345,9 +346,9 @@ export function scan(rootIn, disk = REAL, packageRoot = PACKAGE) {
 
   const relTo = (p) => relative(root, p).replace(/\\/g, '/');
 
-  // What Daiku no longer writes: the seats of the layout before `.daiku/`. A file standing there
-  // is not one the project chose to keep — it is one a Daiku older than `.daiku/` left behind, and
-  // nothing reads it today.
+  // What Daiku no longer writes: the seats of the layout before `.daiku/` this list holds —
+  // machinery the package owns, a parameter pair a reader opens and a script a settings entry
+  // starts — and never a document the project may have written for itself.
   for (const [seat, was] of RETIRED) {
     if (disk.exists(join(root, seat))) behind(legacy, `retired:${seat}`, '9', `${seat} — ${was}`);
   }
