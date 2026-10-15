@@ -47,7 +47,7 @@
       "enums": {
         "to_confirm.class": ["arch", "bug", "perf", "dead", "test-coverage"]
       },
-      "note": "Every item of the four lists carries `finding_id`, and every finding handed over has exactly one outcome: the `block` question checks it against the `finding_ids` passed beside the block. `to_confirm.class` enumerates every discipline a round-1 finder can hand over — `bug`, `arch`, `perf`, `dead` — plus `test-coverage`, the class the closing round on tests adds."
+      "note": "Every item of the four lists carries `finding_id`, and every finding handed over has exactly one outcome: the `block` question checks it against the `finding_ids` passed beside the block. `to_confirm.class` enumerates every discipline a round-1 finder can hand over — `bug`, `arch`, `perf`, `dead` — plus `test-coverage`, the class the Coverage phase adds. The closing round on tests produces its own items through `architect/ledger.mjs`, which builds them from the findings file with the class of the finder that raised them."
     },
     "coverage-auto": {
       "producer": "skills/test-coverage/SKILL.md § Automatic mode",

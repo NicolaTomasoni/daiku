@@ -158,6 +158,27 @@ function createdFiles(cwd, from, to, codeRoot, pathspecs) {
   return out.split('\0').filter(Boolean).map(local).sort();
 }
 
+/**
+ * The added lines of `from..to` under `{code_root}`, as `git diff --numstat` counts them: the
+ * added column summed over the scope files, binary rows (`-`) contributing nothing. An untracked
+ * file stands in `to` like any other, so its lines count. It is the measure the sharding rule of
+ * `skills/review/SKILL.md` § *Finder* decides on — measured here, never counted by hand.
+ */
+function addedLines(cwd, from, to, codeRoot, files) {
+  const inScope = new Set(files);
+  const local = localizer(cwd);
+  const out = git(cwd, ['diff', '--numstat', '--no-renames', from, to, '--', pathspecOf(codeRoot)]);
+  let total = 0;
+  for (const row of out.split('\n')) {
+    if (!row) continue;
+    const tab = row.split('\t');
+    if (tab.length < 3 || tab[0] === '-') continue;
+    if (!inScope.has(local(tab.slice(2).join('\t')))) continue;
+    total += Number(tab[0]);
+  }
+  return total;
+}
+
 function unquote(path) {
   if (!path.startsWith('"')) return path;
   return path
@@ -606,7 +627,7 @@ function actScope(input, root) {
   // `arch` is active when a policy covers a scope file **or** the diff creates a file: a new file is
   // a form no policy can already cover. `new_files` carries the created ones, for the finder.
   const archActive = matched.length > 0 || newFiles.length > 0;
-  const found = { base, tree, files, new_files: newFiles, arch_active: archActive, arch_policies: matched.map((policy) => policy.file) };
+  const found = { base, tree, files, new_files: newFiles, added_lines: addedLines(cwd, base, tree, codeRoot, files), arch_active: archActive, arch_policies: matched.map((policy) => policy.file) };
   if (!files.length) {
     return answer({ action: 'scope', verdict: 'empty', ...found, detail: 'no file under code_root differs from the base: there is nothing to review, and no ledger was opened.' });
   }
@@ -632,8 +653,8 @@ function actScope(input, root) {
   return answer({
     action: 'scope', ledger: slashed(path), verdict: 'scoped', ...found,
     detail: reviewed
-      ? `review of the commit ${reviewed.commit.slice(0, 7)}: ${files.length} files differ from its first parent under code_root, untracked ones included; arch is ${archActive ? 'active' : 'inactive'}.`
-      : `${files.length} files differ from ${base.slice(0, 7)} under code_root, untracked ones included; arch is ${archActive ? 'active' : 'inactive'}.`,
+      ? `review of the commit ${reviewed.commit.slice(0, 7)}: ${files.length} files differ from its first parent under code_root, untracked ones included, ${found.added_lines} added lines; arch is ${archActive ? 'active' : 'inactive'}.`
+      : `${files.length} files differ from ${base.slice(0, 7)} under code_root, untracked ones included, ${found.added_lines} added lines; arch is ${archActive ? 'active' : 'inactive'}.`,
   });
 }
 
@@ -833,7 +854,25 @@ function actRound(input, root) {
 
   let block;
   let failed = false;
-  if (!ids.length) {
+  if (closing) {
+    // The closing round on tests reports: the cycle is closed, after it only the gate runs, and a
+    // fix written in that window no finder would ever reread. Every finding of the round becomes an
+    // item to confirm, built here from the finding's own words and never retyped by the caller.
+    if (input.applier !== undefined && input.applier !== null) {
+      fail('the closing round on tests reports instead of applying: no applier is launched, and no applier block is passed');
+    }
+    if (has(input, 'blocking') && typeof input.blocking !== 'boolean') {
+      fail('blocking must be true or false: whether the findings of the closing round cast doubt on the delivered code');
+    }
+    block = {
+      applied: [], discarded: [], oscillation: [],
+      to_confirm: state.findings.map((finding) => ({
+        finding_id: finding.finding_id, file: finding.file, line: finding.line, class: 'bug',
+        blocking: input.blocking === true,
+        scenario: [finding.description, finding.change].filter(Boolean).join(' '),
+      })),
+    };
+  } else if (!ids.length) {
     if (input.applier !== undefined && input.applier !== null) fail('this round had no finding: the applier is not launched, and no applier block is passed');
     block = { applied: [], discarded: [], to_confirm: [], oscillation: [] };
   } else {
@@ -1282,6 +1321,7 @@ function runBench(root) {
       check('scope:outside-code-root-is-not-in-the-scope', !got.files.includes('docs/x.md'), JSON.stringify(got.files));
       check('scope:an-ignored-file-is-not-in-the-scope', !got.files.some((f) => f.includes('/build/')), JSON.stringify(got.files));
       check('scope:arch-active-when-a-policy-covers-a-file', got.arch_active === true && got.arch_policies.length === 1 && got.arch_policies[0].endsWith('web.md'), JSON.stringify(got.arch_policies));
+      check('scope:added-lines-counts-modified-and-untracked-files', got.added_lines === 2, JSON.stringify(got.added_lines));
       check('scope:the-real-index-is-untouched', readFileSync(join(fx.repo, '.git', 'index')).equals(indexBefore), 'the real index changed');
       check('scope:the-working-tree-is-untouched', sh(fx.cwd, ['status', '--porcelain']) === statusBefore, 'git status changed');
       const ledger = readJson(got.ledger, 'ledger');
@@ -1289,8 +1329,10 @@ function runBench(root) {
       check('scope:the-ledger-is-named-by-its-base', /review-ledger-[0-9a-f]{7}-\d{6}\.json$/.test(got.ledger), got.ledger);
       const restricted = scopeOf(fx, { paths: ['src/a.js'], state_dir: join(fx.dir, 'state2') });
       check('scope:the-path-list-restricts-inside-code-root', JSON.stringify(restricted.files) === '["src/a.js"]', JSON.stringify(restricted.files));
+      check('scope:the-path-list-restricts-the-added-lines', restricted.added_lines === 1, JSON.stringify(restricted.added_lines));
       const narrow = scopeOf(fx, { paths: ['src/b.js'], state_dir: join(fx.dir, 'state3') });
       check('scope:a-path-with-no-modification-gives-an-empty-scope', narrow.verdict === 'empty' && narrow.ledger === null && !existsSync(join(fx.dir, 'state3')), JSON.stringify(narrow));
+      check('scope:an-empty-scope-counts-zero-added-lines', narrow.added_lines === 0, JSON.stringify(narrow.added_lines));
       refused('scope:a-handed-ledger-of-another-item-is-refused', {
         action: 'scope', ...fx.base(), base_ref: 'HEAD', paths: [], policies: fx.policies, item: 'studies/other', ledger: got.ledger,
       }, 'another review\'s');
@@ -1649,13 +1691,14 @@ function runBench(root) {
       put(join(fx.cwd, 'src', 'b.test.js'), 'test("b", () => {});\n');
       const tests = call({ action: 'findings', ledger, closing: true, blocks: { bug: { findings: [bug('src/b.test.js', 1)] } } });
       check('findings:the-closing-round-has-its-own-ids', JSON.stringify(tests.finding_ids) === '["t-bug-1"]', JSON.stringify(tests));
-      const closed = settle({
-        action: 'round', ledger, ...fx.base(), project: fx.project, closing: true,
-        applier: { applied: [], discarded: [], oscillation: [], to_confirm: [{ finding_id: 't-bug-1', file: 'src/b.js', line: 1, scenario: 'the test shows b is wrong', class: 'test-coverage', blocking: true }] },
-      });
+      const closed = settle({ action: 'round', ledger, ...fx.base(), project: fx.project, closing: true, blocking: true });
       const after = readJson(ledger, 'ledger');
       check('round:the-closing-round-adds-no-round', after.rounds.length === 1 && closed.verdict === 'recorded', JSON.stringify(closed));
-      check('round:its-blocking-item-reaches-the-ledger', after.rounds[0].to_confirm.some((item) => item.finding_id === 't-bug-1' && item.blocking), JSON.stringify(after.rounds[0].to_confirm));
+      check('round:the-closing-round-reports-instead-of-applying', after.rounds[0].to_confirm.some((item) => item.finding_id === 't-bug-1' && item.blocking && item.scenario.includes('y')), JSON.stringify(after.rounds[0].to_confirm));
+      check('round:the-closing-round-applies-nothing', after.rounds[0].applied.length === 0 && after.rounds[0].discarded.length === 0, JSON.stringify(after.rounds[0]));
+      refused('round:the-closing-round-takes-no-applier-block', {
+        action: 'round', ledger, ...fx.base(), project: fx.project, closing: true, applier: { applied: [], discarded: [], to_confirm: [], oscillation: [] },
+      }, 'reports instead of applying');
     });
 
     /* --- layers: the added lines are the program's, untracked files included --- */

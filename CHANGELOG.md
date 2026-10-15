@@ -1,5 +1,15 @@
 # Changelog
 
+### 1.2.2 — 2026-10-15
+
+- **The review cycle runs fewer rounds.** Rule 2 no longer fires on a count of severe fixes: three corrected defects say how dirty the perimeter **was**, not how dirty the delta **is**, and what another round would reread is the correction, not them. The count is weighed where the context to weigh it exists — rule 3's merit verdict — and a fast check or a targeted test coming back red stays the only mechanical trigger.
+- **A new cycle on the same base is incremental.** Where a closed ledger with the same base already stands in the state folder, round 1 reads the delta between that cycle's final tree and the current one instead of the whole diff, with the previous ledger handed to the finder as already judged. An empty delta closes without launching a finder, and the old ledger is never rewritten.
+- **The sharding of a large diff is measured, not judged.** The scope answers with `added_lines` — the added column of `git diff --numstat`, untracked files included — and the round-1 `bug` finder splits above 10,000 added lines, `N = min(4, ceil(added_lines / 10,000))`; at the incremental round the count is the delta's own. File count alone never shards.
+- **`perf` and `dead` are judged in one step.** The two look at the same diff and the same lines, so a single `form` step answers both questions and runs each discipline in that same context where it has something to look at, instead of a worker per discipline deciding before the round begins; and the rule on the steps that do not return no longer waits for a `perf` worker that no longer exists.
+- **The closing round on tests reports instead of applying.** The tests the Coverage phase writes are read by a finder whose findings become items to confirm, and no applier follows it: a correction written in that window would be the only unreviewed write of the whole chain.
+
+---
+
 ### 1.2.1 — 2026-10-15
 
 - **`init` no longer takes a project's own document for residue.** The list of the seats Daiku wrote before it moved under `.daiku/` held two documents — `.claude/orchestration.md` and `.claude/project-contract.md` — and a document carries no mark of who wrote it: at `.claude/<name>.md` a file the project wrote for itself is, to any program, the same file as a copy Daiku left behind, and a re-run closed the project's own contract into a `git stash`. The list now holds machinery alone — the parameter pair a reader may still open and the script a settings entry may start — and the criterion is the shape of what stands there, never its path.

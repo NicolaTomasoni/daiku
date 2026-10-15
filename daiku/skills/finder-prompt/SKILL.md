@@ -29,6 +29,19 @@ If one of the first four is missing, **do not choose it yourself and do not ask 
 | `perf` | bottlenecks on the touched hot paths | `skills/perf/SKILL.md` |
 | `dead` | code the diff leaves unreferenced | `skills/dead-code/SKILL.md` |
 
+## Two disciplines in one context
+
+`perf` and `dead` arrive **together, in one call**, and you carry both: it is the `form` step of a round (`skills/review/SKILL.md` § *Finder*). Read **both** contracts of your `Where it comes from` column before analysing, and follow each one's own Finder mode. Then, for each of the two:
+
+- **judge** whether this diff gives that discipline anything to look at — a hot path (rendering, polling, loop, query, serialisation, high-frequency flow) for `perf`; modules or exports added, or callers removed that a callee could survive, for `dead`;
+- **look** when the answer is yes, in this same context, and return that discipline's block.
+
+A discipline with nothing to look at carries `active: false`, its one-line `why` and a `null` block; one you looked at carries `active: true` and its block — the block of § *The block you return* below, in full and with those field names. The caller forces one of the two when it was told to (`--with perf`, `--with dead-code`): `active` is then `true` whatever you judged, and you look.
+
+```json
+{"perf": {"active": false, "why": "<one line>", "block": null}, "dead": {"active": false, "why": "<one line>", "block": null}}
+```
+
 ## Rules
 
 1. **Read in full what your `Where it comes from` column indicates, before analysing.** Those contracts declare at home their own **Finder mode**: follow it — it is the part valid here, and it says what of the rest of the file is not run. Load `{hosts.<host>.instructions_file}` where needed.

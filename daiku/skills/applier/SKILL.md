@@ -29,14 +29,6 @@ You are the **only** step of the cycle that modifies files: finders do not write
 - **Modify nothing outside `{code_root}`**: any external path is off-limits, without exceptions. That line is this contract's, and no hook draws it — so it holds because it is written here, and the caller reads the diff of your round against it. If the documentation would require alignment, **annotate it** without touching it: it belongs to the Memory phase, not to an item to confirm.
 - Do **not** run the build/test gate and do **not** write coverage tests: they are later phases, outside the cycle.
 
-## Closing round on tests mode
-
-`/review` invokes you a second time **after** the cycle, when the Coverage phase has written new tests: it is the closing round on them (§ *Coverage* of `skills/review/SKILL.md`). Whoever invokes you **chooses** this mode and declares it to you in the prompt; the constraints live here, because it is this contract that decides what you apply and what you leave open.
-
-- **The scope is only the newly produced test files.** You touch nothing else, not even for an obvious fix: the cycle is already closed, after you only the gate runs, and what you write here no finder will reread.
-- **A defect that a test reveals in production code is neither corrected nor discarded.** It is the only derogation to "you decide" that is not born from a fork: the correction would lie outside the scope and no round would ever review it again. It goes into `to_confirm` with `blocking: true` — in `scenario` what the test revealed, which behaviour is in doubt, what changes by correcting it — because it casts doubt on the correctness of the delivered code, and from there it stops the commit of whoever hosts you. Discarding it would make it disappear: `discarded` items block nothing.
-- Everything else — how you decide a finding, how you classify a fix, what you return — stays identical to the normal round.
-
 ## How an applied fix is classified
 
 Every fix comes back **classified**, because it is on that classification that the cycle decides whether to continue.
