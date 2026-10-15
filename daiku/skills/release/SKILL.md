@@ -1,6 +1,6 @@
 ---
 name: 'release'
-description: 'Promotes the development branch onto production, once per release: the version lives on production and never on development, the release writes it there with the changelog section built from the block of commits accumulated since the last published release, and replaces the release standing on production for as long as nothing has pushed it. On its first run it asks which paths never reach production with proposed lists and records them in `.daiku/project.json`. A working tree that is not empty is the first question of the run — the owner commits it, or the release flushes it through the review cycle and its closing commit — because a release carries the development tree as its commits hold it. It never pushes — the push stays a manual gesture of the owner. On a project that declared no channels it has nothing to promote and says so.'
+description: 'Promotes the development branch onto production, once per release: the version lives on production and never on development, the release writes it there with the changelog section built from the block of commits accumulated since the last published release, and replaces the release standing on production for as long as nothing has pushed it. On its first run it asks which paths never reach production with proposed lists and records them in `.daiku/project.json`. A working tree that is not empty is the first question of the run — the release flushes it through the review cycle and its closing commit, or the owner commits it — because a release carries the development tree as its commits hold it. It never pushes — the push stays a manual gesture of the owner. On a project that declared no channels it has nothing to promote and says so.'
 argument-hint: '[technical root, optional — default: current directory]'
 ---
 
@@ -19,7 +19,7 @@ keeps its own life.
 ## The two sides
 
 **Development carries a beta, and no changelog.** `{version.file}` stands there holding the number
-production carries now, marked as a beta with a counter — `1.1.6-b.2`. The counter goes **after a
+production carries now, marked as a beta with a counter — `1.2.0-b.1`. The counter goes **after a
 dot and is numeric**: `b.7`, never `b7`, which as
 an alphanumeric identifier semver orders `b10` before `b9`. The beta is not a release, and no
 release ever reads it: a release derives its number from production's own and writes it on
@@ -123,18 +123,20 @@ saying so, and stop — §6 of `contracts/project-contract.md`, no fallback and 
    it carries the development tree **as its commits hold it**, so work standing in the tree and in
    no commit would be left out of the release without anybody noticing. **Where it is not empty you
    ask the owner, and you ask before anything else runs** — the paths one by one, and the two roads
-   with what each costs — because the flush below is a whole review cycle, and a working tree the
-   owner commits in their own terminal costs a minute. The question is the **first act** of the run:
-   put after the chain has started, it asks about a cost already paid.
+   with what each costs — because the flush below is a whole review cycle, and the work standing in
+   the tree is what pays for it. The question is the **first act** of the run: put after the chain
+   has started, it asks about a cost already paid.
 
-   - **`A` — stop, and the owner commits.** Return `released: false` with the paths named in
-     `detail`, and the run is relaunched once they are committed. This is the recommended road: the
-     work is theirs and they know what it is, their terminal is behind no guard, and the release
-     that follows takes its own three minutes.
-   - **`B` — flush it here.** The release makes the tree clean itself, as § *Flushing the working
-     tree* says, and goes on.
+   - **`A` — flush it here.** The release makes the tree clean itself, as § *Flushing the working
+     tree* says, and goes on. This is the recommended road: the work standing in the tree is work
+     this project already decided to keep, the cycle is the only door a commit has here, and the
+     clean tree is what the release was waiting for anyway.
+   - **`B` — stop, and the owner commits.** Return `released: false` with the paths named in
+     `detail`, and the run is relaunched once they are committed. The work is theirs and they know
+     what it is, and their terminal is behind no guard — but the release then waits on a gesture of
+     theirs.
 
-   Where there is nobody to ask — a chained run, a session with no interactive channel — road `B`
+   Where there is nobody to ask — a chained run, a session with no interactive channel — road `A`
    is taken, and `detail` says the question was not asked. A tree still not empty after the flush is
    `released: false`, with the paths left standing named in `detail`.
 
@@ -208,8 +210,8 @@ saying so, and stop — §6 of `contracts/project-contract.md`, no fallback and 
 
 ## Flushing the working tree — **worker** role
 
-**Road `B` of step 1, and the whole of it.** Where the owner chose to have the release make the
-tree clean, this is how.
+**Road `A` of step 1, and the whole of it.** Where the owner chose to have the release make the
+tree clean — or where there was nobody to ask, which takes the same road — this is how.
 The work is not discarded and not stashed: it enters history through the cycle that reads it, which
 is the only door a commit has here — the command guard denies `git commit` outside a review cycle.
 And the release does not trust this step to have happened: `architect/release.mjs` refuses a working

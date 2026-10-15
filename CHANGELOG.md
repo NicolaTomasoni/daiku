@@ -1,5 +1,10 @@
 # Changelog
 
+### 1.2.1 — 2026-10-15
+
+- **`init` no longer takes a project's own document for residue.** The list of the seats Daiku wrote before it moved under `.daiku/` held two documents — `.claude/orchestration.md` and `.claude/project-contract.md` — and a document carries no mark of who wrote it: at `.claude/<name>.md` a file the project wrote for itself is, to any program, the same file as a copy Daiku left behind, and a re-run closed the project's own contract into a `git stash`. The list now holds machinery alone — the parameter pair a reader may still open and the script a settings entry may start — and the criterion is the shape of what stands there, never its path.
+- **`release` recommends flushing the working tree itself.** A tree that is not empty is still the first question of a run, and the recommended road is now the node taking it through the review cycle and its closing commit — and through `commit` for the paths that cycle does not reach — instead of stopping and waiting for the owner's own commit. The stop stays there, second, for whoever prefers to commit the work themselves.
+
 ### 1.2.0 — 2026-10-15
 
 - **The product serves a single host, and the second marketplace is gone.** `Codex` is dropped: the `sync-host` skill and the host layer it wrote are deleted, the Codex manifest, the second marketplace and the hook template leave with them, the Codex agent metadata comes off every skill, and the entry points go from ten to nine. The `hosts` map stays, with its single entry.

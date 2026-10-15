@@ -37,7 +37,7 @@ node "<package root>/skills/init/scan.mjs" "<technical root>"
 - **`fresh: false`, and all three lists empty** — Daiku is already open here and nothing is behind. Your whole answer is one line saying so, in the `language.chat` of `project.json` — `Daiku is already set up here.` in English, `Daiku è già pronto qui.` in Italian — and the run ends: no question, no reading, no write.
 - **`fresh: false`, and at least one list not empty** — **reconciliation** mode. Each entry names the step that handles it (`step`): run those steps and only those, for those pieces and only those. *Step 0* is skipped — the languages live in `project.json`, which already stands and is never rewritten — and so is *Step 2*, unless `instructions` is listed. Then run the scan again: what it still lists is a step that did not go through (*Step 10*).
 
-**A piece standing there since an older Daiku is as much behind as a piece that is not there at all**, and that is why the answer is three lists and not one. `missing` is what the project does not have; `legacy` what an older Daiku deposited at a seat this one does not write any more; `params` the keys of a parameter file this contract no longer names. A relaunch reading only `missing` would call a project all set while five files of a layout nobody reads still stand inside it — and no eye tells an old file from a right one, which is why the comparison is the program's and not yours.
+**A piece standing there since an older Daiku is as much behind as a piece that is not there at all**, and that is why the answer is three lists and not one. `missing` is what the project does not have; `legacy` what an older Daiku deposited at a seat this one does not write any more; `params` the keys of a parameter file this contract no longer names. A relaunch reading only `missing` would call a project all set while files of a layout nobody reads still stand inside it — and no eye tells an old file from a right one, which is why the comparison is the program's and not yours.
 
 The scan reads only what `init` writes. A domain role the project answered in a file written after the first run is not something it can see: whoever writes that file writes the pointer.
 
@@ -489,10 +489,9 @@ Keep the file's line ending (*If the file already exists* of *Step 6*), and fini
 things **already on disk** that this package has left behind, and both are corrected here.
 
 **A seat of the old layout** — `.claude/project.json`, `.claude/environment.json`,
-`.claude/orchestration.md`, `.claude/project-contract.md`, `.claude/hooks/contratti-post-edit.mjs` —
-is a file of Daiku's standing where nothing reads it any more: today's parameters are `.daiku/`, and
-today's contracts live in the package. Close it into the git stash exactly as *Step 6* does with an
-instructions file you find:
+`.claude/hooks/contratti-post-edit.mjs` — is machinery of Daiku's standing at a seat nothing reads
+any more: today's parameters are `.daiku/`. Close it into the git stash exactly as *Step 6* does
+with an instructions file you find:
 
 ```
 git stash push -u -m "daiku: retired — <path> at the seat Daiku no longer writes" -- "<path>"
