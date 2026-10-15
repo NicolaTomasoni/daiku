@@ -45,7 +45,7 @@
   },
   "release": {
     "source": "<folder of the development branch whose content becomes the production tree, where the two sides do not have the same shape — e.g. plugins; drop this key where they do>",
-    "never": ["<paths that never reach production, on top of the method's own footprint — drop this key where there are none>"]
+    "never": ["<paths that never reach production, on top of the method's own footprint — left absent until the first release asks; the release writes [] where there are none>"]
   },
   "areas": {
     "<area name>": {
