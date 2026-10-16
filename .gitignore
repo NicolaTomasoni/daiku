@@ -1,0 +1,7 @@
+# Local working files of the tools that open this repository: the host's own settings, the
+# project's local environment, the review ledgers and the delivery worktrees. They belong to the
+# machine, never to the repository.
+.claude/settings.local.json
+.daiku/environment.local.json
+.docs/runtime/review
+.claude/worktrees/
