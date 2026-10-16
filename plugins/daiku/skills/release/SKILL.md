@@ -27,10 +27,10 @@ production, at the release, and it is not written back.
 The third branch is `edge`, a copy of the product tree re-rooted at `{release.source}` as production is,
 with no changelog, carrying a prerelease of the number production holds now: `<version>-edge.<N>+<tip>`.
 `N` counts the commits on development since the `Development:` anchor of the release standing on
-production, and `<tip>` is the short sha of development's tip. The workshop's own step writes it by hand
-before the push, with the plumbing, and never checks `edge` out: the review cycle never commits to it,
-and nothing on it ever comes back to development. A prerelease sits on `edge` alone, so a project
-following `edge` sees a new number at every push that changes development.
+production, and `<tip>` is the short sha of development's tip. The workshop's own step raises it, with the
+plumbing, without checking `edge` out and never by hand: the number is derived, and nobody types it. The
+review cycle never commits to it, and nothing on it ever comes back to development. A prerelease sits on
+`edge` alone, so a project following `edge` sees a new number at every push that changes development.
 
 **Production is a line of releases.** It does not fast-forward onto development and it is not
 development's ancestor: each release is a commit of its own, carrying the development tree as it
