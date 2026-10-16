@@ -1,11 +1,11 @@
 ---
 name: guardrail-nascono-spenti
-description: "la guardia nega sempre push, --no-verify e le firme di un agente, su qualunque host, e solo il pool dei worktree, i canali e la sede dei ledger si dichiarano; ask-guard nega due gesti del giro, e nessun file; nessun hook esegue un file perché è appena comparso"
+description: "la guardia nega sempre push, --no-verify e le firme di un agente, su qualunque host, e solo il pool dei worktree, i canali e la sede dei ledger si dichiarano; ask-guard nega due gesti del giro, e nessun file, e sul rientro legge il documento delle decisioni; nessun hook esegue un file perché è appena comparso"
 metadata: 
   node_type: memory
   type: project
   originSessionId: 7f30fa0d-9a97-482d-ba1b-c32231e0c9e1
-  modified: 2026-10-12T12:14:09.642Z
+  modified: 2026-10-16T09:00:00.000Z
 ---
 
 **Deciso il 19 settembre 2026, preparando gli hook per la distribuzione.** Un pacchetto si
@@ -40,6 +40,16 @@ perché è la delega a portare il giro oltre la domanda (incorporazione, brief e
 subagenti), e **non nega nessun file**: la guardia sulle scritture è uscita il 1° ottobre 2026 e
 resta fuori. Un messaggio dell'owner chiude la domanda come chiude tutto: la risposta libera prevale,
 e al `UserPromptSubmit` lo stato cade.
+
+**Sul rientro la guardia legge il documento, non la domanda** (dal 16 ottobre 2026). Il primo batch
+di una lista ripresa può aprirsi sopra `1/N`, ma il posto non lo dichiara l'ask: `ask-guard` legge il
+documento delle decisioni — `0.5. strategic-study.md` prima, `1. decision-doc.md` dopo — conta le sue
+carte, trova la prima senza `Choice:` e tiene l'apertura lì. Così il `5/5` di una lista di cui l'owner
+non ha mai visto la prima carta **non parte**: è il caso del ticket `ask-orfana`, dove il primo batch
+(`1–4/5`) fu rifiutato con l'owner lontano e il secondo (`5/5`) arrivò orfano. È anche il motivo per
+cui i batch di una lista lunga escono **uno alla volta**, il successivo solo dopo il ritorno del
+precedente, mai due nello stesso blocco di chiamate. Dove il documento non c'è o non si legge, nessun
+posto è rivendicato e vale la lettura più larga di prima.
 
 **Why il terzo.** `new-feature` chiede all'owner una **lista** di decisioni, e `AskUserQuestion` ne
 porta al massimo quattro per chiamata: una lista di sei si chiede in due chiamate, e il testo del

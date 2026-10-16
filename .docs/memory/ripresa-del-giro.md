@@ -4,7 +4,7 @@ description: "new-feature accetta una cartella al posto della descrizione e ripr
 metadata:
   node_type: memory
   type: project
-  modified: 2026-10-03
+  modified: 2026-10-16
 ---
 
 **Dal 3 ottobre 2026 `new-feature` accetta due argomenti**: una descrizione in linguaggio naturale
@@ -47,11 +47,15 @@ farebbe contare cose diverse alla chat e al documento. Il documento di decisioni
 la catena non conosce è un guasto da **riportare**, non da ignorare: i numeri e le risposte vivono
 nei nomi dichiarati.
 
-**L'eccezione nel guard si legge dal prompt.** `hooks/lib/ask-guard.mjs` pretende che una prima
-batch apra a `1/N` — è così che una lista non perde la testa — salvo quando il giro è una ripresa:
-lì la prima batch apre dove il documento si è fermato. La ripresa si legge dal prompt che apre il
-giro, perché è l'unico momento in cui la cartella viene nominata; un giro ripreso **senza** nominarla
-(nasce da una descrizione, lo slug derivato dalla prosa) resta tenuto a `1/N`. Vedi
+**L'eccezione nel guard si legge dal prompt, e il posto dal documento.** `hooks/lib/ask-guard.mjs`
+pretende che una prima batch apra a `1/N` — è così che una lista non perde la testa — salvo quando il
+giro è una ripresa: lì la prima batch apre dove il documento si è fermato, e il posto non lo presta
+fede all'ask: la guardia **legge il documento** — `0.5. strategic-study.md` prima, `1. decision-doc.md`
+dopo — ne conta le schede, trova la prima senza `Choice:` e tiene lì l'apertura; un batch che apre
+altrove è rifiutato, così il `5/5` di una lista mai vista dalla prima scheda non parte. La ripresa si
+legge dal prompt che apre il giro, perché è l'unico momento in cui la cartella viene nominata; un giro
+ripreso **senza** nominarla (nasce da una descrizione, lo slug derivato dalla prosa) resta tenuto a
+`1/N`. Dove il documento non c'è o non si legge, nessun posto è rivendicato. Vedi
 [[guardrail-nascono-spenti]] e [[confine-del-giro]].
 
 **Why.** Il README del pacchetto prometteva la ripresa da prima che esistesse — «hand it the folder

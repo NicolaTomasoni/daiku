@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: f135a876-1ccd-4db0-99e7-6c7abee5c262
-  modified: 2026-10-15T11:15:15.625Z
+  modified: 2026-10-16T09:09:13.395Z
 ---
 
 **Il prodotto ha il concetto di canale** (dal 3 ottobre 2026, ridisegnato il 5). Un progetto che lo
@@ -64,6 +64,12 @@ rilascio e lascia committare l'owner, il cui terminale nessuna guardia copre. Se
 l'owner vale `A`, e `detail` dice che la domanda non è stata posta. `architect/release.mjs`
 **rifiuta** un albero ancora non pulito, così un rilascio che non ha pulito non scrive niente (vedi
 [[valutatore-deterministico]]).
+
+**`--with-commit` toglie la domanda, nient'altro** (dal 16 ottobre 2026). Dove il flag sta — un
+token separato da spazi in `$ARGUMENTS`, mai dedotto dalla prosa — il passo 1 non chiede: vale `A`
+come se l'owner l'avesse scelta, la pulizia resta l'intero § *Flushing the working tree* e la
+versione del passo 4 resta la sua, e `detail` dice che la pulizia l'ha decisa il flag. La strada
+`B` lì non esiste: un giro con `--with-commit` non torna mai «lavoro lasciato al tuo commit».
 
 **`commit` non scrive più versione né changelog dove i canali sono dichiarati.** Non è una
 conseguenza automatica della chiave: su `develop` la versione è una **beta** che si muove quando
