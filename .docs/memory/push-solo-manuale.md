@@ -1,15 +1,14 @@
 ---
 name: push-solo-manuale
-description: "il push non parte mai da solo — le sedi che lo negano nel cantiere, l'unica eccezione (il workflow che alza `edge`), e il buco che le ha fatte scrivere: uno script che pushava al posto dell'owner"
+description: "il push non parte mai da solo — le sedi che lo negano nel cantiere, e il buco che le ha fatte scrivere: uno script che pushava al posto dell'owner"
 metadata:
   node_type: memory
   type: project
-  modified: 2026-10-16T14:28:36.804Z
+  modified: 2026-10-16T15:50:50.938Z
   originSessionId: a2642d71-61f9-4f11-aa8b-a94f64886de8
 ---
 
-Il push è un gesto manuale dell'owner, e **tre sedi** lo impongono nel cantiere. L'unica eccezione è `edge`,
-dal 16 ottobre 2026, ed è descritta sotto.
+Il push è un gesto manuale dell'owner, e **tre sedi** lo impongono nel cantiere.
 
 - **`.claude/settings.json`** — `permissions.deny` su `git push`, `git push:*` e `git -C * push:*`.
   È la porta che l'hook non chiude: una permission rule dell'host sta sopra ogni altra regola e non
@@ -17,17 +16,12 @@ dal 16 ottobre 2026, ed è descritta sotto.
 - **`.daiku/project.json`** — accende il gate del pacchetto su questo repository, e da lì il
   command-guard nega `git push`, `--no-verify` e le firme dell'agente. Vedi [[guardie-di-macchina]].
 - **`.docs/tools/check-no-push.mjs`** — scansiona gli script del cantiere e segnala chi invoca un
-  push, tranne `edge` nel suo workflow (`ALLOWED`). Col suo banco (`--self-check`), e si lancia prima di un rilascio accanto agli altri.
+  push, in qualunque file. Col suo banco (`--self-check`), e si lancia prima di un rilascio accanto agli altri.
 
 **Il buco che le ha fatte scrivere.** Il 30 settembre 2026 un rilascio è uscito prima che l'owner lo
 decidesse: lo script di pubblicazione pushava **da sé**, e nessuna guardia poteva vederlo — il gate
 di Daiku era spento, perché il cantiere non aveva il suo `project.json`, e comunque un hook legge la
 **riga di comando**, non dentro uno script. La riga che l'agente digita è lo script.
-
-**L'eccezione, dal 16 ottobre 2026.** `.github/workflows/edge.yml` pusha `refs/heads/edge` a ogni push su
-`develop`, così `edge` segue il cantiere senza un gesto a mano. È una decisione dell'owner, e il push
-automatico esiste solo lì. `check-no-push.mjs` la ammette con `ALLOWED`: quel comando esatto, nel solo file
-del workflow, senza forza. Ogni altro push, in ogni altro file, o verso un altro ramo, è rosso.
 
 **Why:** un divieto che vive solo nella prosa è un divieto che un agente può non leggere — e
 «non pushare» era scritto in tre contratti mentre lo script pushava. La lezione non è «scrivere
@@ -36,7 +30,7 @@ esiste il divieto non esiste. Vedi [[daiku-versionato]] per la stessa dottrina a
 
 **How to apply:** quando aggiungi uno script al cantiere, non fargli fare il push — il commit sì,
 il push no. `check-no-push.mjs` te lo ricorda, ma il controllo legge gli script, non le intenzioni:
-se servisse un altro push automatico, va deciso dall'owner e il controllo va cambiato
-con lui, non aggirato. Per `edge` la decisione c'è già. Dal 5 ottobre 2026 il cantiere non ha più script di pubblicazione: il
+se servisse un push automatico, va deciso dall'owner e il controllo va cambiato
+con lui, non aggirato. Dal 5 ottobre 2026 il cantiere non ha più script di pubblicazione: il
 rilascio scrive un ref locale e si ferma, e il push di `develop` e di `main` è dell'owner —
 [[pubblicazione-su-github]].

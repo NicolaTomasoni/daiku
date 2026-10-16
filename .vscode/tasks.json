@@ -42,6 +42,44 @@
       }
     },
     {
+      "label": "LLM: switch to Xiaomi MiMo 2.6 Pro (Xiaomi API)",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${env:USERPROFILE}\\.claude\\llm-switch.ps1",
+        "-Mode",
+        "xiaomi"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "LLM: switch to Xiaomi MiMo 2.6 Flash (Xiaomi API)",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${env:USERPROFILE}\\.claude\\llm-switch.ps1",
+        "-Mode",
+        "xiaomi-flash"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
       "label": "LLM: switch to Claude Code",
       "type": "shell",
       "command": "powershell",
@@ -120,14 +158,6 @@
       "command": "node .daiku/update.mjs",
       "options": { "cwd": "${workspaceFolder}" },
       "presentation": { "echo": false, "reveal": "always", "focus": true, "panel": "dedicated", "clear": true, "showReuseMessage": false },
-      "problemMatcher": []
-    },
-    {
-      "label": "daiku: alza il ramo edge",
-      "detail": "Porta il ramo edge a develop: la copia del prodotto col numero <produzione>-edge.<N>+<tip>. Scrive un commit sul ramo senza fare checkout e senza committare su develop; il push di develop ed edge resta tuo",
-      "type": "shell",
-      "command": "node .docs/tools/bump-edge.mjs",
-      "options": { "cwd": "${workspaceFolder}" },
       "problemMatcher": []
     }
   ]

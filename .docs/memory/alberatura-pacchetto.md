@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 48eaa498-ed6e-4a36-847d-3f8fa95f7f21
-  modified: 2026-10-16T14:28:46.042Z
+  modified: 2026-10-16T15:50:24.801Z
 ---
 
 Il repo ospita il prodotto Daiku. Il repository è **uno solo** — `NicolaTomasoni/daiku` su GitHub,
@@ -55,8 +55,6 @@ tiene i suoi documenti — i punti aperti, i nuovi sviluppi e i cinque documenti
     Il resto del metodo sono le skill di Daiku installate dal marketplace, **rilascio compreso**.
     Vedi [[corpus-di-sviluppo]].
   - `settings.local.json` — punta `autoMemoryDirectory` (vedi [[memoria-nel-repo]]).
-- **`.github/`** — `workflows/edge.yml`: il workflow che alza `edge` a ogni push su `develop`. GitHub lo vuole
-  in radice, ed è del cantiere, non del prodotto.
 - **`.vscode/`** — `tasks.json` con gli switch fra backend LLM: tooling personale dell'owner, con
   path della sua home. Non c'entra niente con Daiku.
 - **`.daiku/`** — i parametri del **cantiere**, non del prodotto, e versionati come il resto: è
