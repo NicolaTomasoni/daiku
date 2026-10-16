@@ -333,8 +333,8 @@ function switchToMain(url) {
   const now = installed();
   process.stdout.write(`\n${green('✓')} Daiku ${bold(now || 'installed')} is now on ${bold('main')}\n`);
   const aligned = alignment(now);
-  if (aligned) process.stdout.write(`  ${aligned}\n`);
-  process.stdout.write('Open a new Claude Code session to load it.\n');
+  if (aligned) process.stdout.write(`\n  ${aligned}\n`);
+  process.stdout.write('\nOpen a new Claude Code session to load it.\n');
 }
 
 async function main() {
@@ -369,10 +369,10 @@ async function main() {
 
   const same = !!after && !!before && after === before;
   process.stdout.write(
-    same ? `  Daiku ${bold(before)} is already the latest.\n\n` : `  ${delta(before, after)}\n`
+    same ? `  Daiku ${bold(before)} is already the latest.\n` : `  ${delta(before, after)}\n`
   );
   const aligned = alignment(after);
-  if (aligned) process.stdout.write(`  ${aligned}\n`);
+  if (aligned) process.stdout.write(`\n  ${aligned}\n`);
 
   if (channel.name === 'edge' && channel.url) {
     process.stdout.write('\n');
@@ -390,7 +390,7 @@ async function main() {
     'Not now',
   ]);
   if (answer !== 0) {
-    process.stdout.write('Nothing changed.\n');
+    process.stdout.write('\nNothing changed.\n');
     return;
   }
 
@@ -409,15 +409,15 @@ async function main() {
   const was = result && typeof result.oldVersion === 'string' ? result.oldVersion : null;
   const now = result && typeof result.newVersion === 'string' ? result.newVersion : null;
   if (was && now && was !== now) {
-    process.stdout.write(`${green('✓')} Daiku updated  ${delta(was, now)}\n`);
+    process.stdout.write(`\n${green('✓')} Daiku updated  ${delta(was, now)}\n`);
   } else if (now) {
-    process.stdout.write(`Daiku ${bold(now)} is already the latest.\n\n`);
+    process.stdout.write(`\nDaiku ${bold(now)} is already the latest.\n`);
   } else {
-    process.stdout.write(`${green('✓')} Daiku updated.\n`);
+    process.stdout.write(`\n${green('✓')} Daiku updated.\n`);
   }
   const realign = alignment(now || after);
-  if (realign) process.stdout.write(`${realign}\n`);
-  process.stdout.write('Open a new Claude Code session to load it.\n');
+  if (realign) process.stdout.write(`\n${realign}\n`);
+  process.stdout.write('\nOpen a new Claude Code session to load it.\n');
 }
 
 main().catch((error) => {
