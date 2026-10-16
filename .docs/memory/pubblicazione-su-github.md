@@ -21,8 +21,9 @@ production.
 `develop` **porta una beta**: il manifest dichiara il numero che `main` porta, marcato con un
 contatore — `1.2.3-b.1` — scritto dopo un punto, perché `b10` verrebbe prima di `b9` in semver. A
 muoverla sono due mani: il **rilascio** la riallinea al numero appena pubblicato, contatore fresco
-a `1`, e un commit di sviluppo alza il contatore quando sale la **forma**
-del pacchetto, cioè quando `init` avrebbe qualcosa da riportare nei progetti ospiti. Non è un rilascio e
+a `1`, e il passo del cantiere (`.docs/tools/bump-beta.mjs`, lanciato a mano prima del push) alza
+il contatore al totale dei commit su `develop` — uno in più a ogni push, qualunque cosa il push
+porti — verificandolo contro l'upstream e viaggiando nel flusso ordinario come un diff qualunque. Non è un rilascio e
 nessun rilascio la legge: il numero di un rilascio si deriva da `main` e si scrive su `main`, dove
 questa viene sovrascritta. Serve perché il pacchetto si installa anche dall'albero di sviluppo — il
 marketplace di questa macchina punta alla cartella di prodotto — ed è quella dichiarazione a far

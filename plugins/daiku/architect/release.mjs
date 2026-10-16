@@ -634,7 +634,8 @@ function actRecord(input) {
 /**
  * The beta follows the release.
  *
- * Development carries production's own number marked as a beta (`1.2.3-b.1`), and a release that
+ * Development carries production's own number marked as a beta (`9.9.9-b.7`
+ * here only as an example — the live number lives in the version file), and a release that
  * left it behind would leave the tree declaring the number just replaced. So after the release step
  * the skill writes the new beta into the working-tree files itself and this action freezes them on
  * development — the way the record commits, and the way production is written: a throwaway index,
@@ -685,8 +686,8 @@ function actBeta(input) {
   }
 
   const expected = new Map();
-  // A replicated file may quote the beta URL-escaped, as a shields badge does (`1.2.3--b.1` for
-  // `1.2.3-b.1`): the literal pass leaves that form intact — `1.2.2--b.3` holds no `1.2.2-b.3`
+  // A replicated file may quote the beta URL-escaped, as a shields badge does (`9.9.9--b.7` for
+  // `9.9.9-b.7` — example numbers, never the live one): the literal pass leaves that form intact — `1.2.2--b.3` holds no `1.2.2-b.3`
   // substring — and the badge pass converts it. Where the beta carries no dash both forms are one.
   const badgeOf = (s) => s.replace(/-/g, '--');
   for (const path of paths) {

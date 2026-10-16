@@ -26,8 +26,10 @@ release ever reads it: a release derives its number from production's own and wr
 production, overwriting this one there. It is there because a package installed from its own
 development tree must declare a version, and because that declaration is what moves the installed
 copy. It moves two ways: the release realigns it to the number just published, counter fresh at
-`1` (§ *The step*, step 6), and a development commit raises the counter when the shape of the
-product moves — a commit `init` would carry into the projects that use it. `{changelog}` is not a
+`1` (§ *The step*, step 6), and the workshop's own step raises the counter to the total of the
+commits on the development branch — one more at every push, whatever the push carries. That step
+runs by hand before the push, checks the number against the branch's upstream, and leaves a diff
+like any other: the review cycle reads it and the manual push closes it. `{changelog}` is not a
 file on development: a released section is born on production,
 at the release, and it is not written back.
 
