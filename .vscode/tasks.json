@@ -122,10 +122,10 @@
       "problemMatcher": []
     },
     {
-      "label": "daiku: alza la beta di develop",
-      "detail": "Porta la versione beta di develop al numero che la produzione dichiara: se la base e' gia' quella di main sale il contatore, altrimenti il numero va al livello di main e il contatore riparte. Scrive i file e non committa: il diff lo guardi tu",
+      "label": "daiku: alza il ramo edge",
+      "detail": "Porta il ramo edge a develop: la copia del prodotto col numero <produzione>-edge.<N>+<tip>. Scrive un commit sul ramo senza fare checkout e senza committare su develop; il push di develop ed edge resta tuo",
       "type": "shell",
-      "command": "node .docs/tools/bump-beta.mjs",
+      "command": "node .docs/tools/bump-edge.mjs",
       "options": { "cwd": "${workspaceFolder}" },
       "problemMatcher": []
     }

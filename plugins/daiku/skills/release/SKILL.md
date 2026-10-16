@@ -18,20 +18,19 @@ keeps its own life.
 
 ## The two sides
 
-**Development carries a beta, and no changelog.** `{version.file}` stands there holding the number
-production carries now, marked as a beta with a counter — `1.2.3-b.1`. The counter goes **after a
-dot and is numeric**: `b.7`, never `b7`, which as
-an alphanumeric identifier semver orders `b10` before `b9`. The beta is not a release, and no
-release ever reads it: a release derives its number from production's own and writes it on
-production, overwriting this one there. It is there because a package installed from its own
-development tree must declare a version, and because that declaration is what moves the installed
-copy. It moves two ways: the release realigns it to the number just published, counter fresh at
-`1` (§ *The step*, step 6), and the workshop's own step raises the counter to the total of the
-commits on the development branch — one more at every push, whatever the push carries. That step
-runs by hand before the push, checks the number against the branch's upstream, and leaves a diff
-like any other: the review cycle reads it and the manual push closes it. `{changelog}` is not a
-file on development: a released section is born on production,
-at the release, and it is not written back.
+**Development carries no version, and no changelog.** The number lives on production alone:
+`{version.file}` there holds the number the last release wrote, and a release derives its number from
+production's own and writes it there. Development has no number to move, so a release leaves nothing
+behind on it to realign. `{changelog}` is not a file on development: a released section is born on
+production, at the release, and it is not written back.
+
+The third branch is `edge`, a copy of the product tree re-rooted at `{release.source}` as production is,
+with no changelog, carrying a prerelease of the number production holds now: `<version>-edge.<N>+<tip>`.
+`N` counts the commits on development since the `Development:` anchor of the release standing on
+production, and `<tip>` is the short sha of development's tip. The workshop's own step writes it by hand
+before the push, with the plumbing, and never checks `edge` out: the review cycle never commits to it,
+and nothing on it ever comes back to development. A prerelease sits on `edge` alone, so a project
+following `edge` sees a new number at every push that changes development.
 
 **Production is a line of releases.** It does not fast-forward onto development and it is not
 development's ancestor: each release is a commit of its own, carrying the development tree as it
@@ -238,21 +237,6 @@ saying so, and stop — §6 of `contracts/project-contract.md`, no fallback and 
    as the release writes production. It is a step of its own and not a `git commit`: the node's own
    write, and the tree is left clean.
 
-   **Then the beta follows the release.** Where `{version.file}` is declared, development is advanced
-   to `<version>-b.1` — the number just published, counter fresh — so the tree the release leaves
-   behind already declares what production carries, and no `version: update` lingers in the tree for
-   the next release to trip on. First write the beta into the working-tree files yourself:
-   `{version.file}`, every file of `{version.replicated_in}`, and the prose seats quoting the old
-   beta you find with a search — a badge quotes it URL-escaped, which the program converts — each
-   holding exactly the replacement and nothing else. Then run `architect/release.mjs` with
-   `action: "beta"`, the same version keys, the `beta`, the `prose_paths` you wrote and a `message`
-   in `{language.commit}`: it checks each file holds exactly the beta transform of what development
-   carries — any other difference fails the call instead of smuggling a change into the beta commit —
-   and commits the group on `{channels.development}` with the plumbing, as the release writes
-   production. It is a step of its own and not a `git commit`: the node's own write, and the tree is
-   left clean. A rerun finding the beta already there writes nothing. Where no `{version.file}` is
-   declared there is no beta to advance: skip it and declare it in `detail`.
-
    **`action: "dry"` runs all of it and moves no ref.** Same keys, same answer, plus `would_be` —
    the commit it would write — where `release` gives `production_sha`. Use it when the owner wants
    to see the release before it exists, and when in doubt about which case you are in: the dry run
@@ -311,7 +295,6 @@ mirrors, where this file stays normative on divergence:
   carrying `--with-commit` can return: road `B` is not reachable there, and `detail` says the flush
   was the flag's. Where § *First run* asked,
   it also says which exclusions were recorded in `.daiku/project.json` — or that there was nobody
-  to ask and the next run asks again. On `released: true` it also says which beta development was
-  advanced to — or, where no `{version.file}` is declared, that there was no beta to advance.
+  to ask and the next run asks again.
   Where the release replaced a draft keeping its number, it says so and names the bullets that
   joined it.

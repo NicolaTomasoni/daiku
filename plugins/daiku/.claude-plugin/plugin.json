@@ -1,6 +1,5 @@
 {
   "name": "daiku",
-  "version": "1.2.3-b.1",
   "description": "Autonomous architecture-first development method: skill contracts, role orchestration, and project parameter contracts.",
   "author": {
     "name": "Nicola Tomasoni"
