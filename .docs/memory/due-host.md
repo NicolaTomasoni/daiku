@@ -25,10 +25,17 @@ falso.
 
 **Dove i due si separano.** Il ramo di delega di §4 di `contracts/orchestration.md` (per opencode il
 tool è `subagent`, con il **nome** dell'agente come parametro); il ramo di § *Ask the owner* (il tool
-`question`); la riga di `instructions_file` in §7; la resa del ruolo in `agents/` — la radice per
-Claude Code, `agents/opencode/` per opencode, e il controllo del corpus impone che ogni host renda
-ogni ruolo. Su opencode le regole di permesso **tolgono davvero il tool** al modello, quindi il
-read-only del finder è imposto dalla costruzione e non solo dalla prosa.
+`question`); la riga di `instructions_file` in §7 — `CLAUDE.md` di qua, `AGENTS.md` di là;
+l'**ancora** alla radice di supporto, che di qua è la variabile sostituita dall'host e di là va
+**calcolata** dalla base directory della skill, perché opencode non sostituisce nessuna variabile; la
+resa del ruolo in `agents/` — la radice per Claude Code, `agents/opencode/` per opencode, e il
+controllo del corpus impone che ogni host renda ogni ruolo; il **canale**, che di qua è
+l'installazione da un marketplace e di là il **deposito dentro il progetto**, con l'annidamento che di
+là si dichiara in `experimental.subagent_depth` e di qua non esiste ([[deposito-opencode]]); la **sede
+delle guardie**, `hooks.json` di qua e un plugin-adattatore di là; la **memoria dell'host** dello
+*Step 7* di `init`, che è una sede che opencode non ha e che `init` lì **dichiara** assente
+([[init-aggancia-la-memoria]]). Su opencode le regole di permesso **tolgono davvero il tool** al
+modello, quindi il read-only del finder è imposto dalla costruzione e non solo dalla prosa.
 
 **Why:** aggiungere un host non è una sede in più, è una superficie che si moltiplica — due rami di
 delega, due rese di ruolo, due file di istruzioni, due vie di installazione — e il costo si paga a

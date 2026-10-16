@@ -274,16 +274,18 @@ claude plugin validate plugins/daiku
 
 Il validatore però non guarda dentro il codice eseguibile del pacchetto: gli hook, tutti
 **fail-open** — davanti a un guasto tacciono ed escono `0`, quindi rotti e silenziosi si
-assomigliano — i sette programmi di `plugins/daiku/architect/` e la scansione di `init`,
-`plugins/daiku/skills/init/scan.mjs`. La verifica del codice è la loro, e vale come la validazione:
+assomigliano — i sette programmi di `plugins/daiku/architect/`, i programmi di `init` sotto
+`plugins/daiku/skills/init/` e l'adattatore delle guardie `plugins/daiku/hooks/opencode-plugin.mjs`.
+La verifica del codice è la loro, e vale come la validazione:
 
 ```bash
 node plugins/daiku/hooks/self-check.mjs
 ```
 
 Lancia insieme i banchi di prova di tutto ciò che il pacchetto esegue — i moduli di
-`plugins/daiku/hooks/lib/`, il banco dei manifest, i sette programmi di
-`plugins/daiku/architect/` e `skills/init/scan.mjs` — stampa il totale contato ed esce `1` al primo caso rosso: quanti
+`plugins/daiku/hooks/lib/`, l'adattatore `plugins/daiku/hooks/opencode-plugin.mjs`, il banco dei
+manifest, i sette programmi di `plugins/daiku/architect/` e i programmi di `init` sotto
+`skills/init/` — stampa il totale contato ed esce `1` al primo caso rosso: quanti
 banchi e quanti controlli siano lo dice la sua uscita, non questa riga. I banchi del ledger e del
 rilascio lavorano con Git vero su repository usa e getta nella cartella temporanea di sistema: vogliono
 `git` nel `PATH`.

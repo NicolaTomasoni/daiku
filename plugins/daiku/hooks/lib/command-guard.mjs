@@ -827,7 +827,7 @@ function reviewGuard(line, env, ctx) {
   };
 }
 
-const REAL_ENV = {
+export const REAL_ENV = {
   isLink: (path) => {
     try {
       // A Windows junction is not a symlink to the POSIX API, yet `lstat` still marks
@@ -895,7 +895,7 @@ const REAL_ENV = {
  * and parameters, so they hold even with an unreachable filesystem. Proved by the
  * bench, not declared here.
  */
-function evaluate(line, cwd, env, ctx) {
+export function evaluate(line, cwd, env, ctx) {
   // The gate, before everything else: without `.daiku/project.json` this project has not
   // opened Daiku, and the guard has nothing to watch. The line is not even read.
   if (!ctx || !ctx.present) return null;
