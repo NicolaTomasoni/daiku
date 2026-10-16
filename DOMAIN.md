@@ -17,7 +17,7 @@
 
 - **Il progetto** — il repository su cui Daiku lavora. Porta i suoi **parametri**: dove sta il
   codice, quali sono le aree e con quale comando si verificano, dove vive la memoria e il suo
-  indice, come si scrivono i messaggi di commit, quali sono i due rami. Porta anche le sue **regole
+  indice, come si scrivono i messaggi di commit, quali sono i rami. Porta anche le sue **regole
   locali**: le convenzioni e i criteri che hanno bisogno di un *perché*, e le regole architetturali
   valide solo per certi path.
 - **Il lavoro** — un problema in lavorazione, con la sua cartella di documenti numerati: il
@@ -50,7 +50,7 @@
 - **L'host** — Claude Code. Daiku gli si presenta come un pacchetto: le skill, che l'agente legge
   come contratti; gli hook, che sorvegliano i gesti; i subagenti, a cui i passi vengono delegati. È
   l'unico host che Daiku dichiara.
-- **Git** — il sistema di controllo versione. Attraverso di esso passano i due rami, i commit, i
+- **Git** — il sistema di controllo versione. Attraverso di esso passano i rami, i commit, i
   worktree dei lavori, e lo stash in cui viene riposto un file del progetto che un documento nuovo
   assorbe.
 - **Il marketplace** — il canale con cui il pacchetto arriva e si aggiorna: installazione,
@@ -92,7 +92,7 @@
   file nuovo.
 - **Blocco di ritorno** — la risposta strutturata che un nodo restituisce a chi l'ha chiamato: un
   oggetto con campi fissi, che il chiamante legge senza ricostruirlo dalla prosa.
-- **Canale** — uno dei due rami del progetto: **sviluppo**, dove ogni commit atterra, e
+- **Canale** — uno dei due canali dichiarati del progetto: **sviluppo**, dove ogni commit atterra, e
   **produzione**, che avanza solo con una release e su cui il lavoro non committa.
 - **Giro** — un passaggio del ciclo di review, o più in generale una tornata di lavoro completa fino
   al commit.

@@ -10,10 +10,10 @@ metadata:
 
 **Il confine fra cantiere e prodotto è il ramo, non un secondo repository** (dal 5 ottobre 2026,
 vedi [[pubblicazione-su-github]]). `develop` porta tutto — il prodotto, `.docs/`, `CLAUDE.md`,
-`.claude/`, `.daiku/`, `.vscode/` — e su `main` esce **il contenuto di `plugins/`**, portato alla
-radice del repository: la vetrina, `daiku/`, il README, il `.gitattributes`, la licenza.
+`.claude/`, `.daiku/`, `.vscode/` — e su `main` ed `edge` esce **il contenuto di `plugins/`**, portato
+alla radice del repository: la vetrina, `daiku/`, il README, il `.gitattributes`, la licenza.
 
-`plugins/` è quindi la cartella il cui **contenuto** è l'albero di `main`. Lo dichiara
+`plugins/` è quindi la cartella il cui **contenuto** è l'albero di `main` e di `edge`. Lo dichiara
 `release.source` in `.daiku/project.json`, ed è per questo che le chiavi `version.*` e `changelog`
 si scrivono una volta sola, nella forma del cantiere: il rilascio le risolve su production togliendo
 quel prefisso.

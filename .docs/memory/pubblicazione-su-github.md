@@ -1,6 +1,6 @@
 ---
 name: pubblicazione-su-github
-description: "Il repository è uno solo — `NicolaTomasoni/daiku` su GitHub, con `develop` cantiere e `main` linea di rilasci: i rilasci li fa `daiku:release`, una bozza si accumula finché non è pushata, e il push resta dell'owner"
+description: "Il repository è uno solo — `NicolaTomasoni/daiku` su GitHub, con `develop` cantiere, `main` linea di rilasci ed `edge` copia del prodotto che segue `develop`: i rilasci li fa `daiku:release`, una bozza si accumula finché non è pushata, e il push resta dell'owner"
 metadata:
   node_type: memory
   type: project
@@ -9,27 +9,28 @@ metadata:
 ---
 
 **Dal 5 ottobre 2026 il repository è uno solo.** `NicolaTomasoni/daiku` su GitHub, privato finché
-Daiku non è pronto per il pubblico, con **due rami**: `develop` è il cantiere, `main` è la
-produzione. Non ci sono più due repository — `tomasoni.nicola/daiku-dev` su GitLab è **congelato**
-dal giorno della migrazione, non riceve più push, e la sua storia è stata importata in `develop`.
+Daiku non è pronto per il pubblico, con **tre rami**: `develop` è il cantiere, `main` è la
+produzione, `edge` è la copia del prodotto che segue `develop`. Non ci sono più due repository —
+`tomasoni.nicola/daiku-dev` su GitLab è **congelato** dal giorno della migrazione, non riceve più push,
+e la sua storia è stata importata in `develop`.
 
-La copia di lavoro è `C:\dev\daiku`, che tiene entrambi i rami, ed è la sola: il vecchio checkout di
+La copia di lavoro è `C:\dev\daiku`, su `develop`, ed è la sola: `main` ed `edge` non si fanno mai
+checkout. Il vecchio checkout di
 servizio — che esisteva perché il macchinario di pubblicazione ci copiava i file dentro — è stato
 **ritirato**, e quel macchinario con lui. Il rilascio non ne ha bisogno: non si mette mai su
 production.
 
-`develop` **porta una beta**: il manifest dichiara il numero che `main` porta, marcato con un
-contatore — `1.2.3-b.1` — scritto dopo un punto, perché `b10` verrebbe prima di `b9` in semver. A
-muoverla sono due mani: il **rilascio** la riallinea al numero appena pubblicato, contatore fresco
-a `1`, e il passo del cantiere (`.docs/tools/bump-beta.mjs`, lanciato a mano prima del push) alza
-il contatore al totale dei commit su `develop` — uno in più a ogni push, qualunque cosa il push
-porti — verificandolo contro l'upstream e viaggiando nel flusso ordinario come un diff qualunque. Non è un rilascio e
-nessun rilascio la legge: il numero di un rilascio si deriva da `main` e si scrive su `main`, dove
-questa viene sovrascritta. Serve perché il pacchetto si installa anche dall'albero di sviluppo — il
-marketplace di questa macchina punta alla cartella di prodotto — ed è quella dichiarazione a far
-muovere la copia installata. La versione è in semver stretto, quindi la chiave non può mancare, e
-`plugins/CHANGELOG.md` non esiste su `develop`. `main` porta versione e changelog, ed è **una linea
-di rilasci**: non è antenata di `develop`, e niente di un rilascio torna indietro.
+`develop` **non porta nessun numero di versione**: il manifest non ha il campo `version`, e
+`plugins/CHANGELOG.md` non esiste. Il numero sta su `main`, e lo scrive il rilascio. Il validatore
+dell'host accetta quel manifest con un avviso: vedi [[installazione-e-versionamento]].
+
+A seguire il lavoro di `develop` da fuori c'è `edge`: una copia di `plugins/` ri-radicata come `main`,
+senza changelog, col manifest che dichiara `<produzione>-edge.<N>+<tip>` — la base è il numero che
+`main` porta adesso, `N` i commit di `develop` dopo l'ancora del trailer `Development:`, `tip` il sha
+corto di `develop`. Lo scrive `.docs/tools/bump-edge.mjs`, lanciato a mano prima del push, con la
+plumbing: non fa checkout, non committa, non pusha. Vedi [[edge-copia-del-prodotto]]. `main` porta
+versione e changelog, ed è **una linea di rilasci**: non è antenata di `develop`, e niente di un
+rilascio torna indietro.
 
 **I rilasci li fa Daiku stesso**, con la skill `release` del pacchetto e il programma
 `plugins/daiku/architect/release.mjs`. Il comando `/rilascia-daiku` e i due script PowerShell non

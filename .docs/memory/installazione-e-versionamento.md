@@ -16,14 +16,17 @@ metadata:
 quello e l'host tira la versione nuova; finché non si bumpa, nessuno aggiorna. Una versione
 **cambiata** basta a far ricopiare il plugin all'host: verificato il 5 ottobre 2026, non serve un
 incremento ordinato né un numero più alto, basta che differisca da quella installata. Claude Code
-tiene ogni versione in una cartella propria e conserva le orfane per 14 giorni.
+tiene ogni versione in una cartella propria e conserva le orfane per 14 giorni. Un manifest senza
+`version` non ferma il validatore: `claude plugin validate plugins/daiku` passa con l'avviso
+`version: No version specified`, provato il 16 ottobre 2026.
 
 **Un marketplace può vivere in una cartella locale, non solo in un repository git.** Verificato il
 5 ottobre 2026 su questa macchina: in `extraKnownMarketplaces` di Claude Code la voce `daiku` ha
 `source: { "source": "directory", "path": "C:\\dev\\daiku\\plugins" }`, e ciò che l'host installa è
 l'albero di `develop` stesso. Nessun clone e nessun ref: è la via per provare il pacchetto in
-sviluppo senza passare da git, ed è perché `develop` dichiara una versione — vedi
-[[pubblicazione-su-github]].
+sviluppo senza passare da git. `develop` non porta più un numero di versione (vedi
+[[pubblicazione-su-github]]): quale numero l'host confronti per una cartella locale senza `version` non
+è verificato; per seguire il lavoro da fuori c'è `edge` ([[edge-copia-del-prodotto]]).
 
 **L'aggiornamento da riga di comando è in due tempi**, verificato il 30 settembre 2026 su `claude`
 2.1.276 con `--help`: `claude plugin marketplace update [name]` («Update marketplace(s) from their

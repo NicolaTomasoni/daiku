@@ -2,10 +2,11 @@
 
 Indice delle memorie del progetto. Una riga per file, nessun contenuto qui dentro.
 
-- [Alberatura del pacchetto](alberatura-pacchetto.md) — un repository solo, `develop` cantiere e `main` produzione; cosa contiene ogni cartella, i nomi che si somigliano e non c'entrano, le tre regole di collocazione
+- [Alberatura del pacchetto](alberatura-pacchetto.md) — un repository solo, `develop` cantiere, `main` produzione ed `edge` copia del prodotto; cosa contiene ogni cartella, i nomi che si somigliano e non c'entrano, le tre regole di collocazione
 - [Il corpus di sviluppo](corpus-di-sviluppo.md) — in `.claude/` restano solo i due comandi che il prodotto non ha; con cui Daiku si sviluppa — rilascio compreso — sono le skill `daiku:*`, e lo strumento resta indietro per scelta
-- [Si pubblica solo il prodotto](si-pubblica-solo-il-prodotto.md) — il confine è il ramo: il contenuto di `plugins/` è la radice di `main`, perché chi installa il marketplace riceve un clone dell'intero repository
-- [Pubblicazione su GitHub](pubblicazione-su-github.md) — un repository solo: `develop` cantiere, `main` linea di rilasci; i rilasci li fa `daiku:release`, una bozza si accumula finché non è pushata, e il push resta dell'owner
+- [Si pubblica solo il prodotto](si-pubblica-solo-il-prodotto.md) — il confine è il ramo: il contenuto di `plugins/` è la radice di `main` e di `edge`, perché chi installa il marketplace riceve un clone dell'intero repository
+- [Pubblicazione su GitHub](pubblicazione-su-github.md) — un repository solo: `develop` cantiere senza versione, `main` linea di rilasci; i rilasci li fa `daiku:release`, una bozza si accumula finché non è pushata, e il push resta dell'owner
+- [Il ramo edge](edge-copia-del-prodotto.md) — la copia del prodotto che segue `develop`, col numero `<produzione>-edge.<N>+<tip>`: come si forma `N`, chi lo scrive con la plumbing (`bump-edge.mjs`), e perché `develop` non porta versione
 - [La memoria vive nel repo](memoria-nel-repo.md) — perché `autoMemoryDirectory` non si versiona e va riscritto su ogni macchina
 - [Il frontmatter di una skill va quotato](frontmatter-skill-va-quotato.md) — il guasto silenzioso che svuota i metadati di una SKILL.md
 - [init scrive il file di istruzioni](init-scrive-le-istruzioni.md) — il divieto ribaltato il 19 settembre 2026, il file trovato che si chiude in uno stash git, la chiave per host scesa in `environment.json`, le sei regole della fusione (riga tenuta intera, sede non rinominata, titoli e numerazione del progetto), e l'inglese di tutto ciò che init deposita
@@ -29,7 +30,7 @@ Indice delle memorie del progetto. Una riga per file, nessun contenuto qui dentr
 - [Il valutatore deterministico](valutatore-deterministico.md) — il prodotto ha un programma che possiede l'ordine della catena e risponde a undici domande meccaniche, e accanto tre strumenti che misurano il disco — la review, il pool dei worktree e la riconciliazione del merge —: il verdetto vincola, e il banco è l'unica difesa
 - [Il pool dei worktree](pool-worktree.md) — `architect/pool.mjs` possiede il registro, il possesso e la scelta dello slot: riusabile è l'albero pulito che non porta commit fuori dal ramo d'integrazione **e che nessuna consegna tiene**, e la scelta si fa sotto un lock esclusivo
 - [Guardie di macchina](guardie-di-macchina.md) — tutte le guardie vivono sotto Program Files e le gestisce solo lo strumento installato, dal task di VS Code; i sorgenti in .docs/tools/macchina/; le trappole di PowerShell 5.1
-- [Il cantiere non si nomina](cantiere-mai-nominarlo.md) — il cantiere e il ritardo della beta installata rispetto all'albero non sono un problema e non si nominano mai se non è l'owner a farlo: il disallineamento è lo stato normale, non una dimenticanza
+- [Il cantiere non si nomina](cantiere-mai-nominarlo.md) — il cantiere e il ritardo dell'ultimo rilascio installato rispetto all'albero non sono un problema e non si nominano mai se non è l'owner a farlo: il disallineamento è lo stato normale, non una dimenticanza
 - [La fase strategica non si salta](fase-strategica-non-si-salta.md) — il giudizio di stadio di decision-doc chiede di chi è la direzione e se è stata messa alla prova: i quattro segnali che vietano il tecnico, i quattro campi del blocco e le undici regole nel valutatore
 - [Kaji fuori dal monorepo](kaji-fuori-dal-monorepo.md) — dal 26 settembre 2026 Kaji vive in C:/dev/Kaji come progetto ospite di Daiku; cosa resta qui e cosa è ancora da decidere
 - [Fan-out di ricerca](fanout-ricerca.md) — `.docs/tools/ricerca.mjs` lancia N `daiku:research` in parallelo, uno per tecnologia, e popola `.daiku/studies/`: lo slug calcolato prima, e il controllo che alla fine ogni appunto ci sia e sia fresco

@@ -9,7 +9,7 @@ metadata:
 ---
 
 Il repo ospita il prodotto Daiku. Il repository è **uno solo** — `NicolaTomasoni/daiku` su GitHub,
-con `develop` cantiere e `main` produzione — e la copia di lavoro sta in
+con `develop` cantiere, `main` produzione ed `edge` copia del prodotto — e la copia di lavoro sta in
 `C:\dev\daiku`. **In radice non entra
 nessun file di prodotto**: ci sono le sedi di sviluppo e una cartella,
 il cui **contenuto** è per intero la radice di `main` — `plugins/`.

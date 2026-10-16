@@ -77,7 +77,7 @@ strumenti di verifica. Il cantiere non si pubblica.
 - **Gli hook sono fail-open.** *Perché:* un hook che va in errore e blocca il turno costa più di
   quanto protegga, e il rischio che copre è raro. *Se è sbagliata:* un hook rotto tace, quindi non
   lo si nota — la contromisura è che ognuno abbia il suo banco di prova.
-- **Due rami invece di un filtro sui file.** *Perché:* chi aggiunge il marketplace riceve un clone
+- **Rami separati invece di un filtro sui file.** *Perché:* chi aggiunge il marketplace riceve un clone
   dell'intero repository, non solo della cartella di prodotto, quindi il filtro non può stare in un
   `.gitignore`. *Se è sbagliata:* ogni release deve costruire l'albero di produzione, invece di
   essere un semplice avanzamento.
@@ -99,5 +99,5 @@ strumenti di verifica. Il cantiere non si pubblica.
 
 - `plugins/daiku/contracts/project-contract.md` e `contracts/orchestration.md` — le regole dei
   parametri, dei ruoli e della delega;
-- `CLAUDE.md`, le istruzioni del cantiere — la collocazione di ogni cosa e i due rami;
+- `CLAUDE.md`, le istruzioni del cantiere — la collocazione di ogni cosa e i rami;
 - la memoria del progetto, in `.docs/memory/`, per il perché delle decisioni qui riassunte.

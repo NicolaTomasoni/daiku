@@ -43,7 +43,7 @@ e nient'altro esce.
 
 | Sede | Cos'è |
 |---|---|
-| `plugins/` | **Daiku** — il cui contenuto è la radice di `main`, il ramo di produzione, che è un marketplace |
+| `plugins/` | **Daiku** — il cui contenuto è la radice di `main`, il ramo di produzione, e di `edge`, la sua copia che segue `develop`: sono marketplace |
 | `plugins/.claude-plugin/marketplace.json` | vetrina Claude Code, punta a `./daiku` |
 | `plugins/daiku/` | il pacchetto Daiku — ciò che l'host installa |
 | `.docs/` | memoria, confronti, esempi, strumenti di sviluppo |
@@ -97,29 +97,32 @@ il prodotto si scrive **solo** lì, che è l'unico albero pubblicato; riportarla
 cantiere è una decisione a parte, che chiedi invece di prendere. Vale allo stesso modo per
 `.claude/orchestration.md`.
 
-## Un repository, due rami: `develop` e `main`
+## Un repository, tre rami: `develop`, `main` ed `edge`
 
 Il repository è **uno solo**: `NicolaTomasoni/daiku` su GitHub, privato finché Daiku non è pronto per
-il pubblico. Il cantiere e il prodotto sono i suoi due rami, e la copia di lavoro è
-`C:\dev\daiku`, che li tiene entrambi.
+il pubblico. Il cantiere è `develop`; `main` ed `edge` sono due copie del prodotto, e nessuno dei tre
+si legge dall'altro. La copia di lavoro è `C:\dev\daiku`, su `develop`: gli altri due non si fanno mai
+checkout.
 
 **`develop` è il cantiere.** Porta tutto — il prodotto sotto `plugins/`, la ricognizione, i punti
-aperti, la memoria, gli esempi, queste istruzioni — ed è il ramo su cui si lavora. **Porta una
-versione, ed è una beta**: il manifest dichiara la versione di `main` stessa, marcata come beta
-con un contatore — `1.2.3-b.1` — scritto dopo un punto, perché `b10` verrebbe prima di `b9`. Non è
-un rilascio e nessun rilascio la legge: il numero di un rilascio si deriva da `main` e si scrive su
-`main`, dove questa viene sovrascritta. Serve perché il pacchetto si installa anche dall'albero di
-sviluppo, e perché è quella dichiarazione a far muovere la copia installata; il rilascio la
-riallinea al numero pubblicato con contatore fresco, e fra un rilascio e l'altro la alza il
-passo del cantiere al totale dei commit su `develop` — uno in più a ogni push, qualunque cosa il
-push porti.
-`plugins/CHANGELOG.md` qui non esiste.
+aperti, la memoria, gli esempi, queste istruzioni — ed è il ramo su cui si lavora. **Non porta nessun
+numero di versione**: il numero sta su `main`, e lo scrive il rilascio. `plugins/CHANGELOG.md` qui non
+esiste.
 
 **`main` è la produzione, ed è una linea di rilasci.** Ogni rilascio è un commit che porta il
 contenuto di `plugins/` alla radice del repository — la vetrina, `daiku/`, il README, il
 `.gitattributes` — con la versione nei due punti e la voce di changelog costruita dai messaggi del
 blocco. `main` **non è antenata di `develop`**, e niente di un rilascio torna indietro: un numero o
 una sezione di changelog che ricompaiano su `develop` sono un guasto, non un allineamento.
+
+**`edge` è la copia del prodotto che segue `develop`.** Porta solo ciò che sta sotto `plugins/`,
+ri-radicato come `main` — la vetrina, `daiku/`, il README — senza changelog, con un numero di
+prerelease sull'imminente versione più i metadati di build: `1.2.3-edge.3+a1b2c3d`. `1.2.3` è il
+numero che `main` porta adesso; `3` conta i commit di `develop` dopo l'ancora che l'ultimo rilascio ha
+registrato nel trailer `Development:`; `a1b2c3d` è il sha corto del tip di `develop`. Il numero cambia a
+ogni push che cambia `develop`: è quello che l'host confronta per muovere la copia di un ospite che
+segue `edge`. Lo scrive il passo del cantiere `.docs/tools/bump-edge.mjs`, lanciato a mano prima del
+push, con la plumbing: non fa checkout, non committa, non pusha. Niente di `edge` torna su `develop`.
 
 **I rilasci li fa Daiku stesso**, con la skill `release` del pacchetto — non un comando del cantiere e
 due script, che non esistono più. Legge `develop`, costruisce il commit di produzione con la plumbing
@@ -131,7 +134,7 @@ rilascio si chiude col push, che resta il gesto manuale dell'owner.
 Il confine fra cantiere e prodotto è il ramo, e dentro `plugins/` è inglese tutto: il prodotto parla
 inglese, il cantiere italiano.
 
-Perché due rami e non un `.gitignore`: chi aggiunge il marketplace riceve un clone dell'**intero**
+Perché rami separati e non un `.gitignore`: chi aggiunge il marketplace riceve un clone dell'**intero**
 repository, non solo di `plugins/daiku/` — lo schema di Claude Code lo dice alla voce `sparsePaths`,
 «If omitted, the full repository is cloned». Il repo *è* l'artefatto consegnato: non c'è un passo di
 impacchettamento dove mettere il filtro, come farebbe il campo `files` di un `package.json`.

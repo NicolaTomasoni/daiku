@@ -72,12 +72,11 @@ versione del passo 4 resta la sua, e `detail` dice che la pulizia l'ha decisa il
 `B` lì non esiste: un giro con `--with-commit` non torna mai «lavoro lasciato al tuo commit».
 
 **`commit` non scrive più versione né changelog dove i canali sono dichiarati.** Non è una
-conseguenza automatica della chiave: su `develop` la versione è una **beta** che il rilascio
-riallinea al numero pubblicato e che fra un rilascio e l'altro il passo del cantiere alza al
-totale dei commit sul ramo di sviluppo — uno in più a ogni push, qualunque cosa il push porti — e `{changelog}` non è un file di sviluppo,
-perché una sezione nasce al rilascio e non torna indietro. Vedi [[pubblicazione-su-github]] per la
-forma della beta. Dove `channels.production` non è dichiarato non c'è rilascio, e `commit` resta
-l'unico che possa muovere il numero: continua a fare com'era.
+conseguenza automatica della chiave: su `develop` non c'è nessun numero di versione — il numero sta
+su produzione, e lo scrive il rilascio — e `{changelog}` non è un file di sviluppo, perché una sezione
+nasce al rilascio e non torna indietro. Il prerelease del ramo `edge` lo scrive il passo del cantiere,
+non il commit: vedi [[edge-copia-del-prodotto]]. Dove `channels.production` non è dichiarato non c'è
+rilascio, e `commit` resta l'unico che possa muovere il numero: continua a fare com'era.
 
 **Punti non provati.** Va verificato che `init` e i suoi rilanci lascino sempre la copia principale
 sul ramo di sviluppo.
