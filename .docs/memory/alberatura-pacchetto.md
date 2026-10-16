@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 48eaa498-ed6e-4a36-847d-3f8fa95f7f21
-  modified: 2026-10-16T15:50:24.801Z
+  modified: 2026-10-16T19:57:42.344Z
 ---
 
 Il repo ospita il prodotto Daiku. Il repository è **uno solo** — `NicolaTomasoni/daiku` su GitHub,
@@ -77,10 +77,11 @@ tiene i suoi documenti — i punti aperti, i nuovi sviluppi e i cinque documenti
 - `backup/skill-estratte.md` — il registro ad append di ciò che è stato tolto dalle skill
 - `tools/check-topology.mjs` — verifica la topologia del corpus, nel gate e a mano prima del
   rilascio; sta qui e non sotto `plugins/` così non viaggia con ciò che si pubblica
-- `tools/check-corpus.mjs` — verifica le otto invarianti del corpus che i contratti dichiarano in
-  prosa senza che nessun controllo le imponesse (caratteri di controllo, chiavi citate e specchio
+- `tools/check-corpus.mjs` — verifica le nove invarianti che il corpus dichiara in prosa senza che
+  nessun controllo le imponesse (caratteri di controllo, chiavi citate e specchio
   `schemas/blocks.json`, path interni, blocchi json, modelli nominati dalle skill, riga §5.1,
-  toolset degli agenti); ha il suo banco in `--self-check`, che accanto al totale elenca le regole
+  toolset degli agenti, vocabolario dei ruoli, clausola `--no-ask` che le carte lascia senza
+  `Choice:`); ha il suo banco in `--self-check`, che accanto al totale elenca le regole
   `never_red`
 - `tools/check-marketplace.mjs` — verifica la vetrina del repository pubblicato: che sia leggibile
   e che ogni voce risolva a una cartella vera dentro l'albero, che ne porti il manifest; ha il suo

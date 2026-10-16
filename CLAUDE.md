@@ -307,12 +307,14 @@ prima di un rilascio, accanto al self-check.
 
 Il corpus è verificato dal **gate dell'area `daiku`** (`.daiku/project.json`): la fase *Gate* della
 skill `review` — che `ship-feature` esegue — lancia `check-corpus.mjs` da sé su ogni consegna che
-tocca `plugins/daiku/`, e un rosso blocca il commit. Copre le otto invarianti che i contratti
-dichiarano in prosa ma nessun altro controllo impone — nessun carattere di controllo in una riga,
+tocca `plugins/daiku/`, e un rosso blocca il commit. Copre le nove invarianti che il corpus
+dichiara in prosa ma nessun altro controllo impone — nessun carattere di controllo in una riga,
 ogni chiave `{…}` citata esistente con lo specchio `schemas/blocks.json` concorde con la prosa, ogni
 path interno che risolve, ogni blocco json parsabile, nessuna skill che nomina un modello, la riga
 d'apertura §5.1 dove serve, l'agente dal toolset ristretto, il vocabolario dei ruoli chiuso ai due
-di §1 — con totale contato ed uscita `1` al primo caso rosso. Il banco del controllo si lancia con `node .docs/tools/check-corpus.mjs --self-check`.
+di §1, e la clausola `--no-ask` — chi nomina il flag porta, in un paragrafo che lo nomina, la
+clausola `Choice:` che nessuna scelta scrive senza l'owner — con totale contato ed uscita `1` al
+primo caso rosso. Il banco del controllo si lancia con `node .docs/tools/check-corpus.mjs --self-check`.
 
 Nessuno di questi guarda la **vetrina** del repository pubblicato — la sola parte che il
 repository studiato ha rotto senza accorgersene, e l'unica il cui errore non si vede in locale ma

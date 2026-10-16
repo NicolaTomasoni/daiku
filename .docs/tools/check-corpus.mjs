@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Verificatore delle otto invarianti del corpus di Daiku.
+ * Verificatore delle nove invarianti del corpus di Daiku.
  *
  * Attrezzo di sviluppo, non codice ospite: vive fuori da `plugins/`, non si pubblica, non si
  * installa in nessun progetto e non gira mai da un hook. Si lancia a mano prima di un rilascio,
@@ -13,7 +13,7 @@
  * **mai** un file: l'unica scrittura avviene dentro `--self-check`, che crea le proprie fixture in
  * `os.tmpdir()` e le cancella alla fine. Non contiene, né lancia, nessun comando d'installazione.
  *
- * Imporre le otto invarianti che i contratti dichiarano in prosa ma nessun controllo verifica
+ * Imporre le nove invarianti che il corpus dichiara in prosa ma nessun controllo verifica
  * (`CLAUDE.md`: «dove possiamo aggiungere un controllo deterministico, lo aggiungiamo sempre»):
  *
  * 1. nessuna riga di un file di testo porta un carattere di controllo C0 diverso da `\n` (0x0A);
@@ -32,11 +32,15 @@
  *    fuori dai controlli.
  * 8. la parola in grassetto con cui una skill dichiara il ruolo di un passo è uno dei ruoli che §1 di
  *    `orchestration.md` dichiara nella sua tabella — il vocabolario si legge da lì, non si ricopia:
- *    una regola documentata dentro un code span o un fence non è una dichiarazione.
+ *    una regola documentata dentro un code span o un fence non è una dichiarazione;
+ * 9. `new-feature/SKILL.md` e `decision-doc/SKILL.md` nominano `--no-ask` e portano, in un
+ *    paragrafo che lo nomina, la clausola `Choice:` — nessuna scelta scritta senza l'owner — e
+ *    nessuno dei due porta la prosa vietata `takes the recommended`, che chiudeva le carte
+ *    lasciando alla ripresa nulla da chiedere.
  *
  * Il totale è contato, non cablato, e ogni controllo ha accanto la sua regex o la sua costante —
  * la definizione è parte del controllo, non un dettaglio interno. Il banco `--self-check` porta
- * casi verdi e rossi per ciascuno degli otto e, accanto a `{checks, passed, failed}`, l'elenco
+ * casi verdi e rossi per ciascuno delle nove e, accanto a `{checks, passed, failed}`, l'elenco
  * `never_red` — le regole che nessuna fixture ha mai reso rosse — perché una regola sempre verde
  * non si distingue da una che non può fallire (`hooks/self-check.mjs:130-136`).
  */
@@ -49,8 +53,15 @@ import { fileURLToPath } from 'node:url';
 
 /* ---------------------------------------------------------------- definizioni */
 
-/** Gli otto controlli, per identificatore: sono le «regole» del banco, quelle che `never_red` conta. */
-const CONTROLLI = ['c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8'];
+/** I nove controlli, per identificatore: sono le «regole» del banco, quelle che `never_red` conta. */
+const CONTROLLI = ['c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9'];
+
+/** Le due skill che portano il flag `--no-ask`: sono le sole che lo dichiarano, e il controllo 9
+ *  le chiude a due — mancanti, o senza la clausola, sono rosse. */
+const SKILL_NO_ASK = ['skills/new-feature/SKILL.md', 'skills/decision-doc/SKILL.md'];
+
+/** La prosa storica con cui `--no-ask` prendeva le scelte al posto dell'owner: non deve tornare. */
+const PROSA_VIETATA_NO_ASK = /takes the recommended/i;
 
 /** La riga d'apertura §5.1, verbatim da `contracts/project-contract.md` §5.1, a spazi normalizzati. */
 const RIGA_51 = '**Parameters.** Every key in braces in this contract resolves on the project '
@@ -313,7 +324,7 @@ function subagentType(testo) {
 /* ---------------------------------------------------------------- verifica */
 
 /**
- * Esegue gli otto controlli su una radice di pacchetto già su disco. Non ha opzioni: le fixture del
+ * Esegue i nove controlli su una radice di pacchetto già su disco. Non ha opzioni: le fixture del
  * banco sono radici temporanee costruite da `radiceBase`, non scorciatoie.
  */
 function verifica(root) {
@@ -498,6 +509,28 @@ function verifica(root) {
     check('c8', problemi.length === 0, problemi.join('; '));
   }
 
+  /* 9 — la clausola `--no-ask`: chi nomina il flag porta, in un paragrafo che lo nomina, la clausola
+   *     che nessuna carta riceve la sua `Choice:` senza l'owner — e la prosa storica che prendeva
+   *     l'opzione consigliata al posto suo non torna. Senza questa seconda sede il testo della skill
+   *     basta a farlo tacere: il difetto è tornato tre volte proprio perché lo diceva nessun controllo. */
+  {
+    const problemi = [];
+    for (const f of SKILL_NO_ASK) {
+      let testo = null;
+      try { testo = leggiTesto(join(root, f)); } catch { problemi.push(`${f}: manca`); }
+      if (testo === null) continue;
+      if (!testo.includes('--no-ask')) { problemi.push(`${f}: non nomina --no-ask`); continue; }
+      const paragrafi = testo.split(/\r?\n\s*\r?\n/);
+      if (!paragrafi.some((p) => p.includes('--no-ask') && p.includes('Choice:'))) {
+        problemi.push(`${f}: nessun paragrafo --no-ask porta la clausola Choice:`);
+      }
+      if (PROSA_VIETATA_NO_ASK.test(testo)) {
+        problemi.push(`${f}: porta la prosa vietata 'takes the recommended'`);
+      }
+    }
+    check('c9', problemi.length === 0, problemi.join('; '));
+  }
+
   return { checks, failed };
 }
 
@@ -567,6 +600,26 @@ function radiceBase(base) {
     `> ${RIGA_51}`,
     '',
     'Uses `{code_root}`.',
+    '',
+  ].join('\n'));
+  // Le due skill del controllo 9: la base le porta già con la clausola, così ogni caso verde
+  // passa e i casi rossi le riscrivono.
+  scrivi(join(root, 'skills/new-feature/SKILL.md'), [
+    '---',
+    "name: 'new-feature'",
+    "description: 'fixture opener'",
+    '---',
+    '',
+    'With `--no-ask` the run stops at the document: no card gets its `Choice:` line.',
+    '',
+  ].join('\n'));
+  scrivi(join(root, 'skills/decision-doc/SKILL.md'), [
+    '---',
+    "name: 'decision-doc'",
+    "description: 'fixture study'",
+    '---',
+    '',
+    'With `--no-ask` nobody is asked: no card gets its `Choice:` line.',
     '',
   ].join('\n'));
   scrivi(join(root, 'agents/finder.md'), [
@@ -713,6 +766,19 @@ function runSelfCheck() {
       '---\nname: fence\ndescription: x\n---\n\nEsempio:\n\n```\n**manager** role\n```\n'));
     caso('fence-spaiato-non-acceca-rosso', 'c8', true, (r) => scrivi(join(r, 'skills/spaiato/SKILL.md'),
       '---\nname: spaiato\ndescription: x\n---\n\n```\nesempio\n\n### Scope — **manager** role\n'));
+
+    // 9 — la clausola --no-ask: la base la porta, i casi rossi la tolgono.
+    caso('no-ask-clausola-verde', 'c9', false, null);
+    caso('no-ask-senza-clausola-rosso', 'c9', true, (r) => scrivi(join(r, 'skills/new-feature/SKILL.md'),
+      '---\nname: new-feature\ndescription: x\n---\n\nWith `--no-ask` the run stops at the document.\n'));
+    caso('no-ask-frase-vietata-rosso', 'c9', true, (r) => scrivi(join(r, 'skills/new-feature/SKILL.md'),
+      '---\nname: new-feature\ndescription: x\n---\n\nWith `--no-ask` the run takes the recommended option (`A`) for every card, and the cards close without a `Choice:` left open.\n'));
+    caso('decision-doc-senza-clausola-rosso', 'c9', true, (r) => scrivi(join(r, 'skills/decision-doc/SKILL.md'),
+      '---\nname: decision-doc\ndescription: x\n---\n\nThe study writes the decision cards.\n'));
+    caso('decision-doc-clausola-verde', 'c9', false, (r) => scrivi(join(r, 'skills/decision-doc/SKILL.md'),
+      '---\nname: decision-doc\ndescription: x\n---\n\nWith `--no-ask` nobody is asked: the cards stay without their `Choice:` line.\n'));
+    caso('no-ask-fuori-dalle-skill-ignorato', 'c9', false, (r) => scrivi(join(r, 'templates/project/notes.md'),
+      'A run with `--no-ask` would leave `Choice:` lines here, outside the skill corpus.\n'));
   } finally {
     rmSync(base, { recursive: true, force: true });
   }

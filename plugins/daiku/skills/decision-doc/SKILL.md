@@ -29,11 +29,12 @@ What holds in both, and is not derogated:
 
 ### From `new-feature` — study
 
-You are a subagent in a fresh context, launched when `0. problem.md` has just been written based on the code and recompared with the notes of the involved technologies. Four differences hold, and nothing else changes:
+You are a subagent in a fresh context, launched when `0. problem.md` has just been written based on the code and recompared with the notes of the involved technologies. Five differences hold, and nothing else changes:
 
 - **The input arrives resolved** — folder, `0. problem.md`, paths of the `research` notes and paths of the pertinent memories stand in the prompt. Point 2 of the procedure has almost nothing to do: the folder carries a single document, already in the right form; if it carries others, you merge them as always. Do not ask anything and do not stop waiting, because there is nobody answering.
 - **The notes open before studying the options.** They are verified facts on the sources, with version and date: a technical option motivated on model memory, when the source is on disk, is the defect that fan-out was spent to avoid. Cite the file and the section when an option rests on them.
 - **Phase 4 does not run here.** You stop at the decision list of Phase 3 and return it: incorporation is interactive, and it arrives as a separate invocation with the answers already in hand. Phases 1, 2 and 3 run in full: the technical stage produces `1. decision-doc.md`, the strategic one `0.5. strategic-study.md`. Stopping at direction does not exempt you from writing — it is the only way for your judgement to reach whoever decides.
+- **No card is ever answered here.** The `Choice:` line belongs to *incorporation* alone, where the owner's answers arrive verbatim in the prompt: written by *study* it would be an answer nobody gave, and whoever resumes the folder would read it as answered and never ask it again. It holds above all under `--no-ask` — a run where nobody will be asked at all — and the document you leave there must come back to the owner with every card open.
 ### From `new-feature` — incorporation
 
 You are a second subagent, fresh context, and in the prompt there are the **owner answers**, decision by decision, verbatim. Incorporate them in the document hosting them: do not re-analyse the problem and do not reopen the already closed decisions.
