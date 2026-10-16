@@ -131,16 +131,19 @@ function marketplace() {
 
 /**
  * The channel the marketplace is registered on, read from the registration itself: `edge` is the
- * git ref of the copy that follows `develop`, `main` is the default branch with no ref, and anything
- * else is a folder or a ref this script does not know — named, and left alone.
+ * git ref of the copy that follows `develop`, `main` is the default branch — an absent ref or the
+ * branch named — recorded either as a URL (`source: "git"`) or as the `owner/repo` shorthand the
+ * host stores as `source: "github"` with no `url`, and anything else is a folder or a ref this
+ * script does not know — named, and left alone.
  */
 function channelOf(market) {
   if (!market) return { name: 'none' };
-  if (market.source === 'git' && market.ref === 'edge') return { name: 'edge', url: market.url || null };
-  if (market.source === 'git' && (!market.ref || market.ref === 'main')) {
-    return { name: 'main', url: market.url || null };
-  }
-  return { name: 'other', where: market.path || market.url || market.ref || 'unknown' };
+  const remote = market.source === 'git' || market.source === 'github';
+  const url =
+    market.url || (market.source === 'github' && market.repo ? `https://github.com/${market.repo}` : null);
+  if (remote && market.ref === 'edge') return { name: 'edge', url };
+  if (remote && (!market.ref || market.ref === 'main')) return { name: 'main', url };
+  return { name: 'other', where: market.path || market.url || market.repo || market.ref || 'unknown' };
 }
 
 /**

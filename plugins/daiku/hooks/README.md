@@ -6,7 +6,7 @@ the other five never stop anything and only say what they know.
 | Hook | Event | What it does |
 |---|---|---|
 | `lib/command-guard.mjs` | `PreToolUse` on `Bash`/`PowerShell` | denies seven gestures: four always, three only where the project declares them |
-| `lib/ask-guard.mjs` | `PreToolUse` on `AskUserQuestion` and on the subagent launch, `PostToolUse` on `AskUserQuestion`, `UserPromptSubmit` | keeps the ask of a run whole: refuses a decision ask whose questions carry no place in the list, refuses a batch that does not continue its list, and refuses the launch of a subagent while the ask is open — a delegation and never a file |
+| `lib/ask-guard.mjs` | `PreToolUse` on `AskUserQuestion` and on the subagent launch, `PostToolUse` on `AskUserQuestion`, `UserPromptSubmit` | keeps the ask of a run whole: refuses a decision ask whose questions carry no place in the list, refuses a batch that does not continue its list **or stops short of the tool's ceiling while cards remain**, and refuses the launch of a subagent while the ask is open — a delegation and never a file |
 | `lib/subagent-advice.mjs` | `SubagentStart`, and `PreToolUse` on the launch tools (`Agent`/`Task`) | says the run's one statement of concision to every subagent it starts — the return block stays whole, the prose around it is where length is spent — and names a launch prompt over the `subagent.prompt_cap` the project declares; **blocks nothing**, never touches the prompt |
 | `lib/contracts-post-edit.mjs` | `PostToolUse` on `Edit`/`Write` | after a write to the corpus — and to the sources a policy watches — reports faults that would not fail on their own |
 | `lib/run-advice.mjs` | `UserPromptSubmit`, and `PreToolUse` on the write tools | marks the session a run was opened in and states the run's rule once — adding the size of the prompt and the seats that exist for it where the prompt is over the `prompt_dump_chars` the project declares; at a write that conversation makes outside the seats the run owns it repeats the rule — and blocks nothing |
@@ -66,11 +66,14 @@ conversation's and the notice speaks; present, a child is doing the work, which 
 
 **`ask-guard` is not a branch of this table either, and it denies two gestures of a run.**
 `new-feature` asks the owner a **list** of decisions, and `AskUserQuestion` carries at most four
-questions per call, so a list of six is asked in two calls: with no boundary on it, a run that asks
+questions per call, so a list of six is asked in two calls, **each one filled to those four while
+cards remain** — one question per call would be a wait per card on a list the owner reads whole
+anyway: with no boundary on it, a run that asks
 four and carries on answers the remaining two **in the owner's place**, and the owner never learns
 the list had six. The list is therefore numbered — every question opens with `k/N`, its own place
 and the length of the list — and this hook is the seat that holds the run to it: it refuses a
-decision ask whose questions carry no place, refuses a batch that does not continue its list, and
+decision ask whose questions carry no place, refuses a batch that does not continue its list **or
+stops short of the ceiling while cards remain**, and
 refuses the **launch of a subagent** while the ask is open, that launch being how the run reaches
 the work that answers the decisions (incorporation, brief, delivery). **It denies no file**: the
 write guard is gone and stays gone, and what is denied here is a delegation. A message of the owner
