@@ -77,7 +77,8 @@ percorso più lungo a quattro livelli `new-feature → ship-feature → review �
   18 o superiore**» ; «Non c'è nessun linguaggio compilato, nessun transpiler e nessun bundler: i file
   `.mjs` sono il codice che gira.»
 - **§2 — Framework e librerie.** «**Nessuna dipendenza esterna.** Il pacchetto non dichiara alcun
-  manifesto di dipendenze né alcun lockfile: tutto è scritto sulla libreria standard di Node e sulle
+  manifesto di **dipendenze** né alcun lockfile: un `package.json` descrittore del plugin è
+  ammesso; tutto è scritto sulla libreria standard di Node e sulle
   API dell'host.»
 - **§3 — Strumenti e catena di build e prova.** «**Non c'è una build**: ciò che si scrive è ciò che si
   esegue.»

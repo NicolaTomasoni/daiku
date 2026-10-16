@@ -4,7 +4,9 @@
  *
  * Claude Code carries the guards by installation: `hooks.json` wires seven modules to the host's
  * events, and the host runs them. opencode has no such file — its extension point is a **plugin**,
- * a module opencode auto-loads from `.opencode/plugins/` and calls through its own V2 API. So on
+ * a module the host loads from the package descriptor and calls through its own V2 API: the
+ * descriptor `plugins/package.json` resolves to the package's entrypoint `plugins/plugin.mjs`,
+ * and that entrypoint imports this file and calls its `setup`. So on
  * opencode the guards must be **re-hung**, and this file is the one place that does it: it
  * **imports** the package's own modules — it never rewrites them, so the guard that runs there is
  * the same guard that runs on Claude Code — and attaches each to the opencode hook that fires
@@ -24,8 +26,9 @@
  * no event for the end of a subagent (`SubagentStop` → zero occurrences) nor for the end of a turn
  * (`Stop` → no equivalent), so there is no point at which those two could be attached: the open
  * ledger notice and the subagent cap notice do not exist on this host. That is a declared gap, not
- * a silent one — the same list stands in the header of this file and in `declared_missing` of
- * `.opencode/daiku/deposit.json`, so whoever reads the deposit learns it without reading the code.
+ * a silent one — the same list stands in the header of this file and in the bench below, which
+ * holds the `MISSING` constant to the file's own text, so whoever reads either learns it without
+ * reading the code.
  *
  * **The tool names are opencode's, not Claude Code's** (§7.5, §11.2 of the opencode study): the
  * shell is `shell`, the write is `edit`, the delegation is `subagent`, the question is `question`.
@@ -48,7 +51,8 @@
  *       `{checks, passed, failed[]}`, exit 1 on the first red. `hooks/self-check.mjs` launches it.
  *
  * The module is a plugin, not a program: run as a program it only answers `--self-check`. Its
- * `default` is the shape opencode's loader accepts — `{id, setup}`.
+ * `default` is the same definition shape `{id, setup}` the entrypoint's loader reads — there,
+ * from `plugins/plugin.mjs`, which imports this `setup` and returns the inventory.
  */
 
 import { existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -72,7 +76,7 @@ export const ID = 'daiku';
 /** The modules this adapter attaches to a live opencode hook — the five of § *The two seats*. */
 export const HOOKED = ['command-guard', 'ask-guard', 'contracts-post-edit', 'run-advice', 'session-advice'];
 
-/** The modules opencode has no event for, declared missing in the file and in the deposit manifest. */
+/** The modules opencode has no event for, declared missing in this file's header and its bench. */
 export const MISSING = ['stop-advice', 'subagent-advice'];
 
 /** opencode's tool names, mapped to the seats the modules read. */
@@ -273,8 +277,8 @@ export function eventHook(event, root, client) {
 /**
  * The plugin's setup: attach the five modules to the live domains and return the inventory. The
  * shape is opencode's V2 promise API (`@opencode/plugin`) — `ctx.tool.hook`, `ctx.session.hook`,
- * `ctx.event.subscribe` — and the module count it reports is what the bench and the deposit
- * manifest both hold to.
+ * `ctx.event.subscribe` — and the module count it reports is what the bench below and the
+ * entrypoint's bench both hold to.
  */
 export function setup(ctx) {
   const root = rootOf(ctx);
@@ -355,10 +359,6 @@ function selfCheck() {
       const source = readFileSync(fileURLToPath(import.meta.url), 'utf-8');
       return source.includes('stop-advice') && source.includes('subagent-advice');
     })());
-    check('the deposit manifest declares the same two modules', (() => {
-      const source = readFileSync(join(HERE, '..', 'skills', 'init', 'deposit.mjs'), 'utf-8');
-      return MISSING.every((name) => source.includes(name));
-    })(), 'the deposit does not name the same missing modules');
 
     // --- the hooks are really registered ------------------------------------------------
     check('execute.before is hooked', (ctx.hooks.tool['execute.before'] || []).length === 1);

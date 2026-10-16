@@ -16,7 +16,7 @@ sede del corpus, invece, `init` la crea su qualunque progetto che non ce l'ha**:
 metodo, e `update-memory` lo scrive a ogni commit. **Su opencode quella sede dell'host non esiste** —
 l'host non ha una cartella di memoria né legge un file di impostazioni: `init` non porta niente e lo
 **dichiara** in una riga, e lì il corpus resta con un solo scrittore, `update-memory`
-([[deposito-opencode]], [[due-host]]).
+([[canale-opencode]], [[due-host]]).
 
 **Why:** la sede è **una sola** — `{memory.root}` — e da quel momento ha due scrittori che non si
 coordinano: l'host di sua iniziativa e `update-memory` a ogni commit. È la scelta dell'owner fra

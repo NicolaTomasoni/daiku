@@ -1,6 +1,6 @@
 ---
 name: 'init'
-description: 'Opens Daiku on a project not having it yet, in one shot after asking the two languages and the name of the development branch: writes `.daiku/` — `project.json`, `environment.json`, `domain/`, `policies/`, `README.md` — the project instructions file and the `.gitignore` lines the method needs, starting from the package skeletons and filling them with what it reads in the repository, and creates the development branch when the two channels are declared. Idempotent: it never overwrites a file belonging to the project, and recreates whole the scripts it deposits, which carry the version of the package that wrote them. It launches once per project, and again when the package carries a new skeleton, and again after every update, to bring its own scripts up to the version in place.'
+description: 'Opens Daiku on a project not having it yet, in one shot after asking the two languages and the name of the development branch: writes `.daiku/` — `project.json`, `environment.json`, `domain/`, `policies/`, `README.md` — the project instructions file and the `.gitignore` lines the method needs, starting from the package skeletons and filling them with what it reads in the repository, and creates the development branch when the two channels are declared. Idempotent: it never overwrites a file belonging to the project, and recreates whole the scripts it writes, which carry the version of the package that wrote them. It launches once per project, and again when the package carries a new skeleton, and again after every update, to bring its own scripts up to the version in place.'
 argument-hint: '[technical root, optional — default: current directory]'
 ---
 
@@ -31,21 +31,21 @@ Before reading, asking or writing anything, measure what is already there. Run e
 node "<package root>/skills/init/scan.mjs" "<technical root>"
 ```
 
-— `<package root>` the folder two levels above this file. On a host that substitutes no variable (opencode) it is the same folder computed from this skill's own base directory — this file stands in `.opencode/skills/init/`, the support in `.opencode/daiku/`, so the root is `<base directory>/../../daiku`. It prints one JSON object, `{fresh, missing, legacy, params}`, and its answer decides the run; you do not second-guess it:
+— `<package root>` the folder two levels above this file, on every host: where the host substitutes no variable (opencode) the same two levels above this skill's own base directory give it — `<base directory>/../..`, with no suffix to add. It prints one JSON object, `{fresh, missing, legacy, params}`, and its answer decides the run; you do not second-guess it:
 
 - **`fresh: true`** — the project has no `.daiku/project.json`: run the whole *Procedure*.
 - **`fresh: false`, and all three lists empty** — Daiku is already open here and nothing is behind. Your whole answer is one line saying so, in the `language.chat` of `project.json` — `Daiku is already set up here.` in English, `Daiku è già pronto qui.` in Italian — and the run ends: no question, no reading, no write.
 - **`fresh: false`, and at least one list not empty** — **reconciliation** mode. Each entry names the step that handles it (`step`): run those steps and only those, for those pieces and only those. *Step 0* is skipped — the languages live in `project.json`, which already stands and is never rewritten — and so is *Step 2*, unless `instructions` is listed. Then run the scan again: what it still lists is a step that did not go through (*Step 10*).
 
-**A piece standing there since an older Daiku is as much behind as a piece that is not there at all**, and that is why the answer is three lists and not one. `missing` is what the project does not have; `legacy` what an older Daiku deposited at a seat this one does not write any more; `params` the keys of a parameter file this contract no longer names. A relaunch reading only `missing` would call a project all set while files of a layout nobody reads still stand inside it — and no eye tells an old file from a right one, which is why the comparison is the program's and not yours.
+**A piece standing there since an older Daiku is as much behind as a piece that is not there at all**, and that is why the answer is three lists and not one. `missing` is what the project does not have; `legacy` what an older Daiku left at a seat this one does not write any more; `params` the keys of a parameter file this contract no longer names. A relaunch reading only `missing` would call a project all set while files of a layout nobody reads still stand inside it — and no eye tells an old file from a right one, which is why the comparison is the program's and not yours.
 
-**On opencode the scan also measures the deposit** — the package this run lays inside the project — and lists it under step `4-bis`: absent when there is no `.opencode/daiku/deposit.json`, **behind** when that manifest carries another version than this package's, or with a piece the manifest names gone from disk. On Claude Code there is no deposit and nothing is listed for it. It is the same measurement as the versioned script of *Step 5-bis*: a deposit of an older Daiku reads as old, and no eye tells it from a right one.
+**On opencode the scan also measures the nesting key** — `experimental.subagent_depth` in the project's own `opencode.json`, which *Step 4-bis* writes — and lists it under step `4-bis` whenever the key is absent. A value the project itself declares counts as present, whatever it is: the project's own choice wins and there is nothing left to do. A file that does not parse as JSON is never listed — a relaunch that cannot write it must not stay behind forever. On Claude Code the step does not exist and nothing is listed for it.
 
 The scan reads only what `init` writes. A domain role the project answered in a file written after the first run is not something it can see: whoever writes that file writes the pointer.
 
 ## Where the skeletons stand
 
-Under `templates/`, at the package root — the folder containing `skills/`, `contracts/` and `templates/`, two levels above this file. It is a path **relative to the package**, not to the project — a form that holds everywhere, where an environment path variable would not. On a host that substitutes no variable (opencode) it is the same folder computed from this skill's own base directory, plus `daiku/` — `<base directory>/../../daiku`, the support deposited beside the skills.
+Under `templates/`, at the package root — the folder containing `skills/`, `contracts/` and `templates/`, two levels above this file. It is a path **relative to the package**, not to the project — a form that holds everywhere, where an environment path variable would not. On a host that substitutes no variable (opencode) the rule is the same, unchanged: the skill stands inside the package's own `skills/` folder, and two levels above this skill's base directory — `<base directory>/../..` — give that same root.
 
 | Skeleton | Where you write it | What you do with it |
 |---|---|---|
@@ -57,7 +57,6 @@ Under `templates/`, at the package root — the folder containing `skills/`, `co
 | `templates/project/instructions.md` | the instructions file, in the technical root | you **fill it**: see *Step 6* |
 | `templates/project/update.mjs` | `.daiku/update.mjs` | you copy it filling its version marker: see *Step 5-bis* |
 | `templates/vscode/tasks.json` | `.vscode/tasks.json`, in the technical root | you copy it, or add its task to the file already there: see *Step 5-bis* |
-| `templates/opencode/plugin.js` | `.opencode/plugins/daiku.js` | the plugin opencode auto-loads, laid down by the deposit with the whole corpus around it: see *Step 4-bis* |
 
 **Everything you write is in English**, whatever language the user chose at *Step 0*. Those two keys say in which language the skills will talk to the user and write commits; they do not say in which language Daiku is made. The skeletons arrive in English and you fill them in English: a half-translated instructions file is the worst of the two forms, and a corpus in a single language is the only thing staying readable when the project changes hands.
 
@@ -90,7 +89,7 @@ If the user does not answer — because you are running inside a chain, or becau
 
 ### 1. The guardrails travel with the package
 
-Hooks and subagents are carried by the package and update themselves: do **not** hook those seven hooks a second time from `.claude/settings.json`, because the package already hooks them and every guard would run twice. The only thing you write under `.claude/` is two keys in `settings.local.json`, and they are at *Step 7*: together they turn the host's own memory on and point it inside the repository, and there is no other way to tell the host.
+Hooks and subagents are carried by the package and update themselves: do **not** hook those seven hooks a second time from `.claude/settings.json`, because the package already hooks them and every guard would run twice. The only thing you write under `.claude/` is two keys in `settings.local.json`, and they are at *Step 7*: together they turn the host's own memory on and point it inside the repository, and there is no other way to tell the host. On opencode the same holds: the guards arrive with the installed package's plugin, and nothing is written in the project to carry them.
 
 You never ask on which host you run: there is one, and it is where you are running. The two languages and the development branch of *Step 0* are the only thing you ask.
 
@@ -255,7 +254,7 @@ When a value is derivable but not certain — a `changelog` that could be the on
 node "<package root>/skills/init/branch.mjs" "<technical root>" <development> <production>
 ```
 
-— `<package root>` the folder two levels above this file (on a host that substitutes no variable, `<base directory>/../../daiku` as above), `<development>` and `<production>` the two names you just wrote, production omitted where you wrote none. It prints one JSON object, `{ok, action, branch, detail}`, and its answer decides: `ok: true` is a branch created, checked out, already there, or nothing to do because the two channels coincide; `ok: false` is a step that did not go through — a dirty tree when the branch was to be created, or a repository with no commit yet, where there is no production branch to be identical to — and you declare it at *Step 10* and create nothing in its place. The dirty-tree failure belongs to **creation** alone: the relaunch, when the branch already exists, does not fail on a dirty tree, because `init` is relaunchable and a working repository is normally dirty. `branch.mjs` writes no file, commits nothing and pushes nothing.
+— `<package root>` the folder two levels above this file (on a host that substitutes no variable, `<base directory>/../..` as above), `<development>` and `<production>` the two names you just wrote, production omitted where you wrote none. It prints one JSON object, `{ok, action, branch, detail}`, and its answer decides: `ok: true` is a branch created, checked out, already there, or nothing to do because the two channels coincide; `ok: false` is a step that did not go through — a dirty tree when the branch was to be created, or a repository with no commit yet, where there is no production branch to be identical to — and you declare it at *Step 10* and create nothing in its place. The dirty-tree failure belongs to **creation** alone: the relaunch, when the branch already exists, does not fail on a dirty tree, because `init` is relaunchable and a working repository is normally dirty. `branch.mjs` writes no file, commits nothing and pushes nothing.
 
 ### 4. Write `.daiku/environment.json` if missing
 
@@ -298,17 +297,17 @@ creates it; one written by you would declare this machine's values as the projec
 
 If the skeleton still contains values recognisably of another project or another machine, do not propagate them: remove them.
 
-### 4-bis. Deposit the package into the project — opencode only
+### 4-bis. Declare the nesting depth — opencode only
 
-**On Claude Code there is nothing here**: the package is served by installation, and the host reads it from where it was installed. **On opencode** the package has no such seat — no manifest, no marketplace, and its extensions are read from the **project** — so it must be **deposited inside the project** by this step. Run exactly:
+**On Claude Code there is nothing here**: the package is served by installation, and the host reads it from where it was installed. **On opencode** the package arrives the same way — `opencode plugin add` installs it once and the package's plugin registers the extensions in code — so what the project alone must carry is one declaration: the method's longest chain — `new-feature → ship-feature → review → finder`, four levels — needs `experimental.subagent_depth: 3`, the key opencode reads **under `experimental`** (in the root it discards it in silence), and it is config of the project. Run exactly:
 
 ```
-node "<package root>/skills/init/deposit.mjs" "<technical root>" <host>
+node "<package root>/skills/init/depth.mjs" "<technical root>"
 ```
 
-— `<package root>` the folder two levels above this file, `<host>` the host you are running on (the `default_host` you wrote at *Step 4*). It prints one JSON object, `{ok, host, wrote, declared_missing, detail}`, and its answer decides: it copies every skill entry point into `.opencode/skills/<name>/`, every opencode role rendering into `.opencode/agents/`, the package's support tree into a sibling `.opencode/daiku/` (which is the root every skill computes from its own base directory — *Step 6* of the anchor rule, `skills/ship-feature/SKILL.md` § *The evaluator*), the guard adapter and the plugin skeleton opencode auto-loads, and writes the manifest `.opencode/daiku/deposit.json` carrying the version of this package. It also writes `experimental.subagent_depth: 3` into `opencode.json`, **under `experimental`**, creating the file if it is missing and never overwriting a value the project declares. `ok: false` is a step that did not go through, and you declare it at *Step 10*; nothing is created in its place. `deposit.mjs` writes no file outside `.opencode/` and `opencode.json`, and it never commits or pushes.
+— `<package root>` the folder two levels above this file. It prints one JSON object, `{ok, action, detail}`, and its answer decides: `action` is `created` (no `opencode.json`, so one is written with the key under `experimental`), `added` (the file stood, the key joined its `experimental` block, every other key kept), `kept` (the project declared its own value, which stays — its choice wins, whatever it is), `untouched` (the file does not parse as JSON and was left byte for byte as it was, because a file of the project is never rewritten from a guess). `kept` and `untouched` answer `ok: true` with the reason in `detail`: a value the project chose is not a failure, and a file it owns that cannot be parsed is its own to fix. `ok: false` is a step that did not go through, and you declare it at *Step 10*; nothing is created in its place. `depth.mjs` writes no file but `opencode.json`, always by addition, and it never commits or pushes.
 
-The step is **idempotent and whole**: `.opencode/` is the method's seat and not the project's, so a relaunch recreates it entire, the way *Step 5-bis* recreates the versioned script — a deposit written by an older Daiku is brought up to the version in place. Only `opencode.json` is the project's, and it is touched by addition alone. This is the step the scan's `deposit` entries (*Scan first*, step `4-bis`) hand to you.
+The step is **idempotent**: a relaunch finds the key and leaves it, under whatever value it carries. This is the step the scan's `depth` entry (*Scan first*, step `4-bis`) hands to you, and it is the whole of what that step writes.
 
 ### 5. Write `domain/` and `policies/`
 
@@ -338,18 +337,17 @@ A rule file spanning several areas is listed in the policy of each. A rule file 
 
 ### 5-bis. Write the update task
 
-Daiku updates with two commands — `claude plugin marketplace update daiku`, then `claude plugin update daiku@daiku` — and the project gets them as one VS Code task, `daiku: update`, running a script under `.daiku/`
-that shows the channel and the version in place, asks before running them, and on the `edge` channel asks whether to leave for `main`.
+Daiku updates through one script, and which host it talks to is the project's own: `default_host` of `.daiku/environment.json`, `claude` wherever that file does not answer. On Claude Code the script runs two commands — `claude plugin marketplace update daiku`, then `claude plugin update daiku@daiku` — showing the channel and the version in place and asking before running them, and on the `edge` channel asking whether to leave for `main`. On opencode it runs the plugin channel of that host — `opencode plugin check`, and `opencode plugin update` only after the same question — then the two deterministic programs of `init` from the installed package's root (`depth.mjs`, then `scan.mjs … --host opencode`), prints each entry the scan still lists, one per line, and hands the prose that remains to `/daiku:init`. The project gets the script as one VS Code task, `daiku: update`, running a script under `.daiku/`.
 
 - **The script**: copy `templates/project/update.mjs` into `.daiku/update.mjs`, **filling the
   marker line it carries at the top** — `daiku:script <version>` — with the `version` of
   `<package root>/.claude-plugin/plugin.json`. Where the file already stands, read that line
   instead of copying: **if it carries the version this package carries, leave the file as it is;
   otherwise rewrite it whole from the skeleton**, marker filled — and that holds where the line is
-  not there at all, which is how a script deposited by an earlier Daiku reads. The script is not
-  the project's file: it is a package artefact deposited under `.daiku/` so that the package can
+  not there at all, which is how a script written by an earlier Daiku reads. The script is not
+  the project's file: it is a package artefact written under `.daiku/` so that the package can
   update itself, and the marker is what lets a later package recognise the one on disk as old.
-  **Every script `init` deposits carries that marker**, for the same reason; no other file does,
+  **Every script `init` writes carries that marker**, for the same reason; no other file does,
   and no other file is ever rewritten for it.
 - **The task**: if `.vscode/tasks.json` does not exist in the technical root, copy `templates/vscode/tasks.json` there as it is. If it exists and already carries a task labelled `daiku: update`, leave it. If it exists without that task, **add** the skeleton's task object as the last element of its `tasks` array, and touch nothing else: the file is JSON with comments, so edit it as text — its comments, its order and its line ending stay as they were. A file with no `tasks` array gets one, beside its `version`.
 
@@ -557,7 +555,7 @@ and the way you took instead — concerns nobody.
 One thing only is written, one line per item, in `{language.chat}`:
 
 - **A step that did not go through** — a write denied or failed, a move refused, the development
-  branch of *Step 3-bis* not created, the deposit of *Step 4-bis* answered `ok: false`, a folder
+  branch of *Step 3-bis* not created, the nesting key of *Step 4-bis* answered `ok: false`, a folder
   still on the wrong side of `.gitignore` after *Step 8*: the file, or the branch, and what it
   still lacks. The project is then not all set, and the closing line is **not** written.
 
@@ -575,7 +573,7 @@ This makes you relaunchable: when the package updates and carries a skeleton pre
 
 The exceptions are three, and none loosens the rule.
 
-The first is the **versioned script** of *Step 5-bis*: where its marker does not carry the version of this package, you rewrite the file whole. It is the only thing you deposit that stays the package's — an artefact the package updates itself through — and the marker is what keeps the rule readable: a script carrying the version of this package is a script you leave alone like any other.
+The first is the **versioned script** of *Step 5-bis*: where its marker does not carry the version of this package, you rewrite the file whole. It is the only thing you write that stays the package's — an artefact the package updates itself through — and the marker is what keeps the rule readable: a script carrying the version of this package is a script you leave alone like any other.
 
 The second is the **instructions file**, which you write also where one exists — closing the one you found into the git stash — but only once, and what guarantees it is at *Step 6*: the comment line you leave inside the new one. Without that line it would not be an exception but a hole, because every relaunch would return to restructuring the file the user curates more than any other. It is the only file of the project's you are allowed to rewrite, and it is so because it is the one on many repositories already existing: leaving it as it was would mean, there, never writing it.
 

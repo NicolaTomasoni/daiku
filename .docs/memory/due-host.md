@@ -30,8 +30,9 @@ l'**ancora** alla radice di supporto, che di qua è la variabile sostituita dall
 **calcolata** dalla base directory della skill, perché opencode non sostituisce nessuna variabile; la
 resa del ruolo in `agents/` — la radice per Claude Code, `agents/opencode/` per opencode, e il
 controllo del corpus impone che ogni host renda ogni ruolo; il **canale**, che di qua è
-l'installazione da un marketplace e di là il **deposito dentro il progetto**, con l'annidamento che di
-là si dichiara in `experimental.subagent_depth` e di qua non esiste ([[deposito-opencode]]); la **sede
+l'installazione da un marketplace e di là il **plugin del pacchetto** con la registrazione in codice,
+con l'annidamento che di
+là si dichiara in `experimental.subagent_depth` e di qua non esiste ([[canale-opencode]]); la **sede
 delle guardie**, `hooks.json` di qua e un plugin-adattatore di là; la **memoria dell'host** dello
 *Step 7* di `init`, che è una sede che opencode non ha e che `init` lì **dichiara** assente
 ([[init-aggancia-la-memoria]]). Su opencode le regole di permesso **tolgono davvero il tool** al
