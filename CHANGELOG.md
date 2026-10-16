@@ -1,5 +1,14 @@
 # Changelog
 
+### 1.2.3 â€” 2026-10-16
+
+- **The method runs on opencode as a second host.** `init` deposits the package into `.opencode/` with a manifest naming what it wrote, the guards are re-hung onto opencode's plugin API declaring the two events it lacks, the scan resolves the host and measures the deposit against the package, and the package root is computed from the skill's base directory where the host substitutes no variable.
+- **The delivery can stop after execution, and the release can flush without asking.** `--no-review` stops the delivery after execution leaving the worktree dirty with the review invocation in the report, `--with-commit` flushes the working tree without asking, a resumed ask is held to the place the decision document left open and read by the guard, and folder names carrying spaces resolve back into one folder, longest run first.
+- **The beta follows the release.** Development is advanced to the number just published, counter fresh at `1`, so the tree left behind already declares what production carries: the skill writes the beta into the working-tree files first, and the program checks each file holds exactly that transform before committing the group on development with the plumbing, as the release writes production.
+- **New commits join the unpushed draft instead of opening a version.** While production's tip is a draft nothing has pushed, the release keeps the draft's number â€” no version is asked, and the section grows with the bullets of what arrived meanwhile; to open a new number, the draft is pushed first. Where the draft already carries everything, there is nothing to release.
+
+---
+
 ### 1.2.2 — 2026-10-15
 
 - **The review cycle runs fewer rounds.** Rule 2 no longer fires on a count of severe fixes: three corrected defects say how dirty the perimeter **was**, not how dirty the delta **is**, and what another round would reread is the correction, not them. The count is weighed where the context to weigh it exists — rule 3's merit verdict — and a fast check or a targeted test coming back red stays the only mechanical trigger.

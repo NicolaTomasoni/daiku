@@ -1,7 +1,7 @@
 ---
 name: 'release'
-description: 'Promotes the development branch onto production, once per release: the version lives on production and never on development, the release writes it there with the changelog section built from the block of commits accumulated since the last published release, and replaces the release standing on production for as long as nothing has pushed it. On its first run it asks which paths never reach production with proposed lists and records them in `.daiku/project.json`. A working tree that is not empty is the first question of the run — the release flushes it through the review cycle and its closing commit, or the owner commits it — because a release carries the development tree as its commits hold it. It never pushes — the push stays a manual gesture of the owner. On a project that declared no channels it has nothing to promote and says so.'
-argument-hint: '[technical root, optional — default: current directory]'
+description: 'Promotes the development branch onto production, once per release: the version lives on production and never on development, the release writes it there with the changelog section built from the block of commits accumulated since the last published release, and replaces the release standing on production for as long as nothing has pushed it. On its first run it asks which paths never reach production with proposed lists and records them in `.daiku/project.json`. A working tree that is not empty is the first question of the run — the release flushes it through the review cycle and its closing commit, or the owner commits it — because a release carries the development tree as its commits hold it. With `--with-commit` that question is not asked: the tree is flushed through the cycle and its closing commit as if the owner had chosen it. It never pushes — the push stays a manual gesture of the owner. On a project that declared no channels it has nothing to promote and says so.'
+argument-hint: '[technical root, optional — default: current directory] [--with-commit]'
 ---
 
 You are the **release** of a project that declared its two channels: the work lives on the
@@ -19,14 +19,16 @@ keeps its own life.
 ## The two sides
 
 **Development carries a beta, and no changelog.** `{version.file}` stands there holding the number
-production carries now, marked as a beta with a counter — `1.2.0-b.1`. The counter goes **after a
+production carries now, marked as a beta with a counter — `1.2.3-b.1`. The counter goes **after a
 dot and is numeric**: `b.7`, never `b7`, which as
 an alphanumeric identifier semver orders `b10` before `b9`. The beta is not a release, and no
 release ever reads it: a release derives its number from production's own and writes it on
 production, overwriting this one there. It is there because a package installed from its own
 development tree must declare a version, and because that declaration is what moves the installed
-copy. It moves when the shape of the product moves — a commit `init` would carry into the projects
-that use it. `{changelog}` is not a file on development: a released section is born on production,
+copy. It moves two ways: the release realigns it to the number just published, counter fresh at
+`1` (§ *The step*, step 6), and a development commit raises the counter when the shape of the
+product moves — a commit `init` would carry into the projects that use it. `{changelog}` is not a
+file on development: a released section is born on production,
 at the release, and it is not written back.
 
 **Production is a line of releases.** It does not fast-forward onto development and it is not
@@ -59,6 +61,12 @@ and stops.
 The **technical root** — the directory the skills run from, carrying `.daiku/project.json`. With an
 argument, it is that; without one, it is the current directory. From it you resolve every key, and
 run every command with `git -C "<technical root>"`.
+
+**`--with-commit`** — the one flag, read as a whitespace-separated token in `$ARGUMENTS` and never
+inferred from prose: where it stands, step 1 of § *The step* has no question to ask, and an unclean
+working tree is flushed before the release without the owner being asked anything. It suppresses
+that question alone: the version of step 4 is still theirs, and the flush is still the whole of
+§ *Flushing the working tree*.
 
 **The release runs from a copy standing on `{channels.development}`.** It never checks production
 out, and it refuses to run while a working copy holds it — a copy holding a branch this node moves
@@ -136,9 +144,15 @@ saying so, and stop — §6 of `contracts/project-contract.md`, no fallback and 
      what it is, and their terminal is behind no guard — but the release then waits on a gesture of
      theirs.
 
+   **Where the invocation carries `--with-commit` the question does not exist**: road `A` is taken
+   as if the owner had chosen it — that is the whole of what the flag does — and `detail` says the
+   flush was taken by the flag. It removes the question and nothing else: what a clean tree is worth
+   is unchanged, and the program refuses a working tree that is not clean, so a release arrived at
+   the write without flushing writes nothing at all.
+
    Where there is nobody to ask — a chained run, a session with no interactive channel — road `A`
-   is taken, and `detail` says the question was not asked. A tree still not empty after the flush is
-   `released: false`, with the paths left standing named in `detail`.
+   is taken too, and `detail` says the question was not asked. A tree still not empty after the flush
+   is `released: false`, with the paths left standing named in `detail`.
 
 2. **Measure.** Run `architect/release.mjs` with `action: "status"`, passing the root, the two
    branches and the release's own keys — `{release.source}`, `{version.file}`,
@@ -161,11 +175,24 @@ saying so, and stop — §6 of `contracts/project-contract.md`, no fallback and 
    are built from. If it is **empty**, development has not moved since the last published release:
    return `released: false` with `detail` saying there is nothing to release, and stop.
 
+   **While production's tip is a draft (`pending`), the new notes cover only what the draft does
+   not carry yet.** Read the draft's own trailer from `git -C "<root>" log -1 --format=%B
+   {channels.production}` (`Development: <sha>`) and take `log --oneline
+   <trailer>..{channels.development}` as the block the added bullets are built from. If that range
+   is **empty**, the draft already carries everything development holds: return `released: false`
+   with `detail` saying the unpushed draft is current and there is nothing to join it, and stop.
+
 4. **Ask the version, once, on the block.** From `current_version`, ask the owner **major**,
    **minor** or **patch** with the structured question of § *Ask the owner* of `contracts/orchestration.md` — one question, three options, in the chat
    language, the recommended first. The answer is the increment; the new number is derived from
    `current_version`. Because this node runs in the conversation, the channel to the owner exists —
    it is the whole reason the question lives here and not inside a subagent.
+
+   **Where `pending` is true there is no version to ask.** The draft was never pushed, so its number
+   is not a rung of any public ladder: the release keeps `current_version` — the draft's own — and
+   the commits that arrived while it sat there join it instead of opening a version of their own.
+   `detail` says the number was kept from the draft. To open a new number instead, push the draft
+   first — closing it — and then release.
 
 5. **Write the changelog section.** In `{language.commit}`, in the style `{changelog}` already
    uses, with the entries the convention admits: which commit types produce an entry is not decided
@@ -174,9 +201,18 @@ saying so, and stop — §6 of `contracts/project-contract.md`, no fallback and 
    number and the date of the day, the bullets, the rule that closes it. What you do **not** do is
    place it: the program places it, below the changelog's title, deterministically.
 
+   **Where `pending` is true the section is the draft's own, grown by the new bullets.** Read it
+   from the production tip — `git -C "<root>" show {channels.production}:<path>`, where `<path>` is
+   `{changelog}` with the `{release.source}` prefix taken off where one is declared — keep its
+   heading, version and date untouched, and append the bullets for the block step 3 just measured
+   after the ones already there, before the rule closing the section. The heading stays the draft's
+   because the release is still the same unpublished one.
+
 6. **Release.** Run `architect/release.mjs` with `action: "release"`, the same keys as step 2, the
    `version`, the `from_sha` the status returned, the `section` you just wrote and the `message` —
-   `release <version>`, plus ` — <the first line of the notes>` where there are notes.
+   `release <version>`, plus ` — <the first line of the notes>` where there are notes. Where the
+   number was kept from a draft, that first line is the first bullet this run adds, not the draft's
+   heading.
 
    It builds the production tree out of the development one — re-rooted at `{release.source}` where
    the project declares it — written with the version in `{version.file}` and in every file of
@@ -199,6 +235,21 @@ saying so, and stop — §6 of `contracts/project-contract.md`, no fallback and 
    with `action: "record"` — which commits that file on `{channels.development}` with the plumbing,
    as the release writes production. It is a step of its own and not a `git commit`: the node's own
    write, and the tree is left clean.
+
+   **Then the beta follows the release.** Where `{version.file}` is declared, development is advanced
+   to `<version>-b.1` — the number just published, counter fresh — so the tree the release leaves
+   behind already declares what production carries, and no `version: update` lingers in the tree for
+   the next release to trip on. First write the beta into the working-tree files yourself:
+   `{version.file}`, every file of `{version.replicated_in}`, and the prose seats quoting the old
+   beta you find with a search — a badge quotes it URL-escaped, which the program converts — each
+   holding exactly the replacement and nothing else. Then run `architect/release.mjs` with
+   `action: "beta"`, the same version keys, the `beta`, the `prose_paths` you wrote and a `message`
+   in `{language.commit}`: it checks each file holds exactly the beta transform of what development
+   carries — any other difference fails the call instead of smuggling a change into the beta commit —
+   and commits the group on `{channels.development}` with the plumbing, as the release writes
+   production. It is a step of its own and not a `git commit`: the node's own write, and the tree is
+   left clean. A rerun finding the beta already there writes nothing. Where no `{version.file}` is
+   declared there is no beta to advance: skip it and declare it in `detail`.
 
    **`action: "dry"` runs all of it and moves no ref.** Same keys, same answer, plus `would_be` —
    the commit it would write — where `release` gives `production_sha`. Use it when the owner wants
@@ -227,7 +278,7 @@ tree that is not clean, so a release that arrived here without flushing writes n
   `{hosts.<host>.instructions_file}`, the founding documents (`documents.*`) and `.daiku/policies/`.
   What neither the cycle nor its closing commit reaches is delegated to a second subagent fully
   running `skills/commit/SKILL.md`, with those paths named one by one. It commits in the window the
-  first has just opened — the guard leaves the commit open for fifteen minutes after a cycle closes
+  first has just opened — the guard leaves the commit open for an hour after a cycle closes
   green, and the two run one after the other. Where the cycle opened no ledger — nothing under
   `{code_root}` differs from the base — there is no window at all, and this work stays where it is:
   it is then the tree that decides, and the release stops.
@@ -254,6 +305,11 @@ mirrors, where this file stays normative on divergence:
 - `detail` always says what happened, and on `released: false` says which of the cases it was:
   no channels declared, the copy not on the development branch, a working copy holding production,
   uncommitted work left to the owner's own commit, uncommitted work the cycle could not flush, or
-  nothing to release. Where § *First run* asked,
+  nothing to release. The one where the work is left to the owner's own commit is not a case a run
+  carrying `--with-commit` can return: road `B` is not reachable there, and `detail` says the flush
+  was the flag's. Where § *First run* asked,
   it also says which exclusions were recorded in `.daiku/project.json` — or that there was nobody
-  to ask and the next run asks again.
+  to ask and the next run asks again. On `released: true` it also says which beta development was
+  advanced to — or, where no `{version.file}` is declared, that there was no beta to advance.
+  Where the release replaced a draft keeping its number, it says so and names the bullets that
+  joined it.

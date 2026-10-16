@@ -16,12 +16,13 @@ When the decisions of a feature are already resolved — `1. decision-doc.md` ex
 
 ## The invocation
 
-**You arrive with folder and chosen solution already resolved in the prompt.** The sequence is the same whether the caller opens a new delivery or resumes an interrupted one: where it starts from is the verdict of the evaluator (§ *The sequence*), never a flag. There is nobody to ask, and a question asked in here stays hanging (§ *Ask the owner* of `contracts/orchestration.md`). The constraints below hold unchanged, and they are not rewritten in the caller prompt. You never push: the push stays a manual act of the owner.
+**You arrive with folder and chosen solution already resolved in the prompt.** The sequence is the same whether the caller opens a new delivery or resumes an interrupted one: where it starts from is the verdict of the evaluator (§ *The sequence*), never a flag — and the one flag that exists, `--no-review`, does not say where the delivery starts but where it stops (§ *2b. No-review stop*). There is nobody to ask, and a question asked in here stays hanging (§ *Ask the owner* of `contracts/orchestration.md`). The constraints below hold unchanged, and they are not rewritten in the caller prompt. You never push: the push stays a manual act of the owner.
 
 ## Input
 
 - **`<folder>`** — path of the folder (relative to the repo root, or absolute), wherever it lives: `{paths.features}/<name>` is the common case but not the only one. Verify it on the filesystem: it must exist and contain `1. decision-doc.md`. If missing, stop and return the block with the reason.
 - **`<chosen solution>`** — with id and text per decision: you pass it to the brief, and only to the brief — if `<folder>/2. blueprint.md` already exists the solution is not needed and is ignored. If it is ambiguous against the decision-doc — it names a decision or an option that do not exist there — **do not guess and do not ask**: stop, and in the block report the options the document truly declares, so that whoever called you can bring them to the owner. If instead the solution was not passed to you at all and no brief exists, use for each decision the **`A`** option — which by contract is the recommended — and declare it in the outcome: it is a defensible choice written by whoever studied the problem, not your invention.
+- **`--no-review`** — when the prompt carries this token, the delivery stops deterministically after phase 2 (Execute) and never opens phase 3 (Review): see § *2b. No-review stop*. It is read as a whitespace-separated token, never inferred from prose.
 
 ## Worktree pool
 
@@ -42,12 +43,12 @@ Every delivery works on a pool worktree, never on the main tree. The pool lives 
 
 **The registry is the attribution git cannot give.** `{paths.review_state}/worktree-pool.json`, written only by `pool.mjs`, one row per slot: `n`, `name`, `branch`, `state` (`in-use` while a delivery holds it, `free` after its merge and cleanup, `blocked` when it stopped with the tree dirty), `delivery` (the folder that took it) and `updated`. It is what lets a full pool say **whose** each occupied slot is instead of facing anonymous dirt: a slot marked `in-use` is a delivery holding it, and if that delivery is gone the slot still leaves the pool — the acquisition stops and names it, and the owner releases it — because the alternative is offering a tree that another run may still be writing. It lives beside the review ledger, in the same folder out of version control.
 
-**A delivery that does not merge records its slot `blocked`.** On `BLOCKED_NO_COMMIT`, on a conflicting merge and on an early block after acquisition, run `release` with `state: "blocked"`: it writes no Git and cleans nothing — the tree is left exactly as the delivery left it — and the registry then names the folder that left it. The blocked paragraphs below already say the tree stays dirty and declared; this is the one line that also records the slot.
+**A delivery that does not merge records its slot `blocked`.** On `BLOCKED_NO_COMMIT`, on a conflicting merge, on an early block after acquisition and on the no-review stop of § *2b. No-review stop*, run `release` with `state: "blocked"`: it writes no Git and cleans nothing — the tree is left exactly as the delivery left it — and the registry then names the folder that left it. The blocked paragraphs below already say the tree stays dirty and declared; this is the one line that also records the slot.
 
 Two roots, two roles, passed to every phase already resolved:
 
 - **work root** — inside the worktree, the same relative position the technical root occupies in the main tree: code, diff, stage, commit, gate and fix run here, and from here `{code_root}` and the command cwds of `{areas}` resolve. Do not guess it: `architect/pool.mjs` reads it out of Git — the position this tree's technical root holds inside the worktree, `git rev-parse --show-prefix` — and returns it in `worktree_root` (§ *0. Acquisition*).
-- **artefacts root** — the main tree: `2. blueprint.md`, `3. memory-report.md`, `4. review-notes.md`, `5. review-report.md` and the early block's `5. delivery-report.md`, plus the ledger in `{paths.review_state}/`, live here, so resumption and report do not depend on the worktree.
+- **artefacts root** — the main tree: `2. blueprint.md`, `3. memory-report.md`, `4. review-notes.md`, `5. review-report.md` and `5. delivery-report.md` — the seat of the early block (§ *Early block*) and of the no-review stop (§ *2b. No-review stop*) — plus the ledger in `{paths.review_state}/`, live here, so resumption and report do not depend on the worktree.
 
 **A worktree is not an inert copy of the project.** If the project declares constraints on its own local environment — dependencies installed in a shared tree, links or junctions between the two copies, tools rewriting files outside the checkout — those constraints hold here and `{hosts.<host>.instructions_file}` declares them: read it before running any environment command inside the worktree. They are not rewritten here, and not guessed: an install command launched in the wrong place is the typical way a delivery breaks the main tree while believing it works on its own.
 
@@ -105,6 +106,12 @@ package-relative path holds wherever the skills run, where an environment path v
 The host substitutes its path variables (`${CLAUDE_PLUGIN_ROOT}`, `${CLAUDE_SKILL_DIR}`) inside the
 text of a `SKILL.md`, so the command can name the root directly. Getting it wrong is contained: the
 command does not start and it is visible, instead of starting and looking in the wrong place.
+
+**On a host that substitutes no variable** — opencode — the root is the same folder **computed from
+this file's own base directory**: a skill loaded from `.opencode/skills/<name>/` stands two levels
+below `.opencode/`, and the package is deposited beside the skills in `.opencode/daiku/`, so the
+support root is `<base directory>/../../daiku`. The relative paths under it do not change: the
+contracts, `architect/` and the ledger resolve from there exactly as above.
 
 **The block it returns** is the one `schemas/blocks.json` § *architect* declares, and that is its
 only copy: this file cites it and does not restate it. It always carries all eleven fields —
@@ -202,11 +209,25 @@ Executor subagent. In the prompt:
 - `{memory.index}` and the paths of the memories pertinent to the perimeter, to open before writing (§4.1 of `contracts/orchestration.md`);
 - ask nothing of the user; stop only before a real block (unjustified destructive action or irreconcilable contradiction).
 
-The expected outcome is the block `skills/execute/SKILL.md` declares in its own § *What you return*, in full and with those field names. Its form is asked like the brief's — `question: "block"`, `name: "execute"`, `block` — and an `invalid` is a failed phase under *Block validation*. On `valid` the phase is over and the delivery goes to phase 3: nothing remeasures the evidence against the disk — the maps the brief built are the last measurement, and the executor worked only on the files they cite.
+The expected outcome is the block `skills/execute/SKILL.md` declares in its own § *What you return*, in full and with those field names. Its form is asked like the brief's — `question: "block"`, `name: "execute"`, `block` — and an `invalid` is a failed phase under *Block validation*. On `valid` the phase is over and the delivery goes to § *2b. No-review stop* when the invocation carries `--no-review`, else to phase 3: nothing remeasures the evidence against the disk — the maps the brief built are the last measurement, and the executor worked only on the files they cite.
 
-### 3. Review — **worker** role, `/review`, always, inside the delivery
+### 2b. No-review stop — deterministic, only when the invocation carries `--no-review`
 
-Review **is part of the delivery**: it is not an optional step, it is not postponed to the user, and it is not skipped — it is the only point of the chain running the build and test gate, so without it nobody has proven the feature compiles. Without it the decision of phase 4 does not exist, so the commit does not exist.
+When the invocation carries `--no-review`, the delivery stops here, after a successful Execute and before any Review. The stop is a flag check, never a judgement: no evaluator question is asked to decide it, and no Review subagent is launched. The steps are fixed and in this order:
+
+1. List the dirty under `{code_root}` in the work root (`git -C <worktree_root> status --porcelain -- {code_root}`): those paths are the unreviewed work, and they go verbatim into the report and the outcome `reason`.
+2. Record the slot `blocked`: run `architect/pool.mjs` `release` with `state: "blocked"` for this delivery's slot — the tree is left exactly as the execution left it, nothing is cleaned, and the registry then names the folder that left it (§ *Worktree pool*). No stage, no memory alignment, no commit, no merge, no cleanup to `free` — and the commit is not a promise left to here: the command guard denies `git commit` wherever no review cycle opened, and no cycle opened here.
+3. Have the report written — the subagent of § *7. Report*, the same phase as everywhere else, whose prompt carries the fields below already resolved — on `<folder>/5. delivery-report.md`, whole and from its first line — never on `5. review-report.md`, which is the artefact proving phase 3 ran. The report states, with the measured values filled in, that the review did not run and that finishing requires the review on this worktree:
+   - the folder, the `<folder>/4. review-notes.md` path, and the base-ref that file declares;
+   - the worktree `<name>`, its branch `{worktree.branch_prefix}<name>`, and its work root `<worktree_root>` (the `worktree` and `worktree_root` of the phase-0 block, verbatim);
+   - the dirty paths of step 1;
+   - this line, with the placeholders already resolved: `To finish, invoke \`review <folder>/4. review-notes.md\` on worktree \`<name>\` at \`<worktree_root>\` (no ledger yet — the review never ran).`
+   - the resume alternative, with the placeholder already resolved: `Resuming with \`new-feature <folder>\` takes back that same slot as it stands and continues from the review.`
+4. Close with `status: "blocked"` and `reason` naming the voluntary stop, the worktree, and the review invocation (see § *Outcome*). The `order` verdict on the artefacts left behind (`4. review-notes.md` present, `5. review-report.md` absent, `5. delivery-report.md` present, no ledger) is `proceed` with `remaining` starting at `review` — that is the deterministic resume, asked and not judged here.
+
+### 3. Review — **worker** role, `/review`, always, inside the delivery — except on the no-review stop
+
+Review **is part of the delivery**: it is not an optional step, it is not postponed to the user, and it is not skipped — it is the only point of the chain running the build and test gate, so without it nobody has proven the feature compiles. Without it the decision of phase 4 does not exist, so the commit does not exist. The single exception is § *2b. No-review stop*: when the invocation carries `--no-review`, this phase never runs — the delivery already stopped after Execute, and the worktree and the review invocation that finishes the work are the ones that section wrote.
 
 Fully run `skills/review/SKILL.md` — scope → finder and fix rounds, until the cycle converges → gate — on file `<folder>/4. review-notes.md` in the **artefacts root** (fixed name by `execute` contract: do not concatenate the returned path, its format is not guaranteed). It is the same discipline running from standalone `/review`: a single source, no copy — **do not rewrite it here**. In the prompt also pass it the worktree work root and the artefacts root: diff, fix, coverage and gate run in the first, ledger and `5. review-report.md` in the second (`skills/review/SKILL.md`, § *When review runs on a worktree*).
 
@@ -342,10 +363,10 @@ A subagent: `node <package root>/architect/pool.mjs <package root>` with `{"acti
 
 ### 7. Report — **worker** role
 
-Subagent writing the report. **Which file it lands on depends on whether phase 3 ran**, and that is the one thing you tell it and it cannot deduce: the fields it carries from the review — `gate`, `outcome`, `missing_disciplines` — exist only when phase 3 ran, and they are exactly the ones § *Early block* tells it not to expect when it did not.
+Subagent writing the report. **Which file it lands on depends on whether phase 3 ran**, and that is the one thing you tell it and it cannot deduce: the fields it carries from the review — `gate`, `outcome`, `missing_disciplines` — exist only when phase 3 ran, and they are exactly the ones § *Early block* and § *2b. No-review stop* tell it not to expect when it did not.
 
 - **Phase 3 ran** — the delivery reached the review, whatever its outcome: append **at the tail** of `<folder>/5. review-report.md` — the file phase 3 already wrote — never overwrite or reformat what is already there.
-- **Phase 3 did not run** — the early block of Acquisition, Brief or Execute: write `<folder>/5. delivery-report.md`, whole and from its first line. `5. review-report.md` is neither created nor touched: it is the artefact that proves phase 3, and a folder carrying it while `1. decision-doc.md` still stands is read by the evaluator as a work arrived after the delivery — `order` answers `stop` and the resumption § *The invocation* declares is lost. The early block reports on its own seat.
+- **Phase 3 did not run** — the early block of Acquisition, Brief or Execute, or the voluntary stop of § *2b. No-review stop*: write `<folder>/5. delivery-report.md`, whole and from its first line. `5. review-report.md` is neither created nor touched: it is the artefact that proves phase 3, and a folder carrying it while `1. decision-doc.md` still stands is read by the evaluator as a work arrived after the delivery — `order` answers `stop` and the resumption § *The invocation* declares is lost. The early block and the no-review stop report on their own seat.
 
 It is the only phase having to report fields produced by **seven others** — fewer on the early block, where some of them never ran — and a subagent in a fresh context derives none of them alone. In the prompt they therefore go **already resolved**, one by one (§4.1 of `contracts/orchestration.md`): rebuilding them from memory drops first precisely the lines saying what the delivery did **not** do — and a poor report is never reopened. In the prompt:
 
@@ -357,6 +378,7 @@ It is the only phase having to report fields produced by **seven others** — fe
 - from the **phase 5b** block: `updated` and the `confirm_with_owner` items;
 - from the **phase 6** block: `committed` and the three SHAs — `commit_sha`, `memory_commit_sha`, `version_commit_sha` — plus the dirty paths declared by phase 4 (no parking: the worktree stays dirty and declared);
 - from **phase 6b**: `merged`, `merge_sha`, possible `conflicts` and `dirty_paths`; and when § *6b-bis* stopped on an overlap, its `overlap`, its `patch` and the question put to the owner — the artefact `<folder>/main-tree.patch` holds the other session's uncommitted work and is the recoverable copy; from **phase 0**: the `<name>` of the worktree and its branch;
+- on the **no-review stop** (§ *2b. No-review stop*) there is no phase 3, 4, 5b, 6 or 6b to report: pass only the seat (`<folder>/5. delivery-report.md`, written whole), `<folder>` and solution, the `<folder>/4. review-notes.md` path with its base-ref, from **phase 0** the `<name>`, its branch and its `worktree_root` (verbatim), the dirty paths of § *2b. No-review stop* step 1, `status: "blocked"`, and the `reason` with the exact review invocation on that worktree — and explicitly tell it the others **do not exist**: gate, decision, memory, commit and merge never ran;
 - the form of the block to write and the JSON block to return, which are those below.
 
 A single block, at the tail of the file above:
@@ -365,6 +387,8 @@ A single block, at the tail of the file above:
 - below, **continuous prose in paragraphs**: what was delivered (distill the chosen solution to its essence, do not paste it verbatim); a paragraph on the review outcome (gate and its synthesis in one sentence, plus the limits review declared on itself — missed disciplines, lost independence — if any); a paragraph with final state and commits, and — when the merge needed § *6b-bis* — how the reconciliation ended and where `main-tree.patch` was left; if open items remain — blockers, post-commit forks, memory facts to confirm with the owner — a last paragraph summarising them grouped by theme and written **in a simple way**: what is at stake, which are the options and what changes by choosing one or the other, understandable without opening the code. If none remain — the normal case, because review and delivery resolve alone what they know how to resolve — omit that paragraph.
 
 Paragraphs separated by an empty line, readable at a glance.
+
+On the **no-review stop** the block is the same seat with a fixed content instead: title `## Delivery`, then what was executed (distill the chosen solution to its essence, do not paste it verbatim), then this paragraph with the placeholders already resolved — `The review did not run (--no-review): the code stays uncommitted in the working tree of worktree \`<name>\` at \`<worktree_root>\` (branch \`<branch>\`), with base \`<base-ref>\` from \`<folder>/4. review-notes.md\`. To finish, invoke \`review <folder>/4. review-notes.md\` on worktree \`<name>\` at \`<worktree_root>\` (no ledger yet — the review never ran).` — then the dirty paths, one per line. No gate paragraph, no commit paragraph, no open-items paragraph: the only open work is the review, and it is named above.
 
 ```json
 {"ok": true, "report_path": "<folder>/5. review-report.md, or <folder>/5. delivery-report.md when the review did not run>", "detail": "<if ok=false, why/reason: file not writable, append failed>"}
@@ -382,7 +406,7 @@ If Acquisition, Brief or Execute fail, the delivery stops — say so in chat, ha
 
 ## Outcome
 
-1. **The few lines whoever invoked you reports**: final state (`GREEN_COMMITTED` | `GREEN_WITH_POST_DECISIONS` | `BLOCKED_NO_COMMIT` | `blocked`), used worktree, SHA if committed and merge SHA, whether memory was updated and its SHA (absent if there was nothing to update). The detail — gate, to-confirm, remaining decisions — is already in the report file (`<folder>/5. review-report.md`, or `<folder>/5. delivery-report.md` when the delivery stopped before the review): **do not repeat it**, refer to the file.
+1. **The few lines whoever invoked you reports**: final state (`GREEN_COMMITTED` | `GREEN_WITH_POST_DECISIONS` | `BLOCKED_NO_COMMIT` | `blocked`), used worktree, SHA if committed and merge SHA, whether memory was updated and its SHA (absent if there was nothing to update). The detail — gate, to-confirm, remaining decisions — is already in the report file (`<folder>/5. review-report.md`, or `<folder>/5. delivery-report.md` when the delivery stopped before the review): **do not repeat it**, refer to the file. On the **no-review stop** the state is `blocked` with no commit and no merge SHA: report the worktree name and its work root, the `<folder>/4. review-notes.md` path, the `<folder>/5. delivery-report.md` path, and the exact review invocation on that worktree — the review never ran, and that invocation is what finishes the work.
 
 2. **Always close with the contract block**, so whoever invoked you — `new-feature` — reads it without interpreting the prose. No field is omitted: with absent value write `null`.
 
@@ -398,12 +422,12 @@ If Acquisition, Brief or Execute fail, the delivery stops — say so in chat, ha
      "memory_commit_sha": "<sha or null>",
      "version_commit_sha": "<sha or null>",
      "architect_agreement": "match|divergence|null",
-     "report_path": "<report path: <folder>/5. review-report.md, or <folder>/5. delivery-report.md on the early block>",
-     "reason": "<only if blocked: the exact reason>"
+     "report_path": "<report path: <folder>/5. review-report.md, or <folder>/5. delivery-report.md on the early block and on the no-review stop>",
+     "reason": "<only if blocked: the exact reason — on the no-review stop it names the voluntary stop, the worktree and the review invocation>"
    }
    ```
 
-Every field comes from a phase, and is reported **verbatim** from there — not recomputed from memory: `status` from phase 4 (a conflicting merge of phase 6b reclassifies it `BLOCKED_NO_COMMIT`); `worktree` from phase 0 (`null` if it acquired nothing); `commit_sha` from `committed`/`commit_sha` of phase 6; `merge_sha` from phase 6b (`null` if merge did not start or went into conflict); `memory_updated` from the `updated` field of phase 5b (`false` if the phase was not run); `memory_committed` and `memory_commit_sha` and `version_commit_sha` from phase 6; `reason` from the `detail` of the blocking phase. The delivery does not park — on `BLOCKED_NO_COMMIT` and on `blocked` the worktree stays dirty and the paths are declared in the report and in `reason`.
+Every field comes from a phase, and is reported **verbatim** from there — not recomputed from memory: `status` from phase 4 (a conflicting merge of phase 6b reclassifies it `BLOCKED_NO_COMMIT`; on the no-review stop it is `blocked` from § *2b. No-review stop*); `worktree` from phase 0 (`null` if it acquired nothing); `commit_sha` from `committed`/`commit_sha` of phase 6; `merge_sha` from phase 6b (`null` if merge did not start or went into conflict); `memory_updated` from the `updated` field of phase 5b (`false` if the phase was not run); `memory_committed` and `memory_commit_sha` and `version_commit_sha` from phase 6; `reason` from the `detail` of the blocking phase. The delivery does not park — on `BLOCKED_NO_COMMIT` and on `blocked` the worktree stays dirty and the paths are declared in the report and in `reason`.
 
 **`architect_agreement` is the one field that measures the delivery instead of reporting it.** It says whether your own reading of the five asked classifications coincided with the verdict of § *The evaluator*: `match` when they agreed, `divergence` when they did not — and on a divergence the verdict held, which is the case worth reading. It is `null` when the evaluator never ran, and a `null` there is not a fault but a fact to declare. It exists to measure the evaluator's value: if the two readings always coincide, the evaluator bought little.
 
@@ -414,6 +438,7 @@ Every field comes from a phase, and is reported **verbatim** from there — not 
 | "I do the brief/execution here in chat, it is faster" | Every phase is a subagent in a fresh context (`contracts/orchestration.md` §4). In chat you carry behind all the context of previous phases and the chain degenerates. |
 | "I rewrite the review discipline here, so everything is in one place" | No: the source is `skills/review/SKILL.md`. Copying it here makes it diverge at the first modification. |
 | "Execute returned `ok: true`, I go to the review" | `ok` is the executor's word on itself, and the phase closes on a `valid` form asked via `block` — but the evidence it carries is never remeasured against the disk here. |
+| "`--no-review` stops the delivery, but the review is part of it, so I run it anyway" | The flag decides where the delivery stops, and § *3. Review* is written to be skipped there. Running it leaves the worktree clean and committed — the flag undone, and the review the owner owed themselves done by the node that was told not to. |
 | "The gate is red but the code is clearly right, I commit" | Red gate = `BLOCKED_NO_COMMIT`. Classification is deterministic, not a judgement. |
 | "I leave this as a post-commit decision, so the user decides" | Post-commit decisions are true forks, not what nobody wanted to resolve. If one road is clearly the right one, it is resolved where the finding originates. |
 | "I commit first and update memory after" | The order is declared: stage → memory → feature commit → doc/memory commit → version/changelog commit. No feature freezes without the artefacts realigned on the **same** diff. |

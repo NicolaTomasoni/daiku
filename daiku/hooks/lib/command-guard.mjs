@@ -753,12 +753,14 @@ function attributionGuard(line, cwd, env) {
  * How long a cycle that has **exited** can still be the one a commit standing here is closing.
  *
  * The closing commit follows the exit within minutes, and the clock starts at the last write the
- * review makes — the `tail`, which writes the gate once the suite has run. A quarter of an hour is
- * a ceiling an order of magnitude above that. It is deliberately **not** `QUIET_MS`: that one asks
- * whether a cycle is still alive, and this one asks whether the commit is the one it decided on.
- * One window for both questions would leave every green review holding the gate open for two hours.
+ * review makes — the `tail`, which writes the gate once the suite has run. An hour is a ceiling
+ * well above that, and wide enough that the work the cycle's own commit does not reach — the
+ * memory and the workshop documents, committed by the step that follows it — lands inside the
+ * window it opened. It is deliberately **not** `QUIET_MS`: that one asks whether a cycle is still
+ * alive, and this one asks whether the commit is the one it decided on. One window for both
+ * questions would leave every green review holding the gate open for two hours.
  */
-const COMMIT_DUE_MS = 15 * 60 * 1000;
+const COMMIT_DUE_MS = 60 * 60 * 1000;
 
 /** The review guard: `git commit` is the closing step of a review cycle, never a gesture of its own.
  *
@@ -825,7 +827,7 @@ function reviewGuard(line, env, ctx) {
   };
 }
 
-const REAL_ENV = {
+export const REAL_ENV = {
   isLink: (path) => {
     try {
       // A Windows junction is not a symlink to the POSIX API, yet `lstat` still marks
@@ -893,7 +895,7 @@ const REAL_ENV = {
  * and parameters, so they hold even with an unreachable filesystem. Proved by the
  * bench, not declared here.
  */
-function evaluate(line, cwd, env, ctx) {
+export function evaluate(line, cwd, env, ctx) {
   // The gate, before everything else: without `.daiku/project.json` this project has not
   // opened Daiku, and the guard has nothing to watch. The line is not even read.
   if (!ctx || !ctx.present) return null;
@@ -1177,10 +1179,11 @@ const CASES = [
   ['a commit while a review is running passes', 'git commit -m "x"', ROOT_CWD, 'allow', '', CTX_REVIEW, 'develop', { 'review-ledger-aaaaaaa-101010.json': ledgerAt(MINUTE) }],
   ['the review\'s own commit passes: the cycle exited with a green gate', 'git commit -m "x"', ROOT_CWD, 'allow', '', CTX_REVIEW, 'develop', { 'review-ledger-aaaaaaa-101010.json': { text: ledgerText('fixed-point', 'green'), at: NOW - MINUTE } }],
   ['the review\'s own commit passes: the cycle exited with a red gate only outside the diff', 'git commit -m "x"', ROOT_CWD, 'allow', '', CTX_REVIEW, 'develop', { 'review-ledger-aaaaaaa-101010.json': { text: ledgerText('fixed-point', 'red', 'pre-existing'), at: NOW - MINUTE } }],
-  ['a green gate older than the commit it was closing holds nothing open', 'git commit -m "x"', ROOT_CWD, 'deny', 'outside a review cycle', CTX_REVIEW, 'develop', { 'review-ledger-aaaaaaa-101010.json': { text: ledgerText('fixed-point', 'green'), at: NOW - 30 * MINUTE } }],
+  ['the window is an hour wide: a green gate half an hour old still passes', 'git commit -m "x"', ROOT_CWD, 'allow', '', CTX_REVIEW, 'develop', { 'review-ledger-aaaaaaa-101010.json': { text: ledgerText('fixed-point', 'green'), at: NOW - 30 * MINUTE } }],
+  ['a green gate older than the commit it was closing holds nothing open', 'git commit -m "x"', ROOT_CWD, 'deny', 'outside a review cycle', CTX_REVIEW, 'develop', { 'review-ledger-aaaaaaa-101010.json': { text: ledgerText('fixed-point', 'green'), at: NOW - 90 * MINUTE } }],
   ['a cycle that exited with a red gate holds nothing open', 'git commit -m "x"', ROOT_CWD, 'deny', 'outside a review cycle', CTX_REVIEW, 'develop', { 'review-ledger-aaaaaaa-101010.json': { text: ledgerText('fixed-point', 'red'), at: NOW - MINUTE } }],
   ['a red gate the diff carries holds nothing open', 'git commit -m "x"', ROOT_CWD, 'deny', 'outside a review cycle', CTX_REVIEW, 'develop', { 'review-ledger-aaaaaaa-101010.json': { text: ledgerText('fixed-point', 'red', 'diff'), at: NOW - MINUTE } }],
-  ['a red gate outside the diff, older than the commit it was closing, holds nothing open', 'git commit -m "x"', ROOT_CWD, 'deny', 'outside a review cycle', CTX_REVIEW, 'develop', { 'review-ledger-aaaaaaa-101010.json': { text: ledgerText('fixed-point', 'red', 'pre-existing'), at: NOW - 30 * MINUTE } }],
+  ['a red gate outside the diff, older than the commit it was closing, holds nothing open', 'git commit -m "x"', ROOT_CWD, 'deny', 'outside a review cycle', CTX_REVIEW, 'develop', { 'review-ledger-aaaaaaa-101010.json': { text: ledgerText('fixed-point', 'red', 'pre-existing'), at: NOW - 90 * MINUTE } }],
   ['a cycle that exited with no gate recorded holds nothing open', 'git commit -m "x"', ROOT_CWD, 'deny', 'outside a review cycle', CTX_REVIEW, 'develop', { 'review-ledger-aaaaaaa-101010.json': { text: ledgerText('fixed-point'), at: NOW - MINUTE } }],
   ['a review quiet for two hours is not in flight', 'git commit -m "x"', ROOT_CWD, 'deny', 'outside a review cycle', CTX_REVIEW, 'develop', { 'review-ledger-aaaaaaa-101010.json': ledgerAt(3 * HOUR) }],
   ['a ledger set aside does not hold the gate open', 'git commit -m "x"', ROOT_CWD, 'deny', 'outside a review cycle', CTX_REVIEW, 'develop', { 'review-ledger-aaaaaaa-101010.json': ledgerAt(MINUTE), 'review-ledger-aaaaaaa-101010.json.abandoned': { text: '', at: NOW - MINUTE } }],

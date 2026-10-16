@@ -41,8 +41,8 @@ ask for it. On a host that requires a pointer, it is the pointer that invoked yo
 
 **Alternative backends.** If the session runs on a switched backend — one of `{backends}` that is not
 the host's native one — the model names in `{hosts.<host>.models}` remain the tier aliases
-to declare: it is the switcher's env that remaps them onto the backend's real model. There is nothing to
-change here, and no skill needs to know that mapping: the only thing that truly changes is
+to declare: it is the switcher's env that remaps them onto the backend's real model, and there is
+nothing to change here. No skill needs to know that mapping: the only thing that truly changes is
 concurrency (§5).
 
 If the host does not let you choose a subagent's model, the role is still
@@ -88,8 +88,8 @@ can reach because they run at the project's opening, outside a feature:
 Everything else — `decision-doc`, `blueprint`, `ship-feature`, `update-memory`, `execute`, `reconcile`,
 `finder-prompt`, `applier`, `arch-check`, `perf`, `dead-code`, `test-coverage`, `study` — is an **internal contract**: a
 subagent receives it as a *path to read*, not as a skill to invoke. `decision-doc`
-is opened by `new-feature`, `ship-feature` by `new-feature` § *Delivery* — it is the delivery, and
-with the whole run now reachable on a folder it is never launched on its own — `update-memory` by
+is opened by `new-feature`, `ship-feature` by `new-feature` § *Delivery* — it is the delivery, never
+launched on its own — `update-memory` by
 `commit` on every invocation, and
 `study` by `research` on every invocation, for reordering. An internal contract
 **asks the owner nothing** and has no `argument-hint`: it returns a genuine choice in its own
@@ -99,8 +99,7 @@ That a host also exposes by name a contract not declared here is a convenience o
 not a declared invocability: what is declared is this section.
 
 On a host declaring `{hosts.<host>.skill_pointers}` a skill from these two tables is launched
-only if it has its own pointer there, and not all have one. Adding the missing pointer, or that of an internal
-contract needed by hand, is twelve lines — not another copy of the contract.
+only if it has its own pointer there, and not all have one. Adding the missing pointer is twelve lines — not another copy of the contract.
 
 ### A contract reachable in more than one way declares its modes at home
 
@@ -112,9 +111,7 @@ and does not rewrite the constraints: an exemption list written in the caller er
 node, and nobody notices until the node does, in finder mode, something that list
 had forgotten to disable.
 
-It applies to every node reachable in more than one way, including those that will arrive from outside: an
-imported contract arrives without modes, and the short road for whoever invokes it is always the same.
-The modes section is written **before** connecting it, not after the first incident.
+It applies to every node reachable in more than one way, including those that will arrive from outside. The modes section is written **before** connecting the node, not after the first incident.
 
 ### The topology: what is connected to what
 
@@ -159,9 +156,9 @@ arc that exists in the prompts' code and exists nowhere readable: it is the form
 having decided so.
 
 **This table reflects a program; it is not the program's seat.** The order lives in
-`architect/architect.mjs`: that program carries the graph above as its own data and
+`architect/architect.mjs`, which carries the graph above as its own data and
 answers, given the entry point and the artefacts already on disk, which phases remain. The table
-**shows** the graph to whoever reads a contract, but does not **declare** it: a skill that needs
+**shows** the graph but does not **declare** it: a skill that needs
 the sequence asks the evaluator and follows the verdict.
 
 **A machine compares the two.** `node hooks/self-check.mjs` launches the evaluator's bench, in
@@ -194,13 +191,12 @@ How to launch:
   halfway. The absence of `Edit` and `Write` is truly enforced. `Bash`, instead, is there, with specifiers
   `Bash(git diff:*)`, `Bash(git log:*)`, `Bash(git grep:*)`, which **restrict** nothing: a
   finder runs `ls`, `cat`, `grep -rn` and any other line without a denial, and it has been seen
-  happening. For that half, read-only rests on the prompt, so **repeat the read-only constraint
-  in the prompt**.
+  happening. So **repeat the read-only constraint in the prompt**.
 
 - **`opencode`** — the `subagent` tool, whose parameter `agent` carries the **name** of the agent to
   run, the file name in `.opencode/agents/`: the step's role is chosen by that name and not by a
   type list. `finder` for analysis-only steps that report findings, `explore` for search only,
-  `general` for everything else — that is, for steps that must write. The model is not chosen per
+  `general` for everything else. The model is not chosen per
   step: a subagent inherits the primary's model unless its own file declares one, so §2's resolution
   lands on that file. Several independent `subagent` calls in the **same** message run concurrently,
   which is how a round's fan-out stays parallel.
@@ -208,7 +204,7 @@ How to launch:
   The package's one **role**, `finder`, is rendered for this host at `agents/opencode/finder.md`,
   with `mode: subagent` — the key defaults to `all`, so an agent that does not declare it is
   selectable as a primary too — and with `edit` and the delegation permission denied at `*`. There
-  the read-only is a **real** boundary in the same sense §4 gives `harness`: a `*` deny takes the
+  the read-only is a **real** boundary in the same sense as on `harness`: a `*` deny takes the
   tool — `edit`, `write`, `patch`, and the delegation tool itself — away from the model. What no
   permission covers is a **shell command's content**: the shell stays, because the contract's reads
   need it, so **repeat the read-only constraint in the prompt** there too.
@@ -221,8 +217,7 @@ an intention and does not enforce it, and an agent that has `Bash` has all of `B
 
 A single rule follows: **a constraint the harness does not cover is repeated
 in the subagent's prompt**, starting with the read-only of whoever has `Bash`. And **you declare it in the outcome**:
-a constraint the harness enforces and one only the prompt states are not the same guarantee, and without that field nothing downstream can
-distinguish the two.
+a constraint the harness enforces and one only the prompt states are not the same guarantee.
 
 Rules valid on every host:
 
@@ -243,7 +238,7 @@ Rules valid on every host:
    `{language.chat}`, an area's commands — go in the prompt as `key = value` lines, copied from the
    parameter file and never paraphrased. The child uses a passed value as it is and resolves on §5
    of `contracts/project-contract.md` only a key it was not passed: a value resolved once is not
-   resolved again by every child, and a key left out still resolves, one file later. What already
+   resolved again by every child. What already
    lives in a file — a ledger, a list a program numbered — goes as its **path**, not as a
    transcription: a copy drifts from its file at the first write, and it is paid twice, by whoever
    writes it into the prompt and by whoever reads it there.
@@ -274,9 +269,9 @@ Rules valid on every host:
    **identical prompt**, because the work itself has to be produced again. A step whose block
    **came back and is `invalid`** — a required field absent, malformed, or a field outside its
    domain — is a form defect, and the form defect is deterministic: the identical prompt reproduces
-   it, and the relaunch can only fail twice. There it is relaunched with the same prompt
-   **plus what said `invalid`**, declaring that the correction is the encoding and not a second
-   thought on the substance. The ceiling is the same for both: one more, never a loop.
+   it. There it is relaunched with the same prompt **plus what said `invalid`**, declaring that the
+   correction is the encoding and not a second thought on the substance. The ceiling is the same for
+   both: one more, never a loop.
 
    **The schema is declared by the node, exactly once.** A step's return block is written
    in the file of the node that produces it. Whoever consumes it **cites** it — "the block that *that file*
@@ -300,10 +295,8 @@ Rules valid on every host:
    second rung, not the first.
 5. **An orchestrator waits for what it launched.** A step that fans out closes when **every**
    subagent it launched has returned its block: the sequence does not move on a fan-out still in
-   flight, and a question to the owner never shares its tool-call block with a launch. For the
-   question of § *Ask the owner* this is not tidiness: asked while a step is still writing, it
-   reaches the owner on a state that is still moving, and the answer describes a list the work in
-   flight can still change.
+   flight, and a question to the owner never shares its tool-call block with a launch — for the
+   reason § *Ask the owner* gives.
 
 ### Depth and degradation
 
@@ -377,17 +370,24 @@ question** — `k/N`, the question's own place and the length of the list the bl
 four questions per call is the ceiling of `AskUserQuestion` and not of the list: the number says how
 long the list is, on every host. On `claude`, a list longer than four is asked in **consecutive
 calls, in the same turn**, from `1/N` to `N/N`, and the ask is closed only when the last card has
-been asked: the cards after the ceiling are not a second thought, they are the same act. `hooks/lib/ask-guard.mjs` is the seat holding the run to it — it refuses a decision ask
+been asked: the cards after the ceiling are not a second thought, they are the same act. The calls
+go out **one at a time** — the next only after the previous has come back, and never two in the same
+tool-call block: a batch emitted over a question still waiting for the owner puts to them the cards
+after it, on a list they may never have seen from its first card. `hooks/lib/ask-guard.mjs` is the seat holding the run to it — it refuses a decision ask
 whose questions carry no place, refuses a batch that does not continue its list, and refuses the
-**launch of a subagent** (§4) while the ask is open, that launch being how the run reaches the work
-that answers the decisions. And a message of the owner closes the ask as it closes everything: their
+**launch of a subagent** (§4) while the ask is open. And a message of the owner closes the ask as it closes everything: their
 free answer prevails over the options, and the run goes on with what they said.
 
 **A list a folder already began opens where it stopped.** `new-feature` accepts a folder already
 opened and there resumes instead of starting again, so the ask of a resumed run carries the cards the
 decision document left without an answer, with the place they have in **that** list — not `1`: the
 numbering of the document is what the owner rereads. It is the only case in which a first batch opens
-above the first card, and the only reason `ask-guard` bends that rule.
+above the first card, and the only reason `ask-guard` bends that rule — and there the guard does not
+take the ask's word for the place: it **reads the document itself**, `0.5. strategic-study.md` first
+and `1. decision-doc.md` after, counts its cards and finds the first without a `Choice:` line, and
+holds the opening batch to that card and that length. A batch opening anywhere else is refused, so the
+`5/5` of a list whose first card was never put to the owner does not go out. Where the document is not
+there or not readable, no place is claimed and the resume keeps the older reading.
 
 **The question is bare; the message above it is not.** The ask renders a title and one line per
 option, and context does not go in there: what the owner reads before choosing is the **chat
@@ -398,10 +398,8 @@ reordering it, and it is written every time, even when the document hosting the 
 disk and can be linked: the owner decides from what they read, not from a file they have to open
 first.
 
-**The ask is the last act, and it is emitted alone.** Every subagent the run launched has returned
-its block and nothing is still in flight (§4 point 5): asked while a step is writing, the question
-reaches the owner on a state that is still moving, and the answer describes a list the work in
-flight can still change.
+**The ask is the last act, and it is emitted alone** — every subagent the run launched has returned
+its block and nothing is still in flight (§4 point 5).
 
 **Whoever asks does not stop at asking.** A skill that poses decisions and then leaves the owner
 the job of relaunching it by hand with the answers is asking him to be the orchestrator in its
@@ -468,8 +466,8 @@ looked up, are §8 of `contracts/project-contract.md`.
 | `backends.<backend>.base_url` | URL the environment points at when that backend is active; absent on the host's native backend |
 | `backends.<backend>.sequential_fanout` | declared only on backends whose fan-out must be sequentialised (§5) |
 | `backends.<backend>.caveats` | that backend's warnings to report in summary, one per line; absent if there are none |
-| `write_roots` | folders the machine admits, where **a write made from the conversation is not the run's own violation**: `run-advice` measures the run's seats (`{paths.features}`, `{paths.studies}`) and adds these, so the reminder does not speak where the machine already declared the folder writable — a machine's own paths, so they belong in `environment.local.json`, and the folder is named, not the side it stands on; **absent is the normal case**, and the reminder then knows only the run's seats |
-| `prompt_dump_chars` | the size, in characters, past which the notice opening a run calls the prompt a **raw dump**: `run-advice` measures the whole prompt that opens it, and over that size the notice adds the size, this key, and the seats that exist for a payload that large — the text in a file with its path passed instead, or `research` — while **truncating nothing and blocking nothing**, because moving a dump is the owner's gesture and not the hook's; **absent is the normal case**, and the notice then says nothing about the size |
+| `write_roots` | folders the machine admits, where **a write made from the conversation is not the run's own violation**: `run-advice` measures the run's seats (`{paths.features}`, `{paths.studies}`) and adds these, so the reminder does not speak where the machine already declared the folder writable — a machine's own paths, so they belong in `environment.local.json`, and the folder is named, not the side it stands on; **absent is the normal case** |
+| `prompt_dump_chars` | the size, in characters, past which the notice opening a run calls the prompt a **raw dump**: `run-advice` measures the whole prompt that opens it, and over that size the notice adds the size, this key, and the seats that exist for a payload that large — the text in a file with its path passed instead, or `research` — while **truncating nothing and blocking nothing**; **absent is the normal case** |
 
 No key is mandatory besides `contract`: for everything else the degradation of
 §6 of `contracts/project-contract.md` applies.

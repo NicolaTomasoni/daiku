@@ -1849,6 +1849,13 @@ const CASES = [
   { id: 'order:the-early-block-reports-on-its-own-seat', cites: { file: 'skills/ship-feature/SKILL.md', section: 'Early block' },
     input: { question: 'order', entry: 'new-feature', present: ['0. problem.md', '1. decision-doc.md', '2. blueprint.md', '4. review-notes.md', '5. delivery-report.md'], ledger: null },
     expect: { verdict: 'proceed', remaining_starts_with: 'review' } },
+  // The voluntary stop of § *2b* leaves the same artefacts the early block leaves, and the
+  // verdict it owes is the same one: `4. review-notes.md` is the last proven phase, so the
+  // resume starts at the review and nothing before it is redone. The rule is stated there and
+  // proved here — the section is what makes the stop deterministic, and the bench is its seat.
+  { id: 'order:the-no-review-stop-resumes-at-the-review', cites: { file: 'skills/ship-feature/SKILL.md', section: '2b. No-review stop' },
+    input: { question: 'order', entry: 'new-feature', present: ['0. problem.md', '1. decision-doc.md', '2. blueprint.md', '4. review-notes.md', '5. delivery-report.md'], ledger: null },
+    expect: { verdict: 'proceed', remaining_starts_with: 'review' } },
   { id: 'order:review-entry', cites: { file: 'skills/review/SKILL.md', section: 'The cycle' },
     input: { question: 'order', entry: 'review', present: [], ledger: null },
     expect: { verdict: 'proceed', remaining_starts_with: 'scope', remaining: ['scope', 'finder', 'applier', 'coverage', 'gate', 'closing'] } },
