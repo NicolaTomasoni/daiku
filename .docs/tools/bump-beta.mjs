@@ -9,20 +9,27 @@
  * `version` del manifest **differisce** da quella in place — non serve un incremento ordinato,
  * basta che cambi. La regola del numero sta in `plugins/daiku/skills/release/SKILL.md`
  * § *The two sides*: `develop` dichiara **il numero che la produzione porta adesso**, marcato beta
- * con un contatore dopo un punto (`1.1.6-b.2`, mai `b2`, che semver ordinerebbe dopo `b10`). Il
- * contatore sale quando sale la **forma** del pacchetto; quando invece l'arretrato e' il numero
- * intero — la produzione ha rilasciato e `develop` e' rimasta indietro — il numero si porta al
- * livello della produzione e il contatore riparte.
+ * con un contatore dopo un punto (`1.2.3-b.230`, mai `b230` senza punto). Il contatore **e' il
+ * totale dei commit su `develop`**: sale di uno a ogni push, qualunque cosa il push porti. Quando
+ * la produzione ha rilasciato e `develop` e' rimasta indietro, la base si porta al livello della
+ * produzione e il contatore riparte dal conteggio corrente.
  *
  * Cosa scrive. Le sedi le legge da `.daiku/project.json`, mai a memoria: `{version.file}` col suo
  * `{version.field}` — la sede canonica — e `{version.replicated_in}`, dove il numero compare anche
- * nella forma scappata che shields.io vuole nel badge (`1.1.6--b.2`, col trattino doppio). Accanto,
+ * nella forma scappata che shields.io vuole nel badge (`1.2.3--b.230`, col trattino doppio). Accanto,
  * i documenti che portano il numero **vivo** come esempio e che invecchierebbero in silenzio: sono
  * in `ESEMPI`, con il perche' di ognuno.
  *
+ * Cosa verifica. Il numero deve dire "ultimo push": il conteggio locale si confronta con quello che
+ * l'upstream di `develop` porta gia' (`origin/develop`, letto in locale senza toccare la rete). Se
+ * il push non ha portato commit nuovi, il numero sarebbe fermo e la copia installata non si
+ * muoverebbe: il comando lo dice e non scrive niente. Se l'albero locale e' indietro rispetto
+ * all'upstream, il numero locale sarebbe bugiardo: stesso esito, stesso motivo.
+ *
  * Cosa non fa. Non committa e non mette in stage niente: il commit e' l'ultimo passo del ciclo di
- * review, e la guardia della review lo nega fuori da li'. Questo script **scrive i file e si
- * ferma**; il diff lo guarda l'owner.
+ * review, e la guardia della review lo nega fuori da li'. Non tocca la rete: niente fetch, niente
+ * push — il push resta il gesto manuale dell'owner, e questo script non lo nomina che in prosa.
+ * Scrive i file e si ferma; il diff lo guarda l'owner.
  *
  * Uso:
  *   node .docs/tools/bump-beta.mjs              # alza e scrive
@@ -33,7 +40,7 @@
  */
 
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -77,15 +84,18 @@ const SE_STESSO = 'bump-beta.mjs';
 /**
  * Il numero che `develop` deve dichiarare.
  *
- * `dev` e `prod` sono le due versioni cosi' come stanno. Se la **base** di `develop` e' gia' quella
- * della produzione, l'arretrato non c'e' e sale il contatore; altrimenti il numero si porta al
- * livello della produzione e il contatore riparte da uno.
+ * `prod` e' il numero nudo della produzione, `count` il totale dei commit su `develop`. La base
+ * segue sempre la produzione e il contatore e' sempre il conteggio: nessuna biforcazione, nessuna
+ * memoria dello stato precedente.
  */
-export function nextVersion(dev, prod) {
-  const beta = BETA.exec(dev);
-  const base = beta ? beta[1] : dev;
-  if (base === prod) return `${prod}-b.${beta ? Number(beta[2]) + 1 : 1}`;
-  return `${prod}-b.1`;
+export function nextVersion(prod, count) {
+  if (typeof prod !== 'string' || !NUMERO.test(prod)) {
+    throw new Error(`la base deve essere un numero nudo, non ${JSON.stringify(prod)}`);
+  }
+  if (!Number.isInteger(count) || count < 0) {
+    throw new Error(`il conteggio deve essere un intero non negativo, non ${JSON.stringify(count)}`);
+  }
+  return `${prod}-b.${count}`;
 }
 
 /** La forma che shields.io vuole dentro l'URL del badge: il trattino diventa doppio. */
@@ -153,6 +163,18 @@ function versioneDiSviluppo(p) {
   const value = parsed[p.version.field];
   if (typeof value !== 'string') fail(`${p.version.file} non dichiara ${p.version.field}`);
   return value;
+}
+
+/** Il totale dei commit di un ramo, letto in locale senza toccare la rete. */
+function conteggio(ramo) {
+  try {
+    const raw = git(['rev-list', '--count', ramo]);
+    const count = Number(raw);
+    if (!Number.isInteger(count) || count < 0) fail(`${ramo} conta ${JSON.stringify(raw)}, che non e' un conteggio`);
+    return count;
+  } catch (error) {
+    fail(`il ramo ${ramo} non risponde: ${String(error.message).split('\n')[0]}`);
+  }
 }
 
 /* ------------------------------------------------------------------------- *
@@ -233,7 +255,20 @@ function act() {
 
   const prod = versioneDiProduzione(p);
   const dev = versioneDiSviluppo(p);
-  const nuova = nextVersion(dev, prod);
+  const count = conteggio(p.channels.development);
+  const upstream = conteggio(`origin/${p.channels.development}`);
+  if (count <= upstream && dev === nextVersion(prod, upstream)) {
+    fail(`il numero e' fermo a ${dev}: il push non ha portato commit nuovi su ${p.channels.development}`);
+  }
+  if (count < upstream) {
+    fail(`l'albero locale e' indietro: ${p.channels.development} conta ${count}, origin/${p.channels.development} conta ${upstream}`);
+  }
+  const nuova = nextVersion(prod, count);
+
+  if (dev === nuova) {
+    process.stdout.write(`OK\nmain: ${prod}\ndevelop: ${dev} (gia' allineato)\n`);
+    return { produzione: prod, sviluppo_prima: dev, sviluppo_dopo: dev, residui: [] };
+  }
 
   const scrivi = (rel, testo) => writeFileSync(join(RADICE, rel), testo, 'utf-8');
 
@@ -269,29 +304,29 @@ function selfCheck() {
     ran += 1;
     if (!condizione) failed.push(`${nome}: ${dettaglio}`);
   };
+  const lancia = (fn) => {
+    try {
+      fn();
+      return null;
+    } catch (error) {
+      return error.message;
+    }
+  };
 
-  // Stessa base: sale il contatore, e la trappola dell'ordinamento si vede.
-  check('stessa base, contatore che sale', nextVersion('1.1.6-b.2', '1.1.6') === '1.1.6-b.3', nextVersion('1.1.6-b.2', '1.1.6'));
-  check('il contatore passa a due cifre', nextVersion('1.1.6-b.9', '1.1.6') === '1.1.6-b.10', nextVersion('1.1.6-b.9', '1.1.6'));
-  check('stessa base senza contatore: il contatore nasce', nextVersion('1.1.6', '1.1.6') === '1.1.6-b.1', nextVersion('1.1.6', '1.1.6'));
+  // La base segue la produzione e il contatore e' il conteggio, senza biforcazioni.
+  check('il numero e base piu conteggio', nextVersion('1.2.3', 230) === '1.2.3-b.230', nextVersion('1.2.3', 230));
+  check('la base nuova sposta il numero', nextVersion('1.2.4', 231) === '1.2.4-b.231', nextVersion('1.2.4', 231));
+  check('il conteggio zero vale', nextVersion('1.2.3', 0) === '1.2.3-b.0', nextVersion('1.2.3', 0));
 
-  // Base diversa: il numero va al livello della produzione e il contatore riparte.
-  check('develop indietro di una release', nextVersion('1.1.5-b.1', '1.1.6') === '1.1.6-b.1', nextVersion('1.1.5-b.1', '1.1.6'));
-  check('develop indietro senza contatore', nextVersion('1.1.4', '1.1.6') === '1.1.6-b.1', nextVersion('1.1.4', '1.1.6'));
-  check('develop avanti: si riallinea alla produzione', nextVersion('1.1.7-b.3', '1.1.6') === '1.1.6-b.1', nextVersion('1.1.7-b.3', '1.1.6'));
-
-  // Il numero nuovo differisce sempre dal vecchio: e' l'unica cosa che l'host guarda.
-  check(
-    'il numero cambia sempre',
-    [['1.1.6-b.2', '1.1.6'], ['1.1.5-b.1', '1.1.6'], ['1.1.6', '1.1.6']].every(
-      ([dev, prod]) => nextVersion(dev, prod) !== dev
-    ),
-    'una combinazione lascia il numero com\'era'
-  );
+  // Una base che non e' un numero nudo e un conteggio che non conta si vedono.
+  check('una base beta e rifiutata', (lancia(() => nextVersion('1.2.3-b.1', 230)) || '').includes('numero nudo'), 'passa una base beta');
+  check('una base vuota e rifiutata', (lancia(() => nextVersion('', 230)) || '').includes('numero nudo'), 'passa una base vuota');
+  check('un conteggio negativo e rifiutato', (lancia(() => nextVersion('1.2.3', -1)) || '').includes('intero non negativo'), 'passa un conteggio negativo');
+  check('un conteggio non intero e rifiutato', (lancia(() => nextVersion('1.2.3', 2.5)) || '').includes('intero non negativo'), 'passa un conteggio non intero');
 
   // La forma scappata del badge.
-  check('scappa il trattino del badge', scappato('1.1.6-b.2') === '1.1.6--b.2', scappato('1.1.6-b.2'));
-  check('un numero nudo non si scappa', scappato('1.1.6') === '1.1.6', scappato('1.1.6'));
+  check('scappa il trattino del badge', scappato('1.2.3-b.230') === '1.2.3--b.230', scappato('1.2.3-b.230'));
+  check('un numero nudo non si scappa', scappato('1.2.3') === '1.2.3', scappato('1.2.3'));
 
   // Il path su produzione.
   check('ri-radica il file di versione', prodPath('plugins', 'plugins/daiku/.claude-plugin/plugin.json') === 'daiku/.claude-plugin/plugin.json', String(prodPath('plugins', 'plugins/daiku/.claude-plugin/plugin.json')));
@@ -299,14 +334,14 @@ function selfCheck() {
   check('senza sorgente il path resta', prodPath('', 'daiku/.claude-plugin/plugin.json') === 'daiku/.claude-plugin/plugin.json', String(prodPath('', 'daiku/.claude-plugin/plugin.json')));
 
   // Le due forme su una riga sola: e' il README di prodotto, col badge.
-  const badge = 'alt="version 1.1.6-b.2" src="https://img.shields.io/badge/version-1.1.6--b.2-3b82f6"';
-  const dopo = conNumero(badge, '1.1.6-b.2', '1.1.6-b.3');
-  check('il badge si aggiorna in entrambe le forme', dopo.includes('version 1.1.6-b.3"') && dopo.includes('version-1.1.6--b.3-'), dopo);
+  const badge = 'alt="version 1.2.3-b.230" src="https://img.shields.io/badge/version-1.2.3--b.230-3b82f6"';
+  const dopo = conNumero(badge, '1.2.3-b.230', '1.2.3-b.231');
+  check('il badge si aggiorna in entrambe le forme', dopo.includes('version 1.2.3-b.231"') && dopo.includes('version-1.2.3--b.231-'), dopo);
 
   // Le due forme sono due stringhe diverse, e il conteggio le tiene separate: l'`alt` porta la
   // forma nuda, l'URL quella scappata, e nessuna delle due contiene l'altra.
-  check('conta la forma nuda', occorrenze(badge, '1.1.6-b.2') === 1, String(occorrenze(badge, '1.1.6-b.2')));
-  check('conta la forma scappata', occorrenze(badge, '1.1.6--b.2') === 1, String(occorrenze(badge, '1.1.6--b.2')));
+  check('conta la forma nuda', occorrenze(badge, '1.2.3-b.230') === 1, String(occorrenze(badge, '1.2.3-b.230')));
+  check('conta la forma scappata', occorrenze(badge, '1.2.3--b.230') === 1, String(occorrenze(badge, '1.2.3--b.230')));
 
   // La scansione trova il numero anche quando e' codice: questo file lo porta nei propri casi di
   // prova, quindi si esclude per nome, e il banco pretende che l'esclusione tenga **su un numero
