@@ -1,11 +1,11 @@
 ---
 name: edge-copia-del-prodotto
-description: "il ramo edge — la copia del prodotto che segue develop, col numero `<produzione>-edge.<N>+<tip>`: come si forma N, e perché develop non porta versione"
+description: "il ramo edge — la copia del prodotto che segue develop, col numero `<produzione>-edge.<N>+<tip>`: come si forma N, chi lo alza (un workflow a ogni push su develop, col motore bump-edge.mjs), e perché develop non porta versione"
 metadata:
   node_type: memory
   type: project
   originSessionId: a2642d71-61f9-4f11-aa8b-a94f64886de8
-  modified: 2026-10-16T15:50:38.921Z
+  modified: 2026-10-16T14:28:42.214Z
 ---
 
 **Il ramo `edge` è la copia del prodotto che segue `develop`.** Porta ciò che sta sotto `plugins/`,
@@ -22,8 +22,17 @@ ri-radicato come `main` (vetrina, `daiku/`, README), senza changelog. Lo decide 
 Il numero cambia a ogni tip, e l'host muove la copia ogni volta che il campo `version` differisce, senza
 chiedere un incremento ordinato: per questo la forma porta il tip.
 
-**How to apply:** nessun meccanismo alza `edge`: la derivazione del numero sopra è la formula che il
-numero deve avere, non un processo che gira da solo. Vedi [[push-solo-manuale]].
+**Chi lo scrive: `.docs/tools/bump-edge.mjs`, lanciato dal workflow `.github/workflows/edge.yml`** a ogni push su
+`develop`. Usa la plumbing:
+indice usa-e-getta, `read-tree` su `develop:plugins`, `hash-object`, `update-index`, `write-tree`,
+`commit-tree`, `update-ref` con il vecchio tip come controllo. Non fa checkout, non committa, non fa fetch né push: li fa il workflow, che porta `main` ed `edge` in locale
+prima e pusha `edge` dopo. Rifiuta un albero con modifiche tracciate, un `develop` indietro rispetto a `origin/develop`, e un
+`main` senza trailer `Development:`. Se `edge` dichiara già il numero che `develop` produce, non scrive
+niente. Il banco è `node .docs/tools/bump-edge.mjs --self-check`: 27 casi, dodici dei quali con Git vero
+su repository usa e getta; una mutazione del numero fa scattare cinque casi e il banco esce `1`.
+
+**How to apply:** nessuno alza `edge` a mano: a ogni push su `develop` lo fa il workflow, e `develop` lo spinge l'owner. Vedi
+[[push-solo-manuale]].
 
 **Why:** `develop` non porta versione. Il tentativo di installare dal ref `develop` del 16 ottobre 2026
 ha dato `manifest_missing` due volte: l'host cerca la vetrina alla radice del repository, e su `develop` lì

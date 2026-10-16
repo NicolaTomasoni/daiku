@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Nessuno script del cantiere pusha.
+ * Nessuno script del cantiere pusha, tranne il workflow che alza `edge`, e solo `edge`.
  *
  * Attrezzo di sviluppo: vive fuori da `plugins/`, non si pubblica e non gira da un hook.
  *
@@ -11,7 +11,8 @@
  * script, e il push sta dentro il file. Il 30 settembre 2026 e' andata esattamente cosi', e
  * un rilascio e' uscito prima che l'owner lo decidesse.
  *
- * Da allora la regola vive anche qui: nessun file eseguibile del cantiere nomina un push.
+ * Da allora la regola vive anche qui: nessun file eseguibile del cantiere nomina un push, tranne il
+ * workflow di `edge`, che puo' pushare solo `refs/heads/edge` (`ALLOWED`, piu' sotto).
  * Il controllo legge il **codice**, non i commenti — parlare del push e' cio' che questo
  * file fa dalla prima riga, e non deve segnalarsi da solo.
  *
@@ -30,13 +31,22 @@ const QUI = dirname(fileURLToPath(import.meta.url));
 const SVILUPPO = join(QUI, '..', '..');
 
 /** Le cartelle che portano script del cantiere, relative alla radice di sviluppo. */
-const RADICI = ['.docs/tools', '.claude'];
+const RADICI = ['.docs/tools', '.claude', '.github/workflows'];
 
 /** Le estensioni che possono contenere un invocazione di git. */
 const ESTENSIONI = ['.ps1', '.mjs', '.js', '.sh', '.cmd', '.bat', '.yml', '.yaml'];
 
 /** Il file che cerca il gesto e' l'unico che puo' nominarlo nel proprio codice. */
 const SE_STESSO = 'check-no-push.mjs';
+
+/**
+ * L'unico push che il cantiere ammette: il ramo edge, dal workflow che lo alza. Il comando e' esatto,
+ * senza forza e senza altri rami: ogni variante, in quel file o in un altro, e' rossa.
+ */
+const ALLOWED = {
+  file: '.github/workflows/edge.yml',
+  command: 'git push origin refs/heads/edge:refs/heads/edge',
+};
 
 /** Il gesto, come apparirebbe in codice: `git ... push`, sullo stesso comando. */
 const GESTO = /\bgit\b[^\n]*\bpush\b/;
@@ -101,12 +111,13 @@ function pushesIn(testo, estensione) {
 }
 
 /**
- * Il primo push che il file invoca, o `null`. Nessun file, in nessuna cartella, puo' nominare
- * il gesto nel proprio codice: il push e' sempre rosso.
+ * Il primo push che il file invoca in modo non ammesso, o `null`. Il workflow di edge puo' pushare
+ * solo il comando di ALLOWED; ogni altro push, in ogni altro file, e' rosso.
  */
-function pushNelFile(testo, estensione) {
+function pushNelFile(relativo, testo, estensione) {
   const pushes = pushesIn(testo, estensione);
-  return pushes[0] ? { riga: pushes[0].riga, testo: pushes[0].testo } : null;
+  const vietato = relativo === ALLOWED.file ? pushes.find((p) => p.comando !== ALLOWED.command) : pushes[0];
+  return vietato ? { riga: vietato.riga, testo: vietato.testo } : null;
 }
 
 function scansiona() {
@@ -130,7 +141,7 @@ function scansiona() {
       } catch {
         continue; // illeggibile: non e' questo controllo a doverlo dichiarare
       }
-      const push = pushNelFile(testo, ESTENSIONI.find((e) => file.endsWith(e)) || '');
+      const push = pushNelFile(relativo, testo, ESTENSIONI.find((e) => file.endsWith(e)) || '');
       if (push) {
         failed.push(`${relativo}:${push.riga}: invoca un push — «${push.testo}»`);
       }
@@ -171,39 +182,40 @@ function selfCheck() {
   const scansionati = scriptDelCantiere(join(SVILUPPO, '.docs', 'tools'));
   check('si esclude da solo', !scansionati.some((f) => basename(f) === SE_STESSO), 'compare fra gli script scansionati');
 
-  // Nessun push ammesso: in nessun file, in nessuna forma, e un push citato in un commento non conta.
-  const workflow = (corpo) => `name: prova\njobs:\n  gira:\n    steps:\n      - run: |\n${corpo}`;
-  const passa = (testo, ext = '.yml') => pushNelFile(testo, ext) === null;
+  // Il solo push ammesso: il ramo edge, dal workflow che lo alza. Senza forza, senza altri rami, e
+  // un push citato in un commento non conta.
+  const workflow = (corpo) => `name: edge\njobs:\n  alza-edge:\n    steps:\n      - run: |\n${corpo}`;
+  const passa = (relativo, testo, ext = '.yml') => pushNelFile(relativo, testo, ext) === null;
   check(
-    'un push in un workflow e rifiutato',
-    !passa(workflow('          git push origin refs/heads/edge:refs/heads/edge\n')),
-    'passa un push di un workflow'
+    'il workflow di edge pusha solo il ramo edge',
+    passa(ALLOWED.file, workflow(`          ${ALLOWED.command}\n`)),
+    'il push di edge e rifiutato'
   );
   check(
     'il workflow che pusha develop e rifiutato',
-    !passa(workflow('          git push origin develop\n')),
+    !passa(ALLOWED.file, workflow('          git push origin develop\n')),
     'passa un push di develop'
   );
   check(
     'il workflow che pusha main e rifiutato',
-    !passa(workflow('          git push origin main\n')),
+    !passa(ALLOWED.file, workflow('          git push origin main\n')),
     'passa un push di main'
   );
   check(
     'il workflow con la forza e rifiutato',
-    !passa(workflow('          git push --force origin refs/heads/edge:refs/heads/edge\n')),
+    !passa(ALLOWED.file, workflow('          git push --force origin refs/heads/edge:refs/heads/edge\n')),
     'passa un push forzato'
   );
-  check('il workflow senza push passa', passa(workflow('          echo alza\n')), 'rifiutato senza push');
+  check('il workflow senza push passa', passa(ALLOWED.file, workflow('          echo alza\n')), 'rifiutato senza push');
   check(
     'un push citato in un commento del workflow non conta',
-    passa(workflow('          echo alza\n') + '# git push origin main\n'),
+    passa(ALLOWED.file, workflow(`          ${ALLOWED.command}\n`) + '# git push origin main\n'),
     'il commento conta'
   );
   check(
     'un altro file con un push resta rifiutato',
-    !passa('git push origin edge\n', '.mjs'),
-    'passa un push in un altro file'
+    !passa('.docs/tools/prova.mjs', 'git push origin edge\n', '.mjs'),
+    'passa un push fuori dal workflow'
   );
 
   const esito = scansiona();

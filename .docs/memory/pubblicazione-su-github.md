@@ -1,11 +1,11 @@
 ---
 name: pubblicazione-su-github
-description: "Il repository è uno solo — `NicolaTomasoni/daiku` su GitHub, con `develop` cantiere, `main` linea di rilasci ed `edge` copia del prodotto che segue `develop`: i rilasci li fa `daiku:release`, una bozza si accumula finché non è pushata, e il push resta dell'owner"
+description: "Il repository è uno solo — `NicolaTomasoni/daiku` su GitHub, con `develop` cantiere, `main` linea di rilasci ed `edge` copia del prodotto che segue `develop`: i rilasci li fa `daiku:release`, una bozza si accumula finché non è pushata, e il push resta dell'owner, salvo `edge`, che si alza da sola a ogni push su `develop`"
 metadata:
   node_type: memory
   type: project
   originSessionId: 69438169-0316-47c8-a4e8-3365650ee2cf
-  modified: 2026-10-16T15:50:22.183Z
+  modified: 2026-10-16T14:28:39.116Z
 ---
 
 **Dal 5 ottobre 2026 il repository è uno solo.** `NicolaTomasoni/daiku` su GitHub, pubblico, con **tre rami**: `develop` è il cantiere, `main` è la
@@ -26,7 +26,8 @@ dell'host accetta quel manifest con un avviso: vedi [[installazione-e-versioname
 A seguire il lavoro di `develop` da fuori c'è `edge`: una copia di `plugins/` ri-radicata come `main`,
 senza changelog, col manifest che dichiara `<produzione>-edge.<N>+<tip>` — la base è il numero che
 `main` porta adesso, `N` i commit di `develop` dopo l'ancora del trailer `Development:`, `tip` il sha
-corto di `develop`. Vedi [[edge-copia-del-prodotto]]. `main` porta
+corto di `develop`. Lo alza a ogni push su `develop` il workflow `.github/workflows/edge.yml`, col motore
+`.docs/tools/bump-edge.mjs`: con la plumbing, senza checkout, ed è il solo push automatico del cantiere. Vedi [[edge-copia-del-prodotto]]. `main` porta
 versione e changelog, ed è **una linea di rilasci**: non è antenata di `develop`, e niente di un
 rilascio torna indietro.
 

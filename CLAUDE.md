@@ -50,6 +50,7 @@ e nient'altro esce.
 | `.daiku/` | i parametri del **cantiere**, non del prodotto: le guardie di Daiku su questo repository, e sotto di sé le sedi dei lavori — `features/`, `studies/` e `handoffs/` |
 | `PRODUCT.md`, `BRAND.md`, `DOMAIN.md`, `STACK.md`, `ARCHITECTURE.md` | i documenti fondativi del cantiere, dichiarati in `documents.*` |
 | `CLAUDE.md`, `.claude/`, `.vscode/`, `.gitignore`, `.gitattributes` | sviluppo, obbligati in radice dall'host e da git |
+| `.github/` | il workflow che alza `edge` a ogni push su `develop` (`workflows/edge.yml`), obbligato in radice da GitHub |
 
 `.daiku/project.json` non è una sede di sviluppo come le altre: **è il gate delle guardie.** Il
 pacchetto è installato su ogni repository che l'host apre, ma non nega niente dove il progetto non
@@ -69,7 +70,7 @@ prodotto, mai in quella di questo repository.
 
 **Qui Daiku è installato dal marketplace `NicolaTomasoni/daiku` sul ramo `edge`**, la copia del prodotto
 che segue `develop`. Lo installano questo repository e Reforgia, perché l'installazione è a livello utente:
-lo strumento con cui Daiku si sviluppa è quindi `edge`, non l'ultimo
+lo strumento con cui Daiku si sviluppa è quindi `edge`, aggiornato a ogni push su `develop`, non l'ultimo
 rilascio di `main`. È la scelta dell'owner del 16 ottobre 2026.
 
 ## Prodotto e cantiere
@@ -122,8 +123,11 @@ una sezione di changelog che ricompaiano su `develop` sono un guasto, non un all
 ri-radicato come `main` — la vetrina, `daiku/`, il README — senza changelog, con un numero di
 prerelease sull'imminente versione più i metadati di build: `1.2.3-edge.3+a1b2c3d`. `1.2.3` è il
 numero che `main` porta adesso; `3` conta i commit di `develop` dopo l'ancora che l'ultimo rilascio ha
-registrato nel trailer `Development:`; `a1b2c3d` è il sha corto del tip di `develop`. È il numero
-che l'host confronta per muovere la copia di un ospite che segue `edge`. Niente di `edge` torna su `develop`.
+registrato nel trailer `Development:`; `a1b2c3d` è il sha corto del tip di `develop`. Il numero cambia a
+ogni push che cambia `develop`: è quello che l'host confronta per muovere la copia di un ospite che
+segue `edge`. Lo alza a ogni push su `develop` il workflow `.github/workflows/edge.yml`, col motore
+`.docs/tools/bump-edge.mjs`, con la plumbing e senza checkout: nessuno lo lancia né lo modifica a mano. È
+l'unico push automatico del cantiere, e tocca solo `edge`. Niente di `edge` torna su `develop`.
 
 **I rilasci li fa Daiku stesso**, con la skill `release` del pacchetto — non un comando del cantiere e
 due script, che non esistono più. Legge `develop`, costruisce il commit di produzione con la plumbing
@@ -281,7 +285,7 @@ claude plugin validate plugins/daiku
 
 Il validatore però non guarda dentro il codice eseguibile del pacchetto: gli hook, tutti
 **fail-open** — davanti a un guasto tacciono ed escono `0`, quindi rotti e silenziosi si
-assomigliano — i sette programmi di `plugins/daiku/architect/`, i programmi di `init` sotto
+assomigliano — gli otto programmi di `plugins/daiku/architect/`, i programmi di `init` sotto
 `plugins/daiku/skills/init/` e l'adattatore delle guardie `plugins/daiku/hooks/opencode-plugin.mjs`.
 La verifica del codice è la loro, e vale come la validazione:
 
@@ -291,7 +295,7 @@ node plugins/daiku/hooks/self-check.mjs
 
 Lancia insieme i banchi di prova di tutto ciò che il pacchetto esegue — i moduli di
 `plugins/daiku/hooks/lib/`, l'adattatore `plugins/daiku/hooks/opencode-plugin.mjs`, l'entrypoint
-`plugins/plugin.mjs`, il banco dei manifest, i sette programmi di `plugins/daiku/architect/`, i
+`plugins/plugin.mjs`, il banco dei manifest, gli otto programmi di `plugins/daiku/architect/`, i
 programmi di `init` sotto `skills/init/` e lo scheletro dell'aggiornamento
 `templates/project/update.mjs` — stampa il totale contato ed esce `1` al primo caso rosso: quanti
 banchi e quanti controlli siano lo dice la sua uscita, non questa riga. I banchi del ledger e del
