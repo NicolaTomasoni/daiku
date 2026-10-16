@@ -25,24 +25,26 @@ codice che gira.
 
 ## 2. Framework e librerie
 
-**Nessuna dipendenza esterna.** Il pacchetto non dichiara alcun manifesto di dipendenze né alcun
-lockfile: tutto è scritto sulla libreria standard di Node e sulle API dell'host. È una scelta
-coerente con la natura del prodotto — un corpus di contratti più i programmi che lo sorvegliano —
-e con il fatto che un pacchetto installato in ogni progetto che l'host apre non deve trascinarsi
-dietro un albero di dipendenze.
+**Nessuna dipendenza esterna.** Il pacchetto non dichiara alcun manifesto di **dipendenze** né
+alcun lockfile: un `package.json` può stare alla radice come descrittore del plugin — ne porta il
+nome e la via dell'entrypoint, mai un campo di dipendenze — e tutto il resto è scritto sulla
+libreria standard di Node e sulle API dell'host. È una scelta coerente con la natura del prodotto —
+un corpus di contratti più i programmi che lo sorvegliano — e con il fatto che un pacchetto
+installato in ogni progetto che l'host apre non deve trascinarsi dietro un albero di dipendenze.
 
 ## 3. Strumenti e catena di build e prova
 
 **Non c'è una build**: ciò che si scrive è ciò che si esegue.
 
 I banchi di prova del pacchetto si lanciano tutti insieme con un comando, che conta il totale e
-esce in errore al primo caso rosso. Accanto, dal cantiere, i controlli che guardano il corpus e la
-vetrina:
+esce in errore al primo caso rosso. Accanto, dal cantiere, i controlli che guardano il corpus, la
+radice pubblicata e la vetrina:
 
 ```bash
 node plugins/daiku/hooks/self-check.mjs          # i banchi di hook, programmi e scansione di init
 node .docs/tools/check-corpus.mjs plugins/daiku  # le invarianti del corpus
 node .docs/tools/check-topology.mjs plugins/daiku # la topologia: nodi, handoff, rimandi
+node .docs/tools/check-no-deps.mjs plugins       # la radice: nessun lockfile, nessun campo di dipendenze
 ```
 
 La validazione del pacchetto e della vetrina è quella dell'host:

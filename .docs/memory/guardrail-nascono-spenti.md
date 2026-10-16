@@ -80,14 +80,16 @@ davvero dal progetto (oggi il pool dei worktree, la guardia del ramo e la guardi
 nel JSON, e nel banco un caso che prova che da spenti **non** negano. Ogni ramo ha la sua riga nella
 tabella di `plugins/daiku/hooks/README.md`, e i banchi di tutto ciò che il pacchetto esegue — i
 moduli di `hooks/lib/` con un banco, il banco dei manifest, i sette programmi di `architect/`, i passi
-di `init` sotto `skills/init/` e l'adattatore delle guardie `hooks/opencode-plugin.mjs` — si lanciano
+di `init` sotto `skills/init/`, l'adattatore delle guardie `hooks/opencode-plugin.mjs`, l'entrypoint
+`plugins/plugin.mjs` e lo scheletro dell'aggiornamento `templates/project/update.mjs` — si lanciano
 insieme con `node plugins/daiku/hooks/self-check.mjs`, che somma i controlli e esce `1` al
 primo rosso: va aggiunto a ogni verifica di rilascio accanto al validatore. Il numero dei banchi
 e dei controlli lo dice l'uscita dello strumento, non questo file.
 
-**Su opencode le guardie non hanno un `hooks.json`: le porta un plugin-adattatore** — cinque moduli su
+**Su opencode le guardie non hanno un `hooks.json`: le porta il plugin del pacchetto**, che importa
+l'adattatore `hooks/opencode-plugin.mjs` — cinque moduli su
 sette agganciati ai domini vivi dell'host, e i due che non hanno un evento (`stop-advice`,
-`subagent-advice`) **dichiarati mancanti**. La forma e le sedi stanno in [[deposito-opencode]].
+`subagent-advice`) **dichiarati mancanti**. La forma e le sedi stanno in [[canale-opencode]].
 
 **La radice i hook la cercano, non la presumono.** `hooks/lib/project-root.mjs` non prende la radice
 git: cerca la `.daiku/project.json` **più vicina salendo dalla cwd** — dopo aver accettato la radice

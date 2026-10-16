@@ -289,9 +289,10 @@ node plugins/daiku/hooks/self-check.mjs
 ```
 
 Lancia insieme i banchi di prova di tutto ciò che il pacchetto esegue — i moduli di
-`plugins/daiku/hooks/lib/`, l'adattatore `plugins/daiku/hooks/opencode-plugin.mjs`, il banco dei
-manifest, i sette programmi di `plugins/daiku/architect/` e i programmi di `init` sotto
-`skills/init/` — stampa il totale contato ed esce `1` al primo caso rosso: quanti
+`plugins/daiku/hooks/lib/`, l'adattatore `plugins/daiku/hooks/opencode-plugin.mjs`, l'entrypoint
+`plugins/plugin.mjs`, il banco dei manifest, i sette programmi di `plugins/daiku/architect/`, i
+programmi di `init` sotto `skills/init/` e lo scheletro dell'aggiornamento
+`templates/project/update.mjs` — stampa il totale contato ed esce `1` al primo caso rosso: quanti
 banchi e quanti controlli siano lo dice la sua uscita, non questa riga. I banchi del ledger e del
 rilascio lavorano con Git vero su repository usa e getta nella cartella temporanea di sistema: vogliono
 `git` nel `PATH`.
@@ -304,9 +305,24 @@ Verifica la topologia del corpus (nodi su disco = righe di tabella, handoff fra 
 rimandi di sezione), con totale contato ed uscita `1` al primo caso rosso. Si lancia a mano
 prima di un rilascio, accanto al self-check.
 
+```bash
+node .docs/tools/check-no-deps.mjs plugins
+```
+
+Vieta i due volti della dipendenza nella radice di `plugins/`: ogni lockfile, per **nome esatto** —
+una sottostringa non basta, perché i nomi del corpus contengono quelle lettere — e ogni
+`package.json` che parsifichi e porti un campo di dipendenze non vuoto, più uno che non parsifica
+affatto. Conta il totale ed esce `1` al primo caso rosso; il suo banco, un caso rosso per ogni nome
+e per ogni campo enumerato, si lancia con:
+
+```bash
+node .docs/tools/check-no-deps.mjs --self-check
+```
+
 Il corpus è verificato dal **gate dell'area `daiku`** (`.daiku/project.json`): la fase *Gate* della
-skill `review` — che `ship-feature` esegue — lancia `check-corpus.mjs` da sé su ogni consegna che
-tocca `plugins/daiku/`, e un rosso blocca il commit. Copre le otto invarianti che i contratti
+skill `review` — che `ship-feature` esegue — lancia i due controlli del suo `run` —
+`check-corpus.mjs` sul corpus e `check-no-deps.mjs` sulla radice — su ogni consegna che
+tocca `plugins/`, e un rosso blocca il commit. Copre le otto invarianti che i contratti
 dichiarano in prosa ma nessun altro controllo impone — nessun carattere di controllo in una riga,
 ogni chiave `{…}` citata esistente con lo specchio `schemas/blocks.json` concorde con la prosa, ogni
 path interno che risolve, ogni blocco json parsabile, nessuna skill che nomina un modello, la riga

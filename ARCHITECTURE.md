@@ -88,9 +88,9 @@ strumenti di verifica. Il cantiere non si pubblica.
   principale resta intatto mentre la catena gira, e più lavori non si pestano i piedi. *Se è
   sbagliata:* il pool è uno stato in più da riconciliare, e un worktree riusabile solo se è pulito
   e nessuna consegna lo tiene.
-- **Due host: Claude Code e opencode.** *Perché:* il pacchetto ne serve due — opencode legge le sue
-  estensioni dal progetto e non da un marketplace, quindi richiede un deposito che l'installazione
-  non copre — e il costo è quello che questo lavoro paga: due rami di delega, due rese di ruolo, due
+- **Due host: Claude Code e opencode.** *Perché:* il pacchetto ne serve due — opencode è un host
+  diverso, con la sua via di installazione, le sue rese di ruolo e i suoi punti di adattamento — e il
+  costo è quello che questo lavoro paga: due rami di delega, due rese di ruolo, due
   file di istruzioni, due vie di installazione. *Se è sbagliata:* la superficie dei parametri è una
   mappa per host con **due** voci, e ogni host in più è un punto di adattamento da tenere allineato —
   non un collasso rimandato.
