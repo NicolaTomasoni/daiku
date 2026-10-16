@@ -631,6 +631,135 @@ function actRecord(input) {
   }
 }
 
+/**
+ * The beta follows the release.
+ *
+ * Development carries production's own number marked as a beta (`1.2.3-b.1`), and a release that
+ * left it behind would leave the tree declaring the number just replaced. So after the release step
+ * the skill writes the new beta into the working-tree files itself and this action freezes them on
+ * development — the way the record commits, and the way production is written: a throwaway index,
+ * `write-tree`, `commit-tree`, `update-ref`, no `git commit`, and the working tree left clean.
+ *
+ * The skill does the writing and this is where it is checked: each file must hold exactly the beta
+ * transform of what development carries — the version file with the field set, every other file with
+ * the old beta replaced. A file holding more than that, or less, fails the call instead of smuggling
+ * a change into the beta commit. The number being replaced is development's own, read from the file
+ * the caller declared: the caller does not hand it over, because a number passed in is a number that
+ * can be wrong.
+ */
+function actBeta(input) {
+  const cwd = resolve(text(input, 'work_root'));
+  if (!existsSync(cwd)) fail(`work_root ${JSON.stringify(input.work_root)} does not exist`);
+  const development = text(input, 'development');
+  const beta = text(input, 'beta');
+  if (!/^\d+\.\d+\.\d+-b\.\d+$/.test(beta)) {
+    fail(`beta must be a version with a numeric counter, got ${JSON.stringify(beta)}`);
+  }
+  const message = text(input, 'message');
+
+  const developmentSha = revOf(cwd, development);
+  if (!developmentSha) fail(`the development branch ${development} does not exist: there is nothing to advance on`);
+
+  const versionFile = devPath(input, 'version_file');
+  const field = text(input, 'version_field');
+  const replicated = has(input, 'version_replicated_in') ? input.version_replicated_in : [];
+  if (!Array.isArray(replicated) || !replicated.every(nonEmpty)) {
+    fail('version_replicated_in must be a list of paths');
+  }
+  const prose = has(input, 'prose_paths') ? input.prose_paths : [];
+  if (!Array.isArray(prose) || !prose.every(nonEmpty)) fail('prose_paths must be a list of paths');
+  const paths = [...new Set([versionFile, ...replicated.map(cleanPath), ...prose.map(cleanPath)])];
+
+  const headVersionRaw = fileAt(cwd, developmentSha, versionFile);
+  if (headVersionRaw === null) {
+    fail(`development carries no ${versionFile}: the beta cannot be advanced from a file that is not there`);
+  }
+  let oldBeta;
+  try {
+    oldBeta = JSON.parse(headVersionRaw)[field];
+  } catch (error) {
+    fail(`the version file on development is not valid JSON (${error.message})`);
+  }
+  if (typeof oldBeta !== 'string' || !oldBeta) {
+    fail(`development carries no ${field} to advance from in ${versionFile}`);
+  }
+
+  const expected = new Map();
+  // A replicated file may quote the beta URL-escaped, as a shields badge does (`1.2.3--b.1` for
+  // `1.2.3-b.1`): the literal pass leaves that form intact — `1.2.2--b.3` holds no `1.2.2-b.3`
+  // substring — and the badge pass converts it. Where the beta carries no dash both forms are one.
+  const badgeOf = (s) => s.replace(/-/g, '--');
+  for (const path of paths) {
+    const before = fileAt(cwd, developmentSha, path);
+    if (before === null) fail(`development carries no ${path}, named for the beta advance`);
+    if (path === versionFile) {
+      expected.set(path, versionedFile(before, field, beta));
+    } else {
+      if (!before.includes(oldBeta) && !before.includes(badgeOf(oldBeta))) {
+        fail(`${path} does not quote the beta ${oldBeta}: it is not a seat of the advance`);
+      }
+      let after = before.split(oldBeta).join(beta);
+      if (badgeOf(oldBeta) !== oldBeta) after = after.split(badgeOf(oldBeta)).join(badgeOf(beta));
+      expected.set(path, after);
+    }
+  }
+
+  // The bytes `git add` would stage for this content, filters and all — the same precaution the
+  // record takes, for the same host that normalises line endings. Comparing blobs instead of
+  // strings is what keeps a CRLF working file from reading as a smuggled change.
+  const blobs = new Map();
+  for (const path of paths) {
+    const file = join(cwd, path);
+    if (!existsSync(file)) fail(`the working file ${path} is not there: write the beta into the working tree first`);
+    const content = readFileSync(file, 'utf-8');
+    const got = git(cwd, ['hash-object', '-w', '--path', path, '--stdin'], { input: content }).trim();
+    const want = git(cwd, ['hash-object', '--path', path, '--stdin'], { input: expected.get(path) }).trim();
+    if (got !== want) {
+      fail(`the working file ${path} holds more — or less — than the beta advance: write exactly the beta into the working tree first`);
+    }
+    blobs.set(path, got);
+  }
+
+  const dir = mkdtempSync(join(tmpdir(), 'daiku-release-beta-'));
+  const index = join(dir, 'index');
+  const env = { GIT_INDEX_FILE: index };
+  try {
+    git(cwd, ['read-tree', developmentSha], { env });
+    for (const [path, blob] of blobs) {
+      git(cwd, ['update-index', '--add', '--cacheinfo', `100644,${blob},${path}`], { env });
+    }
+    const tree = git(cwd, ['write-tree'], { env }).trim();
+    if (tree === treeOf(cwd, developmentSha)) {
+      return answer({
+        ok: true,
+        action: 'beta',
+        recorded: false,
+        beta,
+        previous_sha: developmentSha,
+        development_sha: developmentSha,
+        detail: `development already carries the beta ${beta}: nothing was committed.`,
+      });
+    }
+    const commit = git(cwd, ['commit-tree', tree, '-p', developmentSha, '-m', message], { env }).trim();
+    git(cwd, ['update-ref', `refs/heads/${development}`, commit, developmentSha]);
+    // The real index is put back in step with the branch it now names, as the record does: without
+    // this the files would read as modified against a `HEAD` that already carries them, and the
+    // tree would stay dirty — the very state this advance exists to remove.
+    git(cwd, ['add', '--', ...paths]);
+    return answer({
+      ok: true,
+      action: 'beta',
+      recorded: true,
+      beta,
+      previous_sha: developmentSha,
+      development_sha: commit,
+      detail: `the beta was advanced to ${beta} on ${development} as ${commit.slice(0, 7)}.`,
+    });
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
 function dispatch(input, root) {
   if (!isObject(input)) fail('stdin must be one JSON object');
   const action = input.action;
@@ -638,7 +767,8 @@ function dispatch(input, root) {
   if (action === 'release') return actRelease(input, false);
   if (action === 'dry') return actRelease(input, true);
   if (action === 'record') return actRecord(input);
-  fail(`unknown action ${JSON.stringify(action)}: expected "status", "dry", "release" or "record"`);
+  if (action === 'beta') return actBeta(input);
+  fail(`unknown action ${JSON.stringify(action)}: expected "status", "beta", "dry", "release" or "record"`);
 }
 
 /* ------------------------------------------------------------------------- *
@@ -910,6 +1040,56 @@ function runBench(root) {
       check('record:a-file-the-repository-normalises-leaves-the-tree-clean', one.recorded === true && status === '', `recorded=${one.recorded} status=${JSON.stringify(status)}`);
       const again = rec();
       check('record:and-the-same-answer-again-is-still-no-commit', again.recorded === false, JSON.stringify(again));
+    }
+
+    /* --- the beta follows the release ----------------------------------- */
+    {
+      const repo = fixture('beta');
+      const bump = (extra = {}) => call(repo, Object.assign({
+        action: 'beta', work_root: repo, development: 'develop',
+        version_file: 'plugins/daiku/.claude-plugin/plugin.json', version_field: 'version',
+        version_replicated_in: ['plugins/README.md'], prose_paths: ['plugins/notes.md'],
+        beta: '1.1.3-b.1', message: 'version: update to the 1.1.3 beta',
+      }, extra));
+      // A prose seat quoting the old beta, as the skill finds it with a search. The old beta
+      // carries a dash, so the badge seat below exercises the URL-escaped form too.
+      write(join(repo, 'plugins/daiku/.claude-plugin/plugin.json'), '{\n  "name": "daiku",\n  "version": "1.1.2-b.2"\n}\n');
+      write(join(repo, 'plugins/README.md'), '![version](https://img.shields.io/badge/version-1.1.2--b.2-blue)\n');
+      write(join(repo, 'plugins/notes.md'), '# notes on 1.1.2-b.2\n');
+      sh(repo, ['add', '-A']);
+      sh(repo, ['commit', '-qm', 'version: update']);
+      const before = sh(repo, ['rev-parse', 'develop']).out;
+      const mainBefore = sh(repo, ['rev-parse', 'main']).out;
+      // The skill writes the working tree first: the version file, the badge, the prose.
+      write(join(repo, 'plugins/daiku/.claude-plugin/plugin.json'), '{\n  "name": "daiku",\n  "version": "1.1.3-b.1"\n}\n');
+      write(join(repo, 'plugins/README.md'), '![version](https://img.shields.io/badge/version-1.1.3--b.1-blue)\n');
+      write(join(repo, 'plugins/notes.md'), '# notes on 1.1.3-b.1\n');
+      const got = bump();
+      check('beta:the-beta-is-committed-on-development', got.ok === true && got.recorded === true && got.development_sha !== before, JSON.stringify(got));
+      check('beta:the-commit-carries-the-message', sh(repo, ['log', '-1', '--format=%s', 'develop']).out === 'version: update to the 1.1.3 beta');
+      check('beta:the-version-file-carries-the-beta', (fileAt(repo, 'develop', 'plugins/daiku/.claude-plugin/plugin.json') || '').includes('"1.1.3-b.1"'));
+      check('beta:the-badge-and-the-prose-follow', (fileAt(repo, 'develop', 'plugins/README.md') || '').includes('1.1.3--b.1') && (fileAt(repo, 'develop', 'plugins/notes.md') || '').includes('1.1.3-b.1'));
+      check('beta:the-working-tree-is-left-clean', sh(repo, ['status', '--porcelain']).out === '', sh(repo, ['status', '--porcelain']).out);
+      check('beta:production-is-not-touched', sh(repo, ['rev-parse', 'main']).out === mainBefore, sh(repo, ['rev-parse', 'main']).out);
+      check('beta:the-same-beta-again-writes-nothing', (() => {
+        const again = bump();
+        return again.recorded === false && sh(repo, ['rev-parse', 'develop']).out === got.development_sha;
+      })());
+      check('beta:a-working-file-with-more-than-the-beta-is-refused', (() => {
+        write(join(repo, 'plugins/notes.md'), '# notes on 1.1.3-b.1\n\nSmuggled line.\n');
+        const refused = bump();
+        const tip = sh(repo, ['rev-parse', 'develop']).out;
+        write(join(repo, 'plugins/notes.md'), '# notes on 1.1.3-b.1\n');
+        return refused.ok === false && /more — or less/.test(refused.error) && tip === got.development_sha;
+      })());
+      check('beta:a-beta-that-is-not-a-counter-is-refused', (() => {
+        const bad = bump({ beta: '1.1.3' });
+        return bad.ok === false && /numeric counter/.test(bad.error);
+      })());
+      check('beta:a-prose-seat-that-quotes-no-beta-is-refused', (() => {
+        const bad = bump({ prose_paths: ['plugins/daiku/skills/release/SKILL.md'] });
+        return bad.ok === false && /not a seat/.test(bad.error);
+      })());
     }
 
     /* --- a whole tree, no `source` -------------------------------------- */

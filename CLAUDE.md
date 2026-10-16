@@ -106,10 +106,11 @@ il pubblico. Il cantiere e il prodotto sono i suoi due rami, e la copia di lavor
 **`develop` è il cantiere.** Porta tutto — il prodotto sotto `plugins/`, la ricognizione, i punti
 aperti, la memoria, gli esempi, queste istruzioni — ed è il ramo su cui si lavora. **Porta una
 versione, ed è una beta**: il manifest dichiara la versione di `main` stessa, marcata come beta
-con un contatore — `1.2.2-b.3` — scritto dopo un punto, perché `b10` verrebbe prima di `b9`. Non è
+con un contatore — `1.2.3-b.1` — scritto dopo un punto, perché `b10` verrebbe prima di `b9`. Non è
 un rilascio e nessun rilascio la legge: il numero di un rilascio si deriva da `main` e si scrive su
 `main`, dove questa viene sovrascritta. Serve perché il pacchetto si installa anche dall'albero di
-sviluppo, e perché è quella dichiarazione a far muovere la copia installata; sale quando sale la
+sviluppo, e perché è quella dichiarazione a far muovere la copia installata; il rilascio la
+riallinea al numero pubblicato con contatore fresco, e fra un rilascio e l'altro sale quando sale la
 **forma** del pacchetto, cioè quando `init` avrebbe qualcosa da riportare nei progetti ospiti.
 `plugins/CHANGELOG.md` qui non esiste.
 

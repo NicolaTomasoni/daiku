@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: f135a876-1ccd-4db0-99e7-6c7abee5c262
-  modified: 2026-10-16T09:09:13.395Z
+  modified: 2026-10-16T09:43:54.909Z
 ---
 
 **Il prodotto ha il concetto di canale** (dal 3 ottobre 2026, ridisegnato il 5). Un progetto che lo
@@ -72,7 +72,8 @@ versione del passo 4 resta la sua, e `detail` dice che la pulizia l'ha decisa il
 `B` lì non esiste: un giro con `--with-commit` non torna mai «lavoro lasciato al tuo commit».
 
 **`commit` non scrive più versione né changelog dove i canali sono dichiarati.** Non è una
-conseguenza automatica della chiave: su `develop` la versione è una **beta** che si muove quando
+conseguenza automatica della chiave: su `develop` la versione è una **beta** che il rilascio
+riallinea al numero pubblicato e che fra un rilascio e l'altro si muove quando
 muove la forma del pacchetto — non a ogni commit — e `{changelog}` non è un file di sviluppo,
 perché una sezione nasce al rilascio e non torna indietro. Vedi [[pubblicazione-su-github]] per la
 forma della beta. Dove `channels.production` non è dichiarato non c'è rilascio, e `commit` resta
