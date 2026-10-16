@@ -73,8 +73,8 @@ versione del passo 4 resta la sua, e `detail` dice che la pulizia l'ha decisa il
 
 **`commit` non scrive più versione né changelog dove i canali sono dichiarati.** Non è una
 conseguenza automatica della chiave: su `develop` la versione è una **beta** che il rilascio
-riallinea al numero pubblicato e che fra un rilascio e l'altro si muove quando
-muove la forma del pacchetto — non a ogni commit — e `{changelog}` non è un file di sviluppo,
+riallinea al numero pubblicato e che fra un rilascio e l'altro il passo del cantiere alza al
+totale dei commit sul ramo di sviluppo — uno in più a ogni push, qualunque cosa il push porti — e `{changelog}` non è un file di sviluppo,
 perché una sezione nasce al rilascio e non torna indietro. Vedi [[pubblicazione-su-github]] per la
 forma della beta. Dove `channels.production` non è dichiarato non c'è rilascio, e `commit` resta
 l'unico che possa muovere il numero: continua a fare com'era.

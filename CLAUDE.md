@@ -110,8 +110,9 @@ con un contatore — `1.2.3-b.1` — scritto dopo un punto, perché `b10` verreb
 un rilascio e nessun rilascio la legge: il numero di un rilascio si deriva da `main` e si scrive su
 `main`, dove questa viene sovrascritta. Serve perché il pacchetto si installa anche dall'albero di
 sviluppo, e perché è quella dichiarazione a far muovere la copia installata; il rilascio la
-riallinea al numero pubblicato con contatore fresco, e fra un rilascio e l'altro sale quando sale la
-**forma** del pacchetto, cioè quando `init` avrebbe qualcosa da riportare nei progetti ospiti.
+riallinea al numero pubblicato con contatore fresco, e fra un rilascio e l'altro la alza il
+passo del cantiere al totale dei commit su `develop` — uno in più a ogni push, qualunque cosa il
+push porti.
 `plugins/CHANGELOG.md` qui non esiste.
 
 **`main` è la produzione, ed è una linea di rilasci.** Ogni rilascio è un commit che porta il
