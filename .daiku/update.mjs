@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// daiku:script 1.2.0-b.1 — the Daiku version that wrote this file. `init` fills the version in
+// daiku:script 1.2.2-b.3 — the Daiku version that wrote this file. `init` fills the version in
 // when it copies the skeleton, and recreates the file whole whenever the package moves past it.
 /**
  * Updates Daiku on Claude Code: it reads the version in place, refreshes the marketplace catalogue,

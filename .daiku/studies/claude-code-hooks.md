@@ -1,11 +1,11 @@
 # Claude Code hooks — appunti operativi di sviluppo
 
-> **Versione in uso: 2.1.296** — estensione VSCode `anthropic.claude-code-2.1.296-win32-x64`, il cui binario nativo è ciò che l'host esegue (il pacchetto npm `@anthropic-ai/claude-code` presente su questa macchina dichiara 2.1.276). Ultima pubblicata: **v2.1.296** (release GitHub `anthropics/claude-code`, 2026-10-09): la versione in uso **coincide con l'ultima**.
-> **Il corpo si compone di due raccolte e di una sperimentazione sull'host**, e ognuna data i propri fatti. La **prima raccolta (2026-10-03)** poggia sulla versione allora in uso, la **2.1.276** (contro la 2.1.288 allora ultima); l'**estensione (2026-10-12)** poggia sulla **2.1.296** e risponde a cinque domande puntuali sulla sostituzione dell'output di un tool; la **sperimentazione (2026-10-12)** poggia anch'essa sulla **2.1.296** e risponde a cinque domande sulla consegna di `additionalContext` a un subagent, con l'esito **provato eseguendo l'host** e non leggendo la documentazione. Dove una sezione dichiara la "versione in uso", si riferisce alla versione della raccolta da cui proviene il fatto; dove il fatto appartiene a una versione diversa da quella della raccolta, la soglia è indicata.
-> Modello mentale dello studio: **vince la versione in uso (2.1.296)**. La documentazione canonica (`https://code.claude.com/docs/en/hooks`) riflette **l'ultima versione**; ciò che appartiene a versioni più recenti è segnalato. Ciò che non è confermato è marcato `[to verify]` (prima raccolta) o `[non documentato]` (estensione), con cosa manca; nella sperimentazione `[provato]`/`[non provato]`, col comando e la data.
+> **Versione in uso: 2.1.300** — estensione VSCode `anthropic.claude-code-2.1.300-win32-x64`, il cui binario nativo (`…/resources/native-binary/claude.exe`) è ciò che l'host esegue, e la stessa che risponde su `PATH` (`C:/nvm4w/nodejs/claude` → `2.1.300 (Claude Code)`): misurata sull'host il **2026-10-15**. Ultima pubblicata: **v2.1.300** (release GitHub `anthropics/claude-code`, 2026-10-14) — la versione in uso **coincide con l'ultima**. Le versioni intermedie **2.1.297** e **2.1.298** **non esistono**: il changelog salta da 2.1.296 a 2.1.299.
+> **Il corpo si compone di tre raccolte, una sperimentazione sull'host e un aggiornamento**, e ognuna data i propri fatti. La **prima raccolta (2026-10-03)** poggia sulla versione allora in uso, la **2.1.276** (contro la 2.1.288 allora ultima); l'**estensione (2026-10-12)** poggia sulla **2.1.296** e risponde a cinque domande puntuali sulla sostituzione dell'output di un tool; la **sperimentazione (2026-10-12)** poggia anch'essa sulla **2.1.296** e risponde a cinque domande sulla consegna di `additionalContext` a un subagent, con l'esito **provato eseguendo l'host** e non leggendo la documentazione; l'**aggiornamento (2026-10-15)** poggia sulla **2.1.300** e risponde a cinque nuove domande (il changelog hook fra 2.1.297 e 2.1.300, lo stato dell'issue #16538, la consegna di `additionalContext` da un hook di **plugin** alla conversazione, le altre superfici per la prosa **generata**, cosa un plugin può scrivere). Dove una sezione dichiara la "versione in uso", si riferisce alla versione della raccolta da cui proviene il fatto; dove il fatto appartiene a una versione diversa da quella della raccolta, la soglia è indicata.
+> Modello mentale dello studio: **vince la versione in uso (2.1.300)**. La documentazione canonica (`https://code.claude.com/docs/en/hooks`) riflette **l'ultima versione**; ciò che appartiene a versioni più recenti è segnalato. Ciò che non è confermato è marcato `[to verify]` (prima raccolta) o `[non documentato]` (estensione), con cosa manca; nella sperimentazione `[provato]`/`[non provato]`, col comando e la data.
 > Nota sul cutoff del modello: le firme, i nomi di campo e i JSON qui sotto sono copiati **verbatim** dalle pagine recuperate (o da artefatti di prima parte reali), mai dalla memoria del modello.
-> Radice tecnica: `C:/dev/daiku-workspace/daiku-dev` → `{paths.studies}` = `.daiku/studies`.
-> `documents.stack` e `documents.architecture` **non sono dichiarati** in `.daiku/project.json`: la nota non ha quindi un ancoraggio al progetto oltre a questo. Assenza dichiarata, non supplita.
+> Radice tecnica: `C:/dev/daiku` (`repo_root` in `.daiku/project.json`) → `{paths.studies}` = `.daiku/studies`.
+> `documents.stack` = `STACK.md` e `documents.architecture` = `ARCHITECTURE.md` sono dichiarati in `.daiku/project.json` e letti. Ancoraggio di progetto rilevante per questa nota: il prodotto è **un pacchetto di Claude Code** (JavaScript `.mjs` su Node.js 18+, distribuito via marketplace, `STACK.md` §1, §4), l'host è **uno solo — Claude Code** e **il pacchetto non scrive nel progetto ospite** (`ARCHITECTURE.md` §2, §3); gli hook del pacchetto sono **fail-open** (`ARCHITECTURE.md` §3).
 
 ## Indice
 
@@ -28,6 +28,11 @@
 17. **Nota di chiusura della prima raccolta (2026-10-03)**.
 18. **Avvio di slash-command o skill** — le tre strade, l'assenza di un evento dedicato.
 19. **Consegna di `additionalContext` a un subagent: `SubagentStart` di plugin vs `PreToolUse`** — l'esperimento sull'host, le cinque risposte, le prove.
+20. **Aggiornamento (2026-10-15, base 2.1.300) — Q1** — il changelog hook fra 2.1.296 e 2.1.300: le versioni esistenti, le voci verbatim, e cosa il changelog *non* contiene.
+21. **Aggiornamento (2026-10-15) — Q4** — superfici per la prosa **generata** nella conversazione principale: `outputStyle`, `MessageDisplay`/`displayContent`, `.claude/rules/*.md`, il file di istruzioni.
+22. **Aggiornamento (2026-10-15) — Q5** — cosa un plugin può scrivere e cosa no; l'ordine di merge dei settings.
+23. **Aggiornamento (2026-10-15) — Q2** — lo stato delle issue sul sintomo «hook di plugin non consegnano il contesto» (da #16538 alle issue recenti).
+24. **Aggiornamento (2026-10-15) — Q3** — la consegna di `additionalContext` da un hook di **plugin** alla conversazione: cosa dice la doc, cosa dicono le issue, cosa resta `[non provato]`.
 
 ### Mappa dei nomi
 
@@ -83,6 +88,13 @@ Fonti primarie recuperate (2026-10-12) — estensione, base **2.1.296**:
 - Artefatto di prima parte su disco: `C:\Users\tomas\.vscode\extensions\anthropic.claude-code-2.1.296-win32-x64\resources\native-binary\claude.exe`
 - `d.ts` di prima parte: `C:\nvm4w\nodejs\node_modules\@anthropic-ai\claude-code\sdk-tools.d.ts` (pacchetto npm **2.1.276**: indietro di 20 patch rispetto all'estensione 2.1.296 in uso — da riconfermare contro l'host che gira)
 - Terza parte (usata solo dove marcato): `anthropics/claude-code` #97278 (aperta), #59160 (chiusa), #96742 (aperta)
+
+Fonti primarie recuperate (2026-10-15) — aggiornamento, base **2.1.300**:
+- Changelog ufficiale: `https://raw.githubusercontent.com/anthropics/claude-code/main/CHANGELOG.md` (via `gh api repos/anthropics/claude-code/contents/CHANGELOG.md`) e le release GitHub (`gh release list -R anthropics/claude-code -L 12`, `gh release view v2.1.300/v2.1.299/v2.1.296`); tag (`gh api repos/anthropics/claude-code/tags`). **Le versioni 2.1.297 e 2.1.298 non esistono**: né release né tag né sezione di changelog.
+- Host: `claude --version` → **`2.1.300 (Claude Code)`** (sia l'estensione `anthropic.claude-code-2.1.300-win32-x64` sia il `claude` sul `PATH`, `C:/nvm4w/nodejs/claude`), misurato il 2026-10-15.
+- Documentazione hook: `https://code.claude.com/docs/en/hooks` (sezioni *Add context for Claude*, *SessionStart decision control*, *UserPromptSubmit decision control*, *Exit code 0*, *Hook locations*, *Merge behavior*). **Nota: la doc ha riorganizzato i path** — le impostazioni stanno ora in `https://code.claude.com/docs/en/settings-reference`, e parte dei plugin sotto `https://code.claude.com/docs/en/plugins/…` (`/plugins/overview`, `/plugins/components`, `/plugins/manifest-reference`, `/plugins/install`, `/plugins/loading`, `/plugins/security`).
+- Altre pagine: `https://code.claude.com/docs/en/output-styles`, `https://code.claude.com/docs/en/memory`, `https://code.claude.com/docs/en/sub-agents`.
+- Terza parte (issue): `anthropics/claude-code` #16538, #40614, #73401, #88086, #75972, #12151, #16288, #83643, #92675, #94635, #95673, #96087, #96496, #100869, #101640, #100234, #96193 (stati al 2026-10-15, in §23).
 
 ---
 
@@ -446,7 +458,7 @@ Default di `timeout` e riduzioni per evento: riga del campo `timeout` in §9. I 
 
 **`Elicitation` / `ElicitationResult` con exit 2:** "an exit-2 hook's `hookSpecificOutput` is ignored".
 
-**Bug noto #16538 (plugin SessionStart).** Confermato dalla fonte: issue **anthropics/claude-code#16538**, titolo *"Plugin SessionStart hooks don't surface hookSpecificOutput.additionalContext to Claude"*, aperta da christinetyip il 2026-01-07, **chiusa come "not planned"** con etichetta `stale`, **senza commenti dei maintainer**. Sintomo: un hook `SessionStart` definito in `hooks.json` di un plugin esegue e restituisce JSON valido con `hookSpecificOutput.additionalContext`, ma Claude riceve solo `"SessionStart:Callback hook success: Success"`; lo stesso hook in `~/.claude/settings.json` funziona. L'issue **non indica versioni** e non risulta risolta. `[to verify: stato su 2.1.276]`.
+**Bug noto #16538 (plugin SessionStart).** Confermato dalla fonte: issue **anthropics/claude-code#16538**, titolo *"Plugin SessionStart hooks don't surface hookSpecificOutput.additionalContext to Claude"*, aperta da christinetyip il 2026-01-07, **chiusa come "not planned"** con etichetta `stale`, **senza commenti dei maintainer**. Sintomo: un hook `SessionStart` definito in `hooks.json` di un plugin esegue e restituisce JSON valido con `hookSpecificOutput.additionalContext`, ma Claude riceve solo `"SessionStart:Callback hook success: Success"`; lo stesso hook in `~/.claude/settings.json` funziona. L'issue **non indica versioni** e non risulta risolta. (Stato aggiornato al **2026-10-15** in §23: `CLOSED`/`NOT_PLANNED`, auto-chiusa per inattività il 2026-05-11 e **lockata** il 2026-06-30; i commenti raccolti nominano 2.1.39–2.1.86, mai una riparazione. Il difetto è stato re-filato in #73401 e #88086, anch'essi chiusi dal bot e mai risolti.)
 
 ### 6.7 Persistenza, replay, staleness
 
@@ -1395,3 +1407,415 @@ Il `session_id` è quello della sessione **padre** `[provato]`: coincide con il 
 ### 19.7 Conclusione — la sede B è utilizzabile
 
 Un hook `SubagentStart` **definito in un plugin** consegna davvero `additionalContext` al subagent su **2.1.296** `[provato]`: la sede **B** funziona, con la stessa cap degli altri eventi (10.000 caratteri per stringa, oltre i quali scatta la persistenza su file). In alternativa, la sede **A** `PreToolUse.additionalContext` consegna anch'essa dentro un subagent — ma **dopo** la prima chiamata di tool, non prima della prima richiesta.
+
+**Aggiornamento 2026-10-15 (§24).** La domanda resta aperta per la **conversazione principale**, non per il subagent: che un hook `SessionStart` o `UserPromptSubmit` **definito in un plugin** parli al modello della conversazione è `[non provato]` su **2.1.300** — la doc non distingue i due tipi di hook quanto alla consegna, le issue (§23) lo dicono rotto, e qui non è stato eseguito (la prova qui sopra riguarda solo `SubagentStart`, su 2.1.296).
+
+---
+
+## 20. Aggiornamento (2026-10-15), base **2.1.300** — Q1: il changelog hook fra 2.1.296 e 2.1.300
+
+> Aggiornamento (2026-10-15), base **2.1.300**. Fonte: il changelog ufficiale (`https://raw.githubusercontent.com/anthropics/claude-code/main/CHANGELOG.md`, via `gh api repos/anthropics/claude-code/contents/CHANGELOG.md`) e le release GitHub (`gh release list -R anthropics/claude-code -L 12`, `gh release view`). Le voci qui sotto sono **verbatim**.
+
+### 20.1 Le versioni esistenti
+
+`2.1.296` (2026-10-09) → **niente 2.1.297 né 2.1.298** → `2.1.299` (2026-10-14) → `2.1.300` (2026-10-14, l'ultima). Il changelog non ha sezioni `## 2.1.297` / `## 2.1.298`: sono numeri **mai pubblicati**. Quindi «fra la 2.1.297 e la 2.1.300» coincide, di fatto, con **2.1.296 → 2.1.299 → 2.1.300**.
+
+### 20.2 Voci di changelog sugli hook, verbatim
+
+**`## 2.1.300`:**
+
+> * Fixed SessionEnd hooks sometimes not running when you exit while a background command is still running
+> * Fixed plugin `WorktreeCreate` and `WorktreeRemove` hooks not running when Claude Code starts with `--worktree` (not yet with `--tmux`)
+> * Fixed agent hooks ignoring their `model`: aliases like `haiku` now resolve, a subagent's model no longer overrides it, and an unavailable model falls back to the caller's instead of allowing the action
+> * Changed hooks: `updatedInput` from PreToolUse and PermissionRequest hooks is now validated like Claude's own input: unknown keys are dropped, and input the tool rejects denies the call
+> * Added the `prompt.change` mod hook, raised when the prompt box's text changes without a typed edit: a recalled history entry, a clear, an undo, or a plugin's fill
+> * Changed `PermissionRequest` hooks in Cowork cloud sessions: a `setMode` update in a hook's allow is now ignored; the rest of the approval still applies
+
+**`## 2.1.299`:**
+
+> * Changed `UserPromptSubmit` hooks to run before a skill or custom slash command expands, so a hook that blocks the prompt now also stops its embedded shell commands
+> * Changed a skill's own front-matter `UserPromptSubmit` hook to first run on the prompt after the one that invokes the skill
+> * Fixed Edit and Retry in Cowork and claude.ai cloud sessions failing on a message stopped while its `UserPromptSubmit` or mod `prompt.submit` hooks were still running (regression in 2.1.296)
+> * Windows: Fixed PreToolUse and PermissionRequest hooks that set no shell failing open when Git for Windows isn't installed; a guard that fails now blocks the call
+> * Changed actions a plugin hook can block to be refused, not let through, when the hook cannot be handed them or cannot hand back its answer; a tool that already ran has its result withheld
+> * Changed plugin hooks and workflow scripts to refuse values they hand back that nest deeper than 28,000 levels, with an error naming the limit (workflow scripts allowed 100,000)
+> * Fixed plugin hooks being skipped when they pass a very deeply nested tool input or message on with next()
+> * Fixed the `plugin_loaded` telemetry event reporting `has_hooks` as false for plugins whose hooks are a hooks module, built-in plugins included
+> * Fixed a Remote Control prompt that had passed its hooks being dropped from prompt history when Stop interrupted the next queued prompt's hook
+> * Improved enforcement of managed permission rules, managed hooks and organization MCP tool names against user-installed mods
+> * Fixed plan mode running a write (an MCP tool's, a file's, a shell command's) that a `PreToolUse` hook or a mod's `tool.check` hook allowed
+
+**`## 2.1.296`** (la versione della raccolta precedente, per continuità):
+
+> * Fixed managed-settings `PreToolUse` hooks that deny a tool call with `"continue": false`, and managed `prompt` hooks that block one, refusing the call but not ending the turn
+> * Fixed PostToolUse hooks in managed settings not applying `updatedMCPToolOutput` in some sessions
+> * Fixed SessionStart hooks of a plugin loaded after a headless session starts being skipped when a different plugin with the same name, or another spelling of it, had already run
+> * Fixed a late-loading plugin's SessionStart hook output reaching the new conversation after `/clear` in headless sessions
+> * Fixed PowerShell commands not seeing variables that hooks write to CLAUDE_ENV_FILE (when the file holds only plain assignments)
+> * Improved `--debug` output for hooks: command hooks on tool calls, prompts, SessionStart and Stop now log their command, plugin, outcome and duration when they finish, so a slow hook is identifiable
+> * Fixed Esc or an interrupt during a `UserPromptSubmit` hook or a mod's `prompt.submit` hook ending headless sessions, clearing the typed prompt, or letting the unchecked prompt through
+
+### 20.3 Cosa il changelog **non** contiene (risposta diretta a Q1)
+
+Nessuna voce di **2.1.297/2.1.298/2.1.299/2.1.300** tocca:
+
+- la **consegna di `additionalContext`** al modello (nessuna modifica alla semantica di consegna); l'unica voce che sposta *quando* gira un hook è su `UserPromptSubmit` (§20.2, 2.1.299: gira prima dell'espansione di una skill/comando);
+- l'evento **`SessionStart`** (l'ultima voce che lo nomina resta quella di **2.1.296**, sullo skipping in headless);
+- l'evento **`SubagentStart`** (nessuna voce);
+- il **tetto dei 10.000 caratteri** su `additionalContext`/`systemMessage`/`initialUserMessage`/stdout (nessuna voce);
+- il **replay del testo iniettato al resume** (`--continue`/`--resume`): nessuna voce. La descrizione di §6.7 (testo salvato nel transcript e **rigiocato** invece di rieseguire l'hook, `SessionStart` che si riesegue con `source: "resume"`/`"fork"`) resta quella della doc e non è contraddetta né aggiornata dal changelog.
+
+Quindi, sugli oggetti che Q1 nomina, il changelog **non porta novità**: le uniche modifiche d'interesse sono di **ordine** (`UserPromptSubmit` prima dell'espansione di una skill, 2.1.299) e di **robustezza** (hook di plugin che non venivano eseguiti in casi limite, 2.1.299/2.1.300).
+
+---
+
+## 21. Aggiornamento (2026-10-15), base **2.1.300** — Q4: superfici per influenzare la prosa **generata** nella conversazione principale
+
+> Aggiornamento (2026-10-15), base **2.1.300**. Fonti ufficiali recuperate: `https://code.claude.com/docs/en/settings-reference`, `https://code.claude.com/docs/en/output-styles`, `https://code.claude.com/docs/en/memory`, `https://code.claude.com/docs/en/hooks`, `https://code.claude.com/docs/en/plugins-reference`, `https://code.claude.com/docs/en/sub-agents`. Nota: la doc ha riorganizzato i path — le impostazioni stanno ora in **`/docs/en/settings-reference`** (non più solo `/settings`), e una parte dei plugin sotto `/docs/en/plugins/…`.
+
+| superficie | cosa fa | valori | chi può scriverla | effetto: token generati o solo display | fonte |
+|---|---|---|---|---|---|
+| `outputStyle` in `settings.json` | Seleziona lo stile di output attivo, cioè l'insieme di istruzioni che Claude Code manda al modello a ogni richiesta | Nome di uno stile: built-in `Proactive`, `Concise`, `Explanatory`, `Learning` (case-sensitive) oppure il nome di uno stile custom; `Default` = nessuno stile. Un valore che non combacia dà il Default | Utente / progetto / progetto-locale / managed — «Any file» | **Token generati**: cambia le istruzioni di sistema inviate al modello (system prompt) | https://code.claude.com/docs/en/settings-reference ; https://code.claude.com/docs/en/output-styles |
+| manifest plugin `outputStyles` | Punta ai file/cartelle di stili di output che il plugin spedisce; sostituisce la scansione predefinita di `output-styles/` | Path o array di path (`.md` o cartelle), `./`-prefissato, contenuto nel plugin root | Plugin (autore del plugin) | **Token generati** (è uno stile di output che entra nelle istruzioni della conversazione principale) | https://code.claude.com/docs/en/plugins-reference |
+| cartella `output-styles/` | Sede predefinita di uno stile di output: un file `.md` con frontmatter `name`/`description`/`keep-coding-instructions`/`force-for-plugin` e le istruzioni | Utente `~/.claude/output-styles`; progetto `.claude/output-styles`; managed policy `.claude/output-styles`; plugin `output-styles/` | Utente / progetto / managed / plugin | **Token generati**: `keep-coding-instructions` decide se conservare la sezione coding del system prompt; senza di esso gli stili custom la rimuovono | https://code.claude.com/docs/en/output-styles ; https://code.claude.com/docs/en/plugins-reference |
+| hook `MessageDisplay` (`displayContent`) | Sostituisce il testo mostrato a schermo mentre il messaggio dell'assistente viene emesso | Evento senza matcher; input `turn_id`, `message_id`, `index`, `final`, `delta`; output `hookSpecificOutput.displayContent`; timeout 10 s | Utente / progetto (hooks in `settings.json`); plugin (`hooks/hooks.json` o `hooks` nel manifest) | **Solo display**: non tocca transcript, non tocca ciò che Claude vede, non blocca il messaggio | https://code.claude.com/docs/en/hooks |
+| `.claude/rules/*.md` | Regole modulari caricate nel contesto a ogni sessione (o quando si apre un file che combacia) | File Markdown; unico frontmatter letto è `paths` (glob); sede `~/.claude/rules/` (utente) e `.claude/rules/` (progetto) | Utente e progetto. **Non** un plugin | **Token generati**: caricate nel contesto, stessa priorità di `.claude/CLAUDE.md` | https://code.claude.com/docs/en/memory |
+| file di istruzioni `CLAUDE.md` | Istruzioni persistenti lette a ogni avvio di sessione e concatenate nel contesto | Sedi: managed policy, `~/.claude/CLAUDE.md` (utente), `./CLAUDE.md` o `./.claude/CLAUDE.md` (progetto), `./CLAUDE.local.md` (locale) | Utente / progetto / locale / managed. **Non** un plugin | **Token generati**: il contenuto è iniettato nel contesto di Claude; blocchi HTML-comment sono rimossi prima dell'iniezione | https://code.claude.com/docs/en/memory ; https://code.claude.com/docs/en/plugins-reference |
+
+Citazioni verbatim e URL:
+
+**`outputStyle` (settings-reference)** — https://code.claude.com/docs/en/settings-reference
+
+> | [`outputStyle`](#outputstyle) | Change Claude's role, tone, and output format with an [output style](/docs/en/output-styles) | Model and responses | Any file |
+
+**`outputStyle` (output-styles)** — https://code.claude.com/docs/en/output-styles
+
+> To set a style without the menu, edit the `outputStyle` field directly in a settings file:
+
+> The value is case-sensitive, so write the built-in names as `Proactive`, `Concise`, `Explanatory`, and `Learning`. A value that doesn't match a style name exactly, such as `explanatory`, gives you the Default style. The `/output-style` command ignores case.
+
+> To make a style your default across projects, set `outputStyle` in `~/.claude/settings.json`. A project's own settings files [take precedence](/docs/en/settings#settings-precedence) over that value.
+
+**Sede di uno stile custom e frontmatter** — https://code.claude.com/docs/en/output-styles
+
+> * User: `~/.claude/output-styles`
+> * Project: `.claude/output-styles`
+> * Managed policy: `.claude/output-styles` inside the [managed settings directory](/docs/en/managed-settings#delivery-mechanisms)
+>
+> Project output styles load from every `.claude/output-styles/` between the working directory and the repository root. When more than one of these nested directories defines a style with the same name, Claude Code uses the one closest to the working directory.
+
+> | `name` | No | Name of the output style, shown in the `/config` picker. Default: the file name |
+> | `description` | No | Description of the output style, shown in the `/config` picker |
+> | `keep-coding-instructions` | No | Set to `true` to keep Claude Code's section of built-in software engineering instructions, which only the full system prompt includes, alongside your style. See [How output styles work](#how-output-styles-work). Default: `false` |
+> | `force-for-plugin` | No | Plugin output styles only. Set to `true` to apply this style automatically whenever the plugin is enabled, without requiring users to select it. Overrides the user's `outputStyle` setting. If multiple enabled plugins set this, Claude Code uses the first one loaded. Default: `false` |
+
+**Stile = system prompt** — https://code.claude.com/docs/en/output-styles
+
+> An output style changes the instructions Claude Code gives Claude.
+
+> * Claude Code sends the active style's instructions with every request.
+> * On the full system prompt, custom output styles leave out Claude Code's section of built-in software engineering instructions, such as how to scope changes, write comments, and verify work, unless `keep-coding-instructions` is set to `true`.
+
+> Output styles apply to the main conversation and to a [fork](/docs/en/sub-agents#fork-the-current-conversation), which inherits the parent's whole conversation and system prompt. Other [subagents run their own system prompt](/docs/en/sub-agents#what-loads-at-startup), so styles don't change how they respond.
+
+**Plugin: `outputStyles`, `output-styles/`** — https://code.claude.com/docs/en/plugins-reference
+
+> | `outputStyles` | Path, or array of paths | Output style files or directories. Replaces the default `output-styles/` scan |
+
+> | Output styles | `output-styles/` | Output style Markdown files |
+
+> **Replaces the default**: `commands`, `agents`, `outputStyles`, `workflows`, `experimental.themes`, `experimental.monitors`. When you set `commands`, the default `commands/` directory isn't scanned.
+
+`force-for-plugin` è dichiarato nella tabella frontmatter di output-styles (vedi sopra). Nota sui limiti del plugin: il campo `settings` del manifest «Only `agent` and `subagentStatusLine` take effect; other keys are dropped at load», quindi un plugin **non** scrive la chiave `outputStyle` (plugins-reference). `[to verify]` se `force-for-plugin` basti a tutti gli effetti a un plugin per imporre lo stile anche fuori da un fork: la pagina output-styles dice che si applica «automatically whenever the plugin is enabled».
+
+**`MessageDisplay`** — https://code.claude.com/docs/en/hooks
+
+> Runs while an assistant message streams to the screen. Claude Code displays the message in increments: each time a batch of newly completed lines is ready to render, the hook runs once with those lines and Claude Code renders the hook's replacement text in their place.
+
+> MessageDisplay is display-only: the replacement text changes only what is rendered on screen. The transcript and what Claude sees keep the original text, so Claude never sees the replacement, and verbose mode shows the original. The hook receives assistant message text only, so tool results and the text you type render unchanged.
+
+> | `displayContent` | Text displayed in place of the delta. Omit it to display the original |
+
+> MessageDisplay hooks have no decision control. They can't block the message or change what is stored in the transcript or sent to Claude. Claude Code acts on `displayContent` from their JSON output and discards `systemMessage` and `continue`.
+
+> The default timeout for this event is 10 seconds
+
+Tabella di decision control:
+
+> | MessageDisplay | `hookSpecificOutput` | `displayContent` replaces the displayed text on screen. Display-only: the transcript and what Claude sees keep the original |
+
+Nessun hook sostituisce il system prompt: gli hook di contesto iniettano via `additionalContext`, avvolto in un system reminder — «The `additionalContext` field passes a string from your hook into Claude's context window. Claude Code wraps the string in a [system reminder]…» (https://code.claude.com/docs/en/hooks). `[to verify]` se `MessageDisplay` giri anche per i subagenti: l'evento «fires for every assistant message that streams text» e fra i common input fields compaiono `agent_id` / `agent_type` nei contesti di subagente, ma la pagina non lo dichiara esplicitamente per questo evento (https://code.claude.com/docs/en/hooks).
+
+**`.claude/rules/*.md`** — https://code.claude.com/docs/en/memory
+
+> For larger projects, you can organize instructions into multiple files using the `.claude/rules/` directory. This keeps instructions modular and easier for teams to maintain. Rules can also be [scoped to specific file paths](#path-specific-rules), so they only load into context when Claude works with matching files, reducing noise and saving context space.
+
+> Rules load into context every session or when matching files are opened.
+
+> Rules without [`paths` frontmatter](#path-specific-rules) are loaded at launch with the same priority as `.claude/CLAUDE.md`.
+
+> Project rules are skipped if you exclude `project` from [`--setting-sources`](/docs/en/cli-reference).
+
+> `paths` is the only field Claude Code reads from a rule; any other field is ignored without an error. Claude Code removes the frontmatter before loading the rule into context.
+
+> Personal rules in `~/.claude/rules/` apply to every project on your machine.
+
+> Claude Code loads user-level rules before project rules, so a project rule appears later in Claude's context than a user rule.
+
+**`CLAUDE.md` (file di istruzioni)** — https://code.claude.com/docs/en/memory
+
+> CLAUDE.md files are markdown files that give Claude persistent instructions for a project, your personal workflow, or your entire organization. You write these files in plain text; Claude reads them at the start of every session.
+
+> All discovered files are concatenated into context rather than overriding each other. Across the directory tree, content is ordered from the filesystem root down to your working directory.
+
+> Block-level HTML comments (`<!-- maintainer notes -->`) in CLAUDE.md files are stripped before the content is injected into Claude's context.
+
+> Settings rules are enforced by the client regardless of what Claude decides to do. CLAUDE.md instructions shape Claude's behavior but are not a hard enforcement layer.
+
+Il plugin non entra in questa superficie — https://code.claude.com/docs/en/plugins-reference
+
+> A `CLAUDE.md` at the plugin root isn't loaded as context, and `claude plugin validate` warns when it finds one. To include instructions that load into Claude's context, put them in a skill.
+
+**Ambito.** La pagina sub-agents conferma che solo il **fork** eredita anche lo stile di output della conversazione principale; gli altri subagenti «run their own system prompt», quindi le superfici che stanno nel system prompt (stile di output) agiscono sulla conversazione principale e non su di essi (https://code.claude.com/docs/en/sub-agents). La pagina sub-agents **non** nomina `MessageDisplay`.
+
+---
+
+## 22. Aggiornamento (2026-10-15), base **2.1.300** — Q5: cosa un plugin può scrivere e cosa no; ordine di merge dei settings
+
+> Aggiornamento (2026-10-15), base **2.1.300**. Fonti ufficiali: `plugins`, `plugins/manifest-reference` (citata anche come `plugins-reference`), `plugins/components`, `plugins/install`, `plugins/loading`, `plugins/security`, `settings`, `settings-reference`, `hooks` (tutte sotto `https://code.claude.com/docs/en/`).
+
+### 22.1 Un plugin può depositare una chiave in `.claude/settings.json` del progetto?
+
+**No — il meccanismo documentato non esiste.** Un plugin **applica dei default mentre è abilitato**, non scrive nelle settings del progetto. L'unico canale plugin → settings è `pluginConfigs`, e sono **le risposte che l'utente dà**, salvate nelle settings dell'**utente**.
+
+Chiave `settings` del manifest — verbatim:
+
+> `settings` | Object | Settings Claude Code applies while the plugin is enabled. Only `agent` and `subagentStatusLine` take effect; other keys are dropped at load. A `settings.json` at the plugin root takes precedence over this key.
+
+`plugins/components` — sezione "Default settings":
+
+> To set defaults that apply while the plugin is enabled, add a `settings.json` at the plugin root, or put the same object inline in the `settings` manifest key. Two keys take effect, `agent` and `subagentStatusLine`, and every other key is dropped.
+
+> A `settings.json` at the plugin root holds settings that apply while the plugin is enabled, so a plugin can change how the session behaves and not only add components. Only two keys take effect from a plugin, `agent` and `subagentStatusLine`; every other key is dropped.
+
+Dove finiscono davvero i valori che il plugin chiede — `plugins-reference`, "Where values are stored":
+
+> Non-sensitive values are saved under `pluginConfigs` in the user's `settings.json`. Sensitive values go to the platform's secure credential store instead.
+
+E la natura di `userConfig` è che è **l'utente a fornire il valore**:
+
+> `userConfig` declares values Claude Code prompts the user for when the plugin is enabled, so users don't edit `settings.json` themselves.
+
+`pluginConfigs` ha scope **User or managed**, non project. La pagina `settings` dice anzi chi crea i file:
+
+> **User** and **Project local**: create them yourself, or let Claude Code create them. It writes `~/.claude/settings.json` the first time you change an option in the `/config` menu that it stores in user settings, such as the theme, and `.claude/settings.local.json` the first time you give a standing approval on a permission prompt…
+
+`plugins/security` — "Understand what a plugin can do" elenca hooks, monitors, mods, MCP/LSP servers, `bin/`, skills/commands/agents, updates — e **non** nomina la scrittura di settings.
+
+`[to verify]` Le pagine **non contengono una frase negativa letterale** del tipo «un plugin non può scrivere `.claude/settings.json`». Non esiste un meccanismo documentato che lo faccia, e la sola via plugin → settings è `pluginConfigs` (risposte dell'utente, settings d'utente o managed). Limite di perimetro da notare: un hook o un mod di un plugin gira **con i privilegi dell'utente** (`plugins/security`: «a plugin's mod runs JavaScript inside Claude Code with your permissions»), quindi *codice arbitrario* potrebbe editare il file — ma non è un comportamento documentato né una chiave «depositata» dal plugin. Questo ricalca l'`ARCHITECTURE.md` di progetto: «**Il pacchetto non scrive nel progetto.** L'host non lo permette».
+
+### 22.2 Ordine di merge user / project / local / plugin / managed
+
+`settings` — Settings precedence, verbatim:
+
+> When the same key appears in more than one place, Claude Code uses the value from the highest level that sets it. The stack below shows the levels, highest on top; a key at a higher level overrides the same key anywhere below it.
+>
+> In order, highest precedence first:
+>
+> 1. **Managed settings**: settings your organization deploys, by a `managed-settings.json` file, an MDM policy, or server-managed settings from the claude.ai console. Nothing in your own settings files or `--settings` overrides a managed key…
+> 2. **Command line**: JSON you pass with `--settings <file-or-json>` when you start `claude`, for that session only…
+> 3. **Project local settings** (`.claude/settings.local.json`): your personal settings for this project.
+> 4. **Shared project settings** (`.claude/settings.json`): settings your team checks into source control.
+> 5. **User settings** (`~/.claude/settings.json`): your personal settings for every project.
+
+L'`aria-label` del diagramma ripete lo stesso ordine:
+
+> Settings precedence, highest first: managed settings, command line, project local, shared project, user. A key set at a higher level overrides the same key set lower down.
+
+Il **plugin non è un livello di questo stack**: i suoi default stanno **sotto tutto** — `plugins/components`, "Default settings":
+
+> * **User settings over plugin defaults**: across settings sources, plugin defaults are the lowest layer, so a user's own `agent` in `~/.claude/settings.json` overrides yours
+
+E dove due plugin toccano la stessa chiave:
+
+> * **Two plugins set the same key**: the value from the plugin loaded last applies, and `claude --debug` logs `overrides setting`
+
+Le liste si combinano invece di sovrascriversi — `settings`, "Lists merge instead of overriding":
+
+> When you set the same list key, such as `permissions.allow`, in more than one file, Claude Code combines the lists instead of picking one, so each file can add entries without removing another file's.
+
+Nota sugli hook — `hooks`, "Merge behavior":
+
+> Hook entries merge across settings levels rather than replacing each other: user, project, and local settings add their own hooks without removing managed ones, and the `disableAllHooks` setting can't disable managed hooks from outside managed settings.
+
+E sulla deduplicazione degli handler — `hooks`:
+
+> All matching hooks run in parallel. If you define the same handler in more than one settings file, it runs once. A plugin's or skill's copy of the same handler stays separate.
+
+**Tabella — ordine di merge degli settings (generico):**
+
+| # | Livello | File / sorgente |
+| :- | :- | :- |
+| 1 (massima) | Managed settings | `managed-settings.json`, policy MDM, o server-managed settings dalla console claude.ai |
+| 2 | Command line | `claude --settings <file-or-json>` (una sessione) |
+| 3 | Project local | `.claude/settings.local.json` |
+| 4 | Shared project | `.claude/settings.json` |
+| 5 (minima) | User | `~/.claude/settings.json` |
+| sotto tutto | Plugin defaults | `settings.json` alla radice del plugin, o la chiave `settings` del manifest — solo `agent` e `subagentStatusLine` |
+
+**Tabella — precedenza di `enabledPlugins`** (sei sorgenti, da minor a maggior precedenza, `plugins/loading`):
+
+| Precedenza | Sorgente | Dove |
+| :- | :- | :- |
+| più bassa | `--add-dir` | `.claude/settings.json` o `.claude/settings.local.json` in una directory passata con `--add-dir` (solo sessione; solo un `true` ha effetto) |
+| | `user` | `~/.claude/settings.json` |
+| | `project` | `.claude/settings.json` |
+| | `local` | `.claude/settings.local.json` |
+| | `flag` | il valore `--settings` al lancio (solo sessione) |
+| più alta | `managed` | Managed settings — `true` forza l'abilitazione, `false` blocca, nessun'altra sorgente sovrascrive |
+
+> These sources merge key by key. For each plugin id, the value that applies is the one from the highest-precedence source that mentions the id. A source that doesn't mention the id leaves the value from the lower-precedence source in effect.
+
+### 22.3 Il manifest ha un campo che contribuisce settings?
+
+Sì, ma **limitato**: la chiave **`settings`** (o un `settings.json` alla radice del plugin). Solo `agent` e `subagentStatusLine` hanno effetto; ogni altra chiave è scartata al load. Un plugin quindi **non** contribuisce permessi, env, model o la chiave `outputStyle`: solo quelle due.
+
+Chiavi top-level di `plugin.json` (solo `name` è obbligatoria): `$schema`, `name`, `displayName`, `version`, `description`, `author`, `homepage`, `repository`, `license`, `keywords`, `metadata`, `icon`, `documentationUrl`, `supportUrl`, `privacyPolicyUrl`, `termsOfServiceUrl`, `defaultEnabled`, `dependencies`, `settings`, `userConfig`, `types`, `channels`, `skills`, `commands`, `agents`, `hooks`, `mcpServers`, `lspServers`, `outputStyles`, `workflows`, `experimental` (che contiene `themes`, `monitors`, `evals`).
+
+Layout standard (posizioni di default quando il manifest non punta altrove): manifest `.claude-plugin/plugin.json`; skills `skills/`; commands `commands/`; agents `agents/`; hooks `hooks/hooks.json`; MCP `.mcp.json`; LSP `.lsp.json`; output styles `output-styles/`; workflows `workflows/`; themes `themes/`; monitors `monitors/monitors.json`; eseguibili `bin/`; settings `settings.json` (solo `agent` e `subagentStatusLine`).
+
+### 22.4 Cosa scrivono `claude plugin install` / `marketplace add` su disco
+
+`plugins/install`, "Choose an install scope", verbatim:
+
+> * **User scope**: the plugin is enabled for you in every project on this machine. The entry goes in `enabledPlugins` in `~/.claude/settings.json`.
+> * **Project scope**: the plugin is enabled for everyone who works in this repository. The entry goes in `.claude/settings.json`, which you commit…
+> * **Local scope**: the plugin is enabled for you in this repository only. The entry goes in `.claude/settings.local.json`.
+>
+> When the same plugin is set at several scopes, the local setting overrides the project setting, and the project setting overrides the user setting.
+
+> * **Scope**: user scope by default. Pass `--scope project` or `--scope local` to change it.
+
+`plugins/loading`, "Check which stage a plugin reached":
+
+> **Declared, in settings**: `enabledPlugins` says which plugins should be on, and `extraKnownMarketplaces` says which marketplaces should exist. When you run `claude plugin marketplace add`, Claude Code writes the marketplace to `extraKnownMarketplaces` in your user settings as well as to disk
+
+| Azione | Chiave | File |
+| :- | :- | :- |
+| `claude plugin install` (user scope, default) | `enabledPlugins` | `~/.claude/settings.json` |
+| `claude plugin install --scope project` | `enabledPlugins` | `.claude/settings.json` (committato) |
+| `claude plugin install --scope local` | `enabledPlugins` | `.claude/settings.local.json` |
+| `claude plugin marketplace add` | `extraKnownMarketplaces` | settings **utente** (`~/.claude/settings.json`) + `known_marketplaces.json` |
+| record di fetch/install | — | `~/.claude/plugins/known_marketplaces.json`, `installed_plugins.json`, `cache/` |
+| risposte alla config dialog del plugin | `pluginConfigs` | `~/.claude/settings.json` (o managed); valori `sensitive` nello store di credenziali |
+
+Le tre chiavi hanno scope (`settings-reference`): `enabledPlugins` e `extraKnownMarketplaces` → **Any file**; `pluginConfigs` → **User or managed**. «Any file» = user, project, local, managed. Le organizzazioni possono mettere `enabledPlugins` in **managed settings** per forzare o bloccare un plugin.
+
+---
+
+## 23. Aggiornamento (2026-10-15), base **2.1.300** — Q2: stato delle issue sul sintomo «hook di plugin non consegnano il contesto»
+
+> Aggiornamento (2026-10-15). Raccolta via `gh issue view` / `gh search issues` su `anthropics/claude-code`. Aggiorna e sostituisce la riga su #16538 di §6.6.
+
+| numero | titolo verbatim | stato | date | sintomo | link |
+|---|---|---|---|---|---|
+| #16538 | `Plugin SessionStart hooks don't surface hookSpecificOutput.additionalContext to Claude` | CLOSED (NOT_PLANNED) | creata 2026-01-07 · chiusa 2026-05-11 (bot inattività) · lock 2026-06-30 | Il caso di riferimento: hook di plugin in `hooks/hooks.json` esegue e produce JSON valido con `additionalContext`, ma il modello non lo riceve; hook identico in `~/.claude/settings.json` funziona. Commenti su 2.1.39, 2.1.42→2.1.45, 2.1.75, 2.1.86; `dcadenas` (2026-03-13) riporta che i plugin hook **non eseguono affatto**, non solo che l'output è scartato | [16538](https://github.com/anthropics/claude-code/issues/16538) |
+| #40614 | `[FEATURE] Hierarchical memory to prevent silent loss at 200-line MEMORY.md limit` | CLOSED (NOT_PLANNED) | creata 2026-03-29 · chiusa 2026-05-11 · aggiornata 2026-07-01 | **Non è lo stesso sintomo.** È la feature request di `j-p-c` per l'indice `MEMORY.md` gerarchico; il commento in #16538 la cita solo come "Related" perché quello strumento usa hook `SessionStart`/`PreCompact`. Nessun duplicato del difetto | [40614](https://github.com/anthropics/claude-code/issues/40614) |
+| #73401 | `Windows desktop app: plugin SessionStart hook executes but its stdout is never injected into session context` | CLOSED (NOT_PLANNED) | creata 2026-07-02 · chiusa 2026-08-31 (bot inattività) | Stesso sintomo su Windows desktop: l'hook di plugin **esegue** (marker log), `${CLAUDE_PLUGIN_ROOT}` risolve, `cat` riesce, ma lo stdout non entra nel contesto. Cita esplicitamente #16538 come «the same underlying gap» | [73401](https://github.com/anthropics/claude-code/issues/73401) |
+| #88086 | `VS Code extension: SessionStart plugin hook additionalContext logged as succeeded but never injected into model context` | CLOSED (NOT_PLANNED) | creata 2026-08-19 · chiusa 2026-10-03 (bot inattività) | Lo stesso sintomo nell'estensione VS Code 2.1.236: il transcript mostra `hook_success` con lo stdout completo, ma il modello non riceve nessun `system-reminder` | [88086](https://github.com/anthropics/claude-code/issues/88086) |
+| #75972 | `Plugin-sourced hooks.json never fires, even though the plugin shows installed + enabled (no error, no registry entry evidence)` | OPEN | creata 2026-07-09 · aggiornata 2026-09-10 | Hook di plugin inerti del tutto (SessionStart, Stop, PreToolUse, PostToolUse). **Risposta manutentore** (`bcherny`, COLLABORATOR, 2026-08-17): un nome di evento non riconosciuto fa **rifiutare l'intero `hooks.json`**, quindi nessun hook valido parte; «That's a bug on our side… We're tracking a fix» | [75972](https://github.com/anthropics/claude-code/issues/75972) |
+| #12151 | `[BUG] Plugin hook output not captured or passed to agent (UserPromptSubmit, SessionStart)` | OPEN | creata 2025-11-22 · aggiornata 2026-04-08 | La più vecchia ancora aperta con il sintomo esatto; 24 commenti | [12151](https://github.com/anthropics/claude-code/issues/12151) |
+| #16288 | `Plugin hooks not loaded from external hooks.json file` | OPEN | creata 2026-01-04 · aggiornata 2026-09-27 | Hook referenziati da `plugin.json` (`"hooks": "./hooks/hooks.json"`) mai caricati; stesso hook in `~/.claude/settings.json` funziona | [16288](https://github.com/anthropics/claude-code/issues/16288) |
+| #83643 | `[BUG] Desktop remote sessions: plugin sync to ~/.claude/remote/plugins/ omits hooks/, so plugin hooks never fire` | OPEN | creata 2026-08-03 · aggiornata 2026-10-08 | Causa identificata: la sync delle sessioni remote non copia `hooks/` | [83643](https://github.com/anthropics/claude-code/issues/83643) |
+| #92675 | `Plugin-native PreToolUse hooks (auto-discovered via hooks/hooks.json) are not enforced in interactive sessions…` | OPEN | creata 2026-09-07 | Hook di plugin non applicati in sessioni interattive | [92675](https://github.com/anthropics/claude-code/issues/92675) |
+| #94635 | `[BUG] Desktop Code tab: enabled ~/.claude plugins never load into sessions — regression 2.1.237 → 2.1.260, still broken in 2.1.270` | OPEN | creata 2026-09-16 | Plugin abilitati non caricati (hook inclusi) nella Code tab del desktop | [94635](https://github.com/anthropics/claude-code/issues/94635) |
+| #95673 | `Windows: three bundled plugins' hooks never run and spawn a console window — hooks.json invokes .sh by bare path` | OPEN | creata 2026-09-20 | Su Windows gli hook di tre plugin bundled non eseguono mai | [95673](https://github.com/anthropics/claude-code/issues/95673) |
+| #96087 | `[BUG] Windows desktop (MSIX): plugin hook scripts invisible to externally-spawned interpreter — every hook ENOENTs and asyncRewake Stop hooks loop forever` | OPEN | creata 2026-09-22 | Hook di plugin su Windows desktop: ENOENT sistematico | [96087](https://github.com/anthropics/claude-code/issues/96087) |
+| #96496 | `[BUG] Hooks silently don't fire in Desktop app or new RC session slots (terminal & first RC session work)` | OPEN | creata 2026-09-23 · aggiornata 2026-10-01 | Hook da `.claude/settings.json` (non solo plugin) non partono nella Code tab desktop e nei nuovi slot remote-control | [96496](https://github.com/anthropics/claude-code/issues/96496) |
+| #100869 | `[BUG] Plugin hooks module: classic.* events (classic.Stop, classic.PreToolUse, classic.Notification, classic.PermissionRequest) never reach the module, while settings hooks for the same events fire in the same session (2.1.295)` | OPEN | creata 2026-10-09 | API *hooks module* dei plugin (function hooks) non consegna gli eventi `classic.*` | [100869](https://github.com/anthropics/claude-code/issues/100869) |
+| #101640 | `Mods (function-hook plugins) load but never run in desktop Code tab; CLAUDE_CODE_PLUGIN_DIRS ignored` | OPEN | creata 2026-10-12 | Mod/plugin con function hook caricati ma mai eseguiti nella Code tab | [101640](https://github.com/anthropics/claude-code/issues/101640) |
+| #100234 | `[BUG] SessionStart hooks declared in MANAGED settings deliver no additionalContext in the desktop app on Windows; the same hook from user settings delivers…` | OPEN | creata 2026-10-07 | Stesso sintomo di mancata consegna di `additionalContext`, ma la variabile è *managed settings* + desktop Windows, non il plugin | [100234](https://github.com/anthropics/claude-code/issues/100234) |
+| #96193 | `Hook JSON with top-level additionalContext is silently dropped (no warning), context never reaches the model` | OPEN | creata 2026-09-23 | `additionalContext` di primo livello scartato in silenzio (variante non-plugin) | [96193](https://github.com/anthropics/claude-code/issues/96193) |
+
+- **Il sintomo è ancora vivo dopo il 2026-05.** Dopo la chiusura di #16538 ci sono almeno due re-file plugin-specifici dello stesso difetto, entrambi chiusi dal bot per inattività e mai risolti: #73401 (2026-07-02/2026-08-31, Windows desktop) e #88086 (2026-08-19/2026-10-03, VS Code). Nessuno dei due riporta una conferma di riparazione: sono `NOT_PLANNED` da auto-chiusura, non da verdetto.
+- **L'unica risoluzione di manutentore trovata è su un altro ramo del problema.** In #75972 `bcherny` (COLLABORATOR) conferma il 2026-08-17 un bug reale — un evento non riconosciuto in `hooks.json` invalida l'intero file e spegne tutti gli hook — e dice «We're tracking a fix». Spiega il ramo «gli hook di plugin non eseguono affatto», **non** il ramo «eseguono ma l'output non arriva al modello» di #16538/#73401/#88086, che resta senza risposta.
+- **Il riferimento a #40614 in #16538 non porta a un duplicato.** #40614 è una feature request sulla memoria gerarchica, chiusa `NOT_PLANNED`; il cross-link è motivato solo dall'uso di hook `SessionStart`/`PreCompact` da parte dello strumento citato. `[to verify]` che il numero citato fosse davvero quello voluto dal commentatore: nel thread non c'è altro riferimento.
+- **Il pattern recente è più sui *surface* che sugli eventi.** #94635, #95673, #96087, #96496, #101640 spostano il difetto su desktop Code tab / Windows MSIX / sessioni remote; #100869 e #101640 lo spostano sull'API *hooks module* (function hooks, `classic.*`), che è un meccanismo diverso da `hooks/hooks.json` classico. Fuori dal plugin, lo stesso mancato recapito di `additionalContext` continua a essere segnalato su managed settings (#100234) e sulle forme non canoniche del payload (#96193). `[to verify]` #90296 (2026-08-28, «UserPromptSubmit hooks: two silent failure modes… additionalContext intermittently never reaches the context») è la stessa forma ma riportata su un'app di terzi («ZCode desktop»), non su Claude Code first-party: va esclusa o verificata prima di citarla come prova.
+
+---
+
+## 24. Aggiornamento (2026-10-15), base **2.1.300** — Q3: consegna di `additionalContext` da un hook di **plugin** alla conversazione
+
+> Aggiornamento (2026-10-15), base **2.1.300**. Risponde a: su 2.1.300, un hook `SessionStart` **definito in un plugin** consegna `additionalContext` al modello della **conversazione**? E un `UserPromptSubmit` di plugin? La doc distingue «hook di plugin» da «hook di settings» quanto alla **consegna**? Fonti: `https://code.claude.com/docs/en/hooks`, `https://code.claude.com/docs/en/plugins/components`, `https://code.claude.com/docs/en/plugins-reference`.
+
+### 24.1 Cosa afferma la doc
+
+**Un hook di plugin è una sede come le altre — la doc lo dichiara, ma solo sul *merge*:**
+
+> Define plugin hooks in `hooks/hooks.json` with an optional top-level `description` field. When a plugin is enabled, its hooks merge with your user and project hooks.
+
+> | Plugin `hooks/hooks.json` | When plugin is enabled | Yes, bundled with the plugin |
+
+> Save the plugin's hooks in `hooks/hooks.json` at the plugin root, under a top-level `"hooks"` key, in the same shape as the `hooks` object in `settings.json`. That lets you copy an existing settings hook in unchanged.
+
+> `hooks` takes a `.json` file path, an inline hooks object in the same shape as `hooks` in `settings.json`, or an array mixing both. […] Claude Code merges whatever you declare with `hooks/hooks.json` when that file exists.
+
+**La consegna di `additionalContext` è descritta per evento, mai per provenienza dell'hook:**
+
+> The `additionalContext` field passes a string from your hook into Claude's context window. Claude Code wraps the string in a [system reminder] and inserts it into the conversation at the point where the hook fired. Claude reads the reminder on the next model request, but it doesn't appear as a chat message in the interface.
+>
+> * `SessionStart` and `SubagentStart`: at the start of the conversation, before the first prompt
+> * `UserPromptSubmit` and `UserPromptExpansion`: alongside the submitted prompt
+>
+> When several hooks return `additionalContext` for the same event, Claude receives all of the values.
+
+`SessionStart decision control`, tabella dei campi (verbatim):
+
+> | `additionalContext` | String added to Claude's context at the start of the conversation, before the first prompt. See [Add context for Claude](#add-context-for-claude) for how the text is delivered and what to put in it |
+
+> A hook that only adds context can print it without building JSON, because Claude Code adds a SessionStart hook's plain-text stdout to Claude's context.
+
+`Exit code 0` (verbatim):
+
+> For most events, Claude Code writes stdout to the debug log and doesn't show it in the transcript. The exceptions are `UserPromptSubmit`, `UserPromptExpansion`, `SessionStart`, and `PostModelSwitch`, where Claude Code adds plain-text stdout as context that Claude can see and act on.
+
+`UserPromptSubmit decision control` (verbatim):
+
+> There are two ways to add context to the conversation on exit code 0:
+>
+> * **Plain text stdout**: Claude Code adds stdout it [treats as plain text](#exit-code-0) to Claude's context
+> * **JSON with `additionalContext`**: use the JSON format below for more control. The `additionalContext` field is added as context
+>
+> Neither channel produces a visible transcript entry. Plain stdout and the `additionalContext` value are each injected as a system reminder that starts with the hook's name; Claude reads both. To confirm delivery, check the [debug log](#debug-hooks).
+
+**Le sole differenze che la doc nomina fra hook di plugin e hook di settings riguardano altro, non la consegna** — la deduplicazione degli handler, il trattamento di exit 2 con stderr «file mancante», la finestra d'installazione per `initialUserMessage`/`sessionTitle`, il budget di `SessionEnd`, `allowManagedHooksOnly`:
+
+> All matching hooks run in parallel. If you define the same handler in more than one settings file, it runs once. A plugin's or skill's copy of the same handler stays separate.
+
+> * **`Stop`, `SubagentStop`, `TaskCompleted`, and a plugin's `UserPromptSubmit` hook**: when your hook exits 2 with nothing on stdout and its stderr says a file is missing, such as `No such file or directory`, Claude Code treats the run as a non-blocking error.
+
+> If your plugin's SessionStart hook supplies `initialUserMessage` or `sessionTitle`, install the plugin before the session starts. Claude Code ignores both fields from a plugin that finishes installing after the SessionStart hooks have run.
+
+> * **Per-hook `timeout`**: set `timeout` in that hook's configuration. The overall budget rises automatically to match the highest per-hook `timeout` in your settings files, up to 60 seconds. […] Timeouts set on plugin-provided hooks don't raise the budget.
+
+> * Your user, project, local, and plugin hooks are blocked. Hooks from plugins force-enabled in managed settings `enabledPlugins` are exempt
+
+> Hooks from settings files, managed policy settings, and plugins also run inside subagents. When a subagent calls a tool, tool events such as `PreToolUse` and `PostToolUse` fire the same configured hooks as in the main conversation, and the input carries the `agent_id` and `agent_type` common input fields that identify the subagent.
+
+### 24.2 Cosa affermano le issue (contraddicono la doc)
+
+Le issue (§23) affermano l'opposto per gli hook di **plugin**: l'hook esegue ma `additionalContext` **non** raggiunge il modello, mentre lo stesso hook in `~/.claude/settings.json` funziona (#16538, #73401, #88086; e #75972 che il maintainer ha confermato come bug del file rifiutato intero). Nessuna di queste è risolta, e nessuna copre la **2.1.300** (nominano 2.1.39–2.1.236).
+
+### 24.3 Cosa la doc NON afferma (resta `[to verify]`)
+
+- Non esiste una frase che dica, con queste parole, che l'`additionalContext` di un hook `SessionStart` **o** `UserPromptSubmit` **definito in un plugin** raggiunga il modello della conversazione principale. Il fatto si **deduce** (la tabella *Hook locations* mette `hooks/hooks.json` fra le sedi, il tab *Plugin scripts* dice che si fonde con gli hook utente e di progetto, e la consegna è descritta per evento) ma non è **mai affermato per provenienza**: `[to verify]`.
+- La consegna non è mai qualificata per sorgente: nessuna riga dice «gli hook di plugin consegnano (o non consegnano) `additionalContext` come quelli di settings». L'equivalenza è solo implicita: `[to verify]`.
+- Il paragrafo del merge («Hook entries merge across settings levels…» — user, project, local, managed) **non nomina i plugin**: non è detto se gli hook di plugin stiano dentro quella scala. `[to verify]`.
+- Nessuna riga dice se un plugin installato a metà sessione (dopo il `SessionStart`) consegni ancora il contesto; l'unico caso di plugin-installato-tardi risolto dalla doc riguarda `initialUserMessage` e `sessionTitle`, non `additionalContext`. `[to verify]`.
+- Non è detto se `SessionStart` scatti anche per la sessione di un subagent e dove finirebbe lì il suo `additionalContext`; l'unica riga vicina parla dei tool event che «fire the same configured hooks as in the main conversation». `[to verify]`.
+- Non è detto se il testo di un hook di plugin venga etichettato diversamente nella system reminder (la doc dice solo che la reminder «starts with the hook's name»). `[to verify]`.
+- La pagina **non è vincolata a un numero di build**: porta gate per singola funzione (`v2.1.288 or later`, `v2.1.295 or later`), ma nessuna affermazione è scoped a **2.1.300** in particolare. `[to verify]`.
+
+### 24.4 Sintesi della risposta a Q3
+
+Sulla **2.1.300**: la **doc** non distingue i due tipi di hook quanto alla *consegna* e, descrivendo la consegna **per evento**, lascia intendere che un hook di plugin consegni come uno di settings; le **issue** affermano il contrario per `SessionStart` e `UserPromptSubmit` di plugin; il punto resta **`[non provato]`** su questa macchina e su questa versione — non c'è una riga di doc che lo garantisca né un esito di host che lo provi su 2.1.300 (la §19 prova solo `SubagentStart` di plugin su 2.1.296, che invece consegna). Chi deve decidere se appoggiarsi a un hook `SessionStart`/`UserPromptSubmit` **di plugin** per parlare alla conversazione principale lo fa **contro il rischio dichiarato dalle issue**, non contro una garanzia della doc.
