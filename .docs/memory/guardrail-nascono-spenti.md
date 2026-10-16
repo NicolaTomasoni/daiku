@@ -1,11 +1,11 @@
 ---
 name: guardrail-nascono-spenti
-description: "la guardia nega sempre push, --no-verify e le firme di un agente, su qualunque host, e solo il pool dei worktree, i canali e la sede dei ledger si dichiarano; ask-guard nega due gesti del giro, e nessun file, e sul rientro legge il documento delle decisioni; nessun hook esegue un file perché è appena comparso"
+description: "la guardia nega sempre push, --no-verify e le firme di un agente, su qualunque host, e solo il pool dei worktree, i canali e la sede dei ledger si dichiarano; ask-guard nega due gesti del giro — una domanda fuori forma o corta, e il lancio con la lista aperta —, e nessun file, e sul rientro legge il documento delle decisioni; nessun hook esegue un file perché è appena comparso"
 metadata: 
   node_type: memory
   type: project
   originSessionId: 7f30fa0d-9a97-482d-ba1b-c32231e0c9e1
-  modified: 2026-10-16T15:00:14.783Z
+  modified: 2026-10-16T16:36:34.057Z
 ---
 
 **Deciso il 19 settembre 2026, preparando gli hook per la distribuzione.** Un pacchetto si
@@ -32,7 +32,8 @@ lanciare il banco di prova di una guardia riscritta, e non lo lancia.
 
 **Terzo: un diniego nuovo è un diniego di gesto, non di file.** Dal 2 ottobre 2026
 `hooks/lib/ask-guard.mjs` nega due gesti del solo giro `new-feature`: una domanda di decisione che
-non porta il proprio posto nella lista (`k/N`) e il **lancio di un subagent** mentre la lista non è
+non porta il proprio posto nella lista (`k/N`) — o che, dal 16 ottobre 2026, si ferma sotto il tetto
+di quattro per chiamata mentre restano carte — e il **lancio di un subagent** mentre la lista non è
 stata chiesta tutta. Nasce **acceso**, senza chiave, come la regola del 21 settembre, con due confini
 dichiarati: parla solo in una sessione che ha aperto un giro — legge il marchio che `run-advice`
 scrive, non ne scrive un secondo — e solo dove `.daiku/project.json` esiste. Nega la **delega**
@@ -59,6 +60,14 @@ non si vedeva da nessuna parte: il modulo era completo, il blocco tornava ben fo
 veniva scritto. Da lì il posto nella domanda: non è una cortesia, è la sola cosa che dice quanto è
 lunga la lista — e la lunghezza dichiarata dalla domanda è anche quella che l'owner legge, `3/6`,
 mentre risponde.
+
+**Lo stesso motivo ha reso obbligatorio il riempimento (16 ottobre 2026).** Nessuna riga diceva
+quante domande una chiamata **porta**: «at most four» fissa un tetto e «one at a time» governa le
+chiamate, e un giro leggeva entrambe come una domanda per chiamata — sei attese dove due chiamate
+bastavano, l'owner a rispondere una carta alla volta su una lista che stava già leggendo. Il guard
+rifiuta ora un batch che si ferma sotto il tetto mentre restano carte, nominando quelle che ci
+stanno, e la regola sta in prosa in `contracts/orchestration.md` § *Ask the owner* e nel punto 7 di
+`new-feature` — il feedback è [[ask-a-lotti]].
 
 **Why:** fino a quel giorno `command-guard.mjs` era la guardia di ReforgIA trapiantata nel
 pacchetto — negava `git push` a chiunque, su qualunque repository, rimandando a sezioni di un

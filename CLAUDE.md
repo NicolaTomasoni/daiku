@@ -189,9 +189,10 @@ che ha guardato, mai il motivo per non guardare. Una modifica senza quel passo n
 si dichiara finita.
 
 Il commit non è un'altra sede della stessa regola: è l'ultima. `update-memory` ripassa l'intero
-perimetro sul diff che sta per essere congelato, e il ciclo di review è ciò che lo impone — la
-guardia nega `git commit` fuori da lì. Fuori dal ciclo, in una chat che modifica e non committa,
-l'allineamento lo fa la sessione stessa, che ha la modifica in mano.
+perimetro sul diff che sta per essere congelato, e la skill `commit` lo delega a ogni sua
+invocazione, review o no — la guardia nega comunque `git commit` fuori dal ciclo. Fuori dal ciclo,
+in una chat che modifica e non committa, l'allineamento lo fa la sessione stessa, che ha la
+modifica in mano.
 
 Non si chiede all'owner e non gli si rimanda: «vuoi che aggiorni la memoria?» è la domanda che
 questa regola esiste per rendere impossibile. E «non ho toccato la memoria» non è una conclusione

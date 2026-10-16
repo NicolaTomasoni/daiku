@@ -1,16 +1,18 @@
 ---
 name: il-commit-rivede-il-diff
-description: "Il commit lanciato dall'owner con /daiku:commit non rilegge il diff: committa e basta, perché chi lo lancia l'ha già letto; la guardia lo lascia passare col segno commit-alone.json. Supera la regola dell'8 ottobre 2026"
+description: "Il commit lanciato dall'owner con /daiku:commit non rilegge il diff: prima allinea memoria e documenti con la delega obbligatoria a update-memory, poi committa senza review, perché chi lo lancia l'ha già letto; la guardia lo lascia passare col segno commit-alone.json. Supera la regola dell'8 ottobre 2026"
 metadata:
   node_type: memory
   type: feedback
   originSessionId: a2642d71-61f9-4f11-aa8b-a94f64886de8
-  modified: 2026-10-16T15:00:14.034Z
+  modified: 2026-10-16T18:00:33.236Z
 ---
 
 **Deciso dall'owner il 16 ottobre 2026, e superata la regola dell'8 ottobre.** Il commit lanciato a mano
 con `/daiku:commit` non rilegge il diff: committa tutto il perimetro senza domande e senza analisi, perché
-chi lo lancia — in questa sessione o in un'altra — ha già letto il diff. Nessuna review prima.
+chi lo lancia — in questa sessione o in un'altra — ha già letto il diff. Nessuna review prima. Allinea
+però sempre memoria e documenti prima di congelare: dal 16 ottobre 2026 la delega a `update-memory` è
+obbligatoria in ogni invocazione della skill.
 
 **Why:** l'8 ottobre la regola chiedeva una review prima di ogni commit a mano; l'owner ha detto che il commit
 lanciato da lui è già una lettura, e che fermarlo per una review è un passo in più che non vuole. La review
