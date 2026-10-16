@@ -77,7 +77,11 @@ write guard is gone and stays gone, and what is denied here is a delegation. A m
 closes the ask — their free answer prevails — and the run goes on. A run **resumed** on a folder
 already there (`/new-feature <folder>`) asks the cards its document left open, and there a first batch
 carries the place those cards have in that list instead of `1/N`: the prompt is where the guard reads a
-resume, and it is the only case in which the opening rule bends. Its two boundaries, declared: it
+resume, and it is the only case in which the opening rule bends. There the guard does not trust the
+ask for the place: it reads the decision document — `0.5. strategic-study.md` first, `1. decision-doc.md`
+after — counts its cards and finds the first without a `Choice:` line, and holds the opening batch to
+that card, so the `5/5` of a list whose first card was never put to the owner does not go out; where
+the document is not there or not readable, no place is claimed. Its two boundaries, declared: it
 speaks only in a session that opened a `new-feature` run (reading the mark `run-advice` writes, not
 writing a second one) and only where `.daiku/project.json` exists. The rule it holds is
 `contracts/orchestration.md` § *Ask the owner*. What tells a decision ask from another node's

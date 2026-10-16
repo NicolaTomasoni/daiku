@@ -57,7 +57,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { evaluate, REAL_ENV as GUARD_ENV } from './lib/command-guard.mjs';
-import { judgeAsk, questionsOf, advanceDeny, statePath, readState, writeState, settled, namesAFolder } from './lib/ask-guard.mjs';
+import { judgeAsk, questionsOf, advanceDeny, statePath, readState, writeState, settled, resumeMark } from './lib/ask-guard.mjs';
 import { report, relativeToRoot } from './lib/contracts-post-edit.mjs';
 import { promptDecision, isMarked, markPath, opensRun } from './lib/run-advice.mjs';
 import { warnings } from './lib/session-advice.mjs';
@@ -237,7 +237,7 @@ export function promptHook(event, root, scratch) {
   const marked = isMarked(SESSION_ENV, markPath(shaped, SESSION_ENV));
   const opens = opensRun(text);
   if (opens || marked) {
-    const resume = opens ? namesAFolder(text, ctx, root, SESSION_ENV) : readState(SESSION_ENV, path).resume;
+    const resume = opens ? resumeMark(text, ctx, root, SESSION_ENV) : readState(SESSION_ENV, path).resume;
     writeState(SESSION_ENV, path, { ask: null, resume });
   }
 

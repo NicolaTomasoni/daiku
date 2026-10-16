@@ -1,7 +1,7 @@
 ---
 name: 'release'
-description: 'Promotes the development branch onto production, once per release: the version lives on production and never on development, the release writes it there with the changelog section built from the block of commits accumulated since the last published release, and replaces the release standing on production for as long as nothing has pushed it. On its first run it asks which paths never reach production with proposed lists and records them in `.daiku/project.json`. A working tree that is not empty is the first question of the run — the release flushes it through the review cycle and its closing commit, or the owner commits it — because a release carries the development tree as its commits hold it. It never pushes — the push stays a manual gesture of the owner. On a project that declared no channels it has nothing to promote and says so.'
-argument-hint: '[technical root, optional — default: current directory]'
+description: 'Promotes the development branch onto production, once per release: the version lives on production and never on development, the release writes it there with the changelog section built from the block of commits accumulated since the last published release, and replaces the release standing on production for as long as nothing has pushed it. On its first run it asks which paths never reach production with proposed lists and records them in `.daiku/project.json`. A working tree that is not empty is the first question of the run — the release flushes it through the review cycle and its closing commit, or the owner commits it — because a release carries the development tree as its commits hold it. With `--with-commit` that question is not asked: the tree is flushed through the cycle and its closing commit as if the owner had chosen it. It never pushes — the push stays a manual gesture of the owner. On a project that declared no channels it has nothing to promote and says so.'
+argument-hint: '[technical root, optional — default: current directory] [--with-commit]'
 ---
 
 You are the **release** of a project that declared its two channels: the work lives on the
@@ -59,6 +59,12 @@ and stops.
 The **technical root** — the directory the skills run from, carrying `.daiku/project.json`. With an
 argument, it is that; without one, it is the current directory. From it you resolve every key, and
 run every command with `git -C "<technical root>"`.
+
+**`--with-commit`** — the one flag, read as a whitespace-separated token in `$ARGUMENTS` and never
+inferred from prose: where it stands, step 1 of § *The step* has no question to ask, and an unclean
+working tree is flushed before the release without the owner being asked anything. It suppresses
+that question alone: the version of step 4 is still theirs, and the flush is still the whole of
+§ *Flushing the working tree*.
 
 **The release runs from a copy standing on `{channels.development}`.** It never checks production
 out, and it refuses to run while a working copy holds it — a copy holding a branch this node moves
@@ -136,9 +142,15 @@ saying so, and stop — §6 of `contracts/project-contract.md`, no fallback and 
      what it is, and their terminal is behind no guard — but the release then waits on a gesture of
      theirs.
 
+   **Where the invocation carries `--with-commit` the question does not exist**: road `A` is taken
+   as if the owner had chosen it — that is the whole of what the flag does — and `detail` says the
+   flush was taken by the flag. It removes the question and nothing else: what a clean tree is worth
+   is unchanged, and the program refuses a working tree that is not clean, so a release arrived at
+   the write without flushing writes nothing at all.
+
    Where there is nobody to ask — a chained run, a session with no interactive channel — road `A`
-   is taken, and `detail` says the question was not asked. A tree still not empty after the flush is
-   `released: false`, with the paths left standing named in `detail`.
+   is taken too, and `detail` says the question was not asked. A tree still not empty after the flush
+   is `released: false`, with the paths left standing named in `detail`.
 
 2. **Measure.** Run `architect/release.mjs` with `action: "status"`, passing the root, the two
    branches and the release's own keys — `{release.source}`, `{version.file}`,
@@ -254,6 +266,8 @@ mirrors, where this file stays normative on divergence:
 - `detail` always says what happened, and on `released: false` says which of the cases it was:
   no channels declared, the copy not on the development branch, a working copy holding production,
   uncommitted work left to the owner's own commit, uncommitted work the cycle could not flush, or
-  nothing to release. Where § *First run* asked,
+  nothing to release. The one where the work is left to the owner's own commit is not a case a run
+  carrying `--with-commit` can return: road `B` is not reachable there, and `detail` says the flush
+  was the flag's. Where § *First run* asked,
   it also says which exclusions were recorded in `.daiku/project.json` — or that there was nobody
   to ask and the next run asks again.

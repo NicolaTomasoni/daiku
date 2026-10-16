@@ -72,10 +72,10 @@ of a file, the presence or absence of an area. Three prohibitions, in order of s
 | `version.file` | file carrying the application's canonical version |
 | `version.field` | exact spot in the file where that version lives |
 | `version.replicated_in` | other files carrying the same version and updated together; empty or absent list if there are none |
-| `paths.studies` | folder of the notes on a studied technology, one file per technology; it stands **under `.daiku/`**, like the key below it |
+| `paths.studies` | folder of the notes on a studied technology, one file per technology; under `.daiku/` |
 | `paths.features` | folder hosting the working folders, one per problem, with the method's numbered files inside — and, beside them, the feature catalogue: one folder per feature, one file per study contributing to it; under `.daiku/` |
-| `paths.handoffs` | folder of the handoff documents, one file per job left to another agent, each carrying the problem, what was done, what is missing and the evidence inlined; under `.daiku/`, like the two keys above it |
-| `paths.review_state` | folder of the run's out-of-version-control state: a review's ledger, and the worktree pool's registry (`worktree-pool.json`, written by `architect/pool.mjs`); it stands **inside the repository tree**, under the technical root, but **outside version control** — a `.gitignore` line excludes it — and it is **never under `.daiku/`**, which is versioned (§8); stable, not session-scoped |
+| `paths.handoffs` | folder of the handoff documents, one file per job left to another agent, each carrying the problem, what was done, what is missing and the evidence inlined; under `.daiku/` |
+| `paths.review_state` | folder of the run's out-of-version-control state: a review's ledger, and the worktree pool's registry (`worktree-pool.json`, written by `architect/pool.mjs`); inside the repository tree but **outside version control** — a `.gitignore` line excludes it — and **never under `.daiku/`**, which is versioned (§8); stable, not session-scoped |
 | `memory.root` | root of the persistent memory corpus, inside the repository (§8); on Claude Code it is also the folder where the host writes its own memory (§4.2), and on a host that keeps no such seat — opencode — it is the corpus alone |
 | `memory.index` | index file of the corpus, the one read first |
 | `commit.memory_prefix` | prefix of the memory-and-documentation commit message |
@@ -138,14 +138,13 @@ denial stays whole and the release is a write the guard has nothing to say about
 
 ### 4.2 The key the host reads
 
-`memory.root` has a second reader that is neither a skill nor a hook: it is **the host**, on Claude
+`memory.root` has a second reader that is neither a skill nor a hook: **the host**, on Claude
 Code alone, where the memory the agent writes for itself is a folder of files and its location is
 declared with `autoMemoryDirectory`. `init` points it there, and from that moment that corpus has
 two writers on that host — the session, which realigns in the same work whatever its change has made
-false (and, on Claude Code, the host it runs in, keeping what it noticed mid-session), and
-`update-memory` on every commit's diff — and a single location, **versioned together with the
-code**. **A host with no such seat — opencode — has no second reader here**: there the corpus is
-written by the session and by `update-memory` alone, and nothing points anywhere. It is why this
+false, and, on Claude Code, the host it runs in, keeping what it noticed mid-session — and
+`update-memory` on every commit's diff — and a single location, **versioned together with
+the code**. **A host with no such seat — opencode — has no second reader here.** It is why this
 folder sits inside the repository and not beside it: a memory that does not enter a diff is re-read
 by nobody, corrected by nobody and dies with the laptop it was born on.
 
@@ -154,16 +153,13 @@ waits for the other: the host — where it has the seat — answers for what its
 false, the commit's step walks the whole perimeter again on the frozen diff. A corpus left behind
 between the two is read and believed by the next session exactly like a correct one.
 
-One consequence, and it is not an installation detail.
-
-**The pointing is not committed.** That key lives in `.claude/settings.local.json`, which belongs
-to that machine and stays out of the repository: a versioned file carrying it would declare one
-machine's seat as the project's, and the error would show only in silence, on whoever clones. That
-seat is Claude Code's; a host with no pointing to make — opencode — has none, and loses nothing,
-because `{memory.root}` is opened by path wherever it stands. The
-memory files are committed; the line telling the host to write them there is not. On a clone the memory falls back to the default **silently**, and no skill notices:
-`{memory.root}` is opened by path and found where it was. The remedy is to re-run `/init`
-on that machine.
+One consequence, and it is not an installation detail: **the pointing is not committed.** That key
+lives in `.claude/settings.local.json`, which belongs to that machine and stays out of the
+repository: a versioned file carrying it would declare one machine's seat as the project's, and the
+error would show only in silence, on whoever clones. The memory files are committed; the line
+telling the host to write them there is not. On a clone the memory falls back to the default
+**silently**, and no skill notices: `{memory.root}` is opened by path and found where it was. The
+remedy is to re-run `/init` on that machine.
 
 It is also why `memory.root` and `memory.index` are the only keys `init` **always**
 writes, even on a project that had no corpus. §6 applies to everything else: here
@@ -253,7 +249,7 @@ please without any update taking it away. Where the project already answers that
 its own, `init` writes there a pointer to that file instead of the default: the project's answer
 wins, and its single text stays the one that is changed.
 
-It is the opposite choice to the obvious one, and the reason is practical: a role without a default forces every
+The reason is practical: a role without a default forces every
 project to write one from scratch before getting full behaviour, and meanwhile the skill
 degrades silently. Better a declared default answer, visible and changeable, than an
 absent file nobody knows they must write.
@@ -307,8 +303,7 @@ rewriting the rule above would make it diverge at the first change.
 
 If one of the two keys is missing, §6 says that thing does not exist — and here it means one specific
 thing: **mirror the language of what is in front of you**. For chat, the language the user wrote
-to you in; for a commit, that of the messages already in the history. It is not an elegant fallback, but it is
-the only one that imposes no choice nobody made.
+to you in; for a commit, that of the messages already in the history. It imposes no choice nobody made.
 
 ### 5.6 What `init` deposits is in English, and the two keys do not concern it
 
@@ -367,7 +362,7 @@ a skill that gets it wrong. It is the intended direction.
   exists to make a lagging JSON recognisable, so a skill degrading on an
   absent key also reports the `contract` it read.
 - **It is not incremented for a removed key no skill read.** It is the only exception
-  to the first rule, and it stands on its own: the number exists to make recognisable a JSON
+  to the first rule: the number exists to make recognisable a JSON
   that a skill **would read badly**, and a key nobody opened cannot be read badly by
   anyone. A `project.json` still carrying it has one extra line nobody looks at,
   not a defect. The condition is strict and must be verified, not assumed: *no* skill in the
@@ -397,36 +392,23 @@ changes, and the file the skill opens.
 
 Both live **in the project**, under `.daiku/`, and the folder **is versioned**: `project.json`,
 `environment.json`, `domain/` and `policies/` are the configuration the project wrote for itself,
-part of it by hand, and a clone must find it without running `/init` again. The folder stands inside
-the repository and enters a diff like any other source file.
-
-Beside them stand the **scripts `init` deposits**, `update.mjs` first: it is copied from
-`templates/project/` together with the `daiku: update` task of `.vscode/tasks.json` that runs it —
-it reads the version in place, refreshes the `daiku` marketplace, shows the version in place beside
-the one the catalogue is carrying, asks whether to update, and on a yes updates the package on
-Claude Code. **That path is Claude Code's alone**: its two commands are `claude plugin`'s, and a
-host with no catalogue — opencode — has nothing there for them to refresh. It is no parameter — no
-skill and no hook reads it.
-
-And it is **not the project's file**, which is why it is the one thing under `.daiku/` that `init`
-rewrites. Each script carries the marker `daiku:script <version>` at its top, holding the version of
-the package that deposited it; where the marker names another version, or is absent, the file on
-disk was written by a Daiku older than the one in place, and `init` **recreates it whole** from the
-skeleton. Without the marker an update would stop at the package and leave the project running the
-script of a Daiku it no longer has — and the marker is the only thing distinguishing the two
-readings of the same file: a script this package wrote, which stays, and a script it did not, which
-goes.
-
-And beside it lands `README.md`, copied from the same folder as `.daiku/README.md`: it is Daiku's
-own documentation — what the method is, the commands it offers, where the values live — and it
-stands inside the project so that whoever asks about Daiku, user or agent, finds the answer where
-the rest of Daiku already is. It is not a parameter either: no skill and no hook reads it, and
-nothing cites it. It is read when the question is asked.
+part of it by hand, and a clone must find it without running `/init` again.
 
 **Nothing of Daiku stands outside the repository.** A folder in the user home is a seat no clone
 carries, no `git diff` shows and no reviewer corrects — and it is the first thing a guardrail
 loses, because a perimeter drawn around the working roots does not reach it. What a project needs
 to run is inside the project, and inside its history as well.
+
+Beside them stand the **scripts `init` deposits**, `update.mjs` first: it is copied from
+`templates/project/` together with the `daiku: update` task of `.vscode/tasks.json` that runs it,
+and it is **not the project's file** — which is why it is the one thing under `.daiku/` that `init`
+rewrites. Each script carries the marker `daiku:script <version>` at its top, and where the marker
+names another version, or is absent, `init` **recreates it whole** from the skeleton: the marker is
+the only thing distinguishing a script this package wrote, which stays, from one it did not, which
+goes. The `daiku` task that runs it, the commands it carries and what it shows are
+`skills/init/SKILL.md` § *5-bis. Write the update task*. Nothing reads it: it is no parameter, no skill and no hook.
+Beside it lands `README.md`, Daiku's own documentation, copied from the same folder as
+`.daiku/README.md` and read when the question is asked — no skill and no hook reads it either.
 
 **One path under `.daiku/` stays out, and it is the machine's override**: the `.gitignore` line
 excluding `.daiku/environment.local.json`. `init` writes it in the repository's `.gitignore` when
