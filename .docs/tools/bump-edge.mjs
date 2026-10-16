@@ -2,7 +2,8 @@
 /**
  * Alza il ramo `edge`: la copia del prodotto che segue `develop` a ogni push.
  *
- * Attrezzo di sviluppo: vive fuori da `plugins/`, non si pubblica e non gira da un hook.
+ * Attrezzo di sviluppo: lo lancia il workflow `.github/workflows/edge.yml` a ogni push su `develop`.
+ * Non si pubblica e non gira da un hook.
  *
  * Perche' esiste. `develop` non porta nessun numero di versione: il numero sta su `main`, e lo scrive
  * il rilascio. Un progetto che vuole seguire `develop` da fuori ha bisogno di un numero che l'host
@@ -17,7 +18,7 @@
  * Cosa scrive. Un commit su `edge` con il tree di `develop:plugins`, letto con `read-tree` su un indice
  * usa-e-getta, e il solo manifest col numero nuovo; poi `update-ref` muove il ramo. Il ramo nasce se
  * manca, e ogni commit ha il precedente come padre. Niente checkout, niente `git commit`, niente stage,
- * niente fetch, niente push: il push resta il gesto manuale dell'owner, che spinge `develop` ed `edge`.
+ * niente fetch, niente push: li fa il workflow, che porta `main` ed `edge` in locale prima e pusha `edge` dopo.
  *
  * Cosa verifica. Un albero con modifiche tracciate si rifiuta prima di scrivere: il tip non sarebbe quello
  * che si pubblica. `develop` non deve essere indietro rispetto a `origin/develop`, perche' il tip locale
@@ -25,7 +26,7 @@
  * `develop` produce, non scrive niente.
  *
  * Uso:
- *   node .docs/tools/bump-edge.mjs              # alza edge
+ *   node .docs/tools/bump-edge.mjs              # alza edge (lo chiama il workflow)
  *   node .docs/tools/bump-edge.mjs --self-check
  *
  * L'uscita e' tre righe: `OK`, il numero che la produzione dichiara, il numero di `edge` dopo.

@@ -1,17 +1,17 @@
 ---
 name: corpus-di-sviluppo
-description: "In .claude/commands/ restano solo i comandi che il prodotto non ha — studia-repository e translate-skill; con cui Daiku si sviluppa, rilascio compreso, sono le skill daiku:*, e lo strumento resta indietro per scelta"
+description: "In .claude/commands/ restano solo i comandi che il prodotto non ha — studia-repository e translate-skill; con cui Daiku si sviluppa, rilascio compreso, sono le skill daiku:*, e lo strumento è la copia edge"
 metadata:
   node_type: memory
   type: project
   originSessionId: 48eaa498-ed6e-4a36-847d-3f8fa95f7f21
-  modified: 2026-10-05T00:00:00.000Z
+  modified: 2026-10-16T14:28:44.187Z
 ---
 
 `.claude/` **contiene solo i comandi che il prodotto non ha.**
 
 **Con cui Daiku si sviluppa sono le skill di Daiku stesso.** Il pacchetto è installato dal
-marketplace online — `NicolaTomasoni/daiku`, ramo di produzione `main` — e aprire una feature,
+marketplace `NicolaTomasoni/daiku`, ramo `edge` (dal 16 ottobre 2026, per questo repository e per Reforgia) — e aprire una feature,
 il ciclo di review, il commit, l'allineamento della memoria e **il rilascio** sono le
 sue skill, invocate come `daiku:*` (`new-feature`, `review`, `code-review`, `commit`,
 `release`, `update-memory`, `research`, `study`, `decision-doc`, `blueprint`, `execute`). Un comando
@@ -34,9 +34,9 @@ l'entry point è `daiku:release` — vedi [[pubblicazione-su-github]] e [[canali
 comando del cantiere **si toglie**, non si tiene come scorciatoia: una seconda copia del metodo
 divergerebbe al primo cambiamento.
 
-**Lo strumento resta indietro rispetto all'albero, ed è voluto.** L'ultimo rilascio pubblicato è la
-versione di Daiku che sviluppa Daiku: una modifica a una skill del pacchetto non cambia lo strumento
-finché non si rilascia. È la scelta dell'owner, non una dimenticanza da riparare. Vedi
+**Lo strumento è la copia `edge`, e arriva a ogni push su `develop`.** La versione di Daiku che sviluppa Daiku è
+`edge`: una modifica a una skill del pacchetto raggiunge lo strumento quando `develop` viene pushato e il
+workflow alza `edge`, non quando si salva il file. È la scelta dell'owner del 16 ottobre 2026. Vedi
 [[cantiere-mai-nominarlo]].
 
 **Why:** un comando che il prodotto già offre, riscritto qui, è una seconda copia del metodo da

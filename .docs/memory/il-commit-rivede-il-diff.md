@@ -1,26 +1,28 @@
 ---
 name: il-commit-rivede-il-diff
-description: "Il diff in index si rivede prima di essere congelato: il commit non porta in storia righe che nessuna review ha letto, e la review a mano si fa lì"
+description: "Il commit lanciato dall'owner con /daiku:commit non rilegge il diff: committa e basta, perché chi lo lancia l'ha già letto; la guardia lo lascia passare col segno commit-alone.json. Supera la regola dell'8 ottobre 2026"
 metadata:
+  node_type: memory
   type: feedback
+  originSessionId: a2642d71-61f9-4f11-aa8b-a94f64886de8
+  modified: 2026-10-16T15:00:14.034Z
 ---
 
-**Deciso dall'owner l'8 ottobre 2026.** Il diff **in index** si rivede prima di essere congelato: il
-commit non porta in storia righe che nessuna review ha letto. Dove il ciclo che finisce in quel
-commit ha appena rivisto lo stesso diff, quella **è** la review e non se ne fa una seconda; dove
-invece il commit arriva a mano — su un diff scritto in chat che nessun ciclo ha guardato — la review
-si fa lì, sul diff staged, prima del commit del codice.
+**Deciso dall'owner il 16 ottobre 2026, e superata la regola dell'8 ottobre.** Il commit lanciato a mano
+con `/daiku:commit` non rilegge il diff: committa tutto il perimetro senza domande e senza analisi, perché
+chi lo lancia — in questa sessione o in un'altra — ha già letto il diff. Nessuna review prima.
 
-**Why:** il commit a mano era l'unico punto in cui un diff poteva entrare in storia senza che
-nessuno l'avesse letto. La guardia della review nega `git commit` fuori dal ciclo, ma solo dove il
-progetto dichiara la sede dei ledger: fuori di lì il commit passava. È la legge di *Mai fidarsi di un
-LLM* applicata al commit — dove il divieto non ha una sede deterministica, non esiste.
+**Why:** l'8 ottobre la regola chiedeva una review prima di ogni commit a mano; l'owner ha detto che il commit
+lanciato da lui è già una lettura, e che fermarlo per una review è un passo in più che non vuole. La review
+resta il percorso del commit dell'agente: un commit che l'agente fa da solo, fuori da un ciclo, è quello che la
+guardia nega.
 
-**How to apply:** le due sedi sono le eccezioni di commit del file di istruzioni che `init` deposita
-(`plugins/daiku/templates/project/instructions.md`) e la § *Review of the diff being committed* di
-`plugins/daiku/skills/commit/SKILL.md`; il controllo è la guardia della review in
-`plugins/daiku/hooks/lib/command-guard.mjs`, che nega `git commit` fuori dal ciclo ed è questa
-stessa regola letta dove un comando si può ancora fermare.
+**How to apply:** la skill `plugins/daiku/skills/commit/SKILL.md` scrive `commit-alone.json` nella sede dei
+ledger prima del commit e lo toglie dopo, anche se il commit è rifiutato; la guardia della review
+(`command-guard.mjs`, `reviewGuard`) lascia passare un commit con un segno fresco, un quarto d'ora. Il segno è
+una dichiarazione della skill, non una prova: la guardia non distingue chi lo ha scritto. Il file di istruzioni
+che `init` deposita dice la stessa cosa (`plugins/daiku/templates/project/instructions.md`, l'eccezione
+`commit`).
 
-Vedi [[allineamento-a-ogni-modifica]] per il passo che allinea il corpus, e
-[[guardrail-nascono-spenti]] per la regola delle due sedi.
+Vedi [[guardrail-nascono-spenti]] per la regola delle sedi, e [[allineamento-a-ogni-modifica]] per il passo che
+allinea il corpus.

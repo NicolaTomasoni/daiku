@@ -309,7 +309,7 @@ Il giorno in cui il repository diventa pubblico, questa sezione è una delle cos
 - Nessuna skill duplica questo contratto, nemmeno «per comodità».
 - Nessuna skill introduce un terzo ruolo o un profilo di modello proprio.
 - Nessuna skill esegue `git push`, in nessuna fase e sotto nessuna autorizzazione. Il repository è
-  privato fino al rilascio, e nessun contratto di questo corpus ha motivo di toccare un remoto.
+  pubblico, e nessun contratto di questo corpus ha motivo di toccare un remoto.
 - Il tool `Workflow` non è il motore di nessuna skill: l'orchestrazione è dell'agente, che delega a
   subagent secondo questo file. Non invocarlo.
 - Nessuna skill di questo corpus scrive dentro `plugins/daiku/skills/` o

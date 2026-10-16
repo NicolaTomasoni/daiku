@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 33614099-e150-45f7-99eb-7fe0113b9450
-  modified: 2026-10-12T12:13:48.157Z
+  modified: 2026-10-16T14:18:34.408Z
 ---
 
 `skills/<nome>/SKILL.md` è il **primitivo** del pacchetto, ed è l'unico: non annida, ed è la ragione
@@ -38,5 +38,9 @@ mestiere di `init` (vedi [[init-scrive-le-istruzioni]] e [[tre-livelli-di-parame
 le skill leggono ma che skill non è va in `contracts/`, **mai** sotto `skills/`: l'host scandisce
 anche le sottocartelle che iniziano col punto, quindi `skills/.contratti/` diventerebbe una skill
 rotta.
+
+**Il marketplace sta alla radice del repo che clona; la sottocartella passa solo con `--sparse`, e lo digita chi installa.** `claude plugin marketplace add <owner>/<repo>` clona il repository intero e legge `.claude-plugin/marketplace.json` alla sua radice (documentazione ufficiale: code.claude.com/docs/en/plugin-marketplaces). Il checkout si limita con `--sparse <cartelle>`, come dice l'help di `claude plugin marketplace add` sul CLI installato il 2026-10-16, ma il flag sta nel comando di chi installa e non nel repo. Una sottocartella di un altro repository si dichiara come plugin con `source: "git-subdir"`; se in quel caso scarichi tutto il repo non è verificato.
+
+**Why:** un catalogo che si aggiunge senza flag porta con sé tutto il repo che clona, cantiere compreso. **How to apply:** senza `--sparse` il marketplace resta alla radice del repo che si pubblica; prima di proporre una sottocartella, verificare che l'installazione normale non esponga `.docs/`, `CLAUDE.md` e `.daiku/`. Vedi [[si-pubblica-solo-il-prodotto]].
 
 Vedi [[installazione-e-versionamento]] e [[alberatura-pacchetto]].

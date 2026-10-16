@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 48eaa498-ed6e-4a36-847d-3f8fa95f7f21
-  modified: 2026-10-14T12:39:29.566Z
+  modified: 2026-10-16T14:28:46.042Z
 ---
 
 Il repo ospita il prodotto Daiku. Il repository è **uno solo** — `NicolaTomasoni/daiku` su GitHub,
@@ -55,6 +55,8 @@ tiene i suoi documenti — i punti aperti, i nuovi sviluppi e i cinque documenti
     Il resto del metodo sono le skill di Daiku installate dal marketplace, **rilascio compreso**.
     Vedi [[corpus-di-sviluppo]].
   - `settings.local.json` — punta `autoMemoryDirectory` (vedi [[memoria-nel-repo]]).
+- **`.github/`** — `workflows/edge.yml`: il workflow che alza `edge` a ogni push su `develop`. GitHub lo vuole
+  in radice, ed è del cantiere, non del prodotto.
 - **`.vscode/`** — `tasks.json` con gli switch fra backend LLM: tooling personale dell'owner, con
   path della sua home. Non c'entra niente con Daiku.
 - **`.daiku/`** — i parametri del **cantiere**, non del prodotto, e versionati come il resto: è
@@ -91,8 +93,9 @@ tiene i suoi documenti — i punti aperti, i nuovi sviluppi e i cinque documenti
   banco (`--self-check`)
 - `tools/` — il controllo che nessuno script del cantiere invochi un push (`check-no-push.mjs`),
   accanto ai controlli del corpus e della vetrina, e `macchina/`,
-  i sorgenti delle guardie di macchina (vedi [[guardie-di-macchina]]). **Non c'è più niente che
-  pubblichi**: il rilascio lo fa `daiku:release`, e il push resta dell'owner —
+  i sorgenti delle guardie di macchina (vedi [[guardie-di-macchina]]). **Niente qui pubblica,
+  salvo il workflow di `edge` in radice**: il rilascio lo fa `daiku:release`, e il push di `develop` e di
+  `main` resta dell'owner —
   [[push-solo-manuale]] e [[pubblicazione-su-github]]
 
 ## I nomi che si somigliano e non c'entrano niente

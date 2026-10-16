@@ -116,12 +116,10 @@ Declared exceptions:
 
 - `ship-feature` may commit after the gate and
   after memory and documentation have been aligned to the staged diff.
-- `commit`, invoked explicitly, authorises the commit under its own convention. The diff in index
-  is reviewed before it is frozen — no commit carries a line no review has read — and where the
-  commit arrives by hand, on a diff written in chat that no cycle has looked at, the review is made
-  there, on the staged diff, before the code group is committed. Before committing it always
-  delegates the alignment of memory and documentation to `update-memory` — a mandatory step, not a
-  judgement on whether the diff deserves it.
+- `commit`, invoked explicitly by the owner, authorises a commit of the working tree under its own
+  convention, with no review: whoever invokes it has already read the diff. It leaves its mark in the
+  review seat, which the review guard reads as the owner's own commit, and removes it afterwards. It
+  does not align memory or documentation.
 - `review` always closes with the commit, delegating it, but only on a clean cycle. If a single
   condition is missing it stops at the report.
 

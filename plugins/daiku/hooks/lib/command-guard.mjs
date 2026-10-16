@@ -762,6 +762,25 @@ function attributionGuard(line, cwd, env) {
  */
 const COMMIT_DUE_MS = 60 * 60 * 1000;
 
+/** The mark `/daiku:commit` leaves in the review seat when the owner calls it alone: a file that is
+ * not a ledger, so no cycle reads it, and that the guard reads with a clock. It is fresh for a quarter
+ * of an hour; past that, or absent, it holds nothing. */
+const COMMIT_ALONE = 'commit-alone.json';
+const COMMIT_ALONE_MS = 15 * 60 * 1000;
+
+/** Whether the owner's own `/daiku:commit` is in progress. The skill writes the mark a moment before
+ * its commit and removes it after. A seat that does not answer holds nothing. */
+function ownerCommitMarked(seat, env, now) {
+  try {
+    const file = join(seat, COMMIT_ALONE);
+    if (!env.exists(file)) return false;
+    const stamp = env.stat(file);
+    return Boolean(stamp) && now - stamp.mtimeMs <= COMMIT_ALONE_MS;
+  } catch {
+    return false;
+  }
+}
+
 /** The review guard: `git commit` is the closing step of a review cycle, never a gesture of its own.
  *
  * The rule is `CLAUDE.md`'s for the workshop and `skills/review/SKILL.md`'s for the cycle, and it
@@ -790,6 +809,11 @@ const COMMIT_DUE_MS = 60 * 60 * 1000;
  * A project that declares no `{paths.review_state}` has no cycle to be inside of: §6, and the
  * guard does not exist. The seat is asked of `env`, like every other reading of the world, so the
  * bench answers without a disk; a seat that does not answer allows — the fail-open contract.
+ *
+ * **The owner's own commit.** `/daiku:commit`, called alone, leaves `commit-alone.json` in the seat
+ * a moment before its commit and removes it after; a mark younger than `COMMIT_ALONE_MS` lets that
+ * commit through. No cycle reads it: it is not a ledger. It is a declaration, as a ledger is one —
+ * the guard trusts the skill to write it, and says so here instead of pretending it can tell.
  */
 function reviewGuard(line, env, ctx) {
   if (!ctx || !ctx.present || !ctx.reviewState) return null;
@@ -817,11 +841,13 @@ function reviewGuard(line, env, ctx) {
   ) {
     return null;
   }
+  if (ownerCommitMarked(ctx.reviewState, env, now)) return null;
   return {
     reason:
       '`git commit` outside a review cycle is not allowed: the commit is the closing step of ' +
       '`/daiku:review`, and the cycle is what reads the code just written — the benches say it ' +
-      'compiles, not that it is right. Run the review on the work and let it commit. If a cycle ' +
+      'compiles, not that it is right. Run the review on the work and let it commit, or let the ' +
+      'owner call `/daiku:commit` alone. If a cycle ' +
       'is open, it has been quiet too long or its gate is red: resume it, or set its ledger ' +
       'aside, and relaunch. This guard reads the ledger, not your word.',
   };
@@ -1188,6 +1214,8 @@ const CASES = [
   ['a review quiet for two hours is not in flight', 'git commit -m "x"', ROOT_CWD, 'deny', 'outside a review cycle', CTX_REVIEW, 'develop', { 'review-ledger-aaaaaaa-101010.json': ledgerAt(3 * HOUR) }],
   ['a ledger set aside does not hold the gate open', 'git commit -m "x"', ROOT_CWD, 'deny', 'outside a review cycle', CTX_REVIEW, 'develop', { 'review-ledger-aaaaaaa-101010.json': ledgerAt(MINUTE), 'review-ledger-aaaaaaa-101010.json.abandoned': { text: '', at: NOW - MINUTE } }],
   ["another tool's file in the seat is not a ledger", 'git commit -m "x"', ROOT_CWD, 'deny', 'outside a review cycle', CTX_REVIEW, 'develop', { 'review-ledger-aaaaaaa-101010.json': { text: '{"outcome": null}', at: NOW - MINUTE } }],
+  ["the owner's own commit passes: /daiku:commit left its mark in the seat", 'git commit -m "x"', ROOT_CWD, 'allow', '', CTX_REVIEW, 'develop', { 'commit-alone.json': { text: '{"by": "commit"}', at: NOW - MINUTE } }],
+  ['a commit mark older than its quarter of an hour holds nothing', 'git commit -m "x"', ROOT_CWD, 'deny', 'outside a review cycle', CTX_REVIEW, 'develop', { 'commit-alone.json': { text: '{"by": "commit"}', at: NOW - 20 * MINUTE } }],
   ['a git command that is not a commit passes with no review', 'git status --short', ROOT_CWD, 'allow', '', CTX_REVIEW, 'develop', {}],
   ['without a state folder declared the review guard is off', 'git commit -m "x"', ROOT_CWD, 'allow', '', CTX_FULL, 'develop', {}],
 

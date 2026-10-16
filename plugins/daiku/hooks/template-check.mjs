@@ -18,7 +18,8 @@
  * and a `process` task has no terminal to ask it in — and `templates/project/update.mjs`
  * reads the two versions — the one in place from the host, the one arriving out of the
  * refreshed catalogue — draws the delta, asks before it runs the two update commands in
- * order, and stays silent where there is no terminal — and that it **parses**: the substrings
+ * order, names the channel the marketplace is on and asks before it leaves edge for main, and
+ * stays silent where there is no terminal — and that it **parses**: the substrings
  * above are searched in its text, and a text search says nothing of a file that no longer runs,
  * so `node --check` reads it as well, without executing a line of it. It checks too the marker
  * `init` fills on
@@ -204,6 +205,13 @@ function selfCheck() {
     'daiku: update runs node on .daiku/update.mjs, in a shell task',
     task.type === 'shell' && task.command === 'node .daiku/update.mjs'
   );
+  // Quiet, and focused: no echo of the command and no "terminal will be reused" line above the
+  // channel panel, and the terminal takes the keys the question reads.
+  const presentation = task.presentation || {};
+  check(
+    'daiku: update task runs quiet and focused, so the question can be answered',
+    presentation.echo === false && presentation.showReuseMessage === false && presentation.focus === true
+  );
   let script = '';
   try {
     script = readFileSync(join(ROOT, 'templates', 'project', 'update.mjs'), 'utf-8');
@@ -230,6 +238,21 @@ function selfCheck() {
     script.includes('Update Daiku now?') && script.includes('Not now')
   );
   check('update script asks only where there is a terminal', script.includes('process.stdin.isTTY'));
+  // The channel: where the marketplace is registered, read from the registration itself, and on
+  // edge a panel that says so before the question. The leave to main asks first, and reads each
+  // of its steps back through --json; the ref it adds is named, so `main` is never a guess.
+  check(
+    'update script reads the channel from the marketplace registration',
+    script.includes('function channelOf(') && script.includes("market.ref === 'edge'")
+  );
+  check('update script says on edge that the copy is pre-release', script.includes('You are on edge'));
+  check(
+    'update script asks before leaving edge for main, and names the main ref',
+    script.includes("'Stay on edge'") &&
+      script.includes("'Switch to main'") &&
+      script.includes('#main') &&
+      script.includes('marketplace remove daiku --json')
+  );
   // The marker of the version that wrote it, and the reason `init` may rewrite the file: it is a
   // package artefact, and the version in that line is the package's. It travels as a placeholder
   // because a literal here would be a second seat of the version, drifting from the manifests.

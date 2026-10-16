@@ -1,0 +1,61 @@
+# Alza il ramo edge a ogni push su develop: edge è la copia del prodotto che segue il cantiere.
+# Non si lancia a mano e edge non si tocca a mano. Il motore è .docs/tools/bump-edge.mjs, lo stesso
+# che girava in locale. Questo è l'unico push automatico del repository, e tocca solo edge: lo
+# controlla .docs/tools/check-no-push.mjs.
+name: edge
+
+on:
+  push:
+    branches: [develop]
+
+permissions:
+  contents: write
+
+# Un alzamento alla volta: due push ravvicinati si mettono in coda invece di correre insieme, così
+# su edge non arriva mai un numero vecchio dopo uno nuovo.
+concurrency:
+  group: edge
+  cancel-in-progress: false
+
+jobs:
+  alza-edge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Prende develop con tutta la storia
+        uses: actions/checkout@v4
+        with:
+          ref: develop
+          fetch-depth: 0
+
+      - name: Usa Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Porta main ed edge in locale, come li legge il motore
+        run: |
+          git fetch --no-tags origin main:refs/heads/main
+          if git ls-remote --exit-code --heads origin edge > /dev/null; then
+            git fetch --no-tags origin edge:refs/heads/edge
+          fi
+
+      - name: Identità per i commit della plumbing
+        run: |
+          git config user.name "daiku-edge"
+          git config user.email "edge@users.noreply.github.com"
+
+      - name: Alza edge
+        id: alza
+        run: |
+          prima=$(git rev-parse --verify --quiet refs/heads/edge || echo nessuno)
+          node .docs/tools/bump-edge.mjs > alza.txt
+          cat alza.txt
+          dopo=$(git rev-parse --verify --quiet refs/heads/edge || echo nessuno)
+          if [ "$prima" != "$dopo" ]; then
+            echo "scrive=si" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Pubblica edge
+        if: steps.alza.outputs.scrive == 'si'
+        run: |
+          git push origin refs/heads/edge:refs/heads/edge

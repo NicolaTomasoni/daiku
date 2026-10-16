@@ -339,7 +339,7 @@ A rule file spanning several areas is listed in the policy of each. A rule file 
 ### 5-bis. Write the update task
 
 Daiku updates with two commands — `claude plugin marketplace update daiku`, then `claude plugin update daiku@daiku` — and the project gets them as one VS Code task, `daiku: update`, running a script under `.daiku/`
-that shows the version in place and asks before running them.
+that shows the channel and the version in place, asks before running them, and on the `edge` channel asks whether to leave for `main`.
 
 - **The script**: copy `templates/project/update.mjs` into `.daiku/update.mjs`, **filling the
   marker line it carries at the top** — `daiku:script <version>` — with the `version` of

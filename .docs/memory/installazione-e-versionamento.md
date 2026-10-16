@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 74fa8bc9-dbb1-4c77-bf91-e6ec34544097
-  modified: 2026-10-12T12:11:13.902Z
+  modified: 2026-10-16T14:28:39.778Z
 ---
 
 **I comandi, verificati il 18 settembre 2026.** `/plugin marketplace add <owner>/<repo>`,
@@ -65,11 +65,16 @@ marketplace porta via il plugin che da li' era installato** — `plugin update d
 la ref, e `plugin install daiku@daiku`. Il marketplace sta nelle impostazioni dell'utente, quindi
 la scelta vale per tutta la macchina, non per un progetto.
 
+**Su questa macchina la voce `daiku` è `#edge` dal 16 ottobre 2026**, provato con `claude` 2.1.301: `marketplace
+remove daiku` (porta via `daiku@daiku`, come sopra), `marketplace add "https://github.com/NicolaTomasoni/daiku.git#edge"`,
+`plugin install daiku@daiku --json`. Il plugin utente passa da cartella locale a `1.2.3-edge.5+859fe3a`, e
+`C:\dev\daiku\plugins` non è più la sorgente. Per tornarci: `marketplace remove daiku`, `marketplace add
+"C:\dev\daiku\plugins"`, `plugin install daiku@daiku`. È la scelta dell'owner del 16 ottobre 2026, per daiku e reforgia.
+
 **Why:** la forma breve `owner/repo` è quella che l'host accetta per un marketplace, e vale solo per
 GitHub: è ciò che tiene le istruzioni di installazione corte — vedi [[pubblicazione-su-github]].
 
-Nota pratica: installare Daiku da un repository privato richiede credenziali git sulla macchina di
-chi installa. Per provare il pacchetto in locale conviene un marketplace da path, che non passa da
-git.
+Nota pratica: il repository è pubblico, quindi installare Daiku non richiede credenziali git. Per provare il
+pacchetto in locale conviene comunque un marketplace da path, che non passa da git.
 
 Vedi [[cosa-claude-code-accetta]].

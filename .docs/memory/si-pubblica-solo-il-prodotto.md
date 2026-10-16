@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 69438169-0316-47c8-a4e8-3365650ee2cf
-  modified: 2026-10-12T12:11:31.088Z
+  modified: 2026-10-16T14:18:35.583Z
 ---
 
 **Il confine fra cantiere e prodotto è il ramo, non un secondo repository** (dal 5 ottobre 2026,
@@ -33,5 +33,7 @@ dentro i file**: ciò che sta sotto `plugins/` esce com'è scritto — vedi
 Nota sui file di radice: la cartella di prodotto porta i suoi — `.gitattributes` e `.gitignore` —
 accanto a quelli di radice che valgono per lo sviluppo. Il `.gitignore` è per `main`: è un
 repository che un host apre in locale, e deve tenere fuori i file di macchina che vi nascono.
+
+**Perché `main` resta il prodotto ri-radicato e non l'albero di `develop`.** Il modello GitFlow, con `main` che contiene la storia di `develop`, richiederebbe che ogni installatore digitasse `--sparse` per non ricevere il cantiere: il marketplace Claude lo consente, ma non lo dichiara nel repo. Per questo la distribuzione resta `plugins/` alla radice di `main`, senza flag. Vedi [[cosa-claude-code-accetta]].
 
 Vedi [[alberatura-pacchetto]] per le sedi, e [[corpus-di-sviluppo]] per cosa resta in `.claude/`.

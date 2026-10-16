@@ -115,10 +115,11 @@
     },
     {
       "label": "daiku: update",
-      "detail": "Show the Daiku version in place, then on your answer refresh the daiku marketplace and update the plugin on Claude Code",
+      "detail": "Show the Daiku channel and version in place, then on your answer update the Daiku plugin on Claude Code, or leave edge for main",
       "type": "shell",
       "command": "node .daiku/update.mjs",
       "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "echo": false, "reveal": "always", "focus": true, "panel": "dedicated", "clear": true, "showReuseMessage": false },
       "problemMatcher": []
     },
     {

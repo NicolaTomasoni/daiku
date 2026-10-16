@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 7f30fa0d-9a97-482d-ba1b-c32231e0c9e1
-  modified: 2026-10-16T09:00:00.000Z
+  modified: 2026-10-16T15:00:14.783Z
 ---
 
 **Deciso il 19 settembre 2026, preparando gli hook per la distribuzione.** Un pacchetto si
@@ -19,7 +19,7 @@ negano sempre, senza interruttore: `git push` e `git commit
 senza interruttore, anche il `git commit` il cui messaggio accredita l'agente — un `Co-Authored-By`
 che nomina Claude o un altro agente (`opencode`, `Codex`, `Copilot`), o una riga `Generated with` —
 in `-m`, `--trailer`, heredoc o file `-F`. I rami che restano spenti finché il progetto non li accende sono tre: il pool dei
-worktree, con `{worktree.pool}`; la guardia del ramo, con `channels.production` (dal 3 ottobre 2026: nega `git commit` e `git merge` mentre è attivo il ramo di produzione e `git checkout`/`git switch` verso di esso, e legge il ramo solo sulle righe che nominano git); e la guardia della review, con `{paths.review_state}` (dal 5 ottobre 2026: dove la sede dei ledger è dichiarata, nega `git commit` fuori da un ciclo di review — il commit è l'ultimo passo del ciclo — legge la sede solo su un `git commit`, e una sede che non risponde lascia passare). La rimozione ricorsiva che attraversa una junction di Windows non
+worktree, con `{worktree.pool}`; la guardia del ramo, con `channels.production` (dal 3 ottobre 2026: nega `git commit` e `git merge` mentre è attivo il ramo di produzione e `git checkout`/`git switch` verso di esso, e legge il ramo solo sulle righe che nominano git); e la guardia della review, con `{paths.review_state}` (dal 5 ottobre 2026: dove la sede dei ledger è dichiarata, nega `git commit` fuori da un ciclo di review — il commit è l'ultimo passo del ciclo — salvo il segno `commit-alone.json` che lascia `/daiku:commit` lanciato dall'owner (dal 16 ottobre 2026), e legge la sede solo su un `git commit`, e una sede che non risponde lascia passare). La rimozione ricorsiva che attraversa una junction di Windows non
 ha mai avuto interruttore: non è una policy ma un fatto del sistema operativo.
 
 Il ribaltamento è una decisione dell'owner, non un fatto nuovo: a un agente non si lascia mai la

@@ -50,6 +50,7 @@ e nient'altro esce.
 | `.daiku/` | i parametri del **cantiere**, non del prodotto: le guardie di Daiku su questo repository, e sotto di sé le sedi dei lavori — `features/`, `studies/` e `handoffs/` |
 | `PRODUCT.md`, `BRAND.md`, `DOMAIN.md`, `STACK.md`, `ARCHITECTURE.md` | i documenti fondativi del cantiere, dichiarati in `documents.*` |
 | `CLAUDE.md`, `.claude/`, `.vscode/`, `.gitignore`, `.gitattributes` | sviluppo, obbligati in radice dall'host e da git |
+| `.github/` | il workflow che alza `edge` a ogni push su `develop` (`workflows/edge.yml`), obbligato in radice da GitHub |
 
 `.daiku/project.json` non è una sede di sviluppo come le altre: **è il gate delle guardie.** Il
 pacchetto è installato su ogni repository che l'host apre, ma non nega niente dove il progetto non
@@ -67,9 +68,10 @@ Un file che il repository pubblico deve avere in
 radice — il README, il `.gitattributes`, la vetrina — sta nella radice della cartella del
 prodotto, mai in quella di questo repository.
 
-**Qui Daiku è installato dal marketplace online**, `NicolaTomasoni/daiku`, sul ramo di produzione
-`main`: lo strumento con cui Daiku si sviluppa è l'ultimo rilascio pubblicato, e resta indietro
-rispetto a `plugins/`. È una scelta, non una trascuratezza.
+**Qui Daiku è installato dal marketplace `NicolaTomasoni/daiku` sul ramo `edge`**, la copia del prodotto
+che segue `develop`. Lo installano questo repository e Reforgia, perché l'installazione è a livello utente:
+lo strumento con cui Daiku si sviluppa è quindi `edge`, aggiornato a ogni push su `develop`, non l'ultimo
+rilascio di `main`. È la scelta dell'owner del 16 ottobre 2026.
 
 ## Prodotto e cantiere
 
@@ -81,9 +83,12 @@ propone, mai un giro avviato al posto suo. Sotto `.claude/commands/` restano **s
 ha** — `studia-repository`, `translate-skill`. Il rilascio non è fra loro: lo fa `release`, che è
 una skill del pacchetto come le altre.
 
-**Nessun commit fuori dal ciclo di review.** `commit` non si lancia da solo: il commit è l'ultimo
-passo di `review` — o della fase Review di `ship-feature`, che è lo stesso ciclo — ed è il ciclo a
-trovare quello che un controllo non vede. Che il pacchetto passi i suoi banchi dice che compila, non
+**Nessun commit fuori dal ciclo di review, salvo quello che lancia l'owner.** Il commit dell'agente è
+l'ultimo passo di `review` — o della fase Review di `ship-feature`, che è lo stesso ciclo — ed è il ciclo a
+trovare quello che un controllo non vede. Il commit lanciato a mano dall'owner con `/daiku:commit` passa
+senza review: la skill lascia il suo segno (`commit-alone.json`) nella sede dei ledger, e la guardia lo
+lascia passare per un quarto d'ora. Il segno è una dichiarazione della skill, non una prova: la guardia non
+distingue chi lo ha scritto. Che il pacchetto passi i suoi banchi dice che compila, non
 che è giusto: fra i due c'è di mezzo il codice appena scritto, che nessun finder ha ancora letto. Un
 commit diretto non accorcia la strada, la copre: mette in storia un diff che nessuno rileggerà. Vale
 anche per un file solo, e vale coi banchi verdi. **La seconda sede del divieto è la guardia**: in
@@ -99,8 +104,7 @@ cantiere è una decisione a parte, che chiedi invece di prendere. Vale allo stes
 
 ## Un repository, tre rami: `develop`, `main` ed `edge`
 
-Il repository è **uno solo**: `NicolaTomasoni/daiku` su GitHub, privato finché Daiku non è pronto per
-il pubblico. Il cantiere è `develop`; `main` ed `edge` sono due copie del prodotto, e nessuno dei tre
+Il repository è **uno solo**: `NicolaTomasoni/daiku` su GitHub, pubblico. Il cantiere è `develop`; `main` ed `edge` sono due copie del prodotto, e nessuno dei tre
 si legge dall'altro. La copia di lavoro è `C:\dev\daiku`, su `develop`: gli altri due non si fanno mai
 checkout.
 
@@ -121,8 +125,9 @@ prerelease sull'imminente versione più i metadati di build: `1.2.3-edge.3+a1b2c
 numero che `main` porta adesso; `3` conta i commit di `develop` dopo l'ancora che l'ultimo rilascio ha
 registrato nel trailer `Development:`; `a1b2c3d` è il sha corto del tip di `develop`. Il numero cambia a
 ogni push che cambia `develop`: è quello che l'host confronta per muovere la copia di un ospite che
-segue `edge`. Lo scrive il passo del cantiere `.docs/tools/bump-edge.mjs`, lanciato a mano prima del
-push, con la plumbing: non fa checkout, non committa, non pusha. Niente di `edge` torna su `develop`.
+segue `edge`. Lo alza a ogni push su `develop` il workflow `.github/workflows/edge.yml`, col motore
+`.docs/tools/bump-edge.mjs`, con la plumbing e senza checkout: nessuno lo lancia né lo modifica a mano. È
+l'unico push automatico del cantiere, e tocca solo `edge`. Niente di `edge` torna su `develop`.
 
 **I rilasci li fa Daiku stesso**, con la skill `release` del pacchetto — non un comando del cantiere e
 due script, che non esistono più. Legge `develop`, costruisce il commit di produzione con la plumbing
