@@ -19,7 +19,8 @@
     "file": "plugins/daiku/.claude-plugin/plugin.json",
     "field": "version",
     "replicated_in": [
-      "plugins/README.md"
+      "plugins/README.md",
+      "plugins/package.json"
     ]
   },
   "paths": {
@@ -54,10 +55,13 @@
   },
   "areas": {
     "daiku": {
-      "paths": ["plugins/daiku/"],
+      "paths": ["plugins/"],
       "gate": {
         "cwd": ".",
-        "run": ["node .docs/tools/check-corpus.mjs plugins/daiku"]
+        "run": [
+          "node .docs/tools/check-corpus.mjs plugins/daiku",
+          "node .docs/tools/check-no-deps.mjs plugins"
+        ]
       }
     }
   }

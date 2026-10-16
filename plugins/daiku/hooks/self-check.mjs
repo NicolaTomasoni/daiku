@@ -108,14 +108,14 @@ function benches() {
   } catch (error) {
     process.stderr.write(`cannot read skills/init/branch.mjs: ${error.message}\n`);
   }
-  // The deterministic deposit of the package into an opencode project, the third program of
-  // `skills/init/` beside the scan and the branch: its bench runs on throwaway trees too.
+  // The deterministic nesting declaration of an opencode project, the third program of
+  // `skills/init/` beside the scan and the branch: its bench runs on throwaway projects.
   try {
-    const file = join(ROOT, 'skills', 'init', 'deposit.mjs');
+    const file = join(ROOT, 'skills', 'init', 'depth.mjs');
     readFileSync(file);
-    found.push({ label: 'skills/init/deposit.mjs', file, args: ['--self-check'] });
+    found.push({ label: 'skills/init/depth.mjs', file, args: ['--self-check'] });
   } catch (error) {
-    process.stderr.write(`cannot read skills/init/deposit.mjs: ${error.message}\n`);
+    process.stderr.write(`cannot read skills/init/depth.mjs: ${error.message}\n`);
   }
   // The host manifests have a bench of their own, beside this file: like the
   // evaluator it is not a hook, so discovery by folder would never list it.
@@ -127,14 +127,32 @@ function benches() {
     process.stderr.write(`cannot read template-check.mjs: ${error.message}\n`);
   }
   // The opencode guard adapter, beside `lib/` rather than inside it: it is not a hook of this host
-  // but the plugin opencode loads, so folder discovery would never list it either. Its bench drives
-  // the imported modules through a fake opencode ctx.
+  // but a module the package's entrypoint imports, so folder discovery would never list it either.
+  // Its bench drives the imported modules through a fake opencode ctx.
   try {
     const file = join(HERE, 'opencode-plugin.mjs');
     readFileSync(file);
     found.push({ label: 'hooks/opencode-plugin.mjs', file, args: ['--self-check'] });
   } catch (error) {
     process.stderr.write(`cannot read opencode-plugin.mjs: ${error.message}\n`);
+  }
+  // The package's opencode entrypoint, one level above this file's own folder: the descriptor at
+  // the root of the product folder resolves to it, and its bench registers from the real corpus.
+  try {
+    const file = join(ROOT, '..', 'plugin.mjs');
+    readFileSync(file);
+    found.push({ label: 'plugin.mjs', file, args: ['--self-check'] });
+  } catch (error) {
+    process.stderr.write(`cannot read plugin.mjs: ${error.message}\n`);
+  }
+  // The update skeleton `init` lays down, with the host branch its bench drives through a fake
+  // shell: beside `self-check.mjs` in the package, never a real host from here.
+  try {
+    const file = join(ROOT, 'templates', 'project', 'update.mjs');
+    readFileSync(file);
+    found.push({ label: 'templates/project/update.mjs', file, args: ['--self-check'] });
+  } catch (error) {
+    process.stderr.write(`cannot read templates/project/update.mjs: ${error.message}\n`);
   }
   return found;
 }

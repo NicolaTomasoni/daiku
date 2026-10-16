@@ -194,7 +194,8 @@ How to launch:
   happening. So **repeat the read-only constraint in the prompt**.
 
 - **`opencode`** — the `subagent` tool, whose parameter `agent` carries the **name** of the agent to
-  run, the file name in `.opencode/agents/`: the step's role is chosen by that name and not by a
+  run, the role name the package's plugin registers from `agents/opencode/`: the step's role is
+  chosen by that name and not by a
   type list. `finder` for analysis-only steps that report findings, `explore` for search only,
   `general` for everything else. The model is not chosen per
   step: a subagent inherits the primary's model unless its own file declares one, so §2's resolution
@@ -317,8 +318,10 @@ subagent from launching another — so at the default **no chain that delegates 
 `review → finder`, `research → study`, `commit → update-memory` and `new-feature → decision-doc` all
 ask the project to raise the key to `2`, and the four-level path `new-feature → ship-feature →
 review → finder` asks for at least `3`; at `0` no launch happens at all. The key is **experimental**
-and lives under `experimental` in `opencode.json`, so a project that declares nothing keeps the
-default `1`. The graph above is unchanged by this: it says *who may re-delegate*, the host says *how
+and lives under `experimental` in `opencode.json`: a project opened by `init` carries it — `3`,
+added by *Step 4-bis* under `experimental`, never overwriting a value the project declares — while
+a project outside Daiku keeps the default `1`. The graph above is unchanged by this: it says *who
+may re-delegate*, the host says *how
 deep that may go*, and a longer chain on a project that has not raised the key is a step that does
 not compose there — its depth is a value in the parameters, not a rule rewritten here.
 

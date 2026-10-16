@@ -19,7 +19,7 @@
  *    version of the package doing the scan: a script written by an older Daiku, or by one that
  *    left no marker, is old and `init` recreates it whole — and a `daiku: update` task in
  *    `.vscode/tasks.json`;
- *  - `.daiku/README.md`, Daiku's own documentation, deposited beside the parameters;
+ *  - `.daiku/README.md`, Daiku's own documentation, written beside the parameters;
  *  - the host's instructions file, carrying the marker line `init` leaves in it — the name comes
  *    from `{hosts.<host>.instructions_file}` of the host `init` runs on, never from the order the
  *    `hosts` keys happen to stand in;
@@ -27,10 +27,11 @@
  *  - the two memory keys in `.claude/settings.local.json`, and no memory file left in the host's
  *    default folder under `~/.claude/projects/` — a seat Claude Code alone has, so on opencode
  *    neither the seat nor the folder is expected;
- *  - **the opencode deposit**: on that host `init` lays the package inside the project
- *    (`.opencode/`), and this program reads its manifest `.opencode/daiku/deposit.json` and lists
- *    the deposit as absent, as behind — its `version` is not this package's — or with a piece the
- *    manifest names gone from disk;
+ *  - **the nesting key of an opencode project**: on that host the method's chains need
+ *    `experimental.subagent_depth` in the project's own `opencode.json`, and this program lists it
+ *    under step `4-bis` when the key is absent — under any value the project declares it is
+ *    present, and a file that does not parse as JSON is never listed (a relaunch that cannot write
+ *    it must not stay "not everything ready" forever); on Claude Code the step does not exist;
  *  - the `.gitignore` lines: the machine's files, `{paths.review_state}` and — where it stands
  *    inside the repository — `{worktree.pool}`, ignored by **the repository's own** `.gitignore`
  *    — a global excludes file or `.git/info/exclude` is one machine's, and a clone carries none of
@@ -78,14 +79,14 @@ const PACKAGE = join(HERE, '..', '..');
 
 /** The marker `templates/project/instructions.md` leaves at the bottom of the file. */
 const MARKER = '<!-- daiku:instructions';
-/** The marker `init` leaves at the top of every script it deposits, holding the package version
+/** The marker `init` leaves at the top of every script it writes, holding the package version
  * that wrote it. The skeletons carry it with `<version>`, which `init` fills on the copy. */
 const SCRIPT_MARKER = /^\s*\/\/\s*daiku:script\s+(\S+)/m;
 const TASK_LABEL = 'daiku: update';
 const DEFAULT_INSTRUCTIONS = 'CLAUDE.md';
-/** The `init` step that deposits the package into an opencode project, where the pieces it lists
- * belong. On Claude Code there is no such step and no such deposit. */
-const DEPOSIT_STEP = '4-bis';
+/** The `init` step that declares the nesting depth in an opencode project's `opencode.json`,
+ * where the key it lists belongs. On Claude Code there is no such step and no such key. */
+const DEPTH_STEP = '4-bis';
 
 /** The seats Daiku wrote before it moved under `.daiku/`, and does not write any more: the
  * parameter pair a reader may still open, and the script a settings entry may still start. `init`
@@ -160,7 +161,7 @@ export function markedVersion(text) {
   return found ? found[1] : null;
 }
 
-/** The version this package carries, out of its own manifest: the one a script it deposits must
+/** The version this package carries, out of its own manifest: the one a script it writes must
  * declare. A package unable to say which version it is cannot call a script old, and stays silent
  * (`null`). */
 export function packageVersion(disk, packageRoot) {
@@ -377,26 +378,31 @@ export function scan(rootIn, disk = REAL, packageRoot = PACKAGE, host = null) {
 
   const relTo = (p) => relative(root, p).replace(/\\/g, '/');
 
-  // The opencode deposit: `init` lays the package inside the project and leaves a manifest naming
-  // the version that wrote it and the pieces it wrote. Only an opencode project has it — on Claude
-  // Code the package is served by installation, so there is nothing to deposit and nothing to
-  // measure. A manifest whose version is not this package's is a deposit **behind**, exactly as a
-  // script of an older version is; a piece the manifest names and the disk does not carry is a
-  // deposit to redo, and the whole absence is the deposit never made.
+  // The nesting declaration of an opencode project: `experimental.subagent_depth` in the
+  // project's own `opencode.json`, written by `init`'s `4-bis` step and by nothing else. The
+  // key counts as present under **any** value the project declares — the project's own choice
+  // wins, so there is nothing left to do — and a file that does not parse as JSON is left as it
+  // is and never listed: a relaunch that cannot write it must not stay "not everything ready"
+  // forever. An unreadable file is fail-open like everywhere else in this program.
   if (resolvedHost === 'opencode') {
-    const manifest = readJson(disk, join(root, '.opencode', 'daiku', 'deposit.json'));
-    if (!manifest || typeof manifest !== 'object' || Array.isArray(manifest)) {
-      miss('deposit', DEPOSIT_STEP, '.opencode/ — the package deposit');
-    } else if (current && manifest.version !== current) {
-      miss(
-        'deposit',
-        DEPOSIT_STEP,
-        `.opencode/ — deposited by ${manifest.version ? `Daiku ${manifest.version}` : 'a deposit with no version'}, this package is ${current}`
-      );
+    const path = join(root, 'opencode.json');
+    if (!disk.exists(path)) {
+      miss('depth', DEPTH_STEP, 'opencode.json — experimental.subagent_depth');
     } else {
-      for (const rel of Array.isArray(manifest.wrote) ? manifest.wrote : []) {
-        if (typeof rel !== 'string' || !rel.trim()) continue;
-        if (!disk.exists(join(root, rel))) miss(`deposit:${rel}`, DEPOSIT_STEP, rel);
+      const text = readText(disk, path);
+      let parsed = null;
+      if (text !== null) {
+        try {
+          parsed = JSON.parse(text);
+        } catch {
+          parsed = null;
+        }
+      }
+      if (text !== null && parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        const experimental = parsed.experimental;
+        const declared = experimental && typeof experimental === 'object' && !Array.isArray(experimental)
+          && Object.prototype.hasOwnProperty.call(experimental, 'subagent_depth');
+        if (!declared) miss('depth', DEPTH_STEP, 'opencode.json — experimental.subagent_depth');
       }
     }
   }
@@ -480,7 +486,7 @@ export function scan(rootIn, disk = REAL, packageRoot = PACKAGE, host = null) {
 const T = 'C:/work/repo/src';
 const TOP = 'C:/work/repo';
 const PKG = 'C:/pkg';
-/** The version the fake package carries, and the one a script it deposited must declare. */
+/** The version the fake package carries, and the one a script it wrote must declare. */
 const VERSION = '1.0.8';
 
 function fakeDisk(files, extra = {}) {
@@ -649,35 +655,50 @@ function selfCheck() {
   const opencodeLeftover = { ...opencodeProject, 'C:/Users/me/.claude/projects/C--work-repo-src/memory/a.md': '#' };
   check('on opencode the host default memory folder is not watched', !ids(scan(T, fakeDisk(opencodeLeftover), PKG)).includes('memory-move'));
 
-  // --- the opencode deposit, measured against the package version -------------------
+  // --- the nesting key of an opencode project, measured where the host reads it ----------
   //
-  // `init` lays the package down inside an opencode project and leaves a manifest; the scan reads
-  // that manifest and reports the deposit missing, behind, or with a piece gone. The cases below
-  // are the three states and the absence.
-  const depositFiles = {
-    [`${T}/.opencode/skills/review/SKILL.md`]: '# skill\n',
-    [`${T}/.opencode/agents/finder.md`]: '# finder\n',
-    [`${T}/.opencode/daiku/architect/architect.mjs`]: '// a\n',
-  };
-  const manifestOf = (version, wrote) => JSON.stringify({ version, host: 'opencode', wrote, declared_missing: ['stop-advice', 'subagent-advice'] });
-  const withDeposit = (manifest, extra = {}) => ({ ...opencodeProject, ...depositFiles, [`${T}/.opencode/daiku/deposit.json`]: manifest, ...extra });
-  const wroteAll = Object.keys(depositFiles).map((p) => p.slice(T.length + 1));
+  // `init` writes `experimental.subagent_depth` into the project's own `opencode.json` as its
+  // `4-bis` step; the scan lists the missing key and nothing else about that file. The cases are
+  // the absence, the two shapes that leave the key out, the value the project itself declares,
+  // the file that does not parse, and the same ground on Claude Code, where the step does not
+  // exist at all.
+  const withDepthFile = (json) => ({
+    ...opencodeProject,
+    [`${T}/opencode.json`]: typeof json === 'string' ? json : JSON.stringify(json),
+  });
 
-  const fullDeposit = scan(T, fakeDisk(withDeposit(manifestOf(VERSION, wroteAll))), PKG);
-  check('a complete deposit at the package version: nothing missing', fullDeposit.missing.length === 0);
-  check('a complete deposit: nothing behind either', fullDeposit.legacy.length === 0 && fullDeposit.params.length === 0);
+  const noKeyFile = scan(T, fakeDisk(opencodeProject), PKG);
+  check(
+    'no opencode.json on opencode: the key is listed at 4-bis',
+    noKeyFile.missing.some((m) => m.id === 'depth' && m.step === '4-bis')
+  );
+  check('and it is the only thing missing', JSON.stringify(ids(noKeyFile)) === JSON.stringify(['depth']), ids(noKeyFile).join(','));
 
-  const gonePiece = scan(T, fakeDisk(without(withDeposit(manifestOf(VERSION, wroteAll)), `${T}/.opencode/skills/review/SKILL.md`)), PKG);
-  check('a deposited piece absent: listed, at the deposit step', gonePiece.missing.some((m) => m.id === 'deposit:.opencode/skills/review/SKILL.md' && m.step === '4-bis'));
+  const rootless = scan(T, fakeDisk(withDepthFile({ $schema: 'x', model: 'a/b' })), PKG);
+  check(
+    'an opencode.json without experimental: the key is listed',
+    rootless.missing.some((m) => m.id === 'depth' && m.step === '4-bis')
+  );
 
-  const behindDeposit = scan(T, fakeDisk(withDeposit(manifestOf('1.0.7', wroteAll))), PKG);
-  check('a deposit of an older package: listed as behind', behindDeposit.missing.some((m) => m.id === 'deposit' && m.step === '4-bis'));
+  const blockless = scan(T, fakeDisk(withDepthFile({ experimental: { policies: true } })), PKG);
+  check(
+    'an experimental block without the key: listed',
+    blockless.missing.some((m) => m.id === 'depth' && m.step === '4-bis')
+  );
 
-  const noDeposit = scan(T, fakeDisk(opencodeProject), PKG);
-  check('no .opencode/ on opencode: the whole deposit is listed', noDeposit.missing.some((m) => m.id === 'deposit' && m.step === '4-bis'));
+  const declared = scan(T, fakeDisk(withDepthFile({ experimental: { subagent_depth: 1 } })), PKG);
+  check('a value the project declares: the key is present', !ids(declared).includes('depth'));
+  check('and nothing else is missing either', declared.missing.length === 0, ids(declared).join(','));
 
-  // The same absence on Claude Code is not a missing piece: there is no deposit there.
-  check('no .opencode/ on Claude Code: no deposit listed', !ids(scan(T, fakeDisk(complete()), PKG)).includes('deposit'));
+  const rootKey = scan(T, fakeDisk(withDepthFile({ subagent_depth: 5 })), PKG);
+  check('a root-level key is not the key opencode reads: listed', ids(rootKey).includes('depth'));
+
+  const unparsable = scan(T, fakeDisk(withDepthFile('{ // comment\n "experimental": {} }')), PKG);
+  check('an unparsable opencode.json is never listed', !ids(unparsable).includes('depth'));
+  check('and nothing else is missing on it', unparsable.missing.length === 0, ids(unparsable).join(','));
+
+  // The same ground on Claude Code: no key, no step, nothing named `4-bis`.
+  check('on Claude Code the nesting key is never expected', !ids(scan(T, fakeDisk(complete()), PKG)).includes('depth'));
 
   // The pair of §8: the first file that exists **and parses** wins, taken whole. A local file that
   // does not parse is skipped and the shared one is read — its non-standard name is honoured, and the
