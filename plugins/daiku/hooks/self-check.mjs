@@ -108,6 +108,15 @@ function benches() {
   } catch (error) {
     process.stderr.write(`cannot read skills/init/branch.mjs: ${error.message}\n`);
   }
+  // The deterministic deposit of the package into an opencode project, the third program of
+  // `skills/init/` beside the scan and the branch: its bench runs on throwaway trees too.
+  try {
+    const file = join(ROOT, 'skills', 'init', 'deposit.mjs');
+    readFileSync(file);
+    found.push({ label: 'skills/init/deposit.mjs', file, args: ['--self-check'] });
+  } catch (error) {
+    process.stderr.write(`cannot read skills/init/deposit.mjs: ${error.message}\n`);
+  }
   // The host manifests have a bench of their own, beside this file: like the
   // evaluator it is not a hook, so discovery by folder would never list it.
   try {
@@ -116,6 +125,16 @@ function benches() {
     found.push({ label: 'hooks/template-check.mjs', file, args: ['--self-check'] });
   } catch (error) {
     process.stderr.write(`cannot read template-check.mjs: ${error.message}\n`);
+  }
+  // The opencode guard adapter, beside `lib/` rather than inside it: it is not a hook of this host
+  // but the plugin opencode loads, so folder discovery would never list it either. Its bench drives
+  // the imported modules through a fake opencode ctx.
+  try {
+    const file = join(HERE, 'opencode-plugin.mjs');
+    readFileSync(file);
+    found.push({ label: 'hooks/opencode-plugin.mjs', file, args: ['--self-check'] });
+  } catch (error) {
+    process.stderr.write(`cannot read opencode-plugin.mjs: ${error.message}\n`);
   }
   return found;
 }

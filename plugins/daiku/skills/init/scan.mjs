@@ -20,10 +20,17 @@
  *    left no marker, is old and `init` recreates it whole — and a `daiku: update` task in
  *    `.vscode/tasks.json`;
  *  - `.daiku/README.md`, Daiku's own documentation, deposited beside the parameters;
- *  - the host's instructions file, carrying the marker line `init` leaves in it;
+ *  - the host's instructions file, carrying the marker line `init` leaves in it — the name comes
+ *    from `{hosts.<host>.instructions_file}` of the host `init` runs on, never from the order the
+ *    `hosts` keys happen to stand in;
  *  - `{memory.root}` and its index;
  *  - the two memory keys in `.claude/settings.local.json`, and no memory file left in the host's
- *    default folder under `~/.claude/projects/`;
+ *    default folder under `~/.claude/projects/` — a seat Claude Code alone has, so on opencode
+ *    neither the seat nor the folder is expected;
+ *  - **the opencode deposit**: on that host `init` lays the package inside the project
+ *    (`.opencode/`), and this program reads its manifest `.opencode/daiku/deposit.json` and lists
+ *    the deposit as absent, as behind — its `version` is not this package's — or with a piece the
+ *    manifest names gone from disk;
  *  - the `.gitignore` lines: the machine's files, `{paths.review_state}` and — where it stands
  *    inside the repository — `{worktree.pool}`, ignored by **the repository's own** `.gitignore`
  *    — a global excludes file or `.git/info/exclude` is one machine's, and a clone carries none of
@@ -46,7 +53,7 @@
  * first run. Telling that needs reading the repository, and this program reads only what `init`
  * wrote.
  *
- *   node <package-root>/skills/init/scan.mjs <technical-root>
+ *   node <package-root>/skills/init/scan.mjs <technical-root> [--host <name>]
  *       one JSON object on stdout — `{fresh, missing: [...], legacy: [...], params: [...]}`,
  *       every entry `{id, step, detail}` — exit 0.
  *       Bad arguments: exit 2.
@@ -76,6 +83,9 @@ const MARKER = '<!-- daiku:instructions';
 const SCRIPT_MARKER = /^\s*\/\/\s*daiku:script\s+(\S+)/m;
 const TASK_LABEL = 'daiku: update';
 const DEFAULT_INSTRUCTIONS = 'CLAUDE.md';
+/** The `init` step that deposits the package into an opencode project, where the pieces it lists
+ * belong. On Claude Code there is no such step and no such deposit. */
+const DEPOSIT_STEP = '4-bis';
 
 /** The seats Daiku wrote before it moved under `.daiku/`, and does not write any more: the
  * parameter pair a reader may still open, and the script a settings entry may still start. `init`
@@ -184,13 +194,29 @@ function fromRoot(root, value) {
   return isAbsolute(cleaned) || /^[A-Za-z]:/.test(cleaned) ? resolve(cleaned) : resolve(root, cleaned);
 }
 
-/** The instructions file the environment declares, out of its `hosts` entries: the first that names
- * one. Where it names none, `DEFAULT_INSTRUCTIONS` answers. */
-function declaredInstructionsFile(env) {
-  const hosts =
-    env && env.hosts && typeof env.hosts === 'object' && !Array.isArray(env.hosts) ? Object.values(env.hosts) : [];
-  const found = hosts.map((h) => h && h.instructions_file).find((v) => typeof v === 'string' && v.trim());
-  return found ? found.trim() : null;
+/** The host `init` runs on, read off the environment: the name passed on the command line, else
+ * `default_host`, else the single host the environment declares. `null` where none answers — the
+ * environment names no host, or `default_host` names one the `hosts` object does not carry. The
+ * order the keys happen to stand in is never read: the host is named, not found. */
+export function resolveHost(env, host) {
+  const named = typeof host === 'string' && host.trim() ? host.trim() : null;
+  if (named) return named;
+  const hosts = env && env.hosts && typeof env.hosts === 'object' && !Array.isArray(env.hosts) ? env.hosts : null;
+  if (!hosts) return null;
+  const declared = typeof env.default_host === 'string' && env.default_host.trim() ? env.default_host.trim() : null;
+  if (declared && Object.prototype.hasOwnProperty.call(hosts, declared)) return declared;
+  const keys = Object.keys(hosts);
+  return keys.length === 1 ? keys[0] : null;
+}
+
+/** The instructions file the resolved host declares, out of `{hosts.<host>.instructions_file}`.
+ * Where no host answers, `DEFAULT_INSTRUCTIONS` answers the caller. */
+export function declaredInstructionsFile(env, host) {
+  const hosts = env && env.hosts && typeof env.hosts === 'object' && !Array.isArray(env.hosts) ? env.hosts : null;
+  const name = resolveHost(env, host);
+  const entry = name && hosts ? hosts[name] : null;
+  const found = entry && entry.instructions_file;
+  return typeof found === 'string' && found.trim() ? found.trim() : null;
 }
 
 /** Relative to the repository root, forward slashes: the form `git check-ignore` takes. */
@@ -259,7 +285,7 @@ function leftoverHostMemory(disk, root) {
  * The scan
  * ------------------------------------------------------------------------- */
 
-export function scan(rootIn, disk = REAL, packageRoot = PACKAGE) {
+export function scan(rootIn, disk = REAL, packageRoot = PACKAGE, host = null) {
   const root = resolve(rootIn);
   const daiku = join(root, '.daiku');
   const projectFile = join(daiku, 'project.json');
@@ -321,7 +347,8 @@ export function scan(rootIn, disk = REAL, packageRoot = PACKAGE) {
   // exists **and parses** wins, taken whole — a local file that does not parse is skipped and the
   // shared one is read, and the built-in default is only the fallback when neither names the key.
   const env = readJson(disk, localEnv) || readJson(disk, sharedEnv) || {};
-  const instructionsName = declaredInstructionsFile(env) || DEFAULT_INSTRUCTIONS;
+  const resolvedHost = resolveHost(env, host);
+  const instructionsName = declaredInstructionsFile(env, resolvedHost) || DEFAULT_INSTRUCTIONS;
   const instructions = readText(disk, join(root, instructionsName));
   if (instructions === null || !instructions.includes(MARKER)) miss('instructions', '6', instructionsName);
 
@@ -337,14 +364,42 @@ export function scan(rootIn, disk = REAL, packageRoot = PACKAGE) {
     }
   }
 
-  // The host memory pointed inside, and nothing left in its default folder.
-  const settings = readJson(disk, join(root, '.claude', 'settings.local.json'));
-  const pointed = settings && 'autoMemoryEnabled' in settings && 'autoMemoryDirectory' in settings;
-  if (!pointed) miss('host-memory', '7', '.claude/settings.local.json — autoMemoryEnabled, autoMemoryDirectory');
-  const leftover = leftoverHostMemory(disk, root);
-  if (leftover.length) miss('memory-move', '7', `${leftover.length} file(s) in the host's default memory folder`);
+  // The host memory pointed inside, and nothing left in its default folder. This is Claude Code's
+  // seat and exists only there: on opencode `init` does not write `.claude/settings.local.json`,
+  // so neither the seat nor the host's default folder is expected of that host.
+  if (resolvedHost !== 'opencode') {
+    const settings = readJson(disk, join(root, '.claude', 'settings.local.json'));
+    const pointed = settings && 'autoMemoryEnabled' in settings && 'autoMemoryDirectory' in settings;
+    if (!pointed) miss('host-memory', '7', '.claude/settings.local.json — autoMemoryEnabled, autoMemoryDirectory');
+    const leftover = leftoverHostMemory(disk, root);
+    if (leftover.length) miss('memory-move', '7', `${leftover.length} file(s) in the host's default memory folder`);
+  }
 
   const relTo = (p) => relative(root, p).replace(/\\/g, '/');
+
+  // The opencode deposit: `init` lays the package inside the project and leaves a manifest naming
+  // the version that wrote it and the pieces it wrote. Only an opencode project has it — on Claude
+  // Code the package is served by installation, so there is nothing to deposit and nothing to
+  // measure. A manifest whose version is not this package's is a deposit **behind**, exactly as a
+  // script of an older version is; a piece the manifest names and the disk does not carry is a
+  // deposit to redo, and the whole absence is the deposit never made.
+  if (resolvedHost === 'opencode') {
+    const manifest = readJson(disk, join(root, '.opencode', 'daiku', 'deposit.json'));
+    if (!manifest || typeof manifest !== 'object' || Array.isArray(manifest)) {
+      miss('deposit', DEPOSIT_STEP, '.opencode/ — the package deposit');
+    } else if (current && manifest.version !== current) {
+      miss(
+        'deposit',
+        DEPOSIT_STEP,
+        `.opencode/ — deposited by ${manifest.version ? `Daiku ${manifest.version}` : 'a deposit with no version'}, this package is ${current}`
+      );
+    } else {
+      for (const rel of Array.isArray(manifest.wrote) ? manifest.wrote : []) {
+        if (typeof rel !== 'string' || !rel.trim()) continue;
+        if (!disk.exists(join(root, rel))) miss(`deposit:${rel}`, DEPOSIT_STEP, rel);
+      }
+    }
+  }
 
   // What Daiku no longer writes: the seats of the layout before `.daiku/` this list holds —
   // machinery the package owns, a parameter pair a reader opens and a script a settings entry
@@ -398,7 +453,8 @@ export function scan(rootIn, disk = REAL, packageRoot = PACKAGE) {
       const rel = toRepo(top, pool);
       if (rel && !rel.startsWith('..') && !isAbsolute(rel)) out.push(pool);
     }
-    out.push(join(root, '.claude', 'settings.local.json'));
+    // The machine's settings file is Claude Code's, and only a Claude Code project carries it.
+    if (resolvedHost !== 'opencode') out.push(join(root, '.claude', 'settings.local.json'));
     const keep = [projectFile];
     if (memoryRoot) keep.push(join(memoryRoot, basename(String(memory.index || 'MEMORY.md'))));
     const all = [...out, ...keep].map((p) => toRepo(top, p));
@@ -464,7 +520,7 @@ function complete() {
     [`${PKG}/schemas/blocks.json`]: JSON.stringify({
       params: {
         project_json: ['contract', 'name', 'memory.root', 'memory.index', 'paths.review_state'],
-        environment_json: ['contract', 'hosts', 'hosts.<host>.instructions_file'],
+        environment_json: ['contract', 'default_host', 'hosts', 'hosts.<host>.instructions_file'],
       },
     }),
     [`${PKG}/templates/project/domain/README.md`]: '#',
@@ -539,6 +595,89 @@ function selfCheck() {
 
   const localEnv = { ...without(complete(), `${T}/.daiku/environment.json`), [`${T}/.daiku/environment.local.json`]: '{"contract":1}' };
   check('the machine environment file counts', !ids(scan(T, fakeDisk(localEnv), PKG)).includes('environment'));
+
+  // --- the host is resolved, and the instructions file follows it ------------------
+  //
+  // The environment names two hosts, and the file `init` expects must be the one of the host it
+  // runs on — never the one that happens to stand first in the object. The cases below put the
+  // host that must win *second* on purpose: a scan that reads the first entry answers `AGENTS.md`
+  // and reports `instructions` missing, which is the defect these cases hold.
+  const twoHosts = (order, defaultHost, extra = {}) => {
+    const hosts = {};
+    for (const name of order) hosts[name] = { instructions_file: name === 'opencode' ? 'AGENTS.md' : 'CLAUDE.md' };
+    const env = { contract: 1, hosts };
+    if (defaultHost) env.default_host = defaultHost;
+    return {
+      ...without(complete(), `${T}/CLAUDE.md`),
+      [`${T}/.daiku/environment.json`]: JSON.stringify(env),
+      [`${T}/CLAUDE.md`]: `# Project\n\n${MARKER} -->\n`,
+      ...extra,
+    };
+  };
+  check('two hosts, default_host claude: CLAUDE.md is the file expected', !ids(scan(T, fakeDisk(twoHosts(['claude', 'opencode'], 'claude')), PKG)).includes('instructions'));
+  check('two hosts, opencode written first, default_host claude: still CLAUDE.md', !ids(scan(T, fakeDisk(twoHosts(['opencode', 'claude'], 'claude')), PKG)).includes('instructions'));
+
+  const opencodeEnv = {
+    ...without(complete(), `${T}/CLAUDE.md`),
+    [`${T}/.daiku/environment.json`]: JSON.stringify({ contract: 1, default_host: 'opencode', hosts: { claude: { instructions_file: 'CLAUDE.md' }, opencode: { instructions_file: 'AGENTS.md' } } }),
+    [`${T}/AGENTS.md`]: `# Project\n\n${MARKER} -->\n`,
+  };
+  check('default_host opencode: AGENTS.md is the file expected', !ids(scan(T, fakeDisk(opencodeEnv), PKG)).includes('instructions'));
+  // The host named on the command line wins over `default_host`: the environment declares `claude`
+  // as its default and only `AGENTS.md` is on disk, so a scan that ignored the fourth argument would
+  // resolve `claude`, find `CLAUDE.md` absent, and report `instructions` missing. The case can fail
+  // for the defect it names, which the previous one — `default_host` already `opencode` — could not.
+  const hostArgEnv = {
+    ...without(complete(), `${T}/CLAUDE.md`),
+    [`${T}/.daiku/environment.json`]: JSON.stringify({ contract: 1, default_host: 'claude', hosts: { claude: { instructions_file: 'CLAUDE.md' }, opencode: { instructions_file: 'AGENTS.md' } } }),
+    [`${T}/AGENTS.md`]: `# Project\n\n${MARKER} -->\n`,
+  };
+  check('the host named on the command line wins over default_host', !ids(scan(T, fakeDisk(hostArgEnv), PKG, 'opencode')).includes('instructions'));
+  check('a single declared host answers without default_host', !ids(scan(T, fakeDisk(complete()), PKG)).includes('instructions'));
+  const noHosts = { ...complete(), [`${T}/.daiku/environment.json`]: JSON.stringify({ contract: 1 }) };
+  check('no hosts at all: the built-in default (CLAUDE.md)', !ids(scan(T, fakeDisk(noHosts), PKG)).includes('instructions'));
+
+  // The seats of the host memory exist on Claude Code and nowhere else: on opencode `init` does
+  // not write `.claude/settings.local.json`, so neither the seat nor the folder is expected.
+  const opencodeProject = {
+    ...without(complete(), `${T}/CLAUDE.md`, `${T}/.claude/settings.local.json`),
+    [`${T}/.daiku/environment.json`]: JSON.stringify({ contract: 1, default_host: 'opencode', hosts: { opencode: { instructions_file: 'AGENTS.md' } } }),
+    [`${T}/AGENTS.md`]: `# Project\n\n${MARKER} -->\n`,
+  };
+  const opencodeMissing = ids(scan(T, fakeDisk(opencodeProject), PKG));
+  check('on opencode the host-memory seat is not expected', !opencodeMissing.includes('host-memory'));
+  const opencodeLeftover = { ...opencodeProject, 'C:/Users/me/.claude/projects/C--work-repo-src/memory/a.md': '#' };
+  check('on opencode the host default memory folder is not watched', !ids(scan(T, fakeDisk(opencodeLeftover), PKG)).includes('memory-move'));
+
+  // --- the opencode deposit, measured against the package version -------------------
+  //
+  // `init` lays the package down inside an opencode project and leaves a manifest; the scan reads
+  // that manifest and reports the deposit missing, behind, or with a piece gone. The cases below
+  // are the three states and the absence.
+  const depositFiles = {
+    [`${T}/.opencode/skills/review/SKILL.md`]: '# skill\n',
+    [`${T}/.opencode/agents/finder.md`]: '# finder\n',
+    [`${T}/.opencode/daiku/architect/architect.mjs`]: '// a\n',
+  };
+  const manifestOf = (version, wrote) => JSON.stringify({ version, host: 'opencode', wrote, declared_missing: ['stop-advice', 'subagent-advice'] });
+  const withDeposit = (manifest, extra = {}) => ({ ...opencodeProject, ...depositFiles, [`${T}/.opencode/daiku/deposit.json`]: manifest, ...extra });
+  const wroteAll = Object.keys(depositFiles).map((p) => p.slice(T.length + 1));
+
+  const fullDeposit = scan(T, fakeDisk(withDeposit(manifestOf(VERSION, wroteAll))), PKG);
+  check('a complete deposit at the package version: nothing missing', fullDeposit.missing.length === 0);
+  check('a complete deposit: nothing behind either', fullDeposit.legacy.length === 0 && fullDeposit.params.length === 0);
+
+  const gonePiece = scan(T, fakeDisk(without(withDeposit(manifestOf(VERSION, wroteAll)), `${T}/.opencode/skills/review/SKILL.md`)), PKG);
+  check('a deposited piece absent: listed, at the deposit step', gonePiece.missing.some((m) => m.id === 'deposit:.opencode/skills/review/SKILL.md' && m.step === '4-bis'));
+
+  const behindDeposit = scan(T, fakeDisk(withDeposit(manifestOf('1.0.7', wroteAll))), PKG);
+  check('a deposit of an older package: listed as behind', behindDeposit.missing.some((m) => m.id === 'deposit' && m.step === '4-bis'));
+
+  const noDeposit = scan(T, fakeDisk(opencodeProject), PKG);
+  check('no .opencode/ on opencode: the whole deposit is listed', noDeposit.missing.some((m) => m.id === 'deposit' && m.step === '4-bis'));
+
+  // The same absence on Claude Code is not a missing piece: there is no deposit there.
+  check('no .opencode/ on Claude Code: no deposit listed', !ids(scan(T, fakeDisk(complete()), PKG)).includes('deposit'));
 
   // The pair of §8: the first file that exists **and parses** wins, taken whole. A local file that
   // does not parse is skipped and the shared one is read — its non-standard name is honoured, and the
@@ -687,8 +826,36 @@ function selfCheck() {
 
   check('folder name: every non-alphanumeric byte a dash', projectFolderName('C:/work/repo/src') === 'C--work-repo-src');
 
+  // --- the command line ------------------------------------------------------------------
+  const tailHost = parseArgs(['C:/work/repo', '--host', 'opencode']);
+  check('--host in the tail is read', tailHost.host === 'opencode');
+  check('--host in the tail leaves the root', tailHost.root === 'C:/work/repo');
+  const bareHost = parseArgs(['C:/work/repo', '--host']);
+  check('a --host with no value names no host', bareHost.host === null);
+  check('a --host with no value leaves the root', bareHost.root === 'C:/work/repo');
+  check('no --host leaves the host unnamed', parseArgs(['C:/work/repo']).host === null);
+  check('no arguments: no root', parseArgs([]).root === null);
+
   process.stdout.write(JSON.stringify({ checks: ran, passed: ran - failed.length, failed }, null, 2) + '\n');
   return failed.length ? 1 : 0;
+}
+
+/* ------------------------------------------------------------------------- *
+ * The command line
+ * ------------------------------------------------------------------------- */
+
+/**
+ * The command line, read: the technical root and the optional `--host <name>`. `--host` may stand
+ * anywhere; a `--host` with no value after it names no host, and the root is the first token that is
+ * not `--host` or its value. Exported so the bench exercises the parsing instead of the process.
+ */
+export function parseArgs(argv) {
+  const args = Array.isArray(argv) ? argv : [];
+  const hostAt = args.indexOf('--host');
+  const hasValue = hostAt !== -1 && typeof args[hostAt + 1] === 'string';
+  const host = hasValue ? args[hostAt + 1] : null;
+  const positional = hostAt === -1 ? args.slice() : args.filter((a, i) => i !== hostAt && i !== hostAt + 1);
+  return { root: positional[0] || null, host };
 }
 
 /* ------------------------------------------------------------------------- *
@@ -708,11 +875,11 @@ function invokedDirectly() {
 if (invokedDirectly()) {
   const argv = process.argv.slice(2);
   if (argv[0] === '--self-check') process.exit(selfCheck());
-  const [root] = argv;
+  const { root, host } = parseArgs(argv);
   if (!root) {
-    process.stderr.write('usage: node scan.mjs <technical-root>\n       node scan.mjs --self-check\n');
+    process.stderr.write('usage: node scan.mjs <technical-root> [--host <name>]\n       node scan.mjs --self-check\n');
     process.exit(2);
   }
-  process.stdout.write(JSON.stringify(scan(root)) + '\n');
+  process.stdout.write(JSON.stringify(scan(root, REAL, PACKAGE, host)) + '\n');
   process.exit(0);
 }

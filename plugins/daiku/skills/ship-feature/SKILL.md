@@ -106,6 +106,12 @@ The host substitutes its path variables (`${CLAUDE_PLUGIN_ROOT}`, `${CLAUDE_SKIL
 text of a `SKILL.md`, so the command can name the root directly. Getting it wrong is contained: the
 command does not start and it is visible, instead of starting and looking in the wrong place.
 
+**On a host that substitutes no variable** — opencode — the root is the same folder **computed from
+this file's own base directory**: a skill loaded from `.opencode/skills/<name>/` stands two levels
+below `.opencode/`, and the package is deposited beside the skills in `.opencode/daiku/`, so the
+support root is `<base directory>/../../daiku`. The relative paths under it do not change: the
+contracts, `architect/` and the ledger resolve from there exactly as above.
+
 **The block it returns** is the one `schemas/blocks.json` § *architect* declares, and that is its
 only copy: this file cites it and does not restate it. It always carries all eleven fields —
 `ok`, `verdict`, `remaining`, `resume_from`, `slot`, `blockers`, `retry`, `fallback`, `readings`,

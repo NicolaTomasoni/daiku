@@ -18,7 +18,7 @@ The form of what you write is in `contracts/project-contract.md`, and the keys c
 
 Arguments: `$ARGUMENTS` — `[technical root]`.
 
-The **technical root** is the directory the skills run from, the one carrying the project instructions file — `CLAUDE.md`. It is not always the repository root: a monorepo may have the code under a subfolder and the technical root inside there.
+The **technical root** is the directory the skills run from, the one carrying the project instructions file — `CLAUDE.md` on Claude Code, `AGENTS.md` on opencode. It is not always the repository root: a monorepo may have the code under a subfolder and the technical root inside there.
 
 - With an argument, it is that. Without an argument, it is the current directory.
 - Then run exactly `git -C "<technical root>" rev-parse --show-toplevel`, in both shells. Do not choose another command and do not add checks around it: the exit code is the verdict, and its stdout is the repository root you reuse at *Step 2*.
@@ -31,7 +31,7 @@ Before reading, asking or writing anything, measure what is already there. Run e
 node "<package root>/skills/init/scan.mjs" "<technical root>"
 ```
 
-— `<package root>` the folder two levels above this file. It prints one JSON object, `{fresh, missing, legacy, params}`, and its answer decides the run; you do not second-guess it:
+— `<package root>` the folder two levels above this file. On a host that substitutes no variable (opencode) it is the same folder computed from this skill's own base directory — this file stands in `.opencode/skills/init/`, the support in `.opencode/daiku/`, so the root is `<base directory>/../../daiku`. It prints one JSON object, `{fresh, missing, legacy, params}`, and its answer decides the run; you do not second-guess it:
 
 - **`fresh: true`** — the project has no `.daiku/project.json`: run the whole *Procedure*.
 - **`fresh: false`, and all three lists empty** — Daiku is already open here and nothing is behind. Your whole answer is one line saying so, in the `language.chat` of `project.json` — `Daiku is already set up here.` in English, `Daiku è già pronto qui.` in Italian — and the run ends: no question, no reading, no write.
@@ -39,11 +39,13 @@ node "<package root>/skills/init/scan.mjs" "<technical root>"
 
 **A piece standing there since an older Daiku is as much behind as a piece that is not there at all**, and that is why the answer is three lists and not one. `missing` is what the project does not have; `legacy` what an older Daiku deposited at a seat this one does not write any more; `params` the keys of a parameter file this contract no longer names. A relaunch reading only `missing` would call a project all set while files of a layout nobody reads still stand inside it — and no eye tells an old file from a right one, which is why the comparison is the program's and not yours.
 
+**On opencode the scan also measures the deposit** — the package this run lays inside the project — and lists it under step `4-bis`: absent when there is no `.opencode/daiku/deposit.json`, **behind** when that manifest carries another version than this package's, or with a piece the manifest names gone from disk. On Claude Code there is no deposit and nothing is listed for it. It is the same measurement as the versioned script of *Step 5-bis*: a deposit of an older Daiku reads as old, and no eye tells it from a right one.
+
 The scan reads only what `init` writes. A domain role the project answered in a file written after the first run is not something it can see: whoever writes that file writes the pointer.
 
 ## Where the skeletons stand
 
-Under `templates/`, at the package root — the folder containing `skills/`, `contracts/` and `templates/`, two levels above this file. It is a path **relative to the package**, not to the project — a form that holds everywhere, where an environment path variable would not.
+Under `templates/`, at the package root — the folder containing `skills/`, `contracts/` and `templates/`, two levels above this file. It is a path **relative to the package**, not to the project — a form that holds everywhere, where an environment path variable would not. On a host that substitutes no variable (opencode) it is the same folder computed from this skill's own base directory, plus `daiku/` — `<base directory>/../../daiku`, the support deposited beside the skills.
 
 | Skeleton | Where you write it | What you do with it |
 |---|---|---|
@@ -55,6 +57,7 @@ Under `templates/`, at the package root — the folder containing `skills/`, `co
 | `templates/project/instructions.md` | the instructions file, in the technical root | you **fill it**: see *Step 6* |
 | `templates/project/update.mjs` | `.daiku/update.mjs` | you copy it filling its version marker: see *Step 5-bis* |
 | `templates/vscode/tasks.json` | `.vscode/tasks.json`, in the technical root | you copy it, or add its task to the file already there: see *Step 5-bis* |
+| `templates/opencode/plugin.js` | `.opencode/plugins/daiku.js` | the plugin opencode auto-loads, laid down by the deposit with the whole corpus around it: see *Step 4-bis* |
 
 **Everything you write is in English**, whatever language the user chose at *Step 0*. Those two keys say in which language the skills will talk to the user and write commits; they do not say in which language Daiku is made. The skeletons arrive in English and you fill them in English: a half-translated instructions file is the worst of the two forms, and a corpus in a single language is the only thing staying readable when the project changes hands.
 
@@ -252,7 +255,7 @@ When a value is derivable but not certain — a `changelog` that could be the on
 node "<package root>/skills/init/branch.mjs" "<technical root>" <development> <production>
 ```
 
-— `<package root>` the folder two levels above this file, `<development>` and `<production>` the two names you just wrote, production omitted where you wrote none. It prints one JSON object, `{ok, action, branch, detail}`, and its answer decides: `ok: true` is a branch created, checked out, already there, or nothing to do because the two channels coincide; `ok: false` is a step that did not go through — a dirty tree when the branch was to be created, or a repository with no commit yet, where there is no production branch to be identical to — and you declare it at *Step 10* and create nothing in its place. The dirty-tree failure belongs to **creation** alone: the relaunch, when the branch already exists, does not fail on a dirty tree, because `init` is relaunchable and a working repository is normally dirty. `branch.mjs` writes no file, commits nothing and pushes nothing.
+— `<package root>` the folder two levels above this file (on a host that substitutes no variable, `<base directory>/../../daiku` as above), `<development>` and `<production>` the two names you just wrote, production omitted where you wrote none. It prints one JSON object, `{ok, action, branch, detail}`, and its answer decides: `ok: true` is a branch created, checked out, already there, or nothing to do because the two channels coincide; `ok: false` is a step that did not go through — a dirty tree when the branch was to be created, or a repository with no commit yet, where there is no production branch to be identical to — and you declare it at *Step 10* and create nothing in its place. The dirty-tree failure belongs to **creation** alone: the relaunch, when the branch already exists, does not fail on a dirty tree, because `init` is relaunchable and a working repository is normally dirty. `branch.mjs` writes no file, commits nothing and pushes nothing.
 
 ### 4. Write `.daiku/environment.json` if missing
 
@@ -279,9 +282,10 @@ and a path **absolute inside somebody's home** is an alien value like any other:
 when the project's own file still carries it.
 
 **The `instructions_file` key is kept only if its file is there.** The skeleton carries it filled
-in; you keep it where `CLAUDE.md` really stands in the technical root, and you drop the whole key
-otherwise — §6 of `contracts/project-contract.md` already says what that absence means. This is the
-file *Step 6* writes.
+in; you keep each host's key where that host's file really stands in the technical root — `CLAUDE.md`
+for `claude`, `AGENTS.md` for `opencode` — and you drop the key otherwise — §6 of
+`contracts/project-contract.md` already says what that absence means. This is the file *Step 6*
+writes.
 
 **"Alien" means of another person or another machine, not "already written".** The tier aliases and
 a host's configuration paths hold for anybody: those stay. What identifies somebody is removed.
@@ -293,6 +297,18 @@ creates it; one written by you would declare this machine's values as the projec
 `environment.local.json` the user creates.
 
 If the skeleton still contains values recognisably of another project or another machine, do not propagate them: remove them.
+
+### 4-bis. Deposit the package into the project — opencode only
+
+**On Claude Code there is nothing here**: the package is served by installation, and the host reads it from where it was installed. **On opencode** the package has no such seat — no manifest, no marketplace, and its extensions are read from the **project** — so it must be **deposited inside the project** by this step. Run exactly:
+
+```
+node "<package root>/skills/init/deposit.mjs" "<technical root>" <host>
+```
+
+— `<package root>` the folder two levels above this file, `<host>` the host you are running on (the `default_host` you wrote at *Step 4*). It prints one JSON object, `{ok, host, wrote, declared_missing, detail}`, and its answer decides: it copies every skill entry point into `.opencode/skills/<name>/`, every opencode role rendering into `.opencode/agents/`, the package's support tree into a sibling `.opencode/daiku/` (which is the root every skill computes from its own base directory — *Step 6* of the anchor rule, `skills/ship-feature/SKILL.md` § *The evaluator*), the guard adapter and the plugin skeleton opencode auto-loads, and writes the manifest `.opencode/daiku/deposit.json` carrying the version of this package. It also writes `experimental.subagent_depth: 3` into `opencode.json`, **under `experimental`**, creating the file if it is missing and never overwriting a value the project declares. `ok: false` is a step that did not go through, and you declare it at *Step 10*; nothing is created in its place. `deposit.mjs` writes no file outside `.opencode/` and `opencode.json`, and it never commits or pushes.
+
+The step is **idempotent and whole**: `.opencode/` is the method's seat and not the project's, so a relaunch recreates it entire, the way *Step 5-bis* recreates the versioned script — a deposit written by an older Daiku is brought up to the version in place. Only `opencode.json` is the project's, and it is touched by addition alone. This is the step the scan's `deposit` entries (*Scan first*, step `4-bis`) hand to you.
 
 ### 5. Write `domain/` and `policies/`
 
@@ -341,7 +357,7 @@ The task belongs to the editor, not to the host you are running on.
 
 ### 6. Write the instructions file
 
-It is the file the host loads on every session — `CLAUDE.md` — and it goes in the technical root, with the name declared in `{hosts.<host>.instructions_file}`. Start from `templates/project/instructions.md`, which carries the canonical structure and, inside, two materials not to be confused.
+It is the file the host loads on every session, and it goes in the technical root, with the name declared in `{hosts.<host>.instructions_file}` for the host you are running on — the one *Step 4* writes as `default_host`: `CLAUDE.md` on Claude Code, `AGENTS.md` on opencode. Start from `templates/project/instructions.md`, which carries the canonical structure and, inside, two materials not to be confused.
 
 - **The already written prose is a package default**, like `commit-convention.md`: the *Behaviour* and *Git and commits* sections, and the five stock hard rules, hold for anybody working with Daiku and do not depend on this repository. They are copied as they are. Do not rewrite them in your own words: they were written once to be the same everywhere.
 - **The placeholders in angle brackets are your work**, and they fill in with what you read at *Step 2* — not with what would make sense.
@@ -458,6 +474,8 @@ catch.
 
 ### 7. Carry the host memory into the repository
 
+**This step is Claude Code's alone, and on opencode it does nothing.** The seat it fills — `~/.claude/projects/<project>/memory/` and the two keys in `.claude/settings.local.json` — exists only on Claude Code: opencode keeps no such memory folder and reads no such settings file. On opencode you write neither, and you **declare** that the seat does not exist on this host — one line, not a fabricated file. The corpus lives in `{memory.root}`, which the method writes at every commit, and that is all there is to carry there.
+
 The memory the agent writes itself ends up by default in `~/.claude/projects/<project>/memory/`: outside the repository, invisible in a `git diff`, shared with nobody and lost at the first machine change. Your task is to carry it inside, where it is seen — and committed together with the rest. Two things, in this order:
 
 1. **Move what is already there.** It is the only step of the run reading outside the repository, and the step a sandbox is most likely to deny: if the fence refuses it, **do not look for another way** — leave it undone: it is a step that did not go through (*Step 10*). Look for this project folder under `~/.claude/projects/` — it is named like the absolute path of the technical root with separators reduced to dashes, but do not rebuild it by mind: list that directory and recognise it. If inside there is a `memory/` with files, **move them** into `{memory.root}`. It is the only thing you do outside the repository in the whole run. If a name already exists at destination do not overwrite it: where the two files are identical, the one already in the repository stands and the source is removed; where they differ, the source moves beside it with `-host` before the extension, and gets its line in `{memory.index}` in the form the index already uses. Two different memories called the same are both kept — merging them is a merit judgement, and `update-memory` meets them at the first commit.
@@ -539,9 +557,9 @@ and the way you took instead — concerns nobody.
 One thing only is written, one line per item, in `{language.chat}`:
 
 - **A step that did not go through** — a write denied or failed, a move refused, the development
-  branch of *Step 3-bis* not created, a folder still on the wrong side of `.gitignore` after
-  *Step 8*: the file, or the branch, and what it still lacks. The project is then not all set, and
-  the closing line is **not** written.
+  branch of *Step 3-bis* not created, the deposit of *Step 4-bis* answered `ok: false`, a folder
+  still on the wrong side of `.gitignore` after *Step 8*: the file, or the branch, and what it
+  still lacks. The project is then not all set, and the closing line is **not** written.
 
 ## Idempotence
 

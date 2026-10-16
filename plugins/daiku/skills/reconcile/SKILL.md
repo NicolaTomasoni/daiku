@@ -35,6 +35,8 @@ node <package root>/architect/reconcile.mjs <package root>      # with this obje
 {"action": "measure", "work_root": "<work_root>", "branch": "<branch>", "patch": "<patch>"}
 ```
 
+`<package root>` is the folder two levels above this file, as `ship-feature` § *The evaluator* writes it — the folder containing `skills/`, `contracts/` and `architect/`. On a host that substitutes no variable (opencode) it is the same folder computed from this skill's own base directory, plus `daiku/` — `<base directory>/../../daiku`, the support deposited beside the skills.
+
 The program reads `HEAD` (the integration commit), the merge-base with `branch`, and the obstructed set; writes the patch artefact; computes, per obstructed path, the lines the working tree changes (`ours`) and the lines the branch changes (`theirs`) in the frame of the merge base; and asks the evaluator `question: "reconcile"` with `paths`, one entry per obstructed path as `{"file", "ours", "theirs"}`, each side a list of `[from, to]` intervals. The evaluator answers `stop` when in at least one path an interval of `ours` intersects an interval of `theirs`, `reconcile` otherwise. The keys the evaluator requires are declared once, in `REQUIRES` of `architect/architect.mjs`; the paragraph above from which the call is read names them all.
 
 ## How you verify
