@@ -175,11 +175,24 @@ saying so, and stop — §6 of `contracts/project-contract.md`, no fallback and 
    are built from. If it is **empty**, development has not moved since the last published release:
    return `released: false` with `detail` saying there is nothing to release, and stop.
 
+   **While production's tip is a draft (`pending`), the new notes cover only what the draft does
+   not carry yet.** Read the draft's own trailer from `git -C "<root>" log -1 --format=%B
+   {channels.production}` (`Development: <sha>`) and take `log --oneline
+   <trailer>..{channels.development}` as the block the added bullets are built from. If that range
+   is **empty**, the draft already carries everything development holds: return `released: false`
+   with `detail` saying the unpushed draft is current and there is nothing to join it, and stop.
+
 4. **Ask the version, once, on the block.** From `current_version`, ask the owner **major**,
    **minor** or **patch** with the structured question of § *Ask the owner* of `contracts/orchestration.md` — one question, three options, in the chat
    language, the recommended first. The answer is the increment; the new number is derived from
    `current_version`. Because this node runs in the conversation, the channel to the owner exists —
    it is the whole reason the question lives here and not inside a subagent.
+
+   **Where `pending` is true there is no version to ask.** The draft was never pushed, so its number
+   is not a rung of any public ladder: the release keeps `current_version` — the draft's own — and
+   the commits that arrived while it sat there join it instead of opening a version of their own.
+   `detail` says the number was kept from the draft. To open a new number instead, push the draft
+   first — closing it — and then release.
 
 5. **Write the changelog section.** In `{language.commit}`, in the style `{changelog}` already
    uses, with the entries the convention admits: which commit types produce an entry is not decided
@@ -188,9 +201,18 @@ saying so, and stop — §6 of `contracts/project-contract.md`, no fallback and 
    number and the date of the day, the bullets, the rule that closes it. What you do **not** do is
    place it: the program places it, below the changelog's title, deterministically.
 
+   **Where `pending` is true the section is the draft's own, grown by the new bullets.** Read it
+   from the production tip — `git -C "<root>" show {channels.production}:<path>`, where `<path>` is
+   `{changelog}` with the `{release.source}` prefix taken off where one is declared — keep its
+   heading, version and date untouched, and append the bullets for the block step 3 just measured
+   after the ones already there, before the rule closing the section. The heading stays the draft's
+   because the release is still the same unpublished one.
+
 6. **Release.** Run `architect/release.mjs` with `action: "release"`, the same keys as step 2, the
    `version`, the `from_sha` the status returned, the `section` you just wrote and the `message` —
-   `release <version>`, plus ` — <the first line of the notes>` where there are notes.
+   `release <version>`, plus ` — <the first line of the notes>` where there are notes. Where the
+   number was kept from a draft, that first line is the first bullet this run adds, not the draft's
+   heading.
 
    It builds the production tree out of the development one — re-rooted at `{release.source}` where
    the project declares it — written with the version in `{version.file}` and in every file of
@@ -289,3 +311,5 @@ mirrors, where this file stays normative on divergence:
   it also says which exclusions were recorded in `.daiku/project.json` — or that there was nobody
   to ask and the next run asks again. On `released: true` it also says which beta development was
   advanced to — or, where no `{version.file}` is declared, that there was no beta to advance.
+  Where the release replaced a draft keeping its number, it says so and names the bullets that
+  joined it.
