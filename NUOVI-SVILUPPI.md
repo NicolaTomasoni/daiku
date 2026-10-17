@@ -1,1 +1,0 @@
-Raggruppare repo che implementano memoria, studiarle, implementare in daiku
