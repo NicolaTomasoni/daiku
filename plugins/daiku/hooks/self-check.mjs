@@ -82,7 +82,7 @@ function benches() {
   for (const name of names) {
     found.push({ label: name, file: join(LIB, name), args: ['--self-check'] });
   }
-  for (const program of ['architect.mjs', 'ledger.mjs', 'pool.mjs', 'reconcile.mjs', 'release.mjs', 'cost.mjs', 'view.mjs']) {
+  for (const program of ['architect.mjs', 'ledger.mjs', 'pool.mjs', 'reconcile.mjs', 'release.mjs', 'cost.mjs', 'view.mjs', 'delivered.mjs']) {
     const file = join(ROOT, 'architect', program);
     try {
       readFileSync(file);

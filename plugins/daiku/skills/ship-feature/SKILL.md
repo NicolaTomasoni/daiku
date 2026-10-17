@@ -86,9 +86,11 @@ stops the delivery. `question` is always there; **which other keys each question
 declared once**, in `REQUIRES` of `architect/architect.mjs`: the program refuses an input missing
 one of them, and its bench reads every call to the evaluator in the contracts of `skills/` and
 refuses one whose paragraph does not name them all — so the keys are named where each call is
-made, and not listed again here. Three of them carry a meaning their name does not say: `ledger`
+made, and not listed again here. Four of them carry a meaning their name does not say: `ledger`
 is `null` when there is none, and for `order` a ledger that exists and is not passed turns into a
-fork for the owner where a verdict was due; `step` is `{"node": …, "block": …|null, "attempt": 1|2, "invalid": […]}`, where `invalid` is what the `block` question said of that block — its `blockers`, or `[]` when no question judged it.
+fork for the owner where a verdict was due — or into a contradiction, where the folder carries
+`1. decision-doc.md` and `5. review-report.md` together and the ledger was one of the two facts
+proving the review of it ran, § *7. Report*; `step` is `{"node": …, "block": …|null, "attempt": 1|2, "invalid": […]}`, where `invalid` is what the `block` question said of that block — its `blockers`, or `[]` when no question judged it; and `merged` is the merge that already carries this folder on the integration branch, or `null`, read off Git by `architect/delivered.mjs` — the key is what keeps a folder already delivered from being delivered twice, § *The sequence*.
 These are the eleven questions it answers. The five this file does not use directly are asked by the contracts that need them:
 `closing`, `resumption` and `round` by `skills/review/SKILL.md` (§ *Closing*, § *Baseline and ledger*, § *When to run another round*), through
 `architect/ledger.mjs`, the review's disk side, which imports these questions and hands them the ledger and the added lines it read from disk
@@ -144,11 +146,24 @@ The state needed to **resume** is not that: they are the artefacts the phases de
 The phases are ordered and not skippable. Each is **one** subagent, with the prompt giving it the contract to read, the resolved input and the JSON block to return.
 
 **Which phases remain is not read off this file, it is asked.** Before phase 0, ask the evaluator
-(`question: "order"`), passing the entry point (`entry`), the artefacts already on disk (`present`)
-and the `ledger` (or `null`): the verdict says where to start and what is left to do, and the sections below are its
+(`question: "order"`), passing the entry point (`entry`), the artefacts already on disk (`present`),
+the `ledger` (or `null`) and `merged` — the merge that already carries this folder on the integration
+branch, or `null`: it is **measured, not declared**, by
+`node <package root>/architect/delivered.mjs <package root>` with the work root, the folder and
+`{channels.development}`, and the `delivered` field it answers with is what goes in. The verdict says
+where to start and what is left to do, and the sections below are its
 **rendering** for whoever reads a contract; the evaluator owns the order. Two things stay here:
 the phases are ordered and
 none is skippable, and the worktree lifecycle of phase 0 still belongs here.
+
+**A folder that has already landed stops the delivery, and no phase runs.** When `order` answers
+`stop` because the integration branch carries the merge of this folder, the delivery closes there —
+not acquisition, not the brief — and the sha of that merge is reported. It is what holds a resumed
+folder from redoing work that is already integrated: the artefacts that prove a delivery are written
+in the main tree and committed by nobody, so a folder whose proofs went away reads exactly like one
+that was never executed, and the proof itself is in Git — the merge `§ 6b` writes is
+`-m "merge: <folder>"`, and `architect/delivered.mjs` is what reads it. A work reopened on purpose is
+a new folder, not this one relaunched.
 
 Each block carries the field declaring the outcome of its own phase: `ok` for Brief, Execute and Report, `gate` for Review, `staged` for Stage, `updated` for Memory, `committed` for Commit. **If that field says failure, or if the block does not come back at all, the delivery stops there** (see *Early block*) — an absent block is not interpreted by feel and not rebuilt from the prose of the subagent.
 
@@ -366,7 +381,7 @@ A subagent: `node <package root>/architect/pool.mjs <package root>` with `{"acti
 Subagent writing the report. **Which file it lands on depends on whether phase 3 ran**, and that is the one thing you tell it and it cannot deduce: the fields it carries from the review — `gate`, `outcome`, `missing_disciplines` — exist only when phase 3 ran, and they are exactly the ones § *Early block* and § *2b. No-review stop* tell it not to expect when it did not.
 
 - **Phase 3 ran** — the delivery reached the review, whatever its outcome: append **at the tail** of `<folder>/5. review-report.md` — the file phase 3 already wrote — never overwrite or reformat what is already there.
-- **Phase 3 did not run** — the early block of Acquisition, Brief or Execute, or the voluntary stop of § *2b. No-review stop*: write `<folder>/5. delivery-report.md`, whole and from its first line. `5. review-report.md` is neither created nor touched: it is the artefact that proves phase 3, and a folder carrying it while `1. decision-doc.md` still stands is read by the evaluator as a work arrived after the delivery — `order` answers `stop` and the resumption § *The invocation* declares is lost. The early block and the no-review stop report on their own seat.
+- **Phase 3 did not run** — the early block of Acquisition, Brief or Execute, or the voluntary stop of § *2b. No-review stop*: write `<folder>/5. delivery-report.md`, whole and from its first line. `5. review-report.md` is neither created nor touched: it is the artefact that proves phase 3, and a folder carrying it while `1. decision-doc.md` still stands — with no ledger of a cycle of its own — is read by the evaluator as a work arrived after the delivery: `order` answers `stop` and the resumption § *The invocation* declares is lost. The early block and the no-review stop report on their own seat. **The pair is legitimate in the one case where the review it announces truly ran** — it stands over `4. review-notes.md` and a ledger of its own cycle, and then the verdict cuts the chain at `review`: `decision` and the phases after it remain, and the review is not re-run. The tail leaves no artefact, so a delivery already finished reads the same way as one stopped after `memory`; which of the two it is, is the owner's to know.
 
 It is the only phase having to report fields produced by **seven others** — fewer on the early block, where some of them never ran — and a subagent in a fresh context derives none of them alone. In the prompt they therefore go **already resolved**, one by one (§4.1 of `contracts/orchestration.md`): rebuilding them from memory drops first precisely the lines saying what the delivery did **not** do — and a poor report is never reopened. In the prompt:
 
