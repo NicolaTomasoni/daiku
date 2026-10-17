@@ -164,7 +164,7 @@ release, next to the two package validators.
 
 They are the seven above, `lib/project-root.mjs`, the seven programs of `architect/` — the
 evaluator, the review's ledger tool, the worktree pool, the merge reconciliation, the
-release, the run's cost measure and the reduced view — the two steps of `init`, `skills/init/scan.mjs` and `skills/init/branch.mjs`, and the
+release, the run's cost measure and the delivery's disk side — the two steps of `init`, `skills/init/scan.mjs` and `skills/init/branch.mjs`, and the
 bench of the host manifest beside this file: the last ten outside `lib/`. They are the only benches here whose programs **fail
 loudly**: the seven hooks stay silent on a fault — `ask-guard` on everything but its two verdicts —
 so a total that drops is the only sign a bench stopped running, and that sign is worth exactly as

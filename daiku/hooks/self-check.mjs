@@ -19,9 +19,9 @@
  * one program whose silence stops work. The other six are `architect/ledger.mjs`, the review's
  * disk side, `architect/pool.mjs`, the worktree pool's, `architect/reconcile.mjs`, the merge
  * reconciliation's, `architect/release.mjs`, the release's, `architect/cost.mjs`, the run's
- * deterministic measure, and `architect/view.mjs`, the reduced view a step hands a child. All six
- * fail loudly for the same reason; the benches of the first four run real Git on throwaway
- * repositories under the system temp directory, while those of `cost.mjs` and `view.mjs` run on a
+ * deterministic measure, and `architect/delivered.mjs`, the delivery's disk side. All six fail
+ * loudly for the same reason; the benches of the first four and of `delivered.mjs` run real Git on
+ * throwaway repositories under the system temp directory, while that of `cost.mjs` runs on a
  * simulated filesystem.
  *
  * **A check nobody saw fail counts as red.** A bench whose rules can be enumerated reports,
@@ -82,7 +82,7 @@ function benches() {
   for (const name of names) {
     found.push({ label: name, file: join(LIB, name), args: ['--self-check'] });
   }
-  for (const program of ['architect.mjs', 'ledger.mjs', 'pool.mjs', 'reconcile.mjs', 'release.mjs', 'cost.mjs', 'view.mjs']) {
+  for (const program of ['architect.mjs', 'ledger.mjs', 'pool.mjs', 'reconcile.mjs', 'release.mjs', 'cost.mjs', 'delivered.mjs']) {
     const file = join(ROOT, 'architect', program);
     try {
       readFileSync(file);

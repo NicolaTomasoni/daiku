@@ -39,7 +39,6 @@ const ABSENT = Object.freeze({
   promptDumpChars: null,
   channels: null,
   promptCap: null,
-  payloadCap: null,
 });
 
 /** A declared cap: a positive integer, or `null` for anything else — zero, negative, a string, a
@@ -113,11 +112,10 @@ export function loadContext(root, reads = REAL_READS) {
       memoryRoot: resolvePath(json.memory && json.memory.root, root),
       writeRoots: environment.writeRoots,
       promptDumpChars: environment.promptDumpChars,
-      // The two caps of the `subagent` group. `prompt_cap` is the ceiling on the characters of a
-      // subagent's prompt, `payload_cap` the ceiling on the content a step hands a child. Both a
-      // positive integer, or `null` — a group absent, or a member that is not one, declares nothing.
+      // The cap of the `subagent` group: `prompt_cap` is the ceiling on the characters of a
+      // subagent's prompt. A positive integer, or `null` — a group absent, or a member that is not
+      // one, declares nothing.
       promptCap: positiveInt(subagent && subagent.prompt_cap),
-      payloadCap: positiveInt(subagent && subagent.payload_cap),
       // The two branch names of the channels group. `production` is the switch of the branch
       // guard of `command-guard.mjs`; `development` names the branch the work lives on. A group
       // absent, or a member that is not a non-empty string, contributes `null`.
@@ -212,7 +210,6 @@ export function fakeContext(fields = {}) {
     writeRoots: Array.isArray(fields.writeRoots) ? fields.writeRoots.map(seat).filter(Boolean) : [],
     promptDumpChars: typeof fields.promptDumpChars === 'number' && fields.promptDumpChars > 0 ? Math.floor(fields.promptDumpChars) : null,
     promptCap: positiveInt(fields.promptCap),
-    payloadCap: positiveInt(fields.payloadCap),
     channels: fields.channels || null,
   };
 }

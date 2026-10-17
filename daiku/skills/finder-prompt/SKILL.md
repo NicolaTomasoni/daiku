@@ -64,8 +64,6 @@ A discipline with nothing to look at carries `active: false`, its one-line `why`
 
 7. **Already judged findings** (from the second round on): the ledger holds the discarded of previous rounds with the reason. Do not repropose them, except for new evidence that the reason was wrong — in that case say so explicitly in the description.
 
-8. **When content must cross, it crosses bounded.** A finder hands no child a content, but its own block may carry the findings: where it does, they travel within `{subagent.payload_cap}` — a **deterministic view** of the scope beside the **path of the whole original** the caller gave, never a summary written by a model (`contracts/orchestration.md` §4, *Delegation*) — and the block declares the size in its `payload` field (`{bytes, lines}`).
-
 ## The block you return
 
 **The schema is this, and it is the only one.** The contract of your discipline does not redeclare it: it adds the `confidence` scale and says what to write inside `symbol`, `change` and `description`, which is the only thing changing between one discipline and the next.

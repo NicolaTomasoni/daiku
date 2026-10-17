@@ -181,6 +181,9 @@ const ATOMIC = {
 /** Artefacts that exclude each other: a folder cannot be both before and after delivery. */
 const MUTUALLY_EXCLUSIVE = ['1. decision-doc.md', '5. review-report.md'];
 
+/** The artefact of `execute` — the phase whose review `5. review-report.md` proves. */
+const REVIEW_INPUT = '4. review-notes.md';
+
 /** The verdict domains, taken verbatim from the contracts that already use them. */
 const GATES = ['green', 'red'];
 const EXITS = ['fixed-point', 'discarded-only', 'diminishing-returns', 'oscillation', 'rounds-truncated', 'rounds-exhausted'];
@@ -227,6 +230,22 @@ function presentOf(input) {
     throw new BadInput('present is required and must be an array of file names');
   }
   return present;
+}
+
+/**
+ * The merge that already carries this folder, as `architect/delivered.mjs` measured it: a commit
+ * sha when the integration branch holds the merge of this work, `null` when it does not. The
+ * program is what reads Git — this one opens no file of the project — so the fact arrives already
+ * measured, and a caller that did not measure it cannot leave it out: the key is required, and its
+ * absence is a loud failure rather than a silent «not delivered».
+ */
+function mergedOf(input) {
+  const merged = input.merged;
+  if (merged === null) return null;
+  if (typeof merged !== 'string' || !merged.trim()) {
+    throw new BadInput('merged must be the sha of the merge that carries the folder, or null when it has not landed');
+  }
+  return merged.trim();
 }
 
 function entryOf(input) {
@@ -322,12 +341,20 @@ function reading(branch, remaining, why) {
  */
 function incoherence(input, question) {
   const present = presentOf(input);
-  if (MUTUALLY_EXCLUSIVE.every((artifact) => present.includes(artifact))) {
+  const beforeAndAfter = MUTUALLY_EXCLUSIVE.every((artifact) => present.includes(artifact));
+  // The pair stands together legitimately in one case: a delivery that reached its review. Two
+  // facts prove it, and both are read, never guessed — the artefact of the phase the review reads,
+  // and the ledger of the cycle that ran, which this question's input already requires. Without
+  // them the report cannot be phase 3 of *this* folder's delivery, and the folder is a work
+  // arrived after a delivery that never started here. That is what holds the stop-report off the
+  // review seat in § *2b. No-review stop*: that folder carries `4. review-notes.md` and no ledger.
+  if (beforeAndAfter && !(present.includes(REVIEW_INPUT) && input.ledger)) {
     return block({
       verdict: 'stop',
       detail:
         `input and the artefacts present disagree: ${MUTUALLY_EXCLUSIVE.join(' and ')} stand together in the ` +
-        'same folder, and they exclude each other — the work cannot be both before the delivery and after it. ' +
+        `same folder, and nothing proves the review they announce — ${REVIEW_INPUT} is not there, or no ledger ` +
+        'of a cycle of this folder was handed over. The work cannot be both before the delivery and after it. ' +
         'No reading is guessed: the chain stops.',
     });
   }
@@ -392,6 +419,21 @@ function furthestProven(input) {
 /** 6. The order — `skills/ship-feature/SKILL.md` § *The sequence*. */
 function askOrder(input) {
   const entry = entryOf(input);
+  // The folder outranks its own artefacts: a work already integrated has no chain to order,
+  // whatever the files on disk still say. It is read before every other branch of this question,
+  // because the failure it closes is a resume that redid a delivery on work the integration branch
+  // already holds — the artefacts proving that delivery are written in the main tree, committed by
+  // nobody, and gone at the first stash.
+  const merged = mergedOf(input);
+  if (merged) {
+    return block({
+      verdict: 'stop',
+      detail:
+        `the folder has already been delivered: the integration branch carries its merge at ${String(merged).slice(0, 7)}, ` +
+        'so a chain ordered on it would redo work that is already integrated. The chain stops here. This is the reading ' +
+        '`architect/delivered.mjs` measured on the disk, not a guess; a work reopened on purpose is a new folder.',
+    });
+  }
   if (entry.atomic) return block({ verdict: 'stop', detail: entry.atomic });
   const contradiction = incoherence(input, 'order');
   if (contradiction) return contradiction;
@@ -906,9 +948,9 @@ function valuesAt(value, path) {
 /**
  * The `payload` field a block carries when its step handed a child — or returned — a **content**
  * and not a path: `{bytes, lines}`, both non-negative integers, **absent** where the step passed
- * only a path (`contracts/orchestration.md` §4, *Delegation*). It is the measure the reduced view
- * of `architect/view.mjs` stands beside, and the shape every block whose step delivers content
- * declares. A `payload` absent changes nothing — the field exists only for what crossed.
+ * only a path (`contracts/orchestration.md` §4, *Delegation*). It is the shape every block whose
+ * step delivers content declares. A `payload` absent changes nothing — the field exists only for
+ * what crossed.
  */
 function payloadFaults(value) {
   if (!('payload' in value) || value.payload === null) return [];
@@ -1490,7 +1532,7 @@ const REQUIRES = {
   unblock: ['review_outcome'],
   propagation: ['step'],
   resumption: ['entry', 'present', 'ledger'],
-  order: ['entry', 'present', 'ledger'],
+  order: ['entry', 'present', 'ledger', 'merged'],
   round: ['ledger', 'rounds_cap'],
   layers: ['layers', 'added'],
   block: ['name', 'block'],
@@ -1837,58 +1879,80 @@ const CASES = [
     expect: { verdict: 'restart' } },
 
   /* --- question: order — skills/ship-feature/SKILL.md § The sequence --- */
+  // A folder whose work already stands on the integration branch stops the chain, whatever its
+  // artefacts still say. That the two readings differ is the point of the case: the artefacts
+  // present here order `execute`, and the merge the disk carries outranks them.
+  { id: 'order:the-folder-already-landed', cites: { file: 'skills/ship-feature/SKILL.md', section: 'The sequence' },
+    input: { question: 'order', merged: 'd49ae3ae5f93697953bd1833a867dfc7e977b138', entry: 'new-feature', present: ['0. problem.md', '1. decision-doc.md', '2. blueprint.md'], ledger: null },
+    expect: { verdict: 'stop' } },
   { id: 'order:proceed-from-the-start', cites: { file: 'skills/ship-feature/SKILL.md', section: 'The sequence' },
-    input: { question: 'order', entry: 'new-feature', present: [], ledger: null },
+    input: { question: 'order', merged: null, entry: 'new-feature', present: [], ledger: null },
     expect: { verdict: 'proceed', remaining_starts_with: 'problem' } },
   { id: 'order:proceed-from-the-delivery', cites: { file: 'skills/ship-feature/SKILL.md', section: 'The sequence' },
-    input: { question: 'order', entry: 'new-feature', present: ['1. decision-doc.md'], ledger: null },
+    input: { question: 'order', merged: null, entry: 'new-feature', present: ['1. decision-doc.md'], ledger: null },
     expect: { verdict: 'proceed', remaining_starts_with: 'acquisition' } },
   { id: 'order:proven-phases-are-cut', cites: { file: 'skills/ship-feature/SKILL.md', section: 'The sequence' },
-    input: { question: 'order', entry: 'new-feature', present: ['1. decision-doc.md', '2. blueprint.md'], ledger: null },
+    input: { question: 'order', merged: null, entry: 'new-feature', present: ['1. decision-doc.md', '2. blueprint.md'], ledger: null },
     expect: { verdict: 'proceed', remaining_starts_with: 'execute' } },
   { id: 'order:the-early-block-reports-on-its-own-seat', cites: { file: 'skills/ship-feature/SKILL.md', section: 'Early block' },
-    input: { question: 'order', entry: 'new-feature', present: ['0. problem.md', '1. decision-doc.md', '2. blueprint.md', '4. review-notes.md', '5. delivery-report.md'], ledger: null },
+    input: { question: 'order', merged: null, entry: 'new-feature', present: ['0. problem.md', '1. decision-doc.md', '2. blueprint.md', '4. review-notes.md', '5. delivery-report.md'], ledger: null },
     expect: { verdict: 'proceed', remaining_starts_with: 'review' } },
   // The voluntary stop of § *2b* leaves the same artefacts the early block leaves, and the
   // verdict it owes is the same one: `4. review-notes.md` is the last proven phase, so the
   // resume starts at the review and nothing before it is redone. The rule is stated there and
   // proved here — the section is what makes the stop deterministic, and the bench is its seat.
   { id: 'order:the-no-review-stop-resumes-at-the-review', cites: { file: 'skills/ship-feature/SKILL.md', section: '2b. No-review stop' },
-    input: { question: 'order', entry: 'new-feature', present: ['0. problem.md', '1. decision-doc.md', '2. blueprint.md', '4. review-notes.md', '5. delivery-report.md'], ledger: null },
+    input: { question: 'order', merged: null, entry: 'new-feature', present: ['0. problem.md', '1. decision-doc.md', '2. blueprint.md', '4. review-notes.md', '5. delivery-report.md'], ledger: null },
     expect: { verdict: 'proceed', remaining_starts_with: 'review' } },
   { id: 'order:review-entry', cites: { file: 'skills/review/SKILL.md', section: 'The cycle' },
-    input: { question: 'order', entry: 'review', present: [], ledger: null },
+    input: { question: 'order', merged: null, entry: 'review', present: [], ledger: null },
     expect: { verdict: 'proceed', remaining_starts_with: 'scope', remaining: ['scope', 'finder', 'applier', 'coverage', 'gate', 'closing'] } },
   { id: 'order:review-entry-on-a-review-notes', cites: { file: 'skills/review/SKILL.md', section: 'The cycle' },
-    input: { question: 'order', entry: 'review', present: ['4. review-notes.md'], ledger: null },
+    input: { question: 'order', merged: null, entry: 'review', present: ['4. review-notes.md'], ledger: null },
     expect: { verdict: 'proceed', remaining_starts_with: 'scope' } },
 
   /* --- the three entry points, plus the atomic ones --- */
   { id: 'entry:new-feature', cites: { file: 'skills/new-feature/SKILL.md', section: 'The sequence' },
-    input: { question: 'order', entry: 'new-feature', present: [], ledger: null },
+    input: { question: 'order', merged: null, entry: 'new-feature', present: [], ledger: null },
     expect: { verdict: 'proceed', remaining_starts_with: 'problem' } },
   { id: 'entry:decision-doc', cites: { file: 'skills/decision-doc/SKILL.md', section: 'Input: the problem folder' },
-    input: { question: 'order', entry: 'decision-doc', present: ['0. problem.md'], ledger: null },
+    input: { question: 'order', merged: null, entry: 'decision-doc', present: ['0. problem.md'], ledger: null },
     expect: { verdict: 'proceed', remaining_starts_with: 'decisions' } },
   { id: 'entry:review', cites: { file: 'skills/review/SKILL.md', section: 'Input' },
-    input: { question: 'order', entry: 'review', present: [], ledger: null },
+    input: { question: 'order', merged: null, entry: 'review', present: [], ledger: null },
     expect: { verdict: 'proceed', remaining_starts_with: 'scope' } },
   { id: 'entry:study', cites: { file: 'contracts/orchestration.md', section: '3. Invocable skills and internal contracts' },
-    input: { question: 'order', entry: 'study', present: [], ledger: null },
+    input: { question: 'order', merged: null, entry: 'study', present: [], ledger: null },
     expect: { verdict: 'stop' } },
   { id: 'entry:handoff', cites: { file: 'contracts/orchestration.md', section: '3. Invocable skills and internal contracts' },
-    input: { question: 'order', entry: 'handoff', present: [], ledger: null },
+    input: { question: 'order', merged: null, entry: 'handoff', present: [], ledger: null },
     expect: { verdict: 'stop' } },
 
   /* --- ambiguity: two incoherences and one legitimate fork --- */
   { id: 'ambiguity:incoherence-artifacts-exclude-each-other', cites: { file: 'skills/ship-feature/SKILL.md', section: 'Input' },
-    input: { question: 'order', entry: 'new-feature', present: ['1. decision-doc.md', '5. review-report.md'], ledger: null },
+    input: { question: 'order', merged: null, entry: 'new-feature', present: ['1. decision-doc.md', '5. review-report.md'], ledger: null },
+    expect: { verdict: 'stop', readings_length: 0 } },
+  // The pair with the delivery's chain proven under it is not a contradiction: it is the ordinary
+  // state of a delivery interrupted between its review and the phase after it, and the chain picks
+  // it up where it stopped — the review is not re-run, and nothing before it is redone. The two
+  // facts that prove it are read together, and one alone is not enough: without the ledger of a
+  // cycle the report announces no review, and without the artefact of execute it announces no
+  // review of this folder's delivery — which is the stop-report § *2b. No-review stop* keeps off
+  // this seat, and the red case below is what holds that door shut.
+  { id: 'ambiguity:the-review-report-stands-over-its-own-execute', cites: { file: 'skills/ship-feature/SKILL.md', section: 'The sequence' },
+    input: { question: 'order', merged: null, entry: 'new-feature', present: ['0. problem.md', '1. decision-doc.md', '2. blueprint.md', '4. review-notes.md', '5. review-report.md'], ledger: { ...LEDGER([ROUND([])]), outcome: 'fixed-point', gate: 'green' } },
+    expect: { verdict: 'proceed', remaining_starts_with: 'decision' } },
+  { id: 'ambiguity:the-review-report-without-the-ledger-of-its-cycle', cites: { file: 'skills/ship-feature/SKILL.md', section: '2b. No-review stop' },
+    input: { question: 'order', merged: null, entry: 'new-feature', present: ['0. problem.md', '1. decision-doc.md', '2. blueprint.md', '4. review-notes.md', '5. review-report.md'], ledger: null },
+    expect: { verdict: 'stop', readings_length: 0 } },
+  { id: 'ambiguity:the-review-report-with-a-ledger-and-no-execute', cites: { file: 'skills/ship-feature/SKILL.md', section: 'Input' },
+    input: { question: 'order', merged: null, entry: 'new-feature', present: ['1. decision-doc.md', '5. review-report.md'], ledger: { ...LEDGER([ROUND([])]), outcome: 'fixed-point', gate: 'green' } },
     expect: { verdict: 'stop', readings_length: 0 } },
   { id: 'ambiguity:incoherence-entry-declares-a-missing-artifact', cites: { file: 'skills/decision-doc/SKILL.md', section: 'Input: the problem folder' },
-    input: { question: 'order', entry: 'decision-doc', present: [], ledger: null },
+    input: { question: 'order', merged: null, entry: 'decision-doc', present: [], ledger: null },
     expect: { verdict: 'stop', readings_length: 0 } },
   { id: 'ambiguity:fork-both-readings-are-defensible', cites: { file: 'skills/review/SKILL.md', section: 'Baseline and ledger' },
-    input: { question: 'order', entry: 'new-feature', present: ['4. review-notes.md'], ledger: null },
+    input: { question: 'order', merged: null, entry: 'new-feature', present: ['4. review-notes.md'], ledger: null },
     expect: { verdict: 'stop', readings_length: 2 } },
   /* --- question: round — skills/review/SKILL.md § When to run another round, § Exits --- */
   { id: 'round:rule-1-fixed-point', cites: { file: 'skills/review/SKILL.md', section: 'When to run another round' },
@@ -2345,9 +2409,9 @@ const CASES = [
 /** The input that must be refused loudly. Nothing here is a verdict. */
 const REJECTED = [
   { id: 'reject:unknown-question', input: { question: 'invented', entry: 'new-feature', present: [] } },
-  { id: 'reject:unknown-entry', input: { question: 'order', entry: 'invented', present: [], ledger: null } },
-  { id: 'reject:the-delivery-is-not-an-entry', input: { question: 'order', entry: 'ship-feature', present: ['1. decision-doc.md'], ledger: null } },
-  { id: 'reject:present-not-a-list', input: { question: 'order', entry: 'new-feature', present: 'x', ledger: null } },
+  { id: 'reject:unknown-entry', input: { question: 'order', merged: null, entry: 'invented', present: [], ledger: null } },
+  { id: 'reject:the-delivery-is-not-an-entry', input: { question: 'order', merged: null, entry: 'ship-feature', present: ['1. decision-doc.md'], ledger: null } },
+  { id: 'reject:present-not-a-list', input: { question: 'order', merged: null, entry: 'new-feature', present: 'x', ledger: null } },
   { id: 'reject:review-outcome-absent', input: { question: 'decision' } },
   { id: 'reject:gate-origin-absent', input: { question: 'decision', review_outcome: { gate: 'red', gate_detail: 'x', outcome: 'fixed-point', missing_disciplines: [], to_confirm: [] } } },
   { id: 'reject:gate-origin-outside-its-domain', input: { question: 'decision', review_outcome: GREEN({ gate_origin: 'forse' }) } },
@@ -2400,7 +2464,7 @@ const REJECTED = [
 const DOC_CALLS = [
   { id: 'every-key-named', question: 'round', text: 'call the evaluator with `question: "round"`, the `ledger` and `rounds_cap` (the `N`, or `null`).', unnamed: [] },
   { id: 'a-key-named-as-a-word', question: 'resumption', text: 'with `question: "resumption"`, the ledger you were handed (or `null`), the artefacts present and the entry point.', unnamed: [] },
-  { id: 'a-key-left-out', question: 'order', text: 'with `question: "order"`, `entry: "new-feature"` and `present` (the artefacts already on disk).', unnamed: ['ledger'] },
+  { id: 'a-key-left-out', question: 'order', text: 'with `question: "order"`, `entry: "new-feature"` and `present` (the artefacts already on disk).', unnamed: ['ledger', 'merged'] },
   { id: 'the-question-does-not-name-its-key', question: 'block', text: 'ask it with `question: "block"` and `name: "decision-doc"` whether the shape holds.', unnamed: ['block'] },
   { id: 'an-unknown-question', question: 'invented', text: 'call the evaluator with `question: "invented"`.', unnamed: ['the question itself, which REQUIRES does not know'] },
 ];
