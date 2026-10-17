@@ -30,3 +30,4 @@
 # lavoro effimere del repository stesso, e nessun git deve portarle con sé. Il loro registro sta
 # sotto `.docs/runtime/review`, già escluso qui sopra.
 .claude/worktrees/
+.vscode/

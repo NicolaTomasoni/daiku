@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 7f30fa0d-9a97-482d-ba1b-c32231e0c9e1
-  modified: 2026-10-16T16:36:34.057Z
+  modified: 2026-10-16T22:01:03.731Z
 ---
 
 **Deciso il 19 settembre 2026, preparando gli hook per la distribuzione.** Un pacchetto si
@@ -88,7 +88,7 @@ dove un divieto può avere una sede deterministica, ce l'ha sempre. Fanno eccezi
 davvero dal progetto (oggi il pool dei worktree, la guardia del ramo e la guardia della review): quelli nascono **spenti**, con la loro chiave
 nel JSON, e nel banco un caso che prova che da spenti **non** negano. Ogni ramo ha la sua riga nella
 tabella di `plugins/daiku/hooks/README.md`, e i banchi di tutto ciò che il pacchetto esegue — i
-moduli di `hooks/lib/` con un banco, il banco dei manifest, i sette programmi di `architect/`, i passi
+moduli di `hooks/lib/` con un banco, il banco dei manifest, gli otto programmi di `architect/`, i passi
 di `init` sotto `skills/init/`, l'adattatore delle guardie `hooks/opencode-plugin.mjs`, l'entrypoint
 `plugins/plugin.mjs` e lo scheletro dell'aggiornamento `templates/project/update.mjs` — si lanciano
 insieme con `node plugins/daiku/hooks/self-check.mjs`, che somma i controlli e esce `1` al

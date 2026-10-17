@@ -1,11 +1,11 @@
 ---
 name: valutatore-deterministico
-description: "Il prodotto ha un valutatore deterministico che possiede l'ordine della catena e risponde a undici domande meccaniche, e accanto tre strumenti che misurano il disco — la review, il pool dei worktree e la riconciliazione del merge —: il verdetto vincola, e il banco è l'unica difesa"
+description: "Il prodotto ha un valutatore deterministico che possiede l'ordine della catena e risponde a undici domande meccaniche, e accanto quattro strumenti che misurano il disco — la review, il pool dei worktree, la riconciliazione del merge e lo stato di una cartella —: il verdetto vincola, e il banco è l'unica difesa"
 metadata:
   node_type: memory
   type: project
   originSessionId: 43bcfac4-1cc3-4310-acf9-530699fcf261
-  modified: 2026-10-08T16:04:14.400Z
+  modified: 2026-10-16T22:01:19.076Z
 ---
 
 **Dal 23 settembre 2026 il prodotto ha un valutatore deterministico.** È
@@ -65,6 +65,7 @@ resto del pacchetto discendono da qui, e sono la parte che conta:
   Prima era prosa scritta a mano, e portava una condizione di «libero» — `HEAD == HEAD(<INT>)` —
   che nessuno slot soddisfaceva mai, così il pool non riciclava e si saturava. Vedi [[pool-worktree]].
 - **La riconciliazione di un merge ostruito ha il suo lato disco.** `architect/reconcile.mjs` misura Git — il merge-base, i percorsi ostruiti, le righe che ciascuna parte cambia — scrive in un patch il lavoro non committato dell'albero di lavoro, e chiede al valutatore la domanda `reconcile`: `reconcile` quando le due parti sono disgiunte a riga, `stop` quando toccano le stesse righe, perché una fusione lì è una scelta con tradeoff e la prende l'owner.
+- **Lo stato di una cartella ha il suo lato disco.** `architect/delivered.mjs` legge in Git il soggetto del commit di merge — `merge: <folder>`, la forma che la §6b scrive da sé — e risponde con lo sha di quel merge, o `null`; un ramo d'integrazione che non risolve è un errore, mai un `null`, perché «non è mai atterrata» e «non ho potuto leggere» non devono dare la stessa risposta. È la misura che tiene una cartella già consegnata dal essere consegnata di nuovo: gli artefatti che provano una consegna (`3.`–`5.`) si scrivono nel main tree e **non li committa nessuno** — i tre gruppi sono codice, memoria/doc e versione, e la cartella della feature non sta in nessuno dei tre — quindi uno stash, un `clean` o un checkout li porta via senza lasciare traccia, mentre il segno durevole è il merge ed è sempre stato lì. Il verdetto vincola: `order` chiesto con `merged` non nullo risponde `stop` e la catena non gira.
 - **La radice si passa per argomento, mai dedotta dalla posizione.** Un programma che deduce la
   propria radice dal posto in cui si trova è corretto fino al primo spostamento dell'albero e
   sbaglia in silenzio: è esattamente come è morto il verificatore rimosso il 18 settembre 2026.
@@ -73,8 +74,7 @@ resto del pacchetto discendono da qui, e sono la parte che conta:
 si ferma. E un controllo che nessuno ha visto fallire vale come rosso: il banco del valutatore
 riporta accanto al totale `never_red`, le regole che nessuna sua fixture ha mai reso rosse, e
 `hooks/self-check.mjs` fa rosso quel banco anche con tutti i casi verdi, perché una regola che è
-sempre passata non si distingue da una che non può fallire. I tre banchi stanno accanto ai tre
-programmi e non in `hooks/lib/`, che viene copiata nel progetto dell'utente; quello di `ledger.mjs`
+sempre passata non si distingue da una che non può fallire. I banchi stanno accanto ai programmi e non in `hooks/lib/`, che viene copiata nel progetto dell'utente; quello di `ledger.mjs`
 lavora con Git vero su repository usa e getta nella cartella temporanea di sistema. Si lanciano con
 gli altri con `node plugins/daiku/hooks/self-check.mjs`.
 
@@ -85,7 +85,8 @@ stessa, e se le due letture coincidono sempre allora il valutatore ha reso poco.
 **How to apply:** si invoca con `node <radice del pacchetto>/architect/architect.mjs <radice>` — e
 gli strumenti con `node <radice del pacchetto>/architect/ledger.mjs <radice>` e
 `node <radice del pacchetto>/architect/pool.mjs <radice>` e
-`node <radice del pacchetto>/architect/reconcile.mjs <radice>` — un oggetto JSON su
+`node <radice del pacchetto>/architect/reconcile.mjs <radice>` e
+`node <radice del pacchetto>/architect/delivered.mjs <radice>` — un oggetto JSON su
 stdin e uno su stdout. Le chiavi che ogni domanda richiede sono dichiarate una volta sola, in
 `REQUIRES` di `architect.mjs`, e il suo banco rifiuta una chiamata al valutatore, nei contratti di
 `skills/`, il cui paragrafo non le nomina tutte. Cosa risponde e il blocco di ritorno stanno in

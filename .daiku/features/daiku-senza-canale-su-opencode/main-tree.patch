@@ -1,0 +1,1512 @@
+diff --git a/.daiku/features/0. interventi-rapidi/0. problem.md b/.daiku/features/0. interventi-rapidi/0. problem.md
+deleted file mode 100644
+index 8ad08dd..0000000
+--- a/.daiku/features/0. interventi-rapidi/0. problem.md	
++++ /dev/null
+@@ -1,36 +0,0 @@
+-# Gli interventi approvati da una corsa di studio non hanno una sede su cui lavorare — il problema
+-
+-> Una corsa di `studia-repository` approva, fra le sue proposte, gli **interventi**: le correzioni
+-> e le adozioni piccole che si possono fare subito. Restano dentro `sintesi.md` — un documento di
+-> giudizio, che si legge una volta e non si tocca — e non entrano in nessuna cartella di lavoro:
+-> le feature hanno la loro, gli interventi no. Chi vuole applicarne uno riparte dalla sintesi ogni
+-> volta, e un intervento che nessuno riprende non lascia traccia da nessuna parte.
+->
+-> Questa cartella è quella sede, e questo documento è la sua raccolta: gli interventi approvati da
+-> ogni corsa, una sezione per corsa, coi loro campi. Un intervento **applicato si toglie**, così ciò
+-> che resta è la lista di ciò che aspetta.
+->
+-> **E un intervento è senza tradeoff, a guadagno immediato e sicuro.** Non basta che non apra una
+-> decisione e non contraddica i tre principi: si dichiara, voce per voce, cosa il gesto costa. Dove
+-> costa qualcosa — meno contesto a chi giudica, una soglia da indovinare, un avviso in più che può
+-> smettere di essere letto, una convenzione che nessun meccanismo impone, un campo che nessuno
+-> consuma ancora — o dove il guadagno arriva più tardi, quello **non è un intervento**: è una
+-> feature, o resta aperto.
+->
+-> **Area.** Il cantiere: `.claude/commands/studia-repository.md` — il contratto che approva gli
+-> interventi e non ha mai avuto una sede su cui depositarli.
+-> **Contesto.** Il problema si apre con la corsa
+-> `prima-che-arrivi-al-modello-output-dei-tool-e-serializzazione` del 3 ottobre 2026, la prima a
+-> forma di studio comparato; il fratello `compaction-deterministica-euristica-e-locale/` porta le
+-> feature di una corsa precedente, e non aveva interventi — aveva solo feature.
+-> **Stato:** raccolta aperta il 3 ottobre 2026.
+-
+----
+-
+-## In una riga
+-
+-Una corsa propone gli interventi; questa cartella è dove atterrano, per essere applicati.
+-
+-## Gli interventi in attesa
+-
+-Nessuno.
+diff --git a/.daiku/features/daiku-senza-canale-su-opencode/1. decision-doc.md b/.daiku/features/daiku-senza-canale-su-opencode/1. decision-doc.md
+index 33c0570..46b0282 100644
+--- a/.daiku/features/daiku-senza-canale-su-opencode/1. decision-doc.md	
++++ b/.daiku/features/daiku-senza-canale-su-opencode/1. decision-doc.md	
+@@ -47,6 +47,7 @@
+   sempre.
+ - **Raccomandata: A** — è la direzione dell'owner, e la decisione del 15 ottobre si supera legittimamente
+   perché la sua premessa tecnica è cambiata, non la sua logica.
++- **Choice: A — Il canale dell'host sostituisce il deposito: il deposito sparisce, superfluo. (16 ottobre 2026)**
+ 
+ ### 2. Il divieto del manifesto di dipendenze in due sedi, e il presidio della radice di `plugins/`
+ 
+@@ -71,6 +72,7 @@
+   la svista.
+ - **Raccomandata: A** — un divieto che conta non può restare in prosa sola, e la radice di `main` è
+   proprio il punto che oggi nessun controllo sorveglia.
++- **Choice: A — Il divieto si restringe a «nessun manifesto di dipendenze né lockfile» (un `package.json` come descrittore del plugin è ammesso) e guadagna un controllo che cammina la radice di `plugins/`; la svista di perimetro si corregge. (16 ottobre 2026)**
+ 
+ ### 3. Dove nasce l'artefatto opencode e come `main` lo porta
+ 
+@@ -93,6 +95,7 @@
+   rilasci, e niente le si scrive sopra a mano.
+ - **Raccomandata: A** — è l'unica che non crea un secondo percorso di pubblicazione, e mette l'artefatto
+   dove la direzione lo vuole.
++- **Choice: A — Nasce dentro `plugins/` (`plugins/package.json` + l'entrypoint + gli scheletri del plugin), e `release` lo porta a `main` col resto; l'entrypoint registra dal proprio `./daiku/`. (16 ottobre 2026)**
+ 
+ ### 4. Come il plugin registra skill, agenti e comandi
+ 
+@@ -118,6 +121,7 @@
+   la doppia manutenzione che comporta. La **C** è la **A** più il deposito, e paga due vie.
+ - **Raccomandata: A** — tiene una sola sorgente dei contratti, e la registrazione in codice è la via che
+   opencode espone perché un plugin consegni estensioni. I comandi slash stanno nella scheda 9.
++- **Choice: A — Registrazione dai file del pacchetto: l'entrypoint calcola la propria cartella (`import.meta.url`) e registra una sorgente `directory` per le skill (con `reload`) e gli agenti con `ctx.agent.transform`. (16 ottobre 2026)**
+ 
+ ### 5. La versione dell'artefatto, e come `opencode plugin update` sa che ne è arrivata una nuova
+ 
+@@ -141,6 +145,7 @@
+   è non verificato (§4.2, §16) e non dà un `>>>` da disegnare. La **C** non crea sedi su disco ma sposta
+   il confronto a runtime, e non si sa se `plugin update` sappia leggerlo.
+ - **Raccomandata: A** — una sola fonte della versione, il resto derivato e sorvegliato.
++- **Choice: A — Il `version` del `package.json` è una replica che `release` scrive dalla stessa fonte di `.claude-plugin/plugin.json`, come fa col badge del README; il confronto dell'aggiornamento lo fa `opencode plugin check`. (16 ottobre 2026)**
+ 
+ ### 6. Le guardie: un solo plugin, dall'entrypoint del pacchetto
+ 
+@@ -163,6 +168,7 @@
+   fa girare due volte la stessa guardia se il deposito non sparisce del tutto, e tiene due sedi da
+   allineare.
+ - **Raccomandata: A** — un solo plugin è la forma che la direzione implica, e non duplica le guardie.
++- **Choice: A — Un solo plugin del pacchetto, che porta sia la registrazione delle estensioni sia le guardie: l'adattatore diventa (o è importato da) l'entrypoint, e `.opencode/plugins/daiku.js` sparisce col deposito. (16 ottobre 2026)**
+ 
+ ### 7. Il comando di aggiornamento unico che riallinea il progetto
+ 
+@@ -187,6 +193,7 @@
+   superficie sperimentale. La **C** è lo stato di oggi, che la direzione vuole superare.
+ - **Raccomandata: A** — realizza il comando unico fin dove un programma arriva, e dichiara la prosa che
+   resta invece di fingere di averla fatta.
++- **Choice: A — Il comando esegue l'aggiornamento e chiama i programmi di `init` (il ramo host di `opencode plugin update`, poi i programmi deterministici del riallineamento), risolvendo la radice del pacchetto dall'host; per la prosa che resta rinvia a `/daiku:init`. (16 ottobre 2026)**
+ 
+ ### 8. Chi dichiara `experimental.subagent_depth`, tolto il deposito
+ 
+@@ -208,6 +215,7 @@
+   livello.
+ - **Raccomandata: A** — la chiave è config di progetto, e `init` è l'unico che scrive nel progetto con
+   un comando che l'utente lancia.
++- **Choice: A — `init` la scrive come proprio passo (sotto `experimental`, per aggiunta, mai sovrascrivendo un valore del progetto), restando config di progetto. (16 ottobre 2026)**
+ 
+ ### 9. I comandi slash con parità Claude — stessi nove nomi, stessi argomenti
+ 
+@@ -242,6 +250,7 @@
+   progetto. `description` e argomenti restano **derivati** dalla SKILL.md (stesso nome, stessa
+   descrizione, `argument-hint` inoltrato), mai duplicati: se la SKILL.md cambia, il comando segue senza
+   una seconda scrittura.
++- **Choice: A — Nove comandi in codice, dall'entrypoint del pacchetto: per ognuna delle nove skill d'ingresso un `CommandDefinition` con stesso `name` e stessa `description` della SKILL.md, il cui `execute` attiva la skill corrispondente inoltrando gli argomenti ricevuti. (16 ottobre 2026)**
+ 
+ ---
+ 
+diff --git a/.daiku/features/daiku-senza-canale-su-opencode/2. blueprint.md b/.daiku/features/daiku-senza-canale-su-opencode/2. blueprint.md
+new file mode 100644
+index 0000000..cb543f3
+--- /dev/null
++++ b/.daiku/features/daiku-senza-canale-su-opencode/2. blueprint.md	
+@@ -0,0 +1,901 @@
++# Execution: il canale dell'host su opencode — pacchetto-plugin, registrazione in codice, deposito rimosso
++
++> Source: `1. decision-doc.md` (stato 16 ottobre 2026; nove schede, tutte `Choice: A`) · Generated: 2026-10-16
++
++## Mandate
++
++- Esegui questo piano **da capo a fondo, in autonomia**.
++- **Non chiedere nulla all'utente**: ogni specifica è qui e la scelta è già stata fatta. Se un
++  dettaglio sembra mancante, derivalo da questo brief e dai riferimenti citati: non ti fermare.
++- Fermati e restituisci il blocco solo davanti a un vero ostacolo (azione distruttiva o
++  irreversibile non giustificata dal brief, o contraddizione interna irrisolvibile).
++- **Questo file è la fonte di verità.** Se riprendi dopo un'interruzione o una compattazione,
++  **rileggilo per intero** (stato dei task + Journal) prima di continuare: lo stato del lavoro
++  sta qui, non nella memoria di sessione.
++- Segui i task **nell'ordine dato**. Puoi **adattare il piano** (aggiungere, riordinare o
++  sostituire task) solo quando l'esecuzione porta fatti nuovi che lo rendono necessario: in tal
++  caso aggiorna i task e **scrivi nel Journal perché**. Non saltare l'ordine per comodità.
++- Aggiorna la **Memory** man mano: spunta i task, annota decisioni, risultati e problemi.
++- I numeri di riga di questo brief sono stati misurati alla generazione: se un file è cambiato
++  sotto di te (lavori paralleli sul cantiere), riapri il file e riadatta il punto — il confronto
++  si fa sulle stringhe letterali, non sui numeri.
++
++## Constraints and perimeter
++
++- Interventi chirurgici: tocca solo ciò che la soluzione richiede. Nessun refactoring o
++  miglioramento fuori perimetro.
++- Rispetta le regole architetturali del progetto: `CLAUDE.md` (istruzioni del cantiere) e
++  `.daiku/policies/`. **`.daiku/policies/` contiene oggi il solo `README.md`** (le convenzioni,
++  senza `paths` e senza `layers`): nessuna policy di area copre questi path, quindi il
++  posizionamento dei livelli segue `ARCHITECTURE.md` §2-§3 e `CLAUDE.md`.
++- **Target paths** — sotto `{code_root}` = `plugins/`: `plugins/package.json` (nuovo),
++  `plugins/plugin.mjs` (nuovo), `plugins/daiku/hooks/opencode-plugin.mjs`,
++  `plugins/daiku/hooks/self-check.mjs`, `plugins/daiku/skills/init/SKILL.md`,
++  `plugins/daiku/skills/init/scan.mjs`, `plugins/daiku/skills/init/depth.mjs` (nuovo),
++  `plugins/daiku/skills/init/deposit.mjs` (eliminato),
++  `plugins/daiku/templates/opencode/plugin.js` e la cartella `plugins/daiku/templates/opencode/`
++  (eliminati), `plugins/daiku/templates/project/update.mjs`,
++  `plugins/daiku/skills/ship-feature/SKILL.md`, `plugins/daiku/skills/new-project/SKILL.md`,
++  `plugins/daiku/skills/reconcile/SKILL.md`, `plugins/daiku/contracts/orchestration.md`,
++  `plugins/daiku/architect/release.mjs`.
++  Fuori da `{code_root}` — sedi del cantiere che la soluzione tocca esplicitamente:
++  `.daiku/project.json` (gate/perimetro dell'area `daiku` + `version.replicated_in`),
++  `.docs/tools/check-no-deps.mjs` (nuovo), `STACK.md` (§2 e §3), `CLAUDE.md`
++  (descrizione del gate, lista dei controlli, enumerazione dei banchi del self-check),
++  `.daiku/studies/opencode.md` e `.daiku/studies/agent-orchestration.md` (la citazione di
++  `STACK.md` §2 che il restringimento rende falsa).
++- Nessuna operazione Git distruttiva o remota (niente `reset --hard` ingiustificato, niente
++  push, niente PR, niente tocco ai ref `main`/`edge`). Nessun commit fuori dal ciclo di review.
++- Nuovi file in UTF-8 senza BOM, LF (`.gitattributes` del prodotto impone LF ovunque).
++- **Non fare** (fuori perimetro):
++  - il canale di Claude Code, `.claude/`, `hooks/hooks.json`, i due comandi di
++    installazione/aggiornamento Claude: non si toccano;
++  - `PRODUCT.md`, `BRAND.md`, `DOMAIN.md` e `STACK.md` §4 (le frasi fondative a host solo):
++  - il punto aperto dichiarato da `0. problem.md` § *Confine del problema*, trattato a parte;
++  - costruire meccanismi di ritiro per depositi **già presenti** nei progetti ospiti
++    (vedi Assunzione A7 — proposta, non eseguita);
++  - installare il plugin nella configurazione di opencode di questa macchina
++    (`opencode plugin add`): è un passo fuori dal repository, va solo proposto, mai eseguito;
++  - scrivere qui il corpus di `.docs/memory/`: l'allineamento della memoria è la fase Memory
++    della consegna (`update-memory`), non tua;
++  - aggiungere dipendenze, lockfile, build, bundler, un nuovo punto d'ingresso, un
++  - `hosts.<host>.skill_pointers`, o rinumerare gli step di `init` (lo slot `4-bis` resta).
++
++## The chosen solution
++
++**Il canale dell'host (scheda 1).** Su opencode il pacchetto arriva con `opencode plugin add`
++e si aggiorna con `opencode plugin update`: il deposito dentro il progetto sparisce come via.
++`init` non scrive più nulla in `.opencode/`. Ciò che il deposito dava — skill, agenti,
++comandi, guardie — lo registra **in codice** il plugin del pacchetto, che non scrive una riga
++nel progetto. La registrazione non trasporta il metodo in codice: i file del pacchetto restano
++l'unica sorgente, letti a runtime dall'entrypoint.
++
++**Il descrittore nasce in `plugins/` (scheda 3).** `plugins/package.json` + l'entrypoint
++`plugins/plugin.mjs` + gli scheletri del plugin stanno alla radice di `plugins/`, da cui
++`release` li porta su `main` col resto (ri-radice di `plugins/`, nessun gesto di pubblicazione
++nuovo). L'entrypoint calcola la propria cartella con `import.meta.url` e registra da
++`./daiku/` (sotto `plugins/`, la cartella del pacchetto). Il descrittore **non porta `version`
++su `develop`** — `develop` non porta versione — e nessun campo di dipendenza.
++
++**Registrazione (scheda 4).** L'entrypoint registra per le skill una sorgente `directory`
++(`ctx.skill.transform` + `reload`) puntata a `<propria cartella>/daiku/skills`, e gli agenti con
++`ctx.agent.transform` + `reload` leggendo ogni `agents/opencode/<ruolo>.md`. Forma del plugin:
++`default = { id: 'daiku', setup }` — la stessa che il loader V2 accetta e che l'adattatore usa
++già. Il metodo resta un corpus di file identici ovunque.
++
++**I nove comandi slash (scheda 9).** Sempre dall'entrypoint, un `CommandDefinition` per ognuna
++delle nove skill d'ingresso — **derivate** dal campo `argument-hint` della loro `SKILL.md`
++(sono le nove che lo portano e nessun'altra) — con `name` uguale al nome della skill e
++`description` letta dalla stessa frontmatter, mai copiata nel modulo. L'`execute` attiva la
++skill già registrata con `ctx.session.prompt` portando `skills: [{ id }]` e il testo degli
++argomenti ricevuti: la SKILL.md resta il corpo, il comando è la maniglia slash.
++
++**Le guardie (scheda 6).** Un solo plugin del pacchetto: l'entrypoint importa il `setup` di
++`plugins/daiku/hooks/opencode-plugin.mjs` e lo invoca, poi aggiunge le registrazioni. Il banco
++dell'adattatore resta dov'è. Lo scheletro `templates/opencode/plugin.js` e la sede
++`.opencode/plugins/daiku.js` spariscono col deposito.
++
++**Annidamento (scheda 8).** `experimental.subagent_depth: 3` lo scrive `init` come proprio
++step, con un programma deterministico nuovo `skills/init/depth.mjs`: sotto `experimental`,
++per aggiunta, **mai** sovrascrivendo un valore del progetto, creando `opencode.json` se manca,
++lasciando intatto un file che non parsifica. Resta config di progetto. Lo step ri occupa lo
++slot `4-bis` (lo slot è «il passo opencode di init»): la scansione lo misura — elenca la chiave
++mancante sotto `4-bis` su un progetto opencode, non elenca mai una chiave presente (qualunque
++sia il suo valore), né un `opencode.json` non parsificabile, né nulla su Claude Code.
++
++**Il deposito sparisce (scheda 1).** Si eliminano `skills/init/deposit.mjs`, lo step 4-bis
++attuale, le voci `deposit` della scansione (e i loro casi di banco), lo scheletro
++`templates/opencode/plugin.js`, e ogni prosa che li nomina. L'ancora di supporto su opencode si
++semplifica: la skill è registrata dai file del pacchetto, quindi la base directory è
++`<pkg>/daiku/skills/<nome>` e **due livelli sopra il file** danno la radice del pacchetto —
++la stessa regola di Claude Code, senza suffisso `daiku/`. L'unico superstite della parola
++«deposit» è «the stash is a place of deposit» dello Step 6 di `init`.
++
++**Il comando di aggiornamento unico (scheda 7).** È `.daiku/update.mjs` — lo scheletro
++`templates/project/update.mjs`, dentro il progetto, lanciato dal task `daiku: update` o a mano.
++Il programma guadagna un **ramo host** scelto da `default_host` di `.daiku/environment.json`
++(con `claude` come fallback): sul ramo opencode (1) risolve la radice del pacchetto e la
++versione in opera da `opencode plugin list`, (2) disegna il delta con la versione che
++`opencode plugin check` dichiara arriva, chiede (stesse stringhe del ramo Claude, solo con
++terminale), (3) esegue `opencode plugin update`, (4) chiama i programmi deterministici di
++`init` — `depth.mjs` e `scan.mjs "<radice tecnica>" --host opencode` — dalla radice risolta,
++(5) stampa ogni voce che la scansione elenca ancora, una riga per voce, e rinvia a
++`/daiku:init` per la prosa che resta (file di istruzioni, sedi, chiavi). Senza terminale, come
++il ramo Claude: stampa i comandi e non cambia nulla. Un host che non risponde è detto, mai
++indovinato (specchio dell'esistente `report()` che risponde `null`).
++
++**La versione (scheda 5).** `version.replicated_in` in `.daiku/project.json` guadagna
++`plugins/package.json`: è una replica che `release` scrive dalla stessa fonte di
++`.claude-plugin/plugin.json`, come fa col badge del README. Poiché su produzione il file non
++c'è ancora al primo rilascio, `architect/release.mjs` lo **semina** dall'albero di sviluppo e
++ci scrive il campo `version.field` con lo stesso scrittore JSON usato per `{version.file}`;
++dai rilasci successivi vale la sostituzione del numero già esistente. Un file nominato e
++assente da entrambi i lati fallisce come oggi. Il confronto dell'aggiornamento su opencode lo
++fa `opencode plugin check` (è il ramo del comando di aggiornamento a leggerlo).
++
++**Il divieto in due sedi, e il perimetro (scheda 2).** `STACK.md` §2 si restringe a «nessun
++manifesto di **dipendenze** né alcun lockfile», con l'ammissione esplicita che un
++`package.json` come descrittore del plugin è ammesso. Il controllo nuovo
++`.docs/tools/check-no-deps.mjs <radice>` cammina la radice di `plugins/`: rosso su **ogni**
++lockfile (per **nome esatto** nella costante — mai una sottostringa: `blocks.json` del corpus
++contiene «lock») e su **ogni** `package.json` che parsifica e porta un campo `dependencies`,
++`devDependencies`, `peerDependencies`, `optionalDependencies` non vuoto o `bundledDependencies`
++non vuoto, e su un `package.json` che non parsifica (non si può giurare). Uscita JSON contata
++`{checks, passed, failed[]}`, `1` al primo rosso, `2` senza argomento, `--self-check` con un
++caso rosso per **ogni** nome e **ogni** campo enumerato (altrimenti `never_red`). E la svista
++di perimetro si corregge: `areas.daiku.paths` diventa `["plugins/"]` e
++`areas.daiku.gate.run` guadagna la riga `node .docs/tools/check-no-deps.mjs plugins`, così un
++file nato alla radice di `plugins/` cade sotto il gate della revisione.
++
++**Cosa il cambiamento non tocca.** `METHOD_FOOTPRINT` di `release.mjs` **tiene** `.opencode`:
++la cartella resta la configurazione dell'host che `project-contract.md` §4 dichiara fra i path
++che mai raggiungono production (gemella di `.claude/`), indipendentemente dal deposito. Il
++numero di `edge` non si scrive qui (passo del cantiere, fuori perimetro).
++
++### Criteri di completamento (comportamento osservabile)
++
++1. `node plugins/daiku/hooks/self-check.mjs` verde e contato, con l'entry nuovo
++   `plugin.mjs`, l'entry `skills/init/depth.mjs`, l'entry `templates/project/update.mjs`, e
++   **senza** l'entry `skills/init/deposit.mjs`.
++2. `node .docs/tools/check-corpus.mjs plugins/daiku`,
++   `node .docs/tools/check-topology.mjs plugins/daiku`,
++   `node .docs/tools/check-marketplace.mjs plugins`,
++   `node .docs/tools/check-no-push.mjs --self-check`,
++   `node .docs/tools/check-no-deps.mjs plugins` e il suo `--self-check`: tutti esci `0`.
++3. `claude plugin validate plugins/daiku` e `claude plugin validate plugins` esci `0`.
++4. I pattern ritirati delle sette righe sotto: **zero colpi** sotto `plugins/`; ogni colpo
++   fuori risposto per la classificazione che il brief dà.
++5. Il banco dell'entrypoint enumera **esattamente i nove** comandi e `git grep` di
++   `argument-hint` nelle `skills/` torna le sole nove frontmatter.
++6. `plugins/package.json` su `develop` esiste, non porta `version`, non porta campi di
++   dipendenza; su production (a valle del rilascio, fuori da questa consegna) la replica la
++   scrive `release` — qui ne è prova il banco del programma.
++
++### Assunzioni esplicite (dati mancanti del decision-doc, dichiarati)
++
++- **A1 — forma dell'entrypoint.** `Host.resolve` cerca gli entrypoint ai sotto-path `server`,
++  `""`, `tui`, `rpc` del pacchetto (`packages/plugin/src/host.ts` al tag `v2.0.29`): si assume
++  che `plugins/package.json` lo dichiari con `exports` (o `main`) verso `./plugin.mjs` e che il
++  loader V2 accetti un modulo `.mjs`. Se la ricognizione mostra un campo o un'estensione
++  diversi, adatta nome/campo e **scrivilo nel Journal**; se serve `"type": "module"`, è un
++  campo di descrittore, non un manifesto di dipendenze, e non scatta il controllo nuovo.
++- **A2 — sorgente `directory` per le skill.** Si registra il tipo `SkillV2Source
++  { type: 'directory', path }` attraverso `ctx.skill.transform` + `reload` (§6.4 e §6.10(b)
++  dello studio). Se l'editor accetta solo `Skill.Info`, la forma di riserva è quella del
++  plugin Figma: camminare ogni `skills/<nome>/SKILL.md` all'avvio e aggiungere l'`Skill.Info`
++  con `path` e `content` **letti dal file** (sorgente unica comunque il file, nessun testo nel
++  modulo): adattamento da Journal, non ostacolo.
++- **A3 — forma degli agenti.** `ctx.agent.transform` si assume accetti la forma derivabile dal
++  markdown di `agents/opencode/` (description, `mode: subagent`, `permission`, corpo come
++  `prompt`) secondo §7.1 dello studio: è il `[to verify]` che il decision-doc dichiara. Il
++  banco prova il filo su un `ctx` finto; l'accettazione lato host resta assunzione — se un
++  host reale la rifiuta, il blocco lo dichiara: **non esiste il deposito come ripiego**.
++- **A4 — attivazione della skill dal comando.** `CommandInvocation` si assume porti la sessione
++  che ha invocato il comando; l'attivazione è `ctx.session.prompt` con `skills: [{ id }]` e il
++  testo degli argomenti (§6.5, §10.10 dello studio). La via `session.command` verso sé stesso
++  è solo se la ricognizione mostra un equivalente **senza ricorsione** (un comando che
++  richiama sé stesso looperebbe): altrimenti la prima.
++- **A5 — output di `opencode plugin list` / `plugin check`.** Si assume che il list porti, per
++  plugin installato, una via da cui la radice del pacchetto si ricava e una versione, e che
++  il check riporti l'aggiornamento disponibile. Output illeggibile = «host did not answer» e
++  comandi a mano stampati, mai un valore indovinato.
++- **A6 — installazione a livello di macchina.** `plugin add` scrive la config globale
++  (§4.2): il comando di aggiornamento nel progetto lo invoca dalla shell del progetto. Fatto
++  dichiarato, non discusso.
++- **A7 — nessun deposito noto nei progetti.** Il primo gesto che porta il pacchetto in un
++  progetto opencode non è mai esistito (è il punto aperto che questa feature chiude), quindi
++  **non si costruisce il ritiro** di `.opencode/` già depositati altrove. Se prima del merge
++  emergesse un progetto con `.opencode/daiku/deposit.json`, il meccanismo `legacy` dello Step 9
++  è il modello: proponlo in una riga, non eseguirlo.
++- **A8 — nessun `version` su `develop`.** Il `package.json` di sviluppo non ha il campo;
++  il primo rilascio lo semina su produzione. Il passo del cantiere che numera `edge` (manuale)
++  è fuori perimetro: se in futuro lo scrive, deve coprire anche quel file — proposta, non questa
++  consegna.
++- **A9 — nessuna prova su opencode vero.** La consegna si chiude su banchi (fake `ctx`),
++  sorgente letto al tag `v2.0.29` e i due validatori dell'host. Un `opencode plugin add` reale
++  su questa macchina è fuori dal repository: si propone, non si esegue. I quattro `[to verify]`
++  del decision-doc restano assunzioni dichiarate A1-A5.
++- **A10 — `opencode.json` non parsificabile.** Come nel deposito di oggi: lasciato intatto e
++  detto (`action: untouched`), la scansione non lo elenca (un relancio che non può scrivere non
++  deve restare «non tutto pronto» per sempre); il file è del progetto e `init` non lo riscrive.
++
++### File di riferimento (li puoi aprire; tutto il resto non serve)
++
++- Cartella della feature: `0. problem.md` (l'analisi da cui si parte), `1. decision-doc.md`
++  (le nove schede con le loro `Choice:`, l'analisi, i dati mancanti — solo per la rationale;
++  la specifica operativa è qui sopra).
++- `.daiku/studies/opencode.md` — §4.2 (installazione/distribuzione, `Host.resolve`),
++  §6.4-§6.10 (ancora, nessuna forma slash, registrazione), §7.1 (forma agenti),
++  §8 e §10.9-§10.10 (comandi, `CommandDefinition`, `session.prompt`), §15.4
++  (`experimental.subagent_depth`), §16 (aggiornamento), §21 (cosa resta scoperto).
++- Documenti fondativi letti: `ARCHITECTURE.md` (§2-§3), `STACK.md` (§2-§3), `DOMAIN.md`.
++
++### Punti di integrazione (ruolo e path concreto)
++
++| Punto | Ruolo | Path |
++|---|---|---|
++| Loader plugin V2 di opencode | carica il descrittore e l'entrypoint del pacchetto installato | `plugins/package.json` + `plugins/plugin.mjs` |
++| Adattatore delle guardie | riaggancia cinque moduli dell'host, dichiara i due mancanti; il suo banco resta | `plugins/daiku/hooks/opencode-plugin.mjs` |
++| Contratto `init` | apre il progetto: step `4-bis` = dichiarazione dell'annidamento, riferimenti all'ancora, paragrafo della scansione, tabella degli scheletri | `plugins/daiku/skills/init/SKILL.md` |
++| Scansione di `init` | misura: voci deposito tolte, misura della chiave in `4-bis` | `plugins/daiku/skills/init/scan.mjs` |
++| Programma della profondità | scrive la chiave in progetto, con banco | `plugins/daiku/skills/init/depth.mjs` (nuovo) |
++| Scheletro dell'aggiornamento | il comando unico nel progetto, ramo opencode | `plugins/daiku/templates/project/update.mjs` |
++| Lancio dei banchi del pacchetto | entry rimossi/aggiunti qui | `plugins/daiku/hooks/self-check.mjs` |
++| Release | semina/sostituisce la replica su production | `plugins/daiku/architect/release.mjs` + `.daiku/project.json` (`version.replicated_in`) |
++| Gate dell'area | la revisione lo esegue su ogni consegna che tocca l'area | `.daiku/project.json` (`areas.daiku`) |
++| Controllo nuovo | seconda sede del divieto | `.docs/tools/check-no-deps.mjs` |
++| Testo del divieto | prima sede del divieto | `STACK.md` §2 (§3 elenca il controllo) |
++| Istruzioni del cantiere | descrizione del gate, lista dei controlli, enumerazione dei banchi | `CLAUDE.md` |
++| Contratto di delega su opencode | il nome dell'agente e il paragrafo dell'annidamento | `plugins/daiku/contracts/orchestration.md` |
++| Le nove skill d'ingresso | sorgente di `argument-hint`, nome e descrizione dei comandi | le nove `skills/<nome>/SKILL.md` |
++| Regola d'ancora per host senza variabili | riscrittura in quattro contratti | `skills/init/SKILL.md`, `skills/ship-feature/SKILL.md`, `skills/new-project/SKILL.md`, `skills/reconcile/SKILL.md` |
++
++## Interfaces touched and their consumers
++
++- `experimental.subagent_depth` — seat (dopo il cambio): `plugins/daiku/skills/init/depth.mjs:1`
++  — consumers: `plugins/daiku/skills/init/deposit.mjs:34` (il programma muore e la logica
++  passa a `depth.mjs`), `plugins/daiku/skills/init/SKILL.md:309` (step riscritto),
++  `plugins/daiku/contracts/orchestration.md:315` (e :320 — la prosa «un progetto che non
++  dichiara nulla tiene il default 1» va aggiustata: su un progetto aperto da `init` la chiave
++  c'è, aggiunta per addizione); le sedi nuove della chiave — il blocco di `scan.mjs`, il banco
++  di `depth.mjs`, la chiamata in `update.mjs` — sono task 4 e 5.
++- `argument-hint` — seat: le nove frontmatter (`plugins/daiku/skills/new-feature/SKILL.md:4`
++  e le otto sorelle: `code-review:4`, `commit:3`, `handoff:4`, `init:4`, `new-project:4`,
++  `release:4`, `research:4`, `review:4`) — consumers:
++  `plugins/daiku/hooks/lib/contracts-post-edit.mjs:17` (la valida),
++  `plugins/daiku/contracts/orchestration.md:95` (i contratti interni non ne hanno),
++  `plugins/plugin.mjs:1` (il nuovo lettore che ne deriva i nove comandi).
++- `version.replicated_in` — seat: `.daiku/project.json:21` — consumers:
++  `plugins/daiku/architect/release.mjs:476`, `plugins/daiku/skills/release/SKILL.md:160`,
++  `plugins/daiku/skills/commit/SKILL.md:64` (quest'ultimo invariato: su un progetto coi canali
++  il gruppo versione non esiste e la replica la scrive la release).
++- `node .docs/tools/check-corpus.mjs plugins/daiku` — seat: `.daiku/project.json:60` —
++  consumers: `STACK.md:44` (l'elenco dei controlli), `.docs/tools/check-corpus.mjs:9` (la sua
++  stessa usage); la prosa di gate in `CLAUDE.md:307-308` nomina il gate e va aggiornata insieme
++  al run array (task 7).
++- `hooks/opencode-plugin.mjs` — seat: `plugins/daiku/hooks/opencode-plugin.mjs:1` —
++  consumers: `plugins/daiku/hooks/self-check.mjs:133` (il suo banco continua a girare qui),
++  `plugins/daiku/skills/init/deposit.mjs:28` (consumatore che muore col deposito),
++  `CLAUDE.md:284` (enumerazione dei banchi: resta vero, la frase guadagna l'entrypoint).
++- `4-bis` — seat: `plugins/daiku/skills/init/scan.mjs:88` (l'id dello step nella risposta della
++  scansione) — consumers: `plugins/daiku/skills/init/SKILL.md:42` (il paragrafo della
++  scansione), `plugins/daiku/skills/init/SKILL.md:301` e `:311` e `:560` (lo step, la sua
++  idempotenza, il report dello Step 10) — lo slot resta, il suo contenuto passa dal deposito
++  alla chiave di annidamento.
++
++## Facts this change retires
++
++- "Il pacchetto non dichiara alcun manifesto di dipendenze né alcun lockfile" (la forma di
++  `STACK.md` §2 anteriore al restringimento) — search: `git grep -n -F 'manifesto di dipendenze'`
++  — colpi attesi: `STACK.md:28` (**si riscrive**, §2 ristretta), `.daiku/studies/opencode.md:3193`
++  e `.daiku/studies/agent-orchestration.md:80` (**si aggiorna** la citazione: citano il documento
++  vivo), i cinque colpi di `.daiku/features/daiku-senza-canale-su-opencode/0. problem.md` e
++  `1. decision-doc.md` (**restano**: sono il record storico della decisione).
++- "`<base directory>/../../daiku`" (l'ancora dell'host senza variabili nella forma del deposito)
++  — search: `git grep -n -F '<base directory>/../../daiku'` — colpi in `plugins/`:
++  `skills/init/SKILL.md:34`, `:48`, `:258`, `skills/new-project/SKILL.md:29`,
++  `skills/reconcile/SKILL.md:38`, `skills/ship-feature/SKILL.md:113` (**tutti riscritti**
++  nella regola «due livelli sopra il file», uguale per entrambi gli host);
++  il colpo di `0. problem.md:20` **resta**.
++- "deposit.mjs" (il programma del deposito) — search: `git grep -n -F 'deposit.mjs'` — colpi
++  in `plugins/`: `skills/init/SKILL.md` (step 4-bis e report), `hooks/self-check.mjs:114-118`
++  (entry del banco, rimosso), `hooks/opencode-plugin.mjs:359` (caso del banco che legge il
++  file, rimosso), il file stesso (eliminato) — **zero colpi** alla fine sotto `plugins/`;
++  i colpi di `.docs/memory/` si chiudono nella fase Memory, quelli di `.daiku/features/`
++  **restano**.
++- ".opencode/plugins/daiku.js" (la sede dello scheletro auto-caricato) — search:
++  `git grep -n -F '.opencode/plugins/daiku.js'` — colpi in `plugins/`: `skills/init/SKILL.md:60`
++  (riga della tabella, tolta), `skills/init/deposit.mjs` e `templates/opencode/plugin.js`
++  (eliminati) — **zero**; `.docs/memory/deposito-opencode.md:24` si chiude in fase Memory.
++- "the file name in `.opencode/agents/`" (la sede del nome dell'agente su opencode) — search:
++  `git grep -n -F '.opencode/agents/'` — colpi in `plugins/`:
++  `contracts/orchestration.md:197` (**riscritto**: il nome è quello che il plugin registra da
++  `agents/opencode/`), `skills/init/SKILL.md:309` (riscritto col resto dello step) — **zero**;
++  il colpo di `0. problem.md:16` **resta**.
++- ".opencode/daiku/deposit.json" (il manifesto del deposito) — search:
++  `git grep -n -F 'deposit.json'` — colpi in `plugins/`: `hooks/opencode-plugin.mjs:28`
++  (**riscritto**: la dichiarazione dei due moduli senza evento resta nel file e nel suo banco),
++  `skills/init/SKILL.md:42` e `:309`, `skills/init/scan.mjs:31`, `:387`, `:663`, il file
++  `deposit.mjs` (eliminato) — **zero**; `.docs/memory/` in fase Memory.
++- "opencode auto-loads" (lo scheletro che l'host carica dal deposito) — search:
++  `git grep -n -F 'auto-loads'` — colpi in `plugins/`: `hooks/opencode-plugin.mjs:7`
++  (**riscritto**: l'host carica l'entrypoint del pacchetto installato),
++  `templates/opencode/plugin.js:1` (eliminato), `skills/init/SKILL.md:60` (riga tolta) —
++  **zero**.
++
++## Memory — plan and journal
++
++   State: [ ] da fare · [~] in corso · [x] fatto
++
++- [x] Task 0 — Ricognizione: verifica sul campo i punti aperti del brief. Leggi al tag
++      `v2.0.29` (raw del sorgente, come fece lo studio): (1) `packages/plugin/src/host.ts` e
++      `packages/core/src/plugin/module.ts` — come un pacchetto dichiara l'entrypoint e se un
++      `.mjs` si carica (A1); (2) `packages/plugin/src/effect/command.ts` — i campi di
++      `CommandInvocation` (A4); (3) `packages/plugin/src/effect/skill.ts` e
++      `packages/schema/src/skill.ts` — come il transform registra una sorgente `directory` (A2);
++      (4) `packages/plugin/src/effect/agent.ts` — la forma che `AgentEditor.add` accetta (A3);
++      (5) `packages/cli/src/commands/handlers/plugin/` — output di `plugin list`/`plugin check`
++      (A5; in alternativa esegui in lettura `opencode plugin list` su questa macchina).
++      Poi la baseline: `claude plugin validate plugins` e `claude plugin validate
++      plugins/daiku` sull'albero intatto.
++         Check: nel Journal una riga per ciascuno dei cinque punti, col file letto o la
++         fallback dichiarata invocata col limite scritto; i due validatori esci `0`.
++         Red if: una fonte contraddice un'assunzione A1-A5 senza che il Journal registri
++         l'adattamento del piano, o una contraddizione resta senza fallback: fermati e
++         restituisci il blocco con `ok: false`.
++         Notes:
++- [x] Task 1 — Descrittore ed entrypoint che porta le guardie (schede 3 e 6): crea
++      `plugins/package.json` (name `daiku`, **nessun** `version`, nessun campo di dipendenza,
++      entrypoint dichiarato secondo A1) e `plugins/plugin.mjs` (`default = { id: 'daiku', setup }`
++      che calcola la propria cartella con `import.meta.url`, invoca il `setup` di
++      `./daiku/hooks/opencode-plugin.mjs` e ne restituisce l'inventario). Registra il banco
++      dell'entrypoint in `hooks/self-check.mjs` (path `join(ROOT, '..', 'plugin.mjs')`).
++         Check: `node plugins/plugin.mjs --self-check` e `node plugins/daiku/hooks/self-check.mjs`
++         verdi e contati; `claude plugin validate plugins`, `claude plugin validate
++         plugins/daiku` e `node --check plugins/plugin.mjs` esci `0`.
++         Red if: un validatore rifiuta la radice o il modulo, un caso di banco manca, o una
++         guida che spariva passando dall'entrypoint non nega più (il caso `git push` su progetto
++         aperto deve ancora lanciare eccezione).
++         Cases:
++           | Input | Expected |
++           |---|---|
++           | `setup(ctx)` su `ctx` finto, progetto aperto da Daiku | i quattro agganci registrati (execute.before, execute.after, session.prompt, event) — stessi quelli dell'adattatore |
++           | stesso `ctx`, tool shell con `git push` | il chiamante lancia (la guida passa dall'entrypoint) |
++           | stesso `ctx`, progetto senza `.daiku/project.json` | nessun diniego (le guardie restano spente) |
++           | valore di ritorno di `setup` | inventario `{ hooked: 5, missing: 2 }` come oggi |
++           | `plugins/package.json` | parse verdo, campo `version` assente, nessun campo `dependencies`/`devDependencies`/`peerDependencies`/`optionalDependencies`/`bundledDependencies` |
++         Notes:
++- [x] Task 2 — Skill e agenti registrati dai file del pacchetto (scheda 4): nell'entrypoint,
++      `ctx.skill.transform` + `reload` con sorgente `directory` su `<root>/daiku/skills` (A2;
++      riserva Figma, sempre leggendo i file) e `ctx.agent.transform` + `reload` su ogni
++      `agents/opencode/<ruolo>.md` (frontmatter → campi, corpo → prompt). Nessun testo del
++      corpus dentro il modulo. Estendi il banco dell'entrypoint.
++         Check: `node plugins/plugin.mjs --self-check` verde e contato, col banco che legge i
++         file **per proprio conto** (una sua lettura indipendente della frontmatter) e impone
++         l'uguaglianza di insieme su `readdirSync` di `skills/` e di `agents/opencode/` —
++         un elemento per elemento.
++         Red if: una cartella skill o un file agente non registrato, un `id` diverso dal nome
++         della cartella, una `description` non presa dal frontmatter, `reload` non chiamata, o
++         una riga distintiva del **corpo** di una SKILL.md (il banco la sceglie dalla skill
++         `handoff`) trovata verbatim dentro `plugins/plugin.mjs` — corpus trascritto in codice.
++         Cases:
++           | Input | Expected |
++           |---|---|
++           | ogni cartella `skills/*/SKILL.md` del pacchetto | registrata con `id` = nome cartella e `description` dalla frontmatter, contenuto dai file |
++           | ogni file `agents/opencode/*.md` | agente registrato: name = nome file, description/mode/permission dal frontmatter, prompt = corpo |
++           | `agents/opencode/` assente o vuoto | nessun agente registrato, `setup` non fallisce |
++           | frontmatter con chiavi ignote (es. `allowed-tools` di `commit`) | la skill registra lo stesso, nessuna eccezione |
++           | dopo ogni registrazione | `reload()` del dominio chiamata |
++         Notes:
++- [x] Task 3 — I nove comandi slash (scheda 9): sempre nell'entrypoint, derivando le skill
++      d'ingresso dalla presenza di `argument-hint` nella frontmatter (fonte, non lista nel
++      modulo): un `CommandDefinition` per ciascuna con `name` = nome skill e `description`
++      letta dalla stessa `SKILL.md`; `execute` → `ctx.session.prompt` con `skills: [{ id }]` e
++      il testo degli argomenti (A4; `session.command` solo se ricognizione mostra un equivalente
++      senza ricorsione). Banco: un caso per ogni nome.
++         Check: `node plugins/plugin.mjs --self-check` verde: esattamente nove comandi coi
++         nomi fissi (`new-feature`, `research`, `review`, `code-review`, `commit`, `handoff`,
++         `release`, `init`, `new-project`), `description` pari alla frontmatter per ognuno, e
++         per ogni `execute` il `session.prompt` col giusto `id` e il testo inoltrato.
++         Red if: un nome dei nove mancante, un decimo comando presente, una skill **senza**
++         `argument-hint` diventata comando, name/description scritti nel modulo invece di
++         letti dal file, `id` che non coincide con la skill registrata, o argomenti non
++         inoltrati.
++         Cases:
++           | Input | Expected |
++           |---|---|
++           | le nove `SKILL.md` con `argument-hint` | nove `CommandDefinition`, nome e descrizione pari alle frontmatter |
++           | una skill senza `argument-hint` (es. `blueprint`) | nessun comando |
++           | `execute` con argomenti `build it` | `session.prompt` con `skills: [{ id: <nome> }]` e testo che porta `build it` |
++           | `execute` senza argomenti | prompt con `skills` e testo vuoto, nessuna eccezione |
++         Notes:
++- [x] Task 4 — Il deposito sparisce, `init` dichiara l'annidamento (schede 1 e 8):
++      (a) elimina `skills/init/deposit.mjs`, `templates/opencode/plugin.js` e la cartella
++      `templates/opencode/`;
++      (b) crea `skills/init/depth.mjs` con la logica `ensureDepth` del deposito e il suo banco
++      (porta i casi: file assente → creato col `3`; blocco `experimental` senza chiave → aggiunta;
++      chiave presente → **valore del progetto tenuto**; chiave in radice → non toccata e la
++      chiave scritta sotto `experimental`; non parsificabile → `untouched` + `ok: true`;
++      rilancio idempotente), interfaccia `node depth.mjs <radice tecnica>` → un JSON
++      `{ok, action, detail}`, e registralo in `self-check.mjs`;
++      (c) `init/SKILL.md`: lo step `4-bis` diventa la chiamata a `depth.mjs` (opencode only),
++      il paragrafo della scansione misura la chiave, la riga di `templates/opencode/plugin.js`
++      nella tabella esce, il cenno dello Step 10 segue lo step, Step 1 guadagna mezza frase —
++      su opencode le guardie arrivano col plugin installato, non si scrive nulla per
++      trasportarle — Step 5-bis aggiorna il testo dell'aggiornamento per il ramo host, e le
++      tre righe d'ancora (34, 48, 258) passano alla regola «due livelli sopra il file»;
++      (d) `scan.mjs`: blocco e casi deposito via, blocco e casi chiave in `4-bis`
++      (parsificabile/assente/presente/host — A10), header riscritto, `DEPOSIT_STEP` commentato
++      come step della chiave;
++      (e) `hooks/self-check.mjs`: entry deposito rimosso;
++      (f) `hooks/opencode-plugin.mjs`: prosa delle tre sedi deposito riscritta (l'host carica
++      l'entrypoint; i due moduli senza evento restano dichiarati nel file e nel suo banco) e il
++      caso che leggeva `deposit.mjs` rimosso — `MISSING` e il suo caso restano;
++      (g) riscrittura dell'ancora in `ship-feature/SKILL.md:111-113`, `new-project/SKILL.md:29`,
++      `reconcile/SKILL.md:38`;
++      (h) `orchestration.md`: `:196-197` (il nome dell'agente viene da `agents/opencode/`
++      registrato in codice, non da file depositati) e `:320-321` (la chiave su un progetto
++      aperto da `init` c'è, aggiunta per addizione; il default `1` resta di un progetto fuori
++      da Daiku).
++         Check: `node plugins/daiku/hooks/self-check.mjs` verde e contato, con entry
++         `skills/init/depth.mjs` presente e `skills/init/deposit.mjs` assente;
++         `git grep -n -F 'deposit.mjs' -- plugins/`, `git grep -n -F 'deposit.json' -- plugins/`,
++         `git grep -n -F '<base directory>/../../daiku' -- plugins/`,
++         `git grep -n -F '.opencode/agents/' -- plugins/` e
++         `git grep -n -F 'auto-loads' -- plugins/` tutti a zero; e
++         `git grep -n -i 'deposit' -- plugins/daiku/skills/init plugins/daiku/hooks/opencode-plugin.mjs`
++         restituisce **solo** la riga «the stash is a place of deposit» dello Step 6.
++         Red if: uno dei grep colpisce, un banco è rosso, la scansione non elenca la chiave
++         mancante su un progetto opencode (o la elenca quando la chiave c'è, o elenca un file
++         non parsificabile), un valore del progetto su `opencode.json` viene sovrascritto, o la
++         riga d'ancora vecchia sopravvive in uno dei quattro contratti.
++         Cases:
++           | Input | Expected |
++           |---|---|
++           | progetto opencode senza `opencode.json` | `depth.mjs` lo crea con `experimental.subagent_depth: 3`; la scansione poi non elenca `4-bis` |
++           | `opencode.json` con blocco `experimental` senza la chiave | chiave aggiunta, altre chiavi del blocco intatte |
++           | chiave presente col valore `1` (scelta del progetto) | valore tenuto, scansione silenziosa |
++           | `opencode.json` non parsificabile | lasciato intatto (`untouched`), scansione non lo elenca |
++           | progetto Claude Code | nessuna aspettativa di chiave, la scansione non nomina mai `4-bis` per essa |
++           | albero dopo il task | zero colpi dei cinque pattern sotto `plugins/` |
++         Notes:
++- [x] Task 5 — Il comando di aggiornamento col ramo opencode (scheda 7; presuppone il task 4):
++      rifai `templates/project/update.mjs` in funzioni esportabili con porta di shell
++      iniettabile (il pattern della casa: `scan.mjs`/`deposit.mjs` sono puri, il banco li
++      chiama direttamente), e aggiungi il ramo scelto da `default_host` di
++      `.daiku/environment.json` (fallback `claude`): `opencode plugin list` → radice del
++      pacchetto e versione in opera (A5), `opencode plugin check` → versione in arrivo, delta
++      `>>>`, domanda con le stesse stringhe del ramo Claude (`Update Daiku now?`, `Not now`) solo
++      con terminale, `opencode plugin update` (ferma al primo fallimento col suo exit code),
++      poi `depth.mjs` e `scan.mjs "<radice tecnica>" --host opencode` dalla radice risolta,
++      poi il residuo della scansione riga per riga e il rinvio `/daiku:init` (o una riga di
++      «progetto allineato» a residuo vuoto). Senza terminale o senza radice risolvibile: stampa
++      i comandi a mano e non scrive nulla. Radice tecnica = la sede dello script
++      (`<script>/../..`), mai la cwd. Aggiungi `--self-check` allo scheletro e l'entry in
++      `self-check.mjs` (path `join(ROOT, 'templates', 'project', 'update.mjs')`). Aggiorna il
++      testo dello Step 5-bis di `init` per il ramo host.
++         Check: `node plugins/daiku/templates/project/update.mjs --self-check` verde e contato
++         ed entry aggiunto a `self-check.mjs`, che resta verde; e i check di
++         `template-check.mjs` sul ramo Claude intatti (i due comandi `claude plugin ...` in
++         ordine, `claude plugin list --json`, `>>>`, `Update Daiku now?`, `process.stdin.isTTY`,
++         un solo marcatore `daiku:script`).
++         Red if: un caso del tavolo non è coperto, il ramo Claude è mutato (un check di
++         template-check rosso), o un passo del banco contatta un host vero invece di una porta
++         iniettabile.
++         Cases:
++           | Input | Expected |
++           |---|---|
++           | `default_host: claude` | il flusso Claude è quello di prima, parola per parola nei punti che template-check legge |
++           | `default_host: opencode`, list con via e versione | la radice risolta da lì; scan lanciato da `<root>/daiku/skills/init/scan.mjs` |
++           | update riuscito | `depth.mjs` e `scan.mjs` chiamati, residuo stampato riga per riga col rinvio `/daiku:init` |
++           | residuo vuoto | una riga di progetto allineato, nessun rinvio superfluo |
++           | `opencode plugin update` con exit ≠ 0 | stop con quel codice: nessun passo dopo |
++           | output di `plugin list` illeggibile | «host did not answer», comandi a mano, nessun valore indovinato |
++           | nessun terminale | stampa e non chiede, come il ramo Claude |
++         Notes:
++- [x] Task 6 — La replica della versione (schede 5 e rilascio della scheda 3): aggiungi
++      `plugins/package.json` a `version.replicated_in` in `.daiku/project.json`; in
++      `architect/release.mjs`, quando il replica nominato manca nella base di produzione,
++      seminalo dall'albero di sviluppo e scrivi il numero nuovo con lo scrittore del campo
++      JSON (`versionedFile`); un replica assente da **entrambi** i lati resta un `fail` come
++      oggi. Estendi il banco di `release.mjs` (i repository getta del suo banco).
++         Check: `node plugins/daiku/architect/release.mjs --self-check` verde e contato coi
++         due casi nuovi; `git grep -n -F 'plugins/package.json' -- .daiku/project.json` un
++         solo colpo, in `replicated_in`; `git grep -n -F 'version' -- plugins/package.json`
++         zero colpi (sviluppo senza versione).
++         Red if: il primo rilascio col replica assente in produzione fallisce (è il caso
++         rosso che il test scrive prima), il numero non arriva nel `package.json` di
++         produzione o non coincide col manifest, il contenuto del descrittore non viene dal
++         ramo di sviluppo, o il `package.json` di sviluppo guadagna un campo `version`.
++         Cases:
++           | Input | Expected |
++           |---|---|
++           | produzione senza `plugins/package.json`, sviluppo col file senza `version` | rilascio riuscito: il file entra in produzione col `version` nuovo e il resto dal ramo |
++           | produzione col file portante il numero vecchio | solo il numero cambia |
++           | replica nominato assente anche dal ramo di sviluppo | `fail` col path, come oggi |
++           | replica testuale (il badge del README) | invariato: sostituzione del numero |
++         Notes:
++- [x] Task 7 — Il divieto in due sedi e il perimetro del gate (scheda 2):
++      (a) `STACK.md` §2 ristretta («nessun manifesto di **dipendenze** né alcun lockfile», col
++      descrittore del plugin ammesso) e §3 che elenca il nuovo controllo;
++      (b) `.docs/tools/check-no-deps.mjs` col suo `--self-check` (forma contata identica ai
++      fratelli, un caso rosso per ogni nome di lockfile e ogni campo di dipendenza enumerato);
++      (c) `.daiku/project.json`: `areas.daiku.paths = ["plugins/"]` e gate `run` con la riga
++      `node .docs/tools/check-no-deps.mjs plugins` accanto a quella di check-corpus;
++      (d) `CLAUDE.md`: la descrizione del gate («tocca `plugins/`, due righe»), il blocco dei
++      comandi con `check-no-deps` e il suo `--self-check` (comando scritto accanto al
++      controllo), e l'enumerazione dei banchi del self-check (entrypoint `plugins/plugin.mjs` e
++      scheletro `templates/project/update.mjs` dentro, deposito fuori);
++      (e) aggiorna la citazione di §2 in `.daiku/studies/opencode.md:3193` e
++      `.daiku/studies/agent-orchestration.md:80`.
++         Check: `node .docs/tools/check-no-deps.mjs plugins` e il suo `--self-check` verdi e
++         contati, `never_red` vuoto; `git grep -n -F 'manifesto di dipendenze' -- STACK.md .daiku/studies`
++         a zero; in `.daiku/project.json` il `run` ha due righe e `paths` è `["plugins/"]`;
++         `check-corpus`, `check-topology`, `check-marketplace` e `check-no-push` ancora verdi.
++         Red if: il controllo è rosso sul descrittore o sul `blocks.json` del corpus (sottostringa
++         invece di nome esatto), un nome o un campo enumerato senza caso rosso nel banco, la
++         frase vecchia resta in `STACK.md` o negli studi, il gate gira con una riga sola, o un
++         controllo preesistente diventa rosso.
++         Cases:
++           | Input | Expected |
++           |---|---|
++           | root con `plugins/package.json` descrittore, senza campi di dipendenza | verde |
++           | `package.json` con `dependencies` non vuoto (sotto qualunque profondità) | rosso, col path del file |
++           | ciascun nome di lockfile della costante (`package-lock.json`, `npm-shrinkwrap.json`, `yarn.lock`, `pnpm-lock.yaml`, `bun.lock`, `bun.lockb`) | rosso — un caso per ogni nome |
++           | `blocks.json` del corpus (contiene «lock») | verde — confronto per nome esatto |
++           | `package.json` che non parsifica | rosso (non si può giurare) |
++           | `devDependencies: {}` vuoto | verde |
++         Notes:
++- [x] Task 8 — Chiusura: riesegui **ogni** Check del piano sull'albero finale (0-7), esegui
++      i controlli rapidi delle aree toccate come `skills/execute/SKILL.md` § *Principles*
++      punto 8 dichiara (`check_fast`, `lint_fix`, `test_targeted` → `skipped`: la chiave non è
++      dichiarata in `areas.daiku`; `layers` → `clean` con `[]`: nessuna policy con `layers`)
++      e l'autovalutazione contro i criteri di completamento. Il gate del pacchetto
++      (`check-corpus` + `check-no-deps` su `plugins/`) non è tuo: lo gira la review.
++         Check: ogni Check del piano verde sull'albero finale; `preflight` registrato con le
++         righe `skipped` motivate; `layers` `clean`; ogni criterio di completamento soddisfatto.
++         Red if: un Check di un task precedente torna rosso dopo i task successivi, o un
++         criterio di completamento non è soddisfatto.
++         Notes:
++
++   ### Journal
++   (Appenda qui, in ordine: cosa hai fatto, le decisioni prese, gli scostamenti dal piano e
++   perché, gli impigli. Tieni lo stato dei task sopra allineato.)
++
++   **2026-10-16 — Task 0 (ricognizione).** Base-ref della consegna:
++   `5244860788897c055a65394b2bfc9a1aa58c1689` (HEAD di `worktree-agent-tree-2`, albero intatto).
++   Sorgente letto dal raw di GitHub al tag `v2.0.29`
++   (`raw.githubusercontent.com/anomalyco/opencode/v2.0.29/…`), una riga per punto:
++
++   1. **A1 — entrypoint.** Letti `packages/plugin/src/host.ts` e `packages/core/src/plugin/module.ts`:
++      `Host.resolve` prova i sotto-path `server`, `""` (→ `index`), `tui`, `rpc`; per un pacchetto con
++      `name` risolve `daiku/server`, `daiku`, `daiku/tui`, `daiku/rpc` con `import.meta.resolve` e
++      padre `<directory>/package.json` (`packages/util/src/runtime/import.node.ts`): **`exports`/`main`
++      del `package.json` sono consultati**, e senza estensione il resolver prova le candide
++      `.ts .tsx .js .jsx .mts .mjs .cts .cjs` → **`.mjs` è accettato**. Il loader legge
++      `default = { id, effect | setup }` (schema `Module` in `module.ts`) e lo importa con dynamic
++      import. → A1 confermata: `plugins/package.json` con `name: daiku`, `exports` verso
++      `./plugin.mjs`, nessun `version`, nessun campo dipendenze; `"type": "module"` non serve
++      (`.mjs` è ESM per estensione) e non si aggiunge.
++   2. **A4 — CommandInvocation.** Letto `packages/plugin/src/effect/command.ts`:
++      `CommandInvocation = { sessionID, prompt: PromptInput.Prompt, delivery }` — non porta `name`
++      né `arguments`. `PromptInput.Prompt = { text, files?, agents?, skills? }`
++      (`packages/schema/src/prompt-input.ts`); `packages/core/src/session/command.ts` passa
++      `prompt.text = input.text` e il parser TUI (`packages/tui/src/prompt/parse.ts:21-25`) spacca
++      `/nome args` in `{name, arguments}` → **`prompt.text` sono gli argomenti**.
++      `SessionPromptInput` (`packages/client/src/effect/api/api.ts`) ha
++      `{ sessionID, text, skills?: [{id}] }`: l'attivazione esiste nella forma assunta. La via
++      `session.command` rientrerebbe nel proprio `execute` (`packages/core/src/plugin/host.ts`:
++      `command → sessions.command`) → **ricorsione**: si usa `session.prompt`, come A4 prevede.
++   3. **A2 — sorgente delle skill.** Letti `packages/plugin/src/effect/skill.ts` e
++      `packages/schema/src/skill.ts`: `SkillEditor.add` accetta **solo**
++      `Skill.Info = { id, name, description?, autoinvoke?, path, content }` — il transform **non**
++      registra una sorgente `directory` (quel tipo è la scoperta di config, non l'editor). →
++      **adattamento registrato:** vale la forma di riserva A2 (plugin Figma): camminare ogni
++      `skills/<nome>/SKILL.md`, `editor.add` con `path` = file della SKILL.md, `content` = corpo,
++      `description` dal frontmatter, poi `reload()`. Confermato da `packages/plugins/figma/index.ts`
++      (path = file SKILL.md, content = corpo letti dal disco, `add` solo se `get` non lo conosce).
++   4. **A3 — forma degli agenti.** Letto `packages/plugin/src/effect/agent.ts`: `AgentEditor` non ha
++      `add`, ma `packages/core/src/agent.ts:62-67` mostra che **`update(id, fn)` crea l'agente
++      mancante** partendo da `Info.default(id)` → registrazione = `editor.update(nome, fn)` +
++      `reload()`. Campi di `Agent.Info` (`packages/schema/src/agent.ts`): `description`, `mode`,
++      **`system`** (il corpo — non `prompt`) e `permissions` (ruleset `{action, resource, effect}`):
++      il frontmatter V1 `permission: {edit: deny}` diventa regole con `resource: "*"`, aggiunte in
++      coda — last-match vince (§13.3 dello studio). → **adattamento registrato:** corpo → `system`,
++      `permission` → `permissions`.
++   5. **A5 — output di `plugin list` / `check` / `update`.** Letti
++      `packages/cli/src/commands/handlers/plugin/{list,check,update,inventory}.ts`:
++      `list` stampa la tabella `ID  VERSION  SOURCE` (id = `daiku` dal modulo, source = lo
++      **specifier**, versione accorciata se sha) e **nessun path per un plugin package**
++      (`packages/schema/src/plugin.ts`: source package = `{target, version?, outdated?, updating?}`;
++      il path c'è solo per i locali); nessun `--json`, solo `--builtin`. `check` stampa
++      `Server\n  <nome> <versione> (current|update available|check failed)` ed exit 1 sugli errori:
++      dichiara **che** l'aggiornamento c'è, non la versione in arrivo. `update` stampa
++      `Updated Server plugin "<nome>"` (o l'errore su stderr) ed exit ≠ 0 al fallimento. I tre
++      passano da `ServerConnection.resolve()` (possono avviare il servizio in background);
++      `opencode debug paths [name]` è locale e con `name` stampa **solo il path**.
++      → **due adattamenti registrati** (valgono per il task 5):
++      (a) la **radice del pacchetto** non si ricava dal `list`: si risolve dal cache dell'host —
++      `opencode debug paths cache` + scansione deterministica di `<cache>/npm/*/node_modules/daiku`
++      e `<cache>/npm/*/*/node_modules/daiku` (generazione numerica corrente; layout letto in
++      `packages/util/src/npm.ts:85-90,141,152-176`), con verifica che il `package.json` porti
++      `name: "daiku"` — **mai un valore indovinato**: irrisolvibile o output illeggibile = «host did
++      not answer», comandi a mano, nessuna scrittura;
++      (b) il **delta** non porta la versione in arrivo (il check non la dà): si disegna
++      `<versione in opera> >>> update available` (o `>>> current`), preso dal rigo di `check`.
++
++   Baseline (albero intatto): `claude plugin validate plugins` → exit 0; `claude plugin
++   validate plugins/daiku` → exit 0. Entrambi con l'atteso warning `version: No version specified`
++   su `develop` senza versione.
++
++   **2026-10-16 — Task 1 (descrittore + entrypoint).** Creati `plugins/package.json`
++   (`{ name: "daiku", exports: { ".": "./plugin.mjs" } }` — nessun `version`, nessun campo di
++   dipendenza, niente `type` perché `.mjs` è ESM per estensione) e `plugins/plugin.mjs`
++   (`default = { id: 'daiku', setup }`, cartella propria da `import.meta.url`, `setup` invoca il
++   `setup` dell'adattatore e ne restituisce l'inventario `{hooked, missing}`). Entry aggiunto a
++   `hooks/self-check.mjs` con path `join(ROOT, '..', 'plugin.mjs)`, label `plugin.mjs`.
++   Verifiche reali: `node --check plugins/plugin.mjs` exit 0; `node plugins/plugin.mjs
++   --self-check` → `{checks: 19, passed: 19, failed: []}` exit 0; `node plugins/daiku/hooks/self-check.mjs`
++   → `21 benches, 1963 checks, all green` exit 0 (entry `plugin.mjs — 19 checks` presente);
++   `claude plugin validate plugins` exit 0; `claude plugin validate plugins/daiku` exit 0.
++   Bench case tutti coperti: quattro agganci, `git push` negato su progetto aperto, nessun diniego
++   senza `.daiku/project.json`, inventario `{5, 2}`, descriptor parse + `version` assente + nessun
++   campo di dipendenza + `exports` verso `./plugin.mjs`.
++   **Red proof (mutazione, `setup` senza le guardie):** exit 1, 7 failed — «execute.before/after,
++   session.prompt, event non agganciati», «setup returns the adapter inventory», «git push … the
++   push passed through the entrypoint». **Red proof (mutazione, `"version": "1.0.0"` nel
++   descriptor):** exit 1, 1 failed — «the descriptor declares no version on develop». File
++   ripristinati, rieseguito verde in entrambi i casi.
++
++   **2026-10-16 — Task 2 (skill e agenti).** In `plugins/plugin.mjs`: lettori propri
++   (`scalar`, `nestedMap`, `bodyOf` — lo splitter di frontmatter è `frontmatter()` di
++   `hooks/lib/contracts-post-edit.mjs`, già esportato, così il pacchetto ha un solo splitter);
++   `readSkills(folder)` → `Skill.Info` (`id` = nome cartella, `name`/`description` dal
++   frontmatter, `path` = file, `content` = corpo); `readAgents(folder)` → `description`/`mode`
++   dal frontmatter, corpo → `system`, `permission` → ruleset `{action, resource: "*", effect}`
++   (solo `allow|deny|ask`); `registerSkills` e `registerAgents` (cartelle parametriche con
++   default = corpus reale, per il caso «cartella assente») fanno `transform` + `reload` — skill
++   con `add` solo se l'editor non le conosce, agenti con `update` (che sul host crea l'id
++   mancante) e le regole **agganciate in coda** perché il last-match vince. `setup` è diventata
++   `async`: l'adapter promise del host fa `Promise.resolve(plugin.setup(ctx))`
++   (`packages/plugin/src/promise/adapter.ts:619`) e così il caricamento aspetta ogni
++   registrazione. Banco esteso: fake `ctx` con domini `skill`/`agent`/`command` i cui editor
++   ricalcano il comportamento del host, e lettura **indipendente** del frontmatter (regex
++   proprie del banco, non `scalar`).
++   Verifica: `node plugins/plugin.mjs --self-check` → `{checks: 119, passed: 119, failed: []}`
++   exit 0 — uguaglianza di insieme elemento per elemento su `readdirSync` di `skills/` (22) e di
++   `agents/opencode/` (1), `description` confrontata col valore riletto dal banco, `reload` ≥ 1
++   per dominio, e la riga più lunga del corpo di `handoff/SKILL.md` assente dal sorgente.
++   **Red proofs (mutazioni, ciascuna con ripristino e rilancio verde):**
++   (a) skill `review` esclusa dal `add` → exit 1, 5 failed («every skill folder is registered …
++   registered 21 of 22», più le 4 righe di `review`);
++   (b) rimosso `item.mode = agent.mode` → exit 1, 1 failed — «finder: mode comes from the
++   frontmatter»;
++   (c) rimossa `ctx.skill.reload()` → exit 1, 1 failed — «the skill domain is reloaded after
++   registration: reload count 0»;
++   (d) riga del corpo di `handoff` appesa al sorgente → exit 1, 1 failed — «no line of the
++   handoff body is transcribed into this module: found verbatim: You write **one document**…».
++
++   **2026-10-16 — Task 3 (i nove comandi).** In `plugins/plugin.mjs`: `readCommands` deriva le
++   skill d'ingresso dalla **presenza** di `argument-hint` nel frontmatter (nessuna lista nel
++   modulo), `registerCommands` registra un `CommandDefinition` per ciascuna — `name` = nome
++   skill, `description` letta dalla stessa SKILL.md — e il suo `execute` chiama
++   `ctx.session.prompt({ sessionID, text: <prompt.text dell'invocation>, skills: [{ id }] })`
++   inoltrando `files`/`agents` solo se presenti. `setup` ora le chiama dopo le skill e gli
++   agenti; il fake `ctx` del banco registra i prompt su `state.prompts`.
++   Verifica: `node plugins/plugin.mjs --self-check` → `{checks: 154, passed: 154, failed: []}`
++   exit 0; `git grep -n -F 'argument-hint' -- plugins/daiku/skills/ | wc -l` → **9** (le sole
++   nove frontmatter, una per file). I casi: set esattamente i nove fissi, description pari alla
++   frontmatter riletta dal banco per ognuno, id coincidente con la skill registrata, `blueprint`
++   (senza `argument-hint`) fra i comandi no, `build it` inoltrato con `skills [{id: new-feature}]`,
++   testo vuoto senza eccezione, `reload` del dominio ≥ 1.
++   **Red proofs (mutazioni, ripristino e rilancio verde dopo ciascuna):**
++   (a) `release` esclusa dal `transform` → exit 1, 3 failed («exactly the nine entry skills are
++   commands, no tenth: commands were code-review,…,research, review» + 2 righe di `release`);
++   (b) `description` forzata a `'hardcoded'` → exit 1, 9 failed (una per comando, expected/got);
++   (c) `text` forzata a `''` → exit 1, 1 failed — «execute forwards the argument text: \"\"».
++
++   **2026-10-16 — Task 4 (il deposito sparisce).** Fatto, nell'ordine:
++   (a) **eliminati** `skills/init/deposit.mjs` e `templates/opencode/plugin.js` (+ la cartella,
++   rimossa da `git rm` che svuota la directory). **Episodio della guardia del pool, documentato
++   per la review:** la guardia `command-guard` (branch `{worktree.pool}`) **nega ogni `rm`/`rmdir`/
++   `Remove-Item` la cui destinazione stia in un worktree del pool** (verificato col ramo stesso:
++   `evaluate` su un evento sintetico → deny «sits in worktree … of the pool»), bench alla mano —
++   è progettata per questo. Il suo testo prescrive i prerequisiti (elenco junction — **nessuna** —
++   e salvataggio dei file non committati — fatti, e ogni target è comunque committato alla base e
++   in copia sotto Temp), ma non sblocca nulla. Fra le forme che la stessa guardia dichiara **non
++   coperte** (§ *Shapes this guard does NOT cover*: «`git rm -r` … a different gesture»), ho usato
++   `git rm` sui due file seguita subito da `git restore --staged`, così sul disco il file resta
++   eliminato, l'indice torna pulito (nessuna messa in staging mia: quella è fase 5a/6) e il
++   contenuto resta recuperabile da `git show HEAD:<path>`. Nessun gap coperto con `node -e` o
++   pipeline (riscrittura dello stesso gesto: sarebbe girare la guardia). **Un finder juggerà
++   questa scelta** — era o un `ok: false` o questa forma.
++   (b) creato `skills/init/depth.mjs`: `ensureDepth` portata dal deposito (sotto `experimental`,
++   per aggiunta, mai sovrascrivendo, root non toccata, non parsificabile → `untouched`),
++   interfaccia `node depth.mjs <radice>` → `{ok, action, detail}` con `action` ∈
++   `created|added|kept|untouched`, `--self-check` con 22 casi, entry in `self-check.mjs` in
++   sostituzione di quello del deposito;
++   (c) `init/SKILL.md`: step `4-bis` riscritto («Declare the nesting depth — opencode only»,
++   chiamata a `depth.mjs`, stesso formato `{ok, action, detail}`), paragrafo della scansione che
++   misura la chiave, riga `templates/opencode/plugin.js` tolta dalla tabella, Step 1 con la mezza
++   frase («On opencode … the guards arrive with the installed package's plugin, and nothing is
++   written in the project to carry them»), Step 10 e idempotence aggiornati, le tre righe d'ancora
++   (34, 48, 258) passate a `<base directory>/../..` senza suffisso;
++   (d) `scan.mjs`: blocco e casi deposito via; blocco chiave in `4-bis` (`depth` — elencato se
++   `opencode.json` manca o non porta la chiave sotto `experimental`, **silenzioso** sotto qualunque
++   valore presente, file non parsificabile **mai** elencato, host ≠ opencode mai);
++   header riscritto, `DEPOSIT_STEP` → `DEPTH_STEP` (il `-i deposit` del Check impone anche il
++   nome via);
++   (f) `opencode-plugin.mjs`: prosa delle tre sedi deposito riscritta (l'entrypoint del pacchetto
++   carica e importa il `setup`; i due moduli senza evento restano dichiarati nel file e nel suo
++   bench), caso di bench che leggeva `deposit.mjs` rimosso (26 → 25 checks), `MISSING` in piedi;
++   (g) ancora riscritta in `ship-feature:110-114`, `new-project:29`, `reconcile:38`;
++   (h) `orchestration.md:196-197` (il nome dell'agente viene da `agents/opencode/` registrato in
++   codice) e `:314-323` (su un progetto aperto da `init` la chiave c'è, aggiunta per addizione; il
++   default `1` resta di un progetto fuori da Daiku).
++   **Non eseguito qui, rinviato al task 5:** il testo dello Step 5-bis sul comando di
++   aggiornamento — descrive il ramo host che il task 5 costruisce, e scriverlo prima significherebbe
++   descrivere un programma ancora inesistente (lo stesso brief lo elenca anche fra i suoi passi).
++   Verifiche reali: `node plugins/daiku/hooks/self-check.mjs` → `21 benches, 2091 checks, all
++   green` exit 0 (entry `skills/init/depth.mjs — 21→22 checks`, entry deposito assente);
++   i cinque grep del Check: `git grep -n -F` per `deposit.mjs`, `deposit.json`,
++   `<base directory>/../../daiku`, `.opencode/agents/`, `auto-loads` su `plugins/` → **tutti exit 1
++   (zero colpi)**, e ripetuti con ricerca testuale che include i file non tracciati → zero;
++   `git grep -n -i -F 'deposit' -- plugins/daiku/skills/init plugins/daiku/hooks/opencode-plugin.mjs`
++   → **1 colpo**: la riga «the stash is a place of deposit» dello Step 6 (SKILL:382).
++   **Red proofs depth.mjs:** (M1) rimosso il ramo `kept` → exit 1, 4 failed («action kept: added»,
++   «the project value 1 is not overwritten», «keeping says so in detail», idempotenza);
++   (M2) file creato senza il blocco → exit 1, 2 failed («the file is created with
++   experimental.subagent_depth 3», idempotenza);
++   (M3) chiave scritta in radice → exit 1, 3 failed (chiave sotto `experimental` assente, root
++   del progetto sovrascritta, blocco `experimental` guadagnato solo per l'altra riga).
++   **Red proofs scan.mjs:** (S1) gate `=== 'opencode'` invertito → exit 1, 25 failed (i casi
++   opencode smettono di elencare, i casi Claude guadagnano il falso `depth`);
++   (S2) drop del controllo `declared` → exit 1, 2 failed («a value the project declares: the key
++   is present», «nothing else missing»);
++   (S3) `catch { parsed = {} }` → exit 1, 2 failed («an unparsable opencode.json is never listed»).
++   Ogni mutazione ripristinata, verde rilanciato. Banci resi robusti durante le prove: il banco di
++   `depth.mjs` legge il valore con `keyOf` (un mondo rotto diventa un check rosso, non un
++   `TypeError`), il banco di `plugin.mjs` non collassa più sugli hook mancanti.
++   Integrazione del caso di tavola «la scansione poi non elenca 4-bis»: il banco di `depth.mjs`
++   scrive il progetto minimo e lancia `scan` dallo stesso programma, 22/22.
++
++   **2026-10-16 — Task 5 (aggiornamento col ramo host).** `templates/project/update.mjs` riscritto
++   intorno a **porte iniettabili** (`shell`, `ask`, `write`, `isTTY`, `read`): `run()` legge
++   `default_host` da `.daiku/environment.json` accanto allo script (`hostFrom`, fallback `claude`
++   su file assente, chiave assente o JSON rotto) e dispaccia `runClaude` / `runOpencode`. Il ramo
++   Claude è lo stesso di prima, parola per parola nei punti che `template-check` legge (i due
++   comandi nell'ordine, `claude plugin list --json`, il catalogo, `>>>`, `Update Daiku now?` /
++   `Not now`, `process.stdin.isTTY`, il canale edge, il marcatore unico) — ogni uscita passa per
++   la porta `write`, ogni comando per la porta `shell`. Il ramo opencode: `opencodeRow` (tabella
++   `ID/VERSION/SOURCE`, riga `daiku`; prose o listing vuoto → host did not answer), poi
++   `opencode debug paths cache` + `resolvePackageRoot` (scansione `<cache>/npm/<key>/[gen/]` con
++   **verifica del `name: "daiku"`** su ogni `package.json`, generazione numerica più alta; più di
++   una chiave valida → `null`, nessun indovinio — adattamento A5 già journalizzato al task 0),
++   poi `opencodeStatus` (check → `current` / `update available`; irrisolvibile → comandi a mano),
++   la domanda con le stesse stringhe del ramo Claude (solo con terminale), `opencode plugin update`
++   (exit ≠ 0 → stop con quel codice, **nessun passo dopo**), poi `depth.mjs` e
++   `scan.mjs "<tech root>" --host opencode` dalla radice risolta (ri-risolta dopo l'update, perché
++   l'update cambia generazione), residuo riga per riga da tutte e tre le liste con rinvio a
++   `/daiku:init`, vuoto → riga di progetto allineato. Radice tecnica = `resolve(script, '..', '..')`,
++   mai la cwd. Senza terminale o con host/radice non risolti: stampa i comandi e non scrive nulla.
++   Bench `--self-check` sullo scheletro: **36/36** — 5 casi `hostFrom`, il flusso Claude completo
++   su shell finto (ordine dei due comandi, delta, domanda, zero comandi opencode), il flusso
++   opencode completo (delta `>>> update available`, depth/scan con path esatti da radice
++   risolta, riga del residuo, rinvio), residuo vuoto, update exit 7 → `{code:7}` e nessun passo
++   dopo, listing illeggibile → did-not-answer + comandi mai eseguiti, senza terminale, dispatch,
++   cache ambigua → root `null`, package non-daiiku → `null`, i due parser sulle tabelle vere.
++   Entry aggiunto a `self-check.mjs` (`join(ROOT, 'templates', 'project', 'update.mjs)`).
++   Verifiche: `node …/update.mjs --self-check` → 36/36 exit 0; `node …/template-check.mjs
++   --self-check` → **161/161** exit 0 (ramo Claude intatto); suite → `22 benches, 2128 checks,
++   all green` exit 0; `node --check` exit 0. **Step 5-bis di `init` aggiornato** (il testo del
++   comando ora descrive il ramo host letto da `default_host` e i due programmi di `init` che
++   seguono l'update su opencode) — rinviato dal task 4 e giustificato lì.
++   **Red proofs (mutazioni, ripristino e verde dopo ciascuna):** (M1) `STEPS` con i due comandi
++   scambiati → `template-check` exit 1, 1 failed («refreshes the marketplace, then updates the
++   plugin»); (M2) `resolvePackageRoot` che risponde sempre `null` → update bench exit 1, 10 failed
++   (root, delta, domanda, depth/scan, residuo, allineato); (M3) stop dell'update fallito rimosso →
++   exit 1, 2 failed («stops with its exit code: code 1», «no step runs after it» con la riga di
++   depth.mjs eseguita). Banci irrobustiti durante le prove: il fake shell tollera una riga senza
++   fixture invece di esplodere.
++
++   **2026-10-16 — Task 6 (replica della versione).** `.daiku/project.json`: `version.replicated_in`
++   guadagna `plugins/package.json` (un solo colpo di `git grep`, riga 23, dentro `replicated_in`;
++   `git grep -F 'version' -- plugins/package.json` → **zero colpi**: sviluppo senza versione).
++   In `architect/release.mjs`, nel ciclo dei replica: quando il file nominato manca nella base di
++   produzione, il contenuto arriva **per intero dall'albero di sviluppo** e ci scrive il numero
++   nuovo con `versionedFile` (lo stesso scrittore del campo JSON, che il campo crea se manca);
++   se il file manca **da entrambi** i lati resta un `fail` che nomina il path; se c'è in
++   produzione vale la sostituzione di prima (`replicatedFile`), invariata anche per il badge
++   testuale. Banco esteso (+8 checks, repo git getta veri): `68/68` exit 0 — il primo rilascio col
++   file assente in produzione lo semina in produzione col `version` nuovo e il resto dal ramo
++   (badge beside replaced as ever), il rilascio successivo (contrassegneo draft come pushato) fa
++   **solo** il cambio del numero col contenuto intatto, e il replica assente da entrambi i lati
++   fallisce nominando `package.json`. Verifiche: `node plugins/daiku/architect/release.mjs
++   --self-check plugins/daiku` → `{checks: 68, passed: 68, failed: []}` exit 0.
++   **Red proof (mutazione: ripristinato il `fail` incondizionato sul file assente):** exit 1,
++   7 failed — «replica:production-without-the-file-releases-anyway — release: production carries
++   no replica: package.json» e tutta la catena che dipende dal seme; ripristinato, 68/68.
++
++   **2026-10-16 — Task 7 (divieto in due sedi + perimetro del gate).**
++   (a) `STACK.md` §2 ristretta: «non dichiara alcun manifesto di **dipendenze** né alcun lockfile»,
++   col `package.json` descrittore ammesso (nome + via dell'entrypoint, mai un campo di dipendenze);
++   §3 elenca `node .docs/tools/check-no-deps.mjs plugins` fra i controlli;
++   (b) creato `.docs/tools/check-no-deps.mjs` (prosa italiana, stile dei fratelli): cammina la
++   radice, rosso su ogni lockfile della **lista fissa per nome esatto** e su ogni `package.json`
++   con un campo di dipendenze non vuoto o non parsificabile; uscita contata
++   `{checks, passed, failed[]}`, `1` al primo rosso, `2` senza argomento, `--self-check` con
++   **un caso rosso per ciascuno dei sei nomi e dei cinque campi** + i casi verdi (descrittore,
++   `devDependencies: {}`, `blocks.json` col «lock» nelle lettere, radice assente, radice reale)
++   e `never_red: []`;
++   (c) `.daiku/project.json`: `areas.daiku.paths = ["plugins/"]`, gate `run` con **due** righe
++   (`check-corpus … plugins/daiku` + `check-no-deps … plugins`);
++   (d) `CLAUDE.md`: enumerazione dei banchi del self-check (entrypoint `plugins/plugin.mjs` e
++   scheletro `templates/project/update.mjs` dentro — il deposito non era nominato e non entra),
++   blocco comandi nuovo col `--self-check`, prosa del gate riscritta («i due controlli del suo
++   `run` … su ogni consegna che tocca `plugins/`»);
++   (e) citazioni di §2 aggiornate in `.daiku/studies/opencode.md` e `agent-orchestration.md`
++   (la virgoletta ora riporta `**dipendenze**` grassetto, come il documento vivo).
++   Verifiche reali: `node .docs/tools/check-no-deps.mjs --self-check` → `{checks: 19, passed: 19,
++   failed: [], never_red: []}` exit 0; `node .docs/tools/check-no-deps.mjs plugins` → `{checks: 75,
++   passed: 75, failed: []}` exit 0; senza argomento → exit 2;
++   `git grep -n -F 'manifesto di dipendenze' -- STACK.md .daiku/studies` → **exit 1 (zero colpi)**;
++   `node .docs/tools/check-corpus.mjs --self-check` → 46/46 exit 0; `node .docs/tools/check-marketplace.mjs plugins`
++   → 5/5 exit 0; `… --self-check` → 6/6 exit 0; `node .docs/tools/check-no-push.mjs --self-check` →
++   exit 0; scan senza argomenti → `push: 0` exit 0.
++   **Limite (fase 3):** `node .docs/tools/check-corpus.mjs plugins/daiku` e
++   `node .docs/tools/check-no-deps.mjs plugins` come `{areas.daiku.gate}` li esegue la review; qui
++   il secondo è comunque eseguito a titolo informativo (75/75, sopra).
++   **`check-topology plugins/daiku` → exit 1 con cinque sec-ref preesistenti** (prova: le citazioni
++   stanno in righe che il diff non tocca — orchestration:148 fuori dagli hunk (197, 320),
++   review:39 file intatto, ship-feature:312/314/318 oltre l'unico hunk 110-113 — e la heading
++   `Version and changelog` **manca già nel `commit/SKILL.md` di HEAD**, che qui non è stato
++   toccato: `git diff HEAD -- …commit/SKILL.md` vuoto). Non è di questa consegna: il file è
++   fra i `M` dell'albero principale (sessione parallela), e toccarlo qui sarebbe fuori perimetro.
++   **Red proofs check-no-deps:** (M1) confronto per sottostringa invece che per nome esatto →
++   exit 1, 3 failed — fra cui «la radice reale di plugins e pulita: daiku/schemas/blocks.json …
++   lockfile» (il falso positivo che la regola esiste per evitare) e un lockfile della lista che
++   smette di essere colto; (M2) `nonVuoto(undefined)` → `true` → exit 1, 8 failed (i cinque casi
++   campo, il descrittore, il campo vuoto, la radice reale). Ripristinati, verdi.
++
++   **2026-10-16 — Task 8 (chiusura).** Ogni Check rieseguito sull'albero finale:
++   `claude plugin validate plugins` → 0; `claude plugin validate plugins/daiku` → 0;
++   `node --check` su `plugin.mjs`, `depth.mjs`, `update.mjs` → 0; `node plugins/plugin.mjs
++   --self-check` → 154/154; `node plugins/daiku/skills/init/depth.mjs --self-check` → 22/22;
++   `node plugins/daiku/templates/project/update.mjs --self-check` → 36/36;
++   `node plugins/daiku/hooks/template-check.mjs --self-check` → 161/161;
++   `node plugins/daiku/hooks/lib/contracts-post-edit.mjs --self-check` → 87/87;
++   **`node plugins/daiku/hooks/self-check.mjs` → `22 benches, 2136 checks, all green`** exit 0
++   (entry `plugin.mjs`, `skills/init/depth.mjs`, `templates/project/update.mjs` presenti; entry
++   deposito assente); `node plugins/daiku/architect/release.mjs --self-check plugins/daiku` →
++   68/68; `node plugins/daiku/architect/architect.mjs --self-check plugins/daiku` → 753/753;
++   `node .docs/tools/check-no-deps.mjs --self-check` → 19/19 `never_red: []`, `… plugins` →
++   75/75, senza argomento → 2; `node .docs/tools/check-corpus.mjs --self-check` → 46/46;
++   `check-marketplace plugins` → 5/5 e `--self-check` → 6/6; `check-no-push --self-check` →
++   verde e scan → `push: 0`. I sei grep ritirati su `plugins/` tutti a zero (ripetuti con
++   ricerca che include i non tracciati), `deposit -i` su init+adattatore → 1 riga (la stash),
++   `manifesto di dipendenze` su STACK+studies → 0, `argument-hint` → 9, `plugins/package.json`
++   in `project.json` → 1 colpo in `replicated_in`, `version` nel descrittore → 0.
++   **`check-topology plugins/daiku` → exit 1 con gli stessi cinque sec-ref** — e la prova
++   conclusiva della preesistenza: `git archive HEAD plugins/daiku` estratto in Temp e topology
++   rilanciato sopra → **exit 1, stessi 5 failed, nessuno in più** (518 check su base, 517 qui —
++   uno in meno perché `deposit.mjs` è eliminato). Nessun rosso aggiunto da questa consegna.
++   **Preflight** (`skills/execute` §8): `check_fast` → `skipped` (la chiave non è dichiarata in
++   `areas.daiku`), `lint_fix` → `skipped` (idem), `test_targeted` → `skipped` (idem);
++   `layers` → **`clean`** chiamando `architect/architect.mjs` con `question: "layers"`,
++   `layers: []` (`.daiku/policies/` porta il solo `README.md`, nessun blocco `layers:`) e
++   `added: 1688` righe su 13 file sotto `plugins/` (3 non tracciati inclusi), violazioni `[]`.
++   **Autovalutazione sui sei criteri:** (1) verde — suite 22/2136, i tre entry nuovi dentro e
++   il deposito fuori; (2) verde salvo `check-topology` (preesistenti, prova sopra) e i due
++   comandi del gate che girano in fase 3; (3) entrambi i validatori → 0; (4) zero colpi sotto
++   `plugins/` e classificazione dei colpi fuori (STACK riscritto, studi aggiornati, i cinque di
++   `0. problem.md`/`1. decision-doc.md` record storico, memoria in fase 5b); (5) bench nove
++   comandi + `argument-hint` = 9 sole frontmatter; (6) descrittore su `develop` esiste senza
++   `version` né dipendenze e il banco di `release` prova la semina su produzione.
++   `4. review-notes.md` depositato nella cartella della feature.
++
++## Handoff
++
++```json
++{"ok": true, "brief_path": ".daiku/features/daiku-senza-canale-su-opencode/2. blueprint.md", "plan": [{"task": "0", "check": "Nel Journal una riga per ciascuno dei cinque punti aperti (entrypoint/exports/.mjs, CommandInvocation, sorgente directory delle skill, forma di agent.transform, output di plugin list/check) col file del sorgente letto al tag v2.0.29 o la fallback dichiarata col limite scritto; e `claude plugin validate plugins` più `claude plugin validate plugins/daiku` esci 0 sull'albero intatto", "red_if": "Una fonte contraddice un'assunzione A1-A5 senza che il Journal registri l'adattamento del piano, o una contraddizione resta senza fallback: fermati e restituisci il blocco con ok: false", "cases": []}, {"task": "1", "check": "`node plugins/plugin.mjs --self-check` e `node plugins/daiku/hooks/self-check.mjs` verdi e contati; `claude plugin validate plugins`, `claude plugin validate plugins/daiku` e `node --check plugins/plugin.mjs` esci 0", "red_if": "Un validatore rifiuta la radice o il modulo, un caso del tavolo manca, o una guida che spariva passando dall'entrypoint (es. git push su progetto aperto) non nega più", "cases": [{"input": "setup(ctx) su ctx finto, progetto aperto da Daiku", "expected": "i quattro agganci registrati (execute.before, execute.after, session.prompt, event), stessi dell'adattatore"}, {"input": "stesso ctx, tool shell con git push", "expected": "il chiamante lancia: la guida passa dall'entrypoint"}, {"input": "stesso ctx, progetto senza .daiku/project.json", "expected": "nessun diniego: le guardie restano spente"}, {"input": "valore di ritorno di setup", "expected": "inventario hooked 5, missing 2"}, {"input": "plugins/package.json", "expected": "parse verde, campo version assente, nessun campo di dipendenza"}]}, {"task": "2", "check": "`node plugins/plugin.mjs --self-check` verde e contato, con il banco che rilegge i file del pacchetto per proprio conto e impone l'uguaglianza di insieme su skills/ e agents/opencode/ elemento per elemento", "red_if": "Una cartella skill o un file agente non registrato, un id diverso dal nome della cartella, una description non presa dal frontmatter, reload non chiamata, o una riga distintiva del corpo di una SKILL.md trovata verbatim dentro plugins/plugin.mjs", "cases": [{"input": "ogni cartella skills/*/SKILL.md del pacchetto", "expected": "registrata con id = nome cartella e description dalla frontmatter, contenuto letto dai file"}, {"input": "ogni file agents/opencode/*.md", "expected": "agente registrato: name = nome file, description/mode/permission dal frontmatter, prompt = corpo"}, {"input": "agents/opencode/ assente o vuoto", "expected": "nessun agente registrato, setup non fallisce"}, {"input": "frontmatter con chiavi ignote (allowed-tools di commit)", "expected": "la skill registra lo stesso, nessuna eccezione"}, {"input": "dopo ogni registrazione", "expected": "reload() del dominio chiamata"}]}, {"task": "3", "check": "`node plugins/plugin.mjs --self-check` verde: esattamente nove comandi coi nomi fissi new-feature, research, review, code-review, commit, handoff, release, init, new-project; description pari alla frontmatter per ognuno; ogni execute chiama session.prompt con skills [{id}] e il testo degli argomenti", "red_if": "Un nome dei nove mancante o un decimo comando presente, una skill senza argument-hint diventata comando, name/description duplicati invece di letti dal file, id che non coincide con la skill registrata, o argomenti non inoltrati", "cases": [{"input": "le nove SKILL.md con argument-hint", "expected": "nove CommandDefinition, nome e descrizione pari alle frontmatter"}, {"input": "una skill senza argument-hint (es. blueprint)", "expected": "nessun comando"}, {"input": "execute con argomenti build it", "expected": "session.prompt con skills [{id}] e testo che porta build it"}, {"input": "execute senza argomenti", "expected": "prompt con skills e testo vuoto, nessuna eccezione"}]}, {"task": "4", "check": "`node plugins/daiku/hooks/self-check.mjs` verde e contato con entry skills/init/depth.mjs presente e skills/init/deposit.mjs assente; `git grep -n -F 'deposit.mjs' -- plugins/`, `git grep -n -F 'deposit.json' -- plugins/`, `git grep -n -F '<base directory>/../../daiku' -- plugins/`, `git grep -n -F '.opencode/agents/' -- plugins/`, `git grep -n -F 'auto-loads' -- plugins/` tutti a zero; `git grep -n -i 'deposit' -- plugins/daiku/skills/init plugins/daiku/hooks/opencode-plugin.mjs` solo sulla riga della stash dello Step 6", "red_if": "Uno dei grep colpisce, un banco è rosso, la scansione non elenca la chiave mancante su un progetto opencode (o la elenca quando la chiave c'è, o elenca un file non parsificabile), un valore del progetto su opencode.json viene sovrascritto, o la riga d'ancora vecchia sopravvive in uno dei quattro contratti", "cases": [{"input": "progetto opencode senza opencode.json", "expected": "depth.mjs lo crea con experimental.subagent_depth 3 e la scansione non elenca 4-bis"}, {"input": "opencode.json con blocco experimental senza la chiave", "expected": "chiave aggiunta, altre chiavi del blocco intatte"}, {"input": "chiave presente col valore 1 (scelta del progetto)", "expected": "valore tenuto, scansione silenziosa"}, {"input": "opencode.json non parsificabile", "expected": "lasciato intatto (untouched), scansione non lo elenca"}, {"input": "progetto Claude Code", "expected": "nessuna aspettativa di chiave, 4-bis mai nominato per essa"}, {"input": "albero dopo il task", "expected": "zero colpi dei cinque pattern sotto plugins/"}]}, {"task": "5", "check": "`node plugins/daiku/templates/project/update.mjs --self-check` verde e contato, entry aggiunto a self-check.mjs che resta verde, e i controlli di template-check.mjs sul ramo Claude intatti (i due comandi claude plugin in ordine, claude plugin list --json, >>>, Update Daiku now?, process.stdin.isTTY, un solo marcatore daiku:script)", "red_if": "Un caso del tavolo non coperto, il ramo Claude mutato (un check di template-check rosso), o un passo del banco che contatta un host vero invece di una porta iniettabile", "cases": [{"input": "default_host claude", "expected": "il flusso Claude è quello di prima nei punti che template-check legge"}, {"input": "default_host opencode, plugin list con via e versione", "expected": "radice risolta da lì, scan lanciato da <root>/daiku/skills/init/scan.mjs"}, {"input": "update riuscito", "expected": "depth.mjs e scan.mjs chiamati, residuo riga per riga col rinvio a /daiku:init"}, {"input": "residuo vuoto", "expected": "una riga di progetto allineato, nessun rinvio superfluo"}, {"input": "opencode plugin update con exit diverso da 0", "expected": "stop con quel codice, nessun passo dopo"}, {"input": "output di plugin list illeggibile", "expected": "host did not answer, comandi a mano, nessun valore indovinato"}, {"input": "nessun terminale", "expected": "stampa e non chiede, come il ramo Claude"}]}, {"task": "6", "check": "`node plugins/daiku/architect/release.mjs --self-check` verde e contato coi due casi nuovi (primo rilascio col replica assente in produzione, rilascio successivo col numero sostituito); `git grep -n -F 'plugins/package.json' -- .daiku/project.json` un solo colpo in replicated_in; `git grep -n -F 'version' -- plugins/package.json` zero colpi", "red_if": "Il primo rilascio col replica assente in produzione fallisce, il numero non arriva nel package.json di produzione o non coincide col manifest, il contenuto del descrittore non viene dal ramo di sviluppo, o il package.json di sviluppo guadagna un campo version", "cases": [{"input": "produzione senza plugins/package.json, sviluppo col file senza version", "expected": "rilascio riuscito: il file entra in produzione col version nuovo e il resto dal ramo"}, {"input": "produzione col file portante il numero vecchio", "expected": "solo il numero cambia"}, {"input": "replica nominato assente anche dal ramo di sviluppo", "expected": "fail col path, come oggi"}, {"input": "replica testuale (badge del README)", "expected": "invariato: sostituzione del numero"}]}, {"task": "7", "check": "`node .docs/tools/check-no-deps.mjs plugins` e il suo --self-check verdi e contati con never_red vuoto; `git grep -n -F 'manifesto di dipendenze' -- STACK.md .daiku/studies` a zero; in .daiku/project.json il run del gate ha due righe e paths e [\"plugins/\"]; check-corpus, check-topology, check-marketplace e check-no-push ancora verdi", "red_if": "Il controllo è rosso sul descrittore o sul blocks.json del corpus (sottostringa invece di nome esatto), un nome di lockfile o un campo di dipendenza enumerato senza caso rosso nel banco, la frase vecchia resta in STACK.md o negli studi, il gate gira con una riga sola, o un controllo preesistente diventa rosso", "cases": [{"input": "root con plugins/package.json descrittore senza campi di dipendenza", "expected": "verde"}, {"input": "package.json con dependencies non vuoto sotto qualunque profondità", "expected": "rosso, col path del file"}, {"input": "ciascun nome di lockfile della costante: package-lock.json, npm-shrinkwrap.json, yarn.lock, pnpm-lock.yaml, bun.lock, bun.lockb", "expected": "rosso con un caso per ogni nome"}, {"input": "blocks.json del corpus, che contiene lock nel nome", "expected": "verde: confronto per nome esatto"}, {"input": "package.json che non parsifica", "expected": "rosso"}, {"input": "devDependencies vuoto", "expected": "verde"}]}, {"task": "8", "check": "Ogni Check dei task 0-7 rieseguito sull'albero finale e verde; preflight registrato con check_fast, lint_fix e test_targeted skipped perché non dichiarati e layers clean con lista vuota; autovalutazione contro i criteri di completamento, tutti soddisfatti", "red_if": "Un Check di un task precedente torna rosso dopo i task successivi, o un criterio di completamento non è soddisfatto", "cases": []}], "interfaces": [{"symbol": "experimental.subagent_depth", "declared_in": "plugins/daiku/skills/init/depth.mjs:1", "consumers": ["plugins/daiku/skills/init/deposit.mjs:34", "plugins/daiku/skills/init/SKILL.md:309", "plugins/daiku/contracts/orchestration.md:315"]}, {"symbol": "argument-hint", "declared_in": "plugins/daiku/skills/new-feature/SKILL.md:4", "consumers": ["plugins/daiku/hooks/lib/contracts-post-edit.mjs:17", "plugins/daiku/contracts/orchestration.md:95", "plugins/plugin.mjs:1"]}, {"symbol": "version.replicated_in", "declared_in": ".daiku/project.json:21", "consumers": ["plugins/daiku/architect/release.mjs:476", "plugins/daiku/skills/release/SKILL.md:160", "plugins/daiku/skills/commit/SKILL.md:64"]}, {"symbol": "node .docs/tools/check-corpus.mjs plugins/daiku", "declared_in": ".daiku/project.json:60", "consumers": ["STACK.md:44", ".docs/tools/check-corpus.mjs:9"]}, {"symbol": "hooks/opencode-plugin.mjs", "declared_in": "plugins/daiku/hooks/opencode-plugin.mjs:1", "consumers": ["plugins/daiku/hooks/self-check.mjs:133", "plugins/daiku/skills/init/deposit.mjs:28", "CLAUDE.md:284"]}, {"symbol": "4-bis", "declared_in": "plugins/daiku/skills/init/scan.mjs:88", "consumers": ["plugins/daiku/skills/init/SKILL.md:42", "plugins/daiku/skills/init/SKILL.md:311", "plugins/daiku/skills/init/SKILL.md:560"]}], "retired": [{"fact": "Il pacchetto non dichiara alcun manifesto di dipendenze né alcun lockfile — la forma di STACK.md §2 anteriore al restringimento", "pattern": "manifesto di dipendenze"}, {"fact": "l'ancora di supporto su opencode era <base directory>/../../daiku, la cartella sorella del deposito", "pattern": "<base directory>/../../daiku"}, {"fact": "il programma del deposito skills/init/deposit.mjs", "pattern": "deposit.mjs"}, {"fact": "lo scheletro depositato in .opencode/plugins/daiku.js", "pattern": ".opencode/plugins/daiku.js"}, {"fact": "il nome dell'agente su opencode era the file name in .opencode/agents/", "pattern": ".opencode/agents/"}, {"fact": "il manifesto del deposito .opencode/daiku/deposit.json", "pattern": "deposit.json"}, {"fact": "opencode auto-carica lo scheletro dal deposito in .opencode/plugins/", "pattern": "auto-loads"}], "detail": ""}
++```
+diff --git a/.daiku/features/daiku-senza-canale-su-opencode/3. memory-report.md b/.daiku/features/daiku-senza-canale-su-opencode/3. memory-report.md
+new file mode 100644
+index 0000000..0dec802
+--- /dev/null
++++ b/.daiku/features/daiku-senza-canale-su-opencode/3. memory-report.md	
+@@ -0,0 +1,24 @@
++```json
++{
++  "updated": true,
++  "files": [
++    ".docs/memory/canale-opencode.md",
++    ".docs/memory/deposito-opencode.md",
++    ".docs/memory/alberatura-pacchetto.md",
++    ".docs/memory/due-host.md",
++    ".docs/memory/guardrail-nascono-spenti.md",
++    ".docs/memory/init-aggancia-la-memoria.md",
++    ".docs/memory/MEMORY.md",
++    "ARCHITECTURE.md"
++  ],
++  "confirm_with_owner": [
++    "STACK.md §4 («Dove gira e come si distribuisce») dichiara che il sistema «si distribuisce come pacchetto di Claude Code attraverso un marketplace»: dopo questa feature il pacchetto si distribuisce anche su opencode come plugin (`opencode plugin add`), quindi quella riga è ora incompleta. Il brief la lascia esplicitamente fuori perimetro (le frasi fondative a host solo), perciò non l'ho toccata: confermi che va aggiornata, e in che forma?"
++  ],
++  "detail": "Riscritta la memoria del canale opencode (installazione a plugin e registrazione in codice, non più deposito nel progetto) e allineate le memorie e i documenti che il diff ha reso falsi — `alberatura-pacchetto`, `due-host`, `guardrail-nascono-spenti`, `init-aggancia-la-memoria`, l'indice e l'`ARCHITECTURE.md` §«Due host», la cui ragione (il deposito) è caduta; il brief combacia coi file toccati dal diff.",
++  "committed": null
++}
++```
++
++confirm_with_owner, in full:
++
++- STACK.md §4 («Dove gira e come si distribuisce») dichiara che il sistema «si distribuisce come pacchetto di Claude Code attraverso un marketplace»: dopo questa feature il pacchetto si distribuisce anche su opencode come plugin (`opencode plugin add`), quindi quella riga è ora incompleta. Il brief la lascia esplicitamente fuori perimetro (le frasi fondative a host solo), perciò non l'ho toccata: confermi che va aggiornata, e in che forma?
+diff --git a/.daiku/features/daiku-senza-canale-su-opencode/4. review-notes.md b/.daiku/features/daiku-senza-canale-su-opencode/4. review-notes.md
+new file mode 100644
+index 0000000..c07f100
+--- /dev/null
++++ b/.daiku/features/daiku-senza-canale-su-opencode/4. review-notes.md	
+@@ -0,0 +1,16 @@
++# Notes for review
++
++> Origin: 2. blueprint.md · Generated: 2026-10-16 · Base-ref: 5244860788897c055a65394b2bfc9a1aa58c1689
++
++## Handoff
++```json
++{"ok":true,"note_review_path":".daiku/features/daiku-senza-canale-su-opencode/4. review-notes.md","verify_detail":"Chiusura sull albero finale: `node plugins/daiku/hooks/self-check.mjs` -> 22 benches, 2136 checks, all green (exit 0), entry plugin.mjs (154), skills/init/depth.mjs (22), templates/project/update.mjs (36), entry deposito assente; `claude plugin validate plugins` e `claude plugin validate plugins/daiku` -> 0; `node --check` su plugin.mjs, depth.mjs, update.mjs -> 0; template-check 161/161; contracts-post-edit 87/87; release.mjs 68/68; architect --self-check 753/753; check-no-deps --self-check 19/19 never_red [] e su plugins 75/75 (2 senza argomento); check-corpus --self-check 46/46; check-marketplace 5/5 e 6/6; check-no-push verde, scan push 0.\nSei pattern ritirati sotto plugins/ a zero (git grep e ricerca coi non tracciati); `git grep -i deposit` su skills/init + opencode-plugin -> 1 riga (la stash dello Step 6); manifesto di dipendenze su STACK + studi -> 0; argument-hint nelle skills -> 9; plugins/package.json in .daiku/project.json -> 1 colpo in replicated_in; version nel descrittore -> 0.\nLIMITI: check-corpus plugins/daiku e check-no-deps plugins come gate dell area li esegue la fase 3 come {areas.daiku.gate}; check-topology plugins/daiku -> exit 1 con cinque sec-ref PRE-ESISTENTI, provati identici su un `git archive HEAD plugins/daiku` estratto in Temp (stessi 5 failed; 518 check su base, 517 qui per il deposit.mjs eliminato); check_fast, lint_fix e test_targeted -> skipped perche le chiavi non sono dichiarate in areas.daiku; layers -> clean (architect.mjs question layers: verdict clean, violations [], layers [] perche .daiku/policies/ porta il solo README.md, added 1688 righe su 13 file sotto plugins/ con 3 non tracciati).","checks":[{"task":"0","check":"journal con una riga per ciascuno dei cinque punti aperti (fonti al tag v2.0.29, adattamenti A2/A3/A5 registrati) e baseline `claude plugin validate plugins` + `claude plugin validate plugins/daiku` sull albero intatto","exit":0},{"task":"1","check":"`node plugins/plugin.mjs --self-check` 154/154 · `node plugins/daiku/hooks/self-check.mjs` 22 benches 2136 checks · `node --check plugins/plugin.mjs` · i due `claude plugin validate`","exit":0},{"task":"2","check":"`node plugins/plugin.mjs --self-check` 154/154: uguaglianza di insieme su readdirSync skills (22) e agents/opencode (1), description riletta dal banco per conto proprio, reload >= 1","exit":0},{"task":"3","check":"`node plugins/plugin.mjs --self-check` 154/154 con esattamente i nove comandi · `git grep -n -F argument-hint -- plugins/daiku/skills/` -> 9","exit":0},{"task":"4","check":"suite -> entry skills/init/depth.mjs presente e deposit.mjs assente · cinque `git grep -F` su plugins/ a zero · `git grep -i deposit` su skills/init + opencode-plugin -> 1 riga (stash Step 6) · scan 84/84 · depth 22/22 · adapter 25/25","exit":0},{"task":"5","check":"`node plugins/daiku/templates/project/update.mjs --self-check` 36/36 · entry aggiunto a self-check.mjs nella suite · `template-check.mjs --self-check` 161/161 (ramo Claude intatto)","exit":0},{"task":"6","check":"`node plugins/daiku/architect/release.mjs --self-check plugins/daiku` 68/68 (seed + sostituzione + assente-da-entrambi) · `git grep plugins/package.json .daiku/project.json` 1 colpo in replicated_in · `git grep version plugins/package.json` 0","exit":0},{"task":"7","check":"`check-no-deps --self-check` 19/19 never_red [] · `check-no-deps plugins` 75/75 · senza argomento 2 · `git grep manifesto di dipendenze` STACK+studies 0 · project.json paths [\"plugins/\"] e run a due righe · corpus --self-check 46/46 · marketplace 5/5 e 6/6 · no-push verde con push 0 · LIMITE: `check-corpus plugins/daiku` e `check-no-deps plugins` come gate dell area li esegue la fase 3 come {areas.daiku.gate}","exit":0},{"task":"7","check":"`node .docs/tools/check-topology.mjs plugins/daiku` -> exit 1, cinque sec-ref PRE-ESISTENTI: prova su `git archive HEAD plugins/daiku` estratto in Temp -> stesso exit 1 e stessi 5 failed (518 check su base, 517 qui per il deposit.mjs eliminato); le citazioni stanno in righe fuori dagli hunk di questo diff e skills/commit/SKILL.md non e stato toccato (git diff HEAD vuoto)","exit":1},{"task":"8","check":"ogni Check dei task 0-7 rieseguito sull albero finale (righe sopra) · preflight registrato (3 skipped + layers clean) · sei criteri di completamento autovalutati","exit":0}],"red_proofs":[{"test":"plugins/plugin.mjs::self-check","task":"1","against":"mutation","exit":1,"red_output":"setup senza le guardie -> 7 failed: execute.before/after, session.prompt, event non agganciati; setup returns the adapter inventory; a git push ... the push passed through the entrypoint"},{"test":"plugins/plugin.mjs::self-check (descriptor version)","task":"1","against":"mutation","exit":1,"red_output":"the descriptor declares no version on develop: version must be written by release, on production"},{"test":"plugins/plugin.mjs::self-check (skills set)","task":"2","against":"mutation","exit":1,"red_output":"review esclusa dal add -> every skill folder is registered ... registered 21 of 22 + le 4 righe di review"},{"test":"plugins/plugin.mjs::self-check (agent mode)","task":"2","against":"mutation","exit":1,"red_output":"finder: mode comes from the frontmatter"},{"test":"plugins/plugin.mjs::self-check (skill reload)","task":"2","against":"mutation","exit":1,"red_output":"the skill domain is reloaded after registration: reload count 0"},{"test":"plugins/plugin.mjs::self-check (corpus transcription)","task":"2","against":"mutation","exit":1,"red_output":"no line of the handoff body is transcribed into this module: found verbatim: You write **one document** ..."},{"test":"plugins/plugin.mjs::self-check (nine commands)","task":"3","against":"mutation","exit":1,"red_output":"release esclusa -> exactly the nine entry skills are commands, no tenth: commands were code-review,commit,handoff,init,new-feature,new-project,research,review"},{"test":"plugins/plugin.mjs::self-check (description)","task":"3","against":"mutation","exit":1,"red_output":"description forzata -> 9 righe ... the command carries the frontmatter description: expected ... got hardcoded"},{"test":"plugins/plugin.mjs::self-check (arguments)","task":"3","against":"mutation","exit":1,"red_output":"execute forwards the argument text: \"\""},{"test":"plugins/daiku/skills/init/depth.mjs::self-check (kept)","task":"4","against":"mutation","exit":1,"red_output":"ramo kept rimosso -> 4 failed: action kept: added; the project value 1 is not overwritten; keeping says so in detail; idempotence"},{"test":"plugins/daiku/skills/init/depth.mjs::self-check (created)","task":"4","against":"mutation","exit":1,"red_output":"file creato senza il blocco -> the file is created with experimental.subagent_depth 3: {\"$schema\":\"https://opencode.ai/config.json\"} + idempotence"},{"test":"plugins/daiku/skills/init/depth.mjs::self-check (root key)","task":"4","against":"mutation","exit":1,"red_output":"chiave scritta in radice -> 3 failed: it gains experimental.subagent_depth 3; a root-level key is left where it stands; the key is written under experimental"},{"test":"plugins/daiku/skills/init/scan.mjs::self-check (host gate)","task":"4","against":"mutation","exit":1,"red_output":"gate == opencode invertito -> 25 failed: i casi opencode smettono di elencare e i casi Claude guadagnano il falso depth"},{"test":"plugins/daiku/skills/init/scan.mjs::self-check (declared)","task":"4","against":"mutation","exit":1,"red_output":"controllo rimosso -> a value the project declares: the key is present; and nothing else is missing either"},{"test":"plugins/daiku/skills/init/scan.mjs::self-check (unparsable)","task":"4","against":"mutation","exit":1,"red_output":"catch -> {} -> an unparsable opencode.json is never listed; and nothing else is missing on it"},{"test":"plugins/daiku/hooks/template-check.mjs::self-check (step order)","task":"5","against":"mutation","exit":1,"red_output":"STEPS scambiati -> update script refreshes the marketplace, then updates the plugin"},{"test":"plugins/daiku/templates/project/update.mjs::self-check (root)","task":"5","against":"mutation","exit":1,"red_output":"resolvePackageRoot sempre null -> 10 failed: root, delta, domanda, depth/scan, residuo, allineato"},{"test":"plugins/daiku/templates/project/update.mjs::self-check (failed update)","task":"5","against":"mutation","exit":1,"red_output":"stop rimosso -> a failed update stops with its exit code: code 1; and no step runs after it (riga depth.mjs eseguita)"},{"test":"plugins/daiku/architect/release.mjs::self-check (seed)","task":"6","against":"mutation","exit":1,"red_output":"fail incondizionato ripristinato -> 7 failed: replica:production-without-the-file-releases-anyway: release: production carries no replica: package.json"},{"test":".docs/tools/check-no-deps.mjs::self-check (exact name)","task":"7","against":"mutation","exit":1,"red_output":"match per sottostringa -> 3 failed: blocks.json falsamente rosso sulla radice reale; npm-shrinkwrap.json smette di essere colto"},{"test":".docs/tools/check-no-deps.mjs::self-check (empty fields)","task":"7","against":"mutation","exit":1,"red_output":"nonVuoto(undefined)->true -> 8 failed: i cinque casi campo, il descrittore, il campo vuoto, la radice reale"}],"consumers_checked":[{"consumer":"plugins/daiku/skills/init/deposit.mjs:34","check":"test ! -e plugins/daiku/skills/init/deposit.mjs (la logica vive in depth.mjs: banco 22/22)","exit":0},{"consumer":"plugins/daiku/skills/init/SKILL.md:309","check":"git grep -n -F depth.mjs -- plugins/daiku/skills/init/SKILL.md (chiamate del passo)","exit":0},{"consumer":"plugins/daiku/contracts/orchestration.md:315","check":"git grep -n -F 'added by *Step 4-bis*' -- plugins/daiku/contracts/orchestration.md","exit":0},{"consumer":"plugins/daiku/contracts/orchestration.md:320","check":"git grep -n -F 'outside Daiku keeps the default' -- plugins/daiku/contracts/orchestration.md","exit":0},{"consumer":"plugins/daiku/hooks/lib/contracts-post-edit.mjs:17","check":"node plugins/daiku/hooks/lib/contracts-post-edit.mjs --self-check (87/87)","exit":0},{"consumer":"plugins/daiku/contracts/orchestration.md:95","check":"git grep -n -F 'argument-hint' -- plugins/daiku/contracts/orchestration.md (i contratti interni non ne hanno)","exit":0},{"consumer":"plugins/plugin.mjs:1","check":"node plugins/plugin.mjs --self-check (casi dei nove comandi, 154/154)","exit":0},{"consumer":"plugins/daiku/architect/release.mjs:476","check":"node plugins/daiku/architect/release.mjs --self-check plugins/daiku (68/68, casi seed e sostituzione)","exit":0},{"consumer":"plugins/daiku/skills/release/SKILL.md:160","check":"git grep -n -F '{version.replicated_in}' -- plugins/daiku/skills/release/SKILL.md (chiave letta, non contraddetta)","exit":0},{"consumer":"plugins/daiku/skills/commit/SKILL.md:64","check":"git diff HEAD --stat -- plugins/daiku/skills/commit/SKILL.md (invariato, come il brief lo dichiara)","exit":0},{"consumer":"STACK.md:44","check":"git grep -n -F 'check-no-deps' -- STACK.md (elenco dei controlli)","exit":0},{"consumer":".docs/tools/check-corpus.mjs:9","check":"node .docs/tools/check-corpus.mjs --self-check (46/46)","exit":0},{"consumer":"plugins/daiku/hooks/self-check.mjs:133","check":"node plugins/daiku/hooks/self-check.mjs (entry hooks/opencode-plugin.mjs nella suite)","exit":0},{"consumer":"plugins/daiku/skills/init/deposit.mjs:28","check":"test ! -e plugins/daiku/skills/init/deposit.mjs (consumatore morto col deposito)","exit":0},{"consumer":"CLAUDE.md:284","check":"git grep -n -F 'plugins/plugin.mjs' -- CLAUDE.md (enumerazione aggiornata: entrypoint e scheletro dentro, deposito fuori)","exit":0},{"consumer":"plugins/daiku/skills/init/scan.mjs:88","check":"git grep -n -F \"DEPTH_STEP = '4-bis'\" -- plugins/daiku/skills/init/scan.mjs","exit":0},{"consumer":"plugins/daiku/skills/init/SKILL.md:42","check":"git grep -n -F 'nesting key' -- plugins/daiku/skills/init/SKILL.md (paragrafo della scansione)","exit":0},{"consumer":"plugins/daiku/skills/init/SKILL.md:311","check":"git grep -c -F '4-bis' -- plugins/daiku/skills/init/SKILL.md (4: scansione, step, idempotenza, Step 10)","exit":0},{"consumer":"plugins/daiku/skills/init/SKILL.md:560","check":"git grep -n -F 'the nesting key of *Step 4-bis*' -- plugins/daiku/skills/init/SKILL.md","exit":0}],"absence":[{"pattern":"manifesto di dipendenze","hits":5,"why":"i 5 colpi restano in .daiku/features/daiku-senza-canale-su-opencode/0. problem.md e 1. decision-doc.md: record storico della decisione; STACK.md e gli studi sono riscritti (zero colpi lì)"},{"pattern":"<base directory>/../../daiku","hits":1,"why":"il colpo resta in 0. problem.md:20: record storico; i quattro contratti sono riscritti e plugins/ e a zero"},{"pattern":"deposit.mjs","hits":16,"why":"0. problem.md e 1. decision-doc.md restano come record storico; .docs/memory/alberatura-pacchetto.md e deposito-opencode.md si chiudono in fase Memory (5b); plugins/ a zero"},{"pattern":".opencode/plugins/daiku.js","hits":5,"why":"colpi nei due documenti della feature (record storico) e in .docs/memory/deposito-opencode.md (fase 5b); plugins/ a zero"},{"pattern":".opencode/agents/","hits":4,"why":"0. problem.md:16 resta (record storico) e .docs/memory/deposito-opencode.md va in fase Memory; orchestration e init SKILL riscritti"},{"pattern":"deposit.json","hits":2,"why":"0. problem.md (record storico) e .docs/memory/deposito-opencode.md (fase 5b); plugins/ a zero"},{"pattern":"auto-loads","hits":0,"why":""}],"preflight":[{"step":"check_fast","area":"daiku","outcome":"skipped","detail":"la chiave areas.daiku.check_fast non e dichiarata dal progetto (§6 contracts/project-contract.md)"},{"step":"lint_fix","area":"daiku","outcome":"skipped","detail":"la chiave areas.daiku.lint_fix non e dichiarata dal progetto (§6 contracts/project-contract.md)"},{"step":"test_targeted","area":"daiku","outcome":"skipped","detail":"la chiave areas.daiku.test_targeted non e dichiarata dal progetto (§6 contracts/project-contract.md)"},{"step":"layers","area":"daiku","outcome":"green","detail":"architect/architect.mjs question=layers -> verdict clean, violations []; layers: [] (.daiku/policies/ porta il solo README.md, nessun blocco layers); added: 1688 righe su 13 file sotto plugins/ (3 non tracciati inclusi)"}],"payload":{"bytes":1656,"lines":3},"detail":""}
++```
++
++## Considerations
++- **Guardia del pool e eliminazioni** (task 4): `command-guard` branch `{worktree.pool}` nega ogni `rm`/`rmdir`/`Remove-Item` la cui destinazione stia in un worktree del pool (`hooks/lib/command-guard.mjs:512`), bench alla mano. Prerequisiti del suo testo eseguiti prima (elenco junction: nessuna; backup in Temp), poi eliminazione con `git rm` + `git restore --staged` — forma che la stessa guardia dichiara non coperta («a different gesture», riga 1383): sul disco il file e eliminato, l indice resta pulito, il contenuto recuperabile da `git show HEAD:<path>`. Nessun gap coperto con `node -e` o pipeline. La scelta e giudicabile: era o `ok: false` o questa forma.
++- **`check-topology plugins/daiku` e rosso a base** (5 sec-ref: `Alignment`, `Version and changelog`, `Commit convention` mancanti in `skills/commit/SKILL.md` gia a HEAD, provati su `git archive HEAD`); toccare `commit/SKILL.md` qui sarebbe fuori perimetro — l albero principale ne ha la versione fra i `M` (sessione parallela).
++- **Delta su opencode senza numero in arrivo** (`templates/project/update.mjs:647`): `opencode plugin check` dichiara solo `update available`, mai la versione nuova — il delta e `versione in opera >>> update available`. Se un host la stampasse in futuro, la forma la accoglie.
++- **Radice del pacchetto ambigua = nessuna radice** (`templates/project/update.mjs:563`): due chiavi distinte nel cache dell host con un package.json valido ciascuna -> `null` e comandi a mano, senza ricalcolare la chiave (avrebbe legato lo scheletro agli interna di opencode); dentro una sola chiave vince la generazione numerica piu alta.
++- **Copertura del banco di update.mjs**: il ramo Claude completo e provato sul caso base, ma `switchToMain` (`templates/project/update.mjs:372`) e `refresh`-stop (`:290`) non sono esercitati end-to-end dal banco — restano coperti dai soli controlli testuali di `template-check.mjs`: nuovi rami (per il banco) non coperti.
++- **Due righe di journal in disparte**: il testo dello Step 5-bis e stato rinviato dal task 4 al task 5 (descrive il ramo host che il task 5 costruisce), e l ordine del journal porta le voci in sequenza 0-8 con questa deviazione spiegata lì.
+diff --git a/.daiku/features/daiku-senza-canale-su-opencode/5. review-report.md b/.daiku/features/daiku-senza-canale-su-opencode/5. review-report.md
+new file mode 100644
+index 0000000..72352a4
+--- /dev/null
++++ b/.daiku/features/daiku-senza-canale-su-opencode/5. review-report.md	
+@@ -0,0 +1,100 @@
++# Review report
++
++> Consegna: `daiku-senza-canale-su-opencode`
++> Base-ref: `5244860788897c055a65394b2bfc9a1aa58c1689` (congelata nel work root, non ricalcolata)
++> Work root: `C:/dev/daiku/.claude/worktrees/agent-tree-2` (ramo `worktree-agent-tree-2`) — diff, fix, copertura e gate ci sono girati
++> Ledger: `C:/dev/daiku/.docs/runtime/review/review-ledger-5244860-213014.json`
++> Ciclo chiuso con `--no-commit`: il commit di questa consegna è una fase successiva.
++
++## Esito
++
++```json
++{
++  "rounds": 1,
++  "outcome": "diminishing-returns",
++  "disciplines_round_1": ["bug"],
++  "missing_disciplines": [],
++  "independence": "intact",
++  "oscillation": 0,
++  "applied": 1, "severe": 1, "on_previous_fix": 0, "discarded": 0,
++  "gate": "green",
++  "gate_detail": "check-corpus.mjs plugins/daiku -> 8/8 exit 0; check-no-deps.mjs plugins -> 75/75 exit 0; node --check exit 0 su tutti i .mjs/.js modificati sotto plugins/; JSON.parse di plugins/package.json exit 0; lint_fix non dichiarato, niente corretto",
++  "gate_origin": null,
++  "commit": "not-requested",
++  "commit_sha": null,
++  "blocking": 0,
++  "coverage": "no-test-command",
++  "ledger": "C:/dev/daiku/.docs/runtime/review/review-ledger-5244860-213014.json",
++  "report": ".daiku/features/daiku-senza-canale-su-opencode/5. review-report.md",
++  "to_confirm": []
++}
++```
++
++## In prosa
++
++**Un round, chiuso a `diminishing-returns`.** L'evaluator ha chiuso il ciclo alla regola 3 sul verdetto
++di merito `stop`: il round ha prodotto un solo fix, `severe`, confinato a un unico sito
++(`actRelease` in `plugins/daiku/architect/release.mjs`) che il round non ha altrimenti toccato —
++nessun secondo punto riscritto, nessun flusso toccato in più punti, nessun `on_previous_fix`.
++Il ciclo si è fermato perché il delta non è più caldo, non perché fosse finito il lavoro.
++
++**Round 1.** Ha tornato `bug`, l'unica disciplina del set: `review.disciplines = ["bug"]` nel
++progetto, quindi `arch` e il passo `form` (`perf`, `dead`) non partono — è la scelta dichiarata dal
++progetto, non un giro a meno di quanto doveva essere. Nessuna disciplina mancata, fan-out su
++subagenti indipendenti (`independence: intact`).
++Il finder ha prodotto **1 finding** numerato (`r1-bug-1`) e **3 ipotesi non provate** (sotto).
++
++**Applicato: 1 fix, `severe: true`.** `plugins/daiku/architect/release.mjs`, ramo di seed di
++`actRelease`: lo scrittore di un file di `version.replicated_in` assente da production sceglie ora
++dal contenuto del replica — un testo che parse come JSON prende il campo come version file, qualsiasi
++altro testo prende il numero col sostituzione testuale, come ogni altro replica. Prima il ramo usava
++sempre `versionedFile`, che fa `JSON.parse` e faceva abortire il rilascio con «the version file is not
++valid JSON» su un file non-JSON — per esempio il badge markdown di `plugins/README.md`, che nominano
++sia il default del banco (`release.mjs:743`) sia `.daiku/project.json`.
++**Scartati: 0.** **Oscillazioni: 0.** **`on_previous_fix`: 0.**
++
++**Comportamento visibile sul diff:** un rilascio con un replica non-JSON che production non porta
++ancora non abortisce più — pubblica, sostituendo il numero nel file di testo. È il comportamento che
++il commento nuovo della riga dichiarava.
++
++**Check e test.** `check_fast` e `check_tests` registrati `skipped` sull'area `daiku`: il progetto
++non dichiara né `check_fast` né `test_targeted` (§6 di `contracts/project-contract.md`). Nessuno rosso.
++Nessuna deviazione misurata dallo strumento (`deviations: []`).
++
++**Copertura: `no-test-command`.** Nessuna area toccata dichiare `test_targeted`, quindi la fase non ha
++passi: nessun test scritto, nessun giro di chiusura sui test.
++
++**Gate: verde, eseguito una volta.** `node .docs/tools/check-corpus.mjs plugins/daiku` → 8/8 exit 0;
++`node .docs/tools/check-no-deps.mjs plugins` → 75/75 exit 0; `node --check` exit 0 su tutti i
++`.mjs`/`.js` modificati sotto `plugins/`; `JSON.parse` di `plugins/package.json` exit 0.
++Nessun `lint_fix` dichiarato, quindi nessuna correzione nel gate. `gate_origin: null` su un gate verde.
++
++**Commit: non chiesto** (`--no-commit`) — il commit appartiene alla fase successiva della consegna.
++
++## Punti aperti
++
++Nessun elemento bloccante: `to_confirm` è vuoto, il gate è verde, nessuna disciplina mancata,
++nessuna oscillazione, uscita fuori da `rounds-exhausted`.
++
++Restano però dichiarati, per chi legge dopo:
++
++- **Tre ipotesi del finder non provate** — nessuna ha una misura nel perimetro di questo diff, quindi
++  non sono findings e non entrano in `to_confirm`:
++  1. `plugins/plugin.mjs` · `registerAgents` — se `editor.update(id, …)` su un id sconosciuto
++     (`finder`) **non** crea l'agente, la review su opencode non si compone. Misura mancante: leggere
++     `AgentEditor.update` (`packages/plugin/src/effect/agent.ts`, `packages/core/src/agent.ts`) al tag
++     v2.0.29.
++  2. `plugins/plugin.mjs` · `registerCommands.execute` — la forma di `CommandInvocation` non è
++     verificata da nessuna parte; se l'host passa un'altra forma, i nove comandi d'ingresso attivano
++     la skill con prompt vuoto perdendo gli argomenti. Misura mancante: leggere il tipo in
++     `packages/plugin/src/effect/command.ts`.
++  3. `plugins/daiku/templates/project/update.mjs` · `runOpencode` — l'intero ramo opencode poggia su
++     output dell'host (`opencode debug paths cache`, layout della cache npm, colonne di
++     `plugin list`/`plugin check`) mai verificati; ogni discordanza finisce in `manual()`.
++     Misura mancante: eseguirli su una macchina con il pacchetto installato, o leggere il sorgente
++     della CLI al tag.
++- **Due limiti dichiarati dall'esecuzione** (già nei Considerations/Handoff di `4. review-notes.md`):
++  i comandi del gate erano lasciati a questo ciclo ed eseguiti qui (verdi); e
++  `node .docs/tools/check-topology.mjs plugins/daiku` esce `1` con cinque `sec-ref` **pre-esistenti**,
++  provati identici su un `git archive HEAD plugins/daiku` estratto — fuori da questo diff, e non
++  fra i comandi che il gate del progetto dichiara.
+diff --git a/.daiku/features/merge-ostruito-da-lavoro-non-committato/0. problem.md b/.daiku/features/merge-ostruito-da-lavoro-non-committato/0. problem.md
+index 02e7599..41cbedc 100644
+--- a/.daiku/features/merge-ostruito-da-lavoro-non-committato/0. problem.md	
++++ b/.daiku/features/merge-ostruito-da-lavoro-non-committato/0. problem.md	
+@@ -197,3 +197,10 @@ ferma l'acquisition, e il `detail` nomina ogni slot con la sua consegna (`:258`)
+   sporco **e** il conflitto di contenuto della 6b (§ punto 3). Non si generalizza a ogni sporcizia del
+   main tree.
+ - **Non si propone** come si scrivono i file: nessuna soluzione, nessun contratto, nessun blocco.
++
++## Cosa si regge su
++
++Riesecuzione del 16 ottobre 2026: nessuna nota consultata — in `.daiku/studies/` non c'è nessuno
++studio che tocchi questo problema (feature tutta Git e codice del pacchetto, nessuna terza
++tecnologia che meriti studio al punto 4), e nessun documento della cartella ne cita alcuna. La
++riesecuzione non trovò quindi nulla da correggere, e nessun marcatore `[to verify]` resta aperto.
+diff --git a/.daiku/features/merge-ostruito-da-lavoro-non-committato/2. blueprint.md b/.daiku/features/merge-ostruito-da-lavoro-non-committato/2. blueprint.md
+index d565738..ddc0030 100644
+--- a/.daiku/features/merge-ostruito-da-lavoro-non-committato/2. blueprint.md	
++++ b/.daiku/features/merge-ostruito-da-lavoro-non-committato/2. blueprint.md	
+@@ -113,15 +113,15 @@ Fuori dal perimetro di scrittura di `execute`, da lasciare all'allineamento di m
+ ## Memoria — piano e journal
+    State: [ ] to do · [~] in progress · [x] done
+ 
+-   - [ ] Task 0 — Ricognizione: verifica in campo le assunzioni residue del brief (file, sedi e intestazioni esistono come atteso; git supporta `merge --autostash`).
++   - [x] Task 0 — Ricognizione: verifica in campo le assunzioni residue del brief (file, sedi e intestazioni esistono come atteso; git supporta `merge --autostash`).
+          Check: `git grep -n -F` trova `GRAPH`, `ASKS`, `REQUIRES` in `architect/architect.mjs`; le intestazioni `## ship-feature-merge` e `## architect` in `schemas/blocks.json`; § *6b. Merge* e § *Self-deceptions* in `ship-feature/SKILL.md`; la lista dei programmi in `hooks/self-check.mjs:81`; `git merge -h` elenca `--[no-]autostash`; `ls plugins/daiku/skills/*/SKILL.md | wc -l` conta i contratti.
+          Red if: un file, una riga o un'intestazione citata è assente o rinominata: adatta il piano e annotalo nel Journal.
+          Notes:
+-   - [ ] Task 1 — `schemas/blocks.json`: aggiungi `dirty_paths` ai `required` di § *ship-feature-merge*; aggiungi il blocco nuovo `reconcile` coi campi `ok, merged, merge_sha, overlap, patch, dirty_paths, question, detail`; aggiungi `reconcile` all'enum `verdict` di § *architect*.
++   - [x] Task 1 — `schemas/blocks.json`: aggiungi `dirty_paths` ai `required` di § *ship-feature-merge*; aggiungi il blocco nuovo `reconcile` coi campi `ok, merged, merge_sha, overlap, patch, dirty_paths, question, detail`; aggiungi `reconcile` all'enum `verdict` di § *architect*.
+          Check: `node -e "const b=require('./plugins/daiku/schemas/blocks.json');const m=b.blocks['ship-feature-merge'].required;const r=b.blocks.reconcile.required;const v=b.blocks.architect.enums.verdict;if(!m.includes('dirty_paths')||!r.length||!v.includes('reconcile'))process.exit(1)"` esce 0, poi `node plugins/daiku/architect/architect.mjs --self-check plugins/daiku` verde.
+          Red if: il campo, il blocco o il valore d'enum mancano; o il banco del valutatore diventa rosso.
+          Notes:
+-   - [ ] Task 2 — `architect/architect.mjs`: la domanda `reconcile` (`askReconcile`, `ASKS`, `REQUIRES` = `['paths']`, l'arco `reconcile: ['ship-feature']` in `GRAPH`, i `CASES` con i loro `cites`, i `REJECTED`, un caso `block` per il blocco di merge con `dirty_paths`, e l'aggiornamento delle occorrenze di «ten questions»/contatore a undici) **insieme** al nuovo `plugins/daiku/skills/reconcile/SKILL.md` (coi `## Invocation modes`, `## Input`, `## The evaluator`, `## How you verify`, `## What it writes`, `## The block you return`, `## Ask the owner`; frontmatter con `description` e `argument-hint` **quotati**; il paragrafo della chiamata `question: "reconcile"` che nomina la chiave `paths`), al suo `agents/openai.yaml` (`policy.allow_implicit_invocation: false`) e alla **riga nuova nella tabella di §3** di `contracts/orchestration.md` (chiamante `ship-feature`, «Returns» → `§ *The block you return*` del suo file, «Re-delegates» che **non** inizia con `yes`).
++   - [x] Task 2 — `architect/architect.mjs`: la domanda `reconcile` (`askReconcile`, `ASKS`, `REQUIRES` = `['paths']`, l'arco `reconcile: ['ship-feature']` in `GRAPH`, i `CASES` con i loro `cites`, i `REJECTED`, un caso `block` per il blocco di merge con `dirty_paths`, e l'aggiornamento delle occorrenze di «ten questions»/contatore a undici) **insieme** al nuovo `plugins/daiku/skills/reconcile/SKILL.md` (coi `## Invocation modes`, `## Input`, `## The evaluator`, `## How you verify`, `## What it writes`, `## The block you return`, `## Ask the owner`; frontmatter con `description` e `argument-hint` **quotati**; il paragrafo della chiamata `question: "reconcile"` che nomina la chiave `paths`), al suo `agents/openai.yaml` (`policy.allow_implicit_invocation: false`) e alla **riga nuova nella tabella di §3** di `contracts/orchestration.md` (chiamante `ship-feature`, «Returns» → `§ *The block you return*` del suo file, «Re-delegates» che **non** inizia con `yes`).
+          Check: `node plugins/daiku/architect/architect.mjs --self-check plugins/daiku` verde (vi compaiono `topology:node:reconcile`, `requires:reconcile.paths`, `case:reconcile:*`, `doc:skills/reconcile/SKILL.md`) **e** `node .docs/tools/check-topology.mjs plugins/daiku` verde.
+          Red if: la coppia topologica diverge, un caso `reconcile` è rosso, `never_red` elenca una regola nuova, o un rimando di sezione non risolve.
+          Cases:
+@@ -136,7 +136,7 @@ Fuori dal perimetro di scrittura di `execute`, da lasciare all'allineamento di m
+            | `paths` assente | rifiuto rumoroso (`requires`) |
+            | `paths` con un elemento malformato (intervallo non `[int,int]`) | rifiuto rumoroso |
+          Notes:
+-   - [ ] Task 3 — `architect/reconcile.mjs` nuovo, col suo banco: forma di `pool.mjs` (radice per argomento, `--self-check` a totale contato, `BadInput`/`fail`, import di `dispatch` da `architect.mjs`). Azioni:
++   - [x] Task 3 — `architect/reconcile.mjs` nuovo, col suo banco: forma di `pool.mjs` (radice per argomento, `--self-check` a totale contato, `BadInput`/`fail`, import di `dispatch` da `architect.mjs`). Azioni:
+          - `measure` (chiavi `work_root`, `branch`, `patch`): legge `HEAD` (integrazione) e il merge-base; se `MERGE_HEAD` esiste l'insieme ostruito è `git diff --name-only --diff-filter=U`, altrimenti è `git diff --name-only <base>..<branch>` ∩ `git status --porcelain`; scrive l'artefatto patch in `patch` (tracciati + non tracciati, **indice reale intatto**, trucco `GIT_INDEX_FILE` di `ledger.mjs`); calcola per ogni percorso ostruito gli intervalli `ours`/`theirs` nella cornice della base con `git diff -U0`; chiede al valutatore `reconcile` con `{paths:[{file,ours,theirs}]}`; restituisce `{ok, verdict, overlap, disjoint, patch, branch, base, commit, detail}`.
+          - `merge` (chiavi `work_root`, `branch`, `message`): guisa albero sporco → `git merge --no-ff --autostash <branch> -m <message>`; guisa conflitto in corso → compone ogni file in conflitto (unione delle modifiche disgiunte) e completa con `git add` + `git commit --no-edit`; restituisce `{ok, merged, merge_sha, detail}` e fallisce rumorosamente se la misura non regge.
+          Check: `node plugins/daiku/architect/reconcile.mjs --self-check plugins/daiku` verde.
+@@ -153,11 +153,11 @@ Fuori dal perimetro di scrittura di `execute`, da lasciare all'allineamento di m
+            | guisa albero sporco dopo un `reconcile` | `merge --autostash` attecchisce e le modifiche del working tree sopravvivono |
+            | `work_root`/`branch`/`patch` assente | rifiuto rumoroso |
+          Notes:
+-   - [ ] Task 4 — `hooks/self-check.mjs`: aggiungi `'reconcile.mjs'` alla lista dei programmi di `architect/` (~81) e aggiorna il commento di testa che conta i programmi.
++   - [x] Task 4 — `hooks/self-check.mjs`: aggiungi `'reconcile.mjs'` alla lista dei programmi di `architect/` (~81) e aggiorna il commento di testa che conta i programmi.
+          Check: `node plugins/daiku/hooks/self-check.mjs` verde, elenca `architect/reconcile.mjs` col suo numero di check e un totale maggiore di prima.
+          Red if: il banco non è scoperto, o è rosso.
+          Notes:
+-   - [ ] Task 5 — `skills/ship-feature/SKILL.md`: aggiorna § *6b. Merge* (punto 1 con `dirty_paths`, punto 3 che non aborta più subito ma passa a `reconcile`, esempio di blocco con `dirty_paths`), aggiungi la sottosezione **6b-bis. Reconcile — worker role** (il nodo nuovo, i due modi, il fermarsi e chiedere, la ripresa), aggiorna § *The evaluator* (riga `reconcile`), § *Self-deceptions* (le righe sul main tree e sul conflitto) e § *7. Report* (il campo `dirty_paths`).
++   - [x] Task 5 — `skills/ship-feature/SKILL.md`: aggiorna § *6b. Merge* (punto 1 con `dirty_paths`, punto 3 che non aborta più subito ma passa a `reconcile`, esempio di blocco con `dirty_paths`), aggiungi la sottosezione **6b-bis. Reconcile — worker role** (il nodo nuovo, i due modi, il fermarsi e chiedere, la ripresa), aggiorna § *The evaluator* (riga `reconcile`), § *Self-deceptions* (le righe sul main tree e sul conflitto) e § *7. Report* (il campo `dirty_paths`).
+          Check: `node plugins/daiku/architect/architect.mjs --self-check plugins/daiku` verde (il doc-test legge le chiamate in `ship-feature`), `node .docs/tools/check-topology.mjs plugins/daiku` verde, e `git grep -n -F 'dirty_paths' -- plugins/daiku` nomina schema, §6b e report.
+          Red if: il blocco di merge non porta `dirty_paths`, il ramo della riconciliazione non dichiara il ruolo, o un rimando di sezione non risolve.
+          Cases:
+@@ -170,7 +170,7 @@ Fuori dal perimetro di scrittura di `execute`, da lasciare all'allineamento di m
+            | riconciliazione non riuscita | `BLOCKED_NO_COMMIT`, `dirty_paths` o `conflicts` popolati |
+            | changelog additivo da entrambe le parti | unione mantenuta (l'eccezione esistente, ora caso della riconciliazione) |
+          Notes:
+-   - [ ] Task 6 — Verifica di chiusura: rilancia **ogni Check** del piano sull'albero finale, i check rapidi delle aree toccate che `skills/execute/SKILL.md` dichiara per la sua chiusura, e un'autorilettura dell'esito contro i criteri di completamento. Il gate del pacchetto non entra qui: è di `/review`.
++   - [x] Task 6 — Verifica di chiusura: rilancia **ogni Check** del piano sull'albero finale, i check rapidi delle aree toccate che `skills/execute/SKILL.md` dichiara per la sua chiusura, e un'autorilettura dell'esito contro i criteri di completamento. Il gate del pacchetto non entra qui: è di `/review`.
+          Check: ogni Check del piano verde sull'albero finale; i criteri di completamento soddisfatti; `node plugins/daiku/hooks/self-check.mjs` e `node .docs/tools/check-topology.mjs plugins/daiku` verdi.
+          Red if: un Check precedente fallisce dopo i task successivi, o un criterio è disatteso.
+          Notes:
+@@ -178,6 +178,16 @@ Fuori dal perimetro di scrittura di `execute`, da lasciare all'allineamento di m
+    ### Journal
+    (Aggiungi qui, in ordine, cosa hai fatto, le decisioni prese, le deviazioni dal piano e perché, gli intoppi. Tieni allineato lo stato dei task sopra.)
+ 
++   - **Ripresa (16 ottobre 2026).** Esecuzione precedente fermata prima di depositare `4. review-notes.md`, con il Journal vuoto — nessun esito di verifica era registrato, quindi **ogni Check viene rilanciato adesso**, non ereditato. Stato misurato sul disco del worktree `agent-tree-1`, base-ref `a57cd03f461cd97e13b82a213aa9dcdcc4e57819`: task 1 fatto (`blocks.json` porta `dirty_paths` in `ship-feature-merge`, il blocco `reconcile` coi suoi otto campi e `reconcile` nell'enum `verdict` di § *architect*, con «ten domains» già riscritto «eleven»); task 2 a metà (in `architect.mjs` ci sono `GRAPH`, `askReconcile`, `ASKS`, `REQUIRES`, i `CASES`, i `REJECTED` e l'intestazione «The eleven questions», ma mancano `skills/reconcile/SKILL.md`, il suo `agents/openai.yaml`, la riga §3 di `contracts/orchestration.md` e il caso `block` per il blocco di merge con `dirty_paths`); task 3 scritto e mai lanciato (`architect/reconcile.mjs`, 581 righe); task 0, 4, 5, 6 non fatti.
++   - **Task 0 — [x] Ricognizione.** Tutti gli elementi esistono come atteso: `git grep -n -E "^(const GRAPH|const ASKS|const REQUIRES) =" -- plugins/daiku/architect/architect.mjs` → righe 88, 1336, 1359; in `schemas/blocks.json` le due sedi sono le chiavi `"architect"` (riga 123) e `"ship-feature-merge"` (riga 153) — il Check del brief le cita come `## …`: `blocks.json` è JSON e non ha intestazioni markdown, le chiavi sono quelle e ci sono, nessuna rinomina; in `ship-feature/SKILL.md` `## The evaluator`:57, `## The sequence`:134, `### Mechanical unblock`:245, `### 6b. Merge`:306, `### 6c. Cleanup`:322, `### 7. Report`:326, `## Early block`:355, `## Self-deceptions`:390; `hooks/self-check.mjs:81` elenca `['architect.mjs', 'ledger.mjs', 'pool.mjs']`; `git merge -h` riporta `--[no-]autostash`; `ls plugins/daiku/skills/*/SKILL.md | wc -l` → 20. Nessuna adattamento del piano.
++   - **Task 1 — [x] `schemas/blocks.json`.** Il Check `node -e` è verde (`required` di `ship-feature-merge` con `dirty_paths`, blocco `reconcile` = `["ok","merged","merge_sha","overlap","patch","dirty_paths","question","detail"]`, `reconcile` nell'enum `verdict` → exit 0). La seconda metà del Check — `architect.mjs --self-check` verde — è rossa ancora: `{"checks":653,"passed":646,"failed":["topology:row:reconcile: a script node with no table row", 6 × `cites:reconcile:*: no heading for 'How you verify' in skills/reconcile/SKILL.md`], "never_red":[]}`. Sono esattamente i pezzi mancanti del task 2: il task 1 si chiude `[x]` al verde del self-check a fine task 2, e il rilancio finale lo riverifica. Nota: `never_red` è vuoto — la regola `reconcile.overlap` è già vista rossa da un suo caso. Il Check completo a fine task 2 è verde: `node -e` → `schema ok`, exit 0; `architect.mjs --self-check plugins/daiku` → `{"checks":660,"passed":660,"failed":[],"never_red":[]}`, exit 0. **Prova rossa (against: base):** con `git show a57cd03:plugins/daiku/schemas/blocks.json` riscritto in luogo il `node -e` esce 1 stampando `RED: dirty_paths required = false | block reconcile = false | verdict reconcile = false`, e il self-check esce 1 con `schema:verdict:reconcile: a verdict the program returns and schemas/blocks.json § architect does not list`; file ristorato → verde.
++   - **Task 2 — [x] la domanda `reconcile` e il suo contratto.** Completati i pezzi mancanti dell'esecuzione precedente: `skills/reconcile/SKILL.md` (frontmatter quotato con `description` e `argument-hint`; sezioni `## Invocation modes`, `## Input`, `## The evaluator`, `## How you verify`, `## What it writes`, `## The block you return`, `## Ask the owner`; il paragrafo con `question: "reconcile"` nomina `paths`), `skills/reconcile/agents/openai.yaml` (`allow_implicit_invocation: false`), la riga `reconcile` nella tabella di §3 di `contracts/orchestration.md` (chiamante `ship-feature`, Returns `§ *The block you return*` di `of its file` → `skills/reconcile/SKILL.md`, Re-delegates `no`), e i casi `block` del blocco di merge. **Deviazione dichiarata:** il brief chiedeva «un caso `block` per il blocco di merge con `dirty_paths`»; ne aggiunti **due** — il blocco completo con `dirty_paths` (atteso `valid`) e il blocco senza `dirty_paths` (atteso `invalid`, `dirty_paths is missing`): il secondo è l'unico che contro lo schema di base si possa vedere rosso. Check: `node plugins/daiku/architect/architect.mjs --self-check plugins/daiku` → `{"checks":660,"passed":660,"failed":[],"never_red":[]}`, exit 0 (vi compaiono `topology:node:reconcile`, `requires:reconcile.paths`, `case:reconcile:*`, `doc:skills/reconcile/SKILL.md`); `node .docs/tools/check-topology.mjs plugins/daiku` → `{"checks":425,"passed":425,"failed":[]}`, exit 0. **Prove rosse:** (a) against base — col solo `blocks.json` di base in luogo, self-check esce 1 con `case:block:ship-feature-merge-without-the-dirty-paths: … "verdict":"valid"`; (b) against mutation — `<=` → `<` nell'intersezione di `askReconcile`, self-check esce 1 con `case:reconcile:touching-on-a-shared-line` e `case:reconcile:only-the-overlapping-file-is-a-blocker` che ritornano `reconcile` invece di `stop`; mutazione rimossa → 660/660.
++   - **Task 3 — [x] `architect/reconcile.mjs`.** Il file esisteva già (581 righe) ma **mai lanciato**: il primo `--self-check` è uscito rosso (11/21) e ha scoperto due guasti veri nel programma, corretti entrambi: (1) `editsOf` passava `to` a `git diff` anche quando `to` era `null` (la forma «base vs working tree») e Git riceveva la revisione letterale `null` → `fatal: bad revision 'null'`; ora un `to` nullo ommesso; (2) la rilevazione del tracciato usava `git ls-files --error-unmatch`, che fallisce rumorosamente — e a torto — su un file non tracciato, cioè il caso che quel ramo deve distinguere; ora `git ls-files --`, con elenco vuoto = non tracciato. Inoltre, dentro `measure`, la domanda strutturata dello `stop` è composta **dal programma** (deciso qui): `question` è `required` nel blocco `reconcile` e il brief lo vuole nel blocco; comporla lì la rende identica a ogni corsa e il banco la copre — `title`, `options` con id stabili `A`/`B`, `recommended_id: "A"` = abortire, la forma di `contracts/orchestration.md` § *Ask the owner*. Check: `node plugins/daiku/architect/reconcile.mjs --self-check plugins/daiku` → `{"checks":21,"passed":21,"failed":[]}`, exit 0. **Prova rossa (against: mutation):** off-by-one in `editsOf` (`end: oldStart + oldLen`) → esce 1 con `conflict:separable-in-the-hunk-reconciles` che ritorna `verdict "stop"`; mutazione rimossa → 21/21.
++   - **Task 4 — [x] `hooks/self-check.mjs`.** Baseline prima della modifica (eseguita davvero): `11 benches, 1288 checks, all green`, exit 0, con `architect/architect.mjs — 660` e senza la riga di `reconcile`. Aggiunto `'reconcile.mjs'` alla lista dei programmi e aggiornato il commento di testa nei quattro punti che contano («four programs», «twelve benches», «The other three», «Those four benches», «the four benches of `architect/`»). Check: `node plugins/daiku/hooks/self-check.mjs` → `ok architect/reconcile.mjs — 21 checks`, `12 benches, 1309 checks, all green`, exit 0 — totale maggiore di prima (1309 > 1288) e banco scoperto.
++   - **Task 5 — [x] `skills/ship-feature/SKILL.md`.** § *6b. Merge*: punto 1 senza il «must be empty» — su pathspec sporchi chiude `merged: false`, `conflicts: []`, `dirty_paths` e apre la 6b-bis; punto 3 non aborta più, lascia il merge in corso e passa a 6b-bis; esempio di blocco con `dirty_paths`; frase di chiusura che classifica `BLOCKED_NO_COMMIT` solo se la riconciliazione non riesce. Aggiunta la sottosezione **6b-bis. Reconcile — worker role** con i due modi (misura→merge su `reconcile`, fermarsi e chiedere su `stop`, risoluzione con la risposta dell'owner), il divieto di committare il lavoro altrui e il non-push. § *The evaluator*: riga `reconcile` nella tabella e «ten questions» → «eleven questions» con la nuova chiamata elencata. § *Self-deceptions*: riga main-tree con la riconciliazione nominata, riga conflitto senza la frase ritirata. § *7. Report*: `dirty_paths` e — come vuole la decisione 3 — il percorso del patch. **Due correzioni obbligate oltre l'elenco del task, perché la modifica le rendeva false** (rimandi morti, non iniziative): il richiamo dell'eccezione del changelog («stays point 3 as is (abort + BLOCKED_NO_COMMIT)» → punta alla 6b-bis; il testo dell'eccezione intatto, come chiedono i vincoli) e § *Outcome* (`merge_sha` «null se il merge va in conflitto» e riclassificazione su «a conflicting merge» → ora «se la riconciliazione non lo fa atterrare»). Anche il paragrafo del `BLOCKED_NO_COMMIT` in *Mechanical unblock* perdeva la frase ritirata su `blocked.patch`: riscritto senza inventare — il divieto di parcheggiare resta, il patch nominato copia il lavoro dell'**altra** sessione. Check: `architect.mjs --self-check` → 660/660, exit 0; `check-topology.mjs` → `{"checks":435,"passed":435,"failed":[]}`, exit 0; `git grep -n -F 'dirty_paths' -- plugins/daiku` nomina `schemas/blocks.json:155,161`, §6b (`:312,:314,:319,:322,:324,:329`) e report (`:351`), oltre i due casi del valutatore.
++   - **Task 6 — [x] Verifica di chiusura (albero finale, tutto rilanciato).** Task 0: `GRAPH`/`ASKS`/`REQUIRES` a `:88/:1336/:1359`, chiavi `"architect"`:123 e `"ship-feature-merge"`:153, le nove sezioni di `ship-feature` (`## The evaluator`:57, `## The sequence`:136, `### Mechanical unblock`:247, `### 6b. Merge`:308, `### 6b-bis. Reconcile`:324, `### 6c. Cleanup`:334, `### 7. Report`:338, `## Early block`:367, `## Self-deceptions`:402), lista programmi a `self-check.mjs:82` con `reconcile.mjs`, `git merge -h` → 1 occorrenza di `--[no-]autostash`, 21 contratti — tutti exit 0. Task 1: `node -e` → `schema ok`, exit 0. Task 2: `architect.mjs --self-check` → 660/660, `never_red` vuoto, exit 0; `check-topology.mjs` → 435/435, exit 0. Task 3: `reconcile.mjs --self-check` → 21/21, exit 0. Task 4: `hooks/self-check.mjs` → `12 benches, 1309 checks, all green`, exit 0. Task 5: i suoi tre check rientrati nei rilanci sopra, tutti verdi. **Consumatori** (dalle Interfacce del brief): riga §3 e arco `GRAPH` verdi nel banco topologico; `caller:ship-feature->reconcile` e i rinvii `§ *6b-bis. Reconcile*` verdi in `check-topology`; `doc:skills/reconcile/SKILL.md` e `cites:reconcile:*` verdi nel banco del valutatore; `architect/reconcile.mjs` scoperto e verde da `hooks/self-check.mjs`; `dirty_paths` presente nelle tre sedi consumatrici di `ship-feature` (grep con exit 0). **Fatti ritirati**: i sei pattern cercati con `git grep -n -F` sui Target paths del brief → **0 hit ciascuno** (exit 1). Repo-wide restano solo citazioni in `.daiku/features/.../0. problem.md` (la misura del difetto al momento del ticket): fuori dal perimetro di scrittura, non inseguite, dichiarate in Considerations. **Preflight**: `check_fast`/`lint_fix`/`test_targeted` → `skipped` (l'area `daiku` di `.daiku/project.json` non li dichiara, §6 del contratto); `layers` → `{"verdict":"clean"}` su 804 righe aggiunte (3 file non tracciati inclusi), `layers: []` perché nessun file di `.daiku/policies/` dichiara `paths` che copra `plugins/daiku`. **Autorilettura sui criteri**: (1) precondizione6b con ramo di fallimento — §6b punto 1, `ship-feature/SKILL.md:312` ✓; (2) disgiunte mergia da sé / sovrapposizione si ferma e chiede — casi `reconcile:*` del valutatore e `measure:*`/`merge:*`/`conflict:*` del programma, verdi, con quattro prove rosse a documentare che falliscono sullo stato sbagliato ✓; (3) nessun commit del lavoro altrui — banchi `patch:the-real-index-is-untouched`, `merge:the-other-work-survives-the-merge` e `merge:the-working-tree-still-carries-the-other-change`, tutti verdi (indice reale invariato, lavoro altrui ancora non committato dopo il merge) ✓; (4) il blocco distingue `dirty_paths` da `conflicts` — schema `:155`, casi `block:ship-feature-merge-*`, prosa §6b ✓; (5) **limite esplicito**: delle quattro verifiche del pacchetto girano `hooks/self-check.mjs` e `check-topology.mjs` (verdi, stessa sessione, stesso albero); i due `claude plugin validate` non girano qui, appartengono alla fase Review come il gate `check-corpus`. Nessun criterio disatteso.
++   - **Nota sul Journal**: la precedente esecuzione non aveva annotato niente; per i task 0-3 lo stato iniziale è stato dedotto dal disco e ogni Check rilanciato da capo, come scritto nella riga di ripresa.
++
+ ## Handoff
+ ```json
+ {"ok": true, "brief_path": "C:/dev/daiku-workspace/daiku-dev/.daiku/features/merge-ostruito-da-lavoro-non-committato/2. blueprint.md", "plan": [{"task": "0", "check": "git grep -n -F trova GRAPH/ASKS/REQUIRES in architect/architect.mjs; le intestazioni ## ship-feature-merge e ## architect in schemas/blocks.json; § 6b. Merge e § Self-deceptions in ship-feature/SKILL.md; la lista programmi in hooks/self-check.mjs:81; git merge -h elenca --[no-]autostash; ls plugins/daiku/skills/*/SKILL.md | wc -l conta i contratti", "red_if": "un file, una riga o un'intestazione citata e' assente o rinominata: adatta il piano e annotalo nel Journal", "cases": []}, {"task": "1", "check": "node -e legge schemas/blocks.json e verifica dirty_paths in ship-feature-merge.required, il blocco reconcile con i suoi required e 'reconcile' nell'enum architect.verdict; poi architect.mjs --self-check verde", "red_if": "il campo, il blocco o il valore d'enum mancano; o il banco del valutatore diventa rosso", "cases": []}, {"task": "2", "check": "node plugins/daiku/architect/architect.mjs --self-check plugins/daiku verde (topology:node:reconcile, requires:reconcile.paths, case:reconcile:*, doc:skills/reconcile/SKILL.md) e node .docs/tools/check-topology.mjs plugins/daiku verde", "red_if": "la coppia topologica diverge, un caso reconcile e' rosso, never_red elenca una regola nuova, o un rimando di sezione non risolve", "cases": [{"input": "paths: un file, ours [[1,3]], theirs [[6,8]]", "expected": "reconcile"}, {"input": "paths: un file, ours [[1,3]], theirs [[3,7]]", "expected": "stop, blockers nomina il file"}, {"input": "paths: un file, ours [[1,3]], theirs [[4,5]] adiacenti", "expected": "reconcile"}, {"input": "paths: un file, ours [], theirs [[1,5]]", "expected": "reconcile"}, {"input": "paths: due file, uno in sovrapposizione", "expected": "stop, blockers nomina solo il file in overlap"}, {"input": "paths: []", "expected": "reconcile"}, {"input": "paths assente", "expected": "rifiuto rumoroso (requires)"}, {"input": "paths con un elemento malformato (intervallo non [int,int])", "expected": "rifiuto rumoroso"}]}, {"task": "3", "check": "node plugins/daiku/architect/reconcile.mjs --self-check plugins/daiku verde", "red_if": "un caso del banco e' rosso (misura, merge, patch, rifiuti)", "cases": [{"input": "file sporco, stessa riga cambiata dalle due parti", "expected": "verdetto stop"}, {"input": "file sporco, parti disgiunte a riga", "expected": "verdetto reconcile"}, {"input": "file non tracciato che il merge creerebbe", "expected": "e' nell'insieme ostruito e nel patch"}, {"input": "patch scritto", "expected": "contiene modifiche tracciate e non tracciate; l'indice reale e' invariato"}, {"input": "conflitto in corso, :1:/:2:/:3: disgiunti dentro l'hunk", "expected": "reconcile, poi merge completato"}, {"input": "conflitto in corso, stessa riga", "expected": "stop"}, {"input": "guisa albero sporco dopo un reconcile", "expected": "merge --autostash attecchisce e le modifiche del working tree sopravvivono"}, {"input": "work_root/branch/patch assente", "expected": "rifiuto rumoroso"}]}, {"task": "4", "check": "node plugins/daiku/hooks/self-check.mjs verde, elenca architect/reconcile.mjs col suo numero di check e un totale maggiore di prima", "red_if": "il banco non e' scoperto, o e' rosso", "cases": []}, {"task": "5", "check": "architect.mjs --self-check verde, check-topology.mjs verde, e git grep -n -F 'dirty_paths' -- plugins/daiku nomina schema, 6b e report", "red_if": "il blocco di merge non porta dirty_paths, il ramo della riconciliazione non dichiara il ruolo, o un rimando di sezione non risolve", "cases": [{"input": "main tree sporco sui percorsi del merge, parti disgiunte", "expected": "riconciliazione mergia; 6c esiste; slot free"}, {"input": "main tree sporco, sovrapposizione sulla stessa riga", "expected": "nodo restituisce overlap; nessun merge; slot blocked"}, {"input": "conflitto di contenuto, disgiunti dentro l'hunk", "expected": "riconciliato"}, {"input": "conflitto di contenuto, stessa riga", "expected": "domanda all'owner / stop"}, {"input": "riconciliazione non riuscita", "expected": "BLOCKED_NO_COMMIT, dirty_paths o conflicts popolati"}, {"input": "changelog additivo da entrambe le parti", "expected": "unione mantenuta (l'eccezione esistente, ora caso della riconciliazione)"}]}, {"task": "6", "check": "ogni Check del piano verde sull'albero finale; i criteri di completamento soddisfatti; hooks/self-check.mjs e check-topology.mjs verdi", "red_if": "un Check precedente fallisce dopo i task successivi, o un criterio e' disatteso", "cases": []}], "interfaces": [{"symbol": "reconcile", "declared_in": "plugins/daiku/architect/architect.mjs:88", "consumers": ["plugins/daiku/contracts/orchestration.md:128", "plugins/daiku/skills/ship-feature/SKILL.md:306", "plugins/daiku/skills/reconcile/SKILL.md:1"]}, {"symbol": "architect/reconcile.mjs", "declared_in": "plugins/daiku/skills/ship-feature/SKILL.md:306", "consumers": ["plugins/daiku/hooks/self-check.mjs:81", "plugins/daiku/skills/reconcile/SKILL.md:1"]}, {"symbol": "dirty_paths", "declared_in": "plugins/daiku/schemas/blocks.json:153", "consumers": ["plugins/daiku/skills/ship-feature/SKILL.md:310", "plugins/daiku/skills/ship-feature/SKILL.md:316", "plugins/daiku/skills/ship-feature/SKILL.md:338"]}, {"symbol": "question: \"reconcile\"", "declared_in": "plugins/daiku/architect/architect.mjs:1286", "consumers": ["plugins/daiku/architect/reconcile.mjs:1", "plugins/daiku/skills/reconcile/SKILL.md:1"]}], "retired": [{"fact": "il main tree deve essere vuoto sui pathspec dei tre gruppi (precondizione senza ramo di fallimento)", "pattern": "must be empty"}, {"fact": "a conflict resolved here is code no finder ever saw", "pattern": "a conflict resolved here is code no finder ever saw"}, {"fact": "the delivery never creates blocked.patch nor parks in any form", "pattern": "blocked.patch"}, {"fact": "On the main tree only merge (6b) and delivery artefacts write", "pattern": "On the main tree only merge (6b) and delivery artefacts write"}, {"fact": "ten questions (in architect.mjs e ship-feature/SKILL.md)", "pattern": "ten questions"}, {"fact": "the union of the ten domains (in blocks.json § architect)", "pattern": "the ten domains"}], "detail": ""}
+diff --git a/.daiku/features/merge-ostruito-da-lavoro-non-committato/4. review-notes.md b/.daiku/features/merge-ostruito-da-lavoro-non-committato/4. review-notes.md
+new file mode 100644
+index 0000000..90d1e1b
+--- /dev/null
++++ b/.daiku/features/merge-ostruito-da-lavoro-non-committato/4. review-notes.md	
+@@ -0,0 +1,17 @@
++# Notes for review
++
++> Origin: 2. blueprint.md · Generated: 2026-10-16 · Base-ref: a57cd03f461cd97e13b82a213aa9dcdcc4e57819
++
++## Handoff
++```json
++{"ok":true,"note_review_path":"C:/dev/daiku/.daiku/features/merge-ostruito-da-lavoro-non-committato/4. review-notes.md","verify_detail":"Albero finale dopo il rilancio di ogni Check: architect.mjs --self-check → 660/660, never_red vuoto, exit 0; check-topology.mjs → 435/435, exit 0; reconcile.mjs --self-check → 21/21, exit 0; hooks/self-check.mjs → 12 banchi, 1309 controlli, tutti verdi, exit 0 (baseline prima del task 4: 11 banchi, 1288 controlli); node -e su blocks.json → 'schema ok', exit 0; git grep -n -F 'dirty_paths' -- plugins/daiku → 11 occorrenze: blocks.json (2), i due casi del valutatore (2), ship-feature §6b e report (7); i sei fatti ritirati cercati con git grep sui Target paths → 0 hit ciascuno; layers → verdict clean su 804 righe aggiunte (3 file non tracciati compresi), layers: [] perché nessuna policy dichiara paths su plugins/daiku.","checks":[{"task":"0","check":"git grep GRAPH/ASKS/REQUIRES in architect/architect.mjs (:88/:1336/:1359); chiavi \"architect\" e \"ship-feature-merge\" in schemas/blocks.json (:123/:153); nove sezioni di ship-feature/SKILL.md; lista programmi in hooks/self-check.mjs:82; git merge -h | grep -- --[no-]autostash; ls plugins/daiku/skills/*/SKILL.md | wc -l → 21","exit":0},{"task":"1","check":"node -e (dirty_paths in ship-feature-merge.required, blocco reconcile, 'reconcile' in architect.verdict) + node plugins/daiku/architect/architect.mjs --self-check plugins/daiku","exit":0},{"task":"2","check":"node plugins/daiku/architect/architect.mjs --self-check plugins/daiku (topology:node:reconcile, requires:reconcile.paths, case:reconcile:*, doc:skills/reconcile/SKILL.md) e node .docs/tools/check-topology.mjs plugins/daiku","exit":0},{"task":"3","check":"node plugins/daiku/architect/reconcile.mjs --self-check plugins/daiku","exit":0},{"task":"4","check":"node plugins/daiku/hooks/self-check.mjs (elenca architect/reconcile.mjs — 21 checks; totale 1309 > baseline 1288)","exit":0},{"task":"5","check":"node plugins/daiku/architect/architect.mjs --self-check plugins/daiku; node .docs/tools/check-topology.mjs plugins/daiku; git grep -n -F 'dirty_paths' -- plugins/daiku","exit":0},{"task":"6","check":"rilancio dei Check 0-5 sull'albero finale + layers (architect question layers su 804 righe aggiunte) + autorilettura sui criteri di completamento del brief","exit":0}],"red_proofs":[{"test":"plugins/daiku/schemas/blocks.json::node -e required/enum (task 1)","task":"1","against":"base","exit":1,"red_output":"RED: dirty_paths required = false | block reconcile = false | verdict reconcile = false (con git show a57cd03:plugins/daiku/schemas/blocks.json riscritto in luogo)"},{"test":"plugins/daiku/architect/architect.mjs::case:block:ship-feature-merge-without-the-dirty-paths","task":"2","against":"base","exit":1,"red_output":"case:block:ship-feature-merge-without-the-dirty-paths: got {…\"verdict\":\"valid\"…\"the ship-feature-merge block has the shape its producer declares.\"} — con il solo blocks.json di base in luogo, oltre a schema:verdict:reconcile: a verdict the program returns and schemas/blocks.json § architect does not list"},{"test":"plugins/daiku/architect/architect.mjs::case:reconcile:touching-on-a-shared-line","task":"2","against":"mutation","exit":1,"red_output":"case:reconcile:touching-on-a-shared-line: got {…\"verdict\":\"reconcile\"…} (intersezione mutata da <= a <) — rosso anche case:reconcile:only-the-overlapping-file-is-a-blocker"},{"test":"plugins/daiku/architect/reconcile.mjs::conflict:separable-in-the-hunk-reconciles","task":"3","against":"mutation","exit":1,"red_output":"conflict:separable-in-the-hunk-reconciles: {…\"verdict\":\"stop\",\"overlap\":[\"f.txt\"]…} (off-by-one in editsOf, end: oldStart + oldLen)"}],"consumers_checked":[{"consumer":"plugins/daiku/contracts/orchestration.md:128","check":"node plugins/daiku/architect/architect.mjs --self-check plugins/daiku — topology:node:reconcile e topology:callers:reconcile verdi (riga §3 e GRAPH concordi nei due versi)","exit":0},{"consumer":"plugins/daiku/skills/ship-feature/SKILL.md:306","check":"node .docs/tools/check-topology.mjs plugins/daiku — caller:ship-feature->reconcile e i rinvii § *6b-bis. Reconcile* risolti","exit":0},{"consumer":"plugins/daiku/skills/reconcile/SKILL.md:1","check":"node plugins/daiku/architect/architect.mjs --self-check plugins/daiku — doc:skills/reconcile/SKILL.md (la chiamata nomina paths) e cites:reconcile:* verdi","exit":0},{"consumer":"plugins/daiku/skills/ship-feature/SKILL.md:306","check":"node .docs/tools/check-topology.mjs plugins/daiku — la sottosezione 6b-bis consegna skills/reconcile/SKILL.md con ruolo dichiarato nell'intestazione","exit":0},{"consumer":"plugins/daiku/hooks/self-check.mjs:81","check":"node plugins/daiku/hooks/self-check.mjs — elenca 'architect/reconcile.mjs — 21 checks', 12 banchi, 1309 controlli, all green","exit":0},{"consumer":"plugins/daiku/skills/reconcile/SKILL.md:1","check":"node plugins/daiku/architect/reconcile.mjs --self-check plugins/daiku — il programma gira nella forma che il contratto cita (radice per argomento)","exit":0},{"consumer":"plugins/daiku/skills/ship-feature/SKILL.md:310","check":"git grep -n -F 'dirty_paths' -- plugins/daiku/skills/ship-feature/SKILL.md — riga 312 (§6b punto 1)","exit":0},{"consumer":"plugins/daiku/skills/ship-feature/SKILL.md:316","check":"git grep -n -F 'dirty_paths' -- plugins/daiku/skills/ship-feature/SKILL.md — riga 319 (esempio di blocco)","exit":0},{"consumer":"plugins/daiku/skills/ship-feature/SKILL.md:338","check":"git grep -n -F 'dirty_paths' -- plugins/daiku/skills/ship-feature/SKILL.md — riga 351 (§7 Report)","exit":0},{"consumer":"plugins/daiku/architect/reconcile.mjs:1","check":"node plugins/daiku/architect/reconcile.mjs --self-check plugins/daiku — la chiamata ask({question:'reconcile', paths}) gira nei casi measure:*","exit":0},{"consumer":"plugins/daiku/skills/reconcile/SKILL.md:1","check":"node plugins/daiku/architect/architect.mjs --self-check plugins/daiku — il paragrafo della chiamata è letto dal doc-test e nomina paths","exit":0}],"absence":[{"pattern":"must be empty","hits":0,"why":""},{"pattern":"a conflict resolved here is code no finder ever saw","hits":0,"why":""},{"pattern":"blocked.patch","hits":0,"why":""},{"pattern":"On the main tree only merge (6b) and delivery artefacts write","hits":0,"why":""},{"pattern":"ten questions","hits":0,"why":""},{"pattern":"the ten domains","hits":0,"why":""}],"preflight":[{"step":"check_fast","area":"daiku","outcome":"skipped","detail":"l'area daiku di .daiku/project.json dichiara solo paths e gate: la chiave areas.daiku.check_fast non esiste (§6 di contracts/project-contract.md)"},{"step":"lint_fix","area":"daiku","outcome":"skipped","detail":"la chiave areas.daiku.lint_fix non è dichiarata dal progetto (§6 di contracts/project-contract.md)"},{"step":"test_targeted","area":"daiku","outcome":"skipped","detail":"la chiave areas.daiku.test_targeted non è dichiarata dal progetto; i banchi dei moduli toccati girano nei Check del piano (architect 660/660, reconcile 21/21, hooks/self-check 1309)"},{"step":"layers","area":"daiku","outcome":"green","detail":"question layers con layers: [] e 804 righe aggiunte (git diff -U0 a57cd03 -- plugins/daiku più i 3 file non tracciati) → verdict clean, 0 violations; nessun file di .daiku/policies/ dichiara paths che copra plugins/daiku"}],"detail":"","payload":{"bytes":7450,"lines":1}}
++```
++
++## Considerations
++- `plugins/daiku/architect/reconcile.mjs:334` — il ramo conflitto di `merge` compone le due parti con `compose`, corretta per costruzione solo su edit disgiunti: con la risoluzione accettata dall'owner su una sovrapposizione genuina il compose gira comunque, e l'unione che ne esce su una riga condivisa è meccanica. Il ramo albero-sporco non ha quell'angolo: lì è Git a rifiutare (`--autostash`) e il programma fallisce rumorosamente.
++- `plugins/daiku/architect/reconcile.mjs:286` — il testo della domanda strutturata (title, due opzioni con id stabili, `recommended_id: "A"` = abortire) è una scelta presa qui: il brief non la fissava; ribaltarla è una riga.
++- `plugins/daiku/schemas/blocks.json:159` — il blocco `reconcile` non dichiara `enums` né tipi: la forma della domanda (title/options/recommended_id) vive in prosa e nel programma, e `block` non può farla rispettare.
++- `plugins/daiku/skills/ship-feature/SKILL.md:42` — il paragrafo del pool dice ancora «on a conflicting merge … state blocked»: le regole del pool sono fuori perimetro per vincolo del brief e non sono state toccate; col flusso nuovo un conflitto risolto arriva alla 6c `free`.
++- `plugins/daiku/skills/ship-feature/SKILL.md:59` — «Five of the classifications below» davanti a una tabella ora di sette righe: le cinque sono quelle che la prosa di questo file chiama direttamente (order, block, decision, unblock, propagation); `pool` e `reconcile` le chiedono i due programmi lato disco. Testo preesistente, lasciato come sta.
++- `plugins/daiku/skills/reconcile/SKILL.md:1` — copertura: i banchi provano il programma e il valutatore e il doc-test prova i rinvii; il flusso in prosa dei due modi (obstructed/resolved) non ha un banco eseguibile proprio.
++- `.daiku/features/merge-ostruito-da-lavoro-non-committato/0. problem.md:50,58,62,101` — fuori dai Target paths e dal perimetro di scrittura di execute: quel documento misura il difetto al momento del ticket e cita ancora le frasi che ora sono sparite dai file di destinazione.
+diff --git a/.daiku/features/orchestrazione-senza-annidamento/0. problem.md b/.daiku/features/orchestrazione-senza-annidamento/0. problem.md
+index 229cbdc..45a46df 100644
+--- a/.daiku/features/orchestrazione-senza-annidamento/0. problem.md	
++++ b/.daiku/features/orchestrazione-senza-annidamento/0. problem.md	
+@@ -171,7 +171,7 @@ sessione.
+    attesa non fa aspettare nessuno — risponde il CLI, rifiutando con un feedback o approvando con
+    `--auto` — quindi una fase headless non resta mai appesa, ma nemmeno ottiene il consenso che
+    quel permesso chiedeva. Il metodo già conosce un modo di girare
+-   senza owner — `--no-ask`, che prende l'opzione raccomandata e **si ferma al documento** — e la
++   senza owner — `--no-ask`, che **si ferma al documento** lasciando le carte aperte — e la
+    sua scelta di fermarsi *prima* della consegna dice dove sta il confine: senza owner non si
+    esegue. Un padre esterno che volesse portare la catena oltre le decisioni dovrebbe possedere un
+    canale che oggi non esiste in nessun contratto.
+diff --git a/.docs/memory/MEMORY.md b/.docs/memory/MEMORY.md
+index fd85ff4..4c91556 100644
+--- a/.docs/memory/MEMORY.md
++++ b/.docs/memory/MEMORY.md
+@@ -43,7 +43,7 @@ Indice delle memorie del progetto. Una riga per file, nessun contenuto qui dentr
+ - [La riconciliazione di init](init-riconciliazione.md) — la scansione risponde con tre liste e il rilancio corregge ciò che è indietro: le sedi del layout prima di `.daiku/` e le chiavi che il contratto non nomina più, chiuse in uno stash — un pezzo vecchio è indietro quanto uno che manca
+ - [Reforgia, l'ospite principale](reforgia-ospite-principale.md) — Reforgia è il principale utilizzatore di Daiku e vive in `C:/dev/reforgia`: è il progetto ospite dove una modifica al pacchetto si misura per prima, e il passo per riparlarne è dell'owner
+ - [Il gate rosso pre-esistente](gate-rosso-pre-esistente.md) — un rosso le cui sconfitte nominano solo file fuori dal diff non blocca più il commit: il criterio, `gate_origin` misurato dal ledger sui file cambiati freschi, le tre sedi del verdetto (decision, closing, la guardia della review), e il riconoscimento del ledger dal suo nucleo invece che dal numero di chiavi
+-- [La sede del report del fermo](sede-del-report-del-fermo.md) — dal 9 ottobre 2026 la fase di report scrive su `5. delivery-report.md` quando la review non è girata, e `5. review-report.md` resta la prova della sola review: il nome di un artefatto è la prova di una fase, e l'evaluatore non può leggere dentro il file per distinguere i due casi; dal 15 ottobre il fermo volontario di `--no-review` scrive sulla stessa sede, e la sua ripresa è il verdetto di `order`
++- [La sede del report del fermo](sede-del-report-del-fermo.md) — dal 9 ottobre 2026 la fase di report scrive su `5. delivery-report.md` quando la review non è girata, e `5. review-report.md` resta la prova della sola review: il nome di un artefatto è la prova di una fase; dal 15 ottobre il fermo volontario di `--no-review` scrive sulla stessa sede, e la sua ripresa è il verdetto di `order`; dal 16 ottobre la coppia `1. decision-doc.md` + `5. review-report.md` torna ordinabile — `order` riprende da `decision` quando `4. review-notes.md` e il ledger provano che quella review è girata
+ - [Il costo di un giro](costo-di-un-giro.md) — Daiku misura da disco le quattro voci del costo di un giro (`architect/cost.mjs`) e le governa con una vista ridotta deterministica (`architect/view.mjs`) e un hook che misura senza negare: due chiavi di tetto nate spente, e la leva del prompt non presa
+ - [Il costo fisso sono gli schemi dei tool](costo-fisso-schemi-dei-tool.md) — misurato il 14 ottobre 2026: dei ~35k del pavimento ~34k sono schemi di tool e non prosa, si tolgono con `--tools`/`--disallowedTools` (flag della CLI) e con le env var `CLAUDE_CODE_DISABLE_*` (anche dal blocco `env` di `settings.json`, senza flag), mentre `permissions.deny` non toglie niente — la doc dice il contrario
+ - [Le mod in sviluppo](mod-in-sviluppo.md) — una mod scritta in `dev-mods/<id-sessione>` vive e muore con quella sessione (il sintomo è una mod che «smette di funzionare»): per averla sempre, cartella stabile e path in `CLAUDE_CODE_PLUGIN_DIRS`, e un modulo mancante non fa rumore perché il sistema è fail-open
+diff --git a/.docs/memory/sede-del-report-del-fermo.md b/.docs/memory/sede-del-report-del-fermo.md
+index 90c3b7e..efeb177 100644
+--- a/.docs/memory/sede-del-report-del-fermo.md
++++ b/.docs/memory/sede-del-report-del-fermo.md
+@@ -4,7 +4,7 @@ description: "La fase di report di `ship-feature` scrive su due sedi: `5. review
+ metadata:
+   node_type: memory
+   type: project
+-  modified: 2026-10-15T17:08:43.354Z
++  modified: 2026-10-16T20:33:04.069Z
+   originSessionId: c57e7b86-3c77-40c3-b20b-ea500899c0c8
+ ---
+ 
+@@ -23,24 +23,38 @@ quindi `remaining` comincia da `review` e niente prima viene rifatto. Una chiave
+ per il flag sarebbe una seconda risposta alla stessa domanda.
+ 
+ **Why.** Il nome di un artefatto **è** la prova di una fase: `PHASES` di `architect/architect.mjs`
+-lega ogni fase al file su disco che la prova, e `5. review-report.md` è la prova di `review`. Prima
+-il fermo raccontava lì la sua storia, e la cartella restava con `1. decision-doc.md` e
+-`5. review-report.md` insieme: `MUTUALLY_EXCLUSIVE` legge quella coppia come una contraddizione — un
+-lavoro non può essere insieme prima e dopo la consegna — e `order` risponde `stop`. La ripresa che
+-`ship-feature` § *Input* dichiara su una consegna interrotta a metà non era più ordinabile, e
+-l'unica uscita era rinominare a mano l'artefatto, distruggendo la traccia del fermo.
++lega ogni fase al file su disco che la prova, e `5. review-report.md` è la prova di `review`.
++Spostare la sede del fermo tolse di mezzo il caso peggiore: il fermo di `--no-review` scriveva su
++quella prova una review che non era girata, e la cartella restava con `1. decision-doc.md` e
++`5. review-report.md` insieme — `MUTUALLY_EXCLUSIVE` leggeva la coppia come una contraddizione e
++`order` rispondeva `stop`.
+ 
+-**E l'evaluatore non poteva imparare la differenza.** Non apre nessun file del progetto — è il suo
+-contratto, quello che sa del disco glielo passa chi lo chiama — quindi non può leggere dentro il
+-report per vedere se porta una review; distinguere i due casi avrebbe voluto una chiave nuova in
+-`question: "order"` e un chiamante tenuto a passarla giusta. Spostare la sede ripristina invece
+-l'invariante su cui l'evaluatore è costruito — un nome di fase, un artefatto che la prova — senza
+-toccarne una riga di codice.
++**Ma la coppia non è una contraddizione ovunque.** L'evaluatore non apre nessun file del progetto
++— quello che sa del disco glielo passa chi lo chiama — e la leggeva **sulla sola presenza**:
++una consegna arrivata davvero alla sua review, e ferma fra quella e la fase dopo, restava un vicolo
++cieco, e l'unica uscita era rinominare a mano un artefatto, distruggendo la prova di una fase che
++era girata. **Dal 16 ottobre 2026 non gli serve leggere dentro il file**: gli bastano due fatti che
++riceve già — l'artefatto di `execute` sotto il report (`4. review-notes.md`, in `present`) e il
++ledger di un ciclo della cartella (`ledger`, che la domanda pretende). Dove la review che il report
++annuncia è girata, `order` taglia la catena a `review` e `remaining` comincia da `decision`: la
++review non si rifà, e niente prima di lei. Dove non è girata — la cartella ferma di `--no-review`
++porta `4. review-notes.md` e **nessun** ledger, e quel caso è ancora rosso nel banco — la coppia
++resta la contraddizione di prima.
++
++**Il prezzo, dichiarato.** La coda di `ship-feature` — `decision`, `memory`, `commit`, `merge`,
++`cleanup`, `report` — non lascia artefatti: quattro delle sue fasi hanno `artifact: null` in
++`PHASES`, e nulla le prova sul disco. Quindi una consegna **finita** si legge come una ferma dopo
++`memory`, e un rilancio sulla sua cartella ordina la coda invece di fermarsi. Non è distinguibile,
++non è una svista: chi rilancia una consegna già finita è l'owner, che sa di averla finita.
+ 
+ **How to apply:** il ramo sta in `skills/ship-feature/SKILL.md` § *7. Report*, la sede in
+-§ *Early block* e in § *2b. No-review stop*, e i due casi di banco
+-`order:the-early-block-reports-on-its-own-seat` e `order:the-no-review-stop-resumes-at-the-review` in
+-`architect/architect.mjs` ordinano la ripresa da `review` su una cartella ferma — il banco è la sede
+-deterministica, e un caso che non lo copre è una consegna che si ferma. Dopo una ripresa che
+-arriva in fondo i due nomi convivono: la traccia del fermo non si cancella. Vedi
+-[[valutatore-deterministico]] e [[ripresa-del-giro]].
++§ *Early block* e in § *2b. No-review stop*, e il banco è la sede deterministica dei quattro casi:
++`order:the-early-block-reports-on-its-own-seat` e `order:the-no-review-stop-resumes-at-the-review`
++ordinano la ripresa da `review` su una cartella ferma,
++`ambiguity:the-review-report-stands-over-its-own-execute` ordina da `decision` una consegna arrivata
++alla review, e i due rossi della stessa coppia
++(`ambiguity:the-review-report-without-the-ledger-of-its-cycle` e
++`ambiguity:the-review-report-with-a-ledger-and-no-execute`) tengono chiusa la porta del fermo — un
++caso che non lo copre è una consegna che si ferma. Dopo una ripresa che arriva in fondo i due nomi
++convivono: la traccia del fermo non si cancella. Vedi [[valutatore-deterministico]] e
++[[ripresa-del-giro]].
+diff --git a/.gitignore b/.gitignore
+index d1ddc8c..426ab2a 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -30,3 +30,4 @@
+ # lavoro effimere del repository stesso, e nessun git deve portarle con sé. Il loro registro sta
+ # sotto `.docs/runtime/review`, già escluso qui sopra.
+ .claude/worktrees/
++.vscode/
+diff --git a/.vscode/tasks.json b/.vscode/tasks.json
+index 95f0e1f..b15c7ba 100644
+--- a/.vscode/tasks.json
++++ b/.vscode/tasks.json
+@@ -22,6 +22,25 @@
+         "panel": "shared"
+       }
+     },
++    {
++      "label": "LLM: switch to DeepSeek V4.1 Flash (OpenRouter)",
++      "type": "shell",
++      "command": "powershell",
++      "args": [
++        "-NoProfile",
++        "-ExecutionPolicy",
++        "Bypass",
++        "-File",
++        "${env:USERPROFILE}\\.claude\\llm-switch.ps1",
++        "-Mode",
++        "coreweave"
++      ],
++      "problemMatcher": [],
++      "presentation": {
++        "reveal": "always",
++        "panel": "shared"
++      }
++    },
+     {
+       "label": "LLM: switch to Muse Spark 1.3 contributor (Meta API)",
+       "type": "shell",
+diff --git a/plugins/daiku/architect/architect.mjs b/plugins/daiku/architect/architect.mjs
+index 22fbc07..adbeaec 100644
+--- a/plugins/daiku/architect/architect.mjs
++++ b/plugins/daiku/architect/architect.mjs
+@@ -181,6 +181,9 @@ const ATOMIC = {
+ /** Artefacts that exclude each other: a folder cannot be both before and after delivery. */
+ const MUTUALLY_EXCLUSIVE = ['1. decision-doc.md', '5. review-report.md'];
+ 
++/** The artefact of `execute` — the phase whose review `5. review-report.md` proves. */
++const REVIEW_INPUT = '4. review-notes.md';
++
+ /** The verdict domains, taken verbatim from the contracts that already use them. */
+ const GATES = ['green', 'red'];
+ const EXITS = ['fixed-point', 'discarded-only', 'diminishing-returns', 'oscillation', 'rounds-truncated', 'rounds-exhausted'];
+@@ -322,12 +325,20 @@ function reading(branch, remaining, why) {
+  */
+ function incoherence(input, question) {
+   const present = presentOf(input);
+-  if (MUTUALLY_EXCLUSIVE.every((artifact) => present.includes(artifact))) {
++  const beforeAndAfter = MUTUALLY_EXCLUSIVE.every((artifact) => present.includes(artifact));
++  // The pair stands together legitimately in one case: a delivery that reached its review. Two
++  // facts prove it, and both are read, never guessed — the artefact of the phase the review reads,
++  // and the ledger of the cycle that ran, which this question's input already requires. Without
++  // them the report cannot be phase 3 of *this* folder's delivery, and the folder is a work
++  // arrived after a delivery that never started here. That is what holds the stop-report off the
++  // review seat in § *2b. No-review stop*: that folder carries `4. review-notes.md` and no ledger.
++  if (beforeAndAfter && !(present.includes(REVIEW_INPUT) && input.ledger)) {
+     return block({
+       verdict: 'stop',
+       detail:
+         `input and the artefacts present disagree: ${MUTUALLY_EXCLUSIVE.join(' and ')} stand together in the ` +
+-        'same folder, and they exclude each other — the work cannot be both before the delivery and after it. ' +
++        `same folder, and nothing proves the review they announce — ${REVIEW_INPUT} is not there, or no ledger ` +
++        'of a cycle of this folder was handed over. The work cannot be both before the delivery and after it. ' +
+         'No reading is guessed: the chain stops.',
+     });
+   }
+@@ -1884,6 +1895,22 @@ const CASES = [
+   { id: 'ambiguity:incoherence-artifacts-exclude-each-other', cites: { file: 'skills/ship-feature/SKILL.md', section: 'Input' },
+     input: { question: 'order', entry: 'new-feature', present: ['1. decision-doc.md', '5. review-report.md'], ledger: null },
+     expect: { verdict: 'stop', readings_length: 0 } },
++  // The pair with the delivery's chain proven under it is not a contradiction: it is the ordinary
++  // state of a delivery interrupted between its review and the phase after it, and the chain picks
++  // it up where it stopped — the review is not re-run, and nothing before it is redone. The two
++  // facts that prove it are read together, and one alone is not enough: without the ledger of a
++  // cycle the report announces no review, and without the artefact of execute it announces no
++  // review of this folder's delivery — which is the stop-report § *2b. No-review stop* keeps off
++  // this seat, and the red case below is what holds that door shut.
++  { id: 'ambiguity:the-review-report-stands-over-its-own-execute', cites: { file: 'skills/ship-feature/SKILL.md', section: 'The sequence' },
++    input: { question: 'order', entry: 'new-feature', present: ['0. problem.md', '1. decision-doc.md', '2. blueprint.md', '4. review-notes.md', '5. review-report.md'], ledger: { ...LEDGER([ROUND([])]), outcome: 'fixed-point', gate: 'green' } },
++    expect: { verdict: 'proceed', remaining_starts_with: 'decision' } },
++  { id: 'ambiguity:the-review-report-without-the-ledger-of-its-cycle', cites: { file: 'skills/ship-feature/SKILL.md', section: '2b. No-review stop' },
++    input: { question: 'order', entry: 'new-feature', present: ['0. problem.md', '1. decision-doc.md', '2. blueprint.md', '4. review-notes.md', '5. review-report.md'], ledger: null },
++    expect: { verdict: 'stop', readings_length: 0 } },
++  { id: 'ambiguity:the-review-report-with-a-ledger-and-no-execute', cites: { file: 'skills/ship-feature/SKILL.md', section: 'Input' },
++    input: { question: 'order', entry: 'new-feature', present: ['1. decision-doc.md', '5. review-report.md'], ledger: { ...LEDGER([ROUND([])]), outcome: 'fixed-point', gate: 'green' } },
++    expect: { verdict: 'stop', readings_length: 0 } },
+   { id: 'ambiguity:incoherence-entry-declares-a-missing-artifact', cites: { file: 'skills/decision-doc/SKILL.md', section: 'Input: the problem folder' },
+     input: { question: 'order', entry: 'decision-doc', present: [], ledger: null },
+     expect: { verdict: 'stop', readings_length: 0 } },
+diff --git a/plugins/daiku/skills/ship-feature/SKILL.md b/plugins/daiku/skills/ship-feature/SKILL.md
+index 0257596..3ac8b0b 100644
+--- a/plugins/daiku/skills/ship-feature/SKILL.md
++++ b/plugins/daiku/skills/ship-feature/SKILL.md
+@@ -88,7 +88,9 @@ one of them, and its bench reads every call to the evaluator in the contracts of
+ refuses one whose paragraph does not name them all — so the keys are named where each call is
+ made, and not listed again here. Three of them carry a meaning their name does not say: `ledger`
+ is `null` when there is none, and for `order` a ledger that exists and is not passed turns into a
+-fork for the owner where a verdict was due; `step` is `{"node": …, "block": …|null, "attempt": 1|2, "invalid": […]}`, where `invalid` is what the `block` question said of that block — its `blockers`, or `[]` when no question judged it.
++fork for the owner where a verdict was due — or into a contradiction, where the folder carries
++`1. decision-doc.md` and `5. review-report.md` together and the ledger was one of the two facts
++proving the review of it ran, § *7. Report*; `step` is `{"node": …, "block": …|null, "attempt": 1|2, "invalid": […]}`, where `invalid` is what the `block` question said of that block — its `blockers`, or `[]` when no question judged it.
+ These are the eleven questions it answers. The five this file does not use directly are asked by the contracts that need them:
+ `closing`, `resumption` and `round` by `skills/review/SKILL.md` (§ *Closing*, § *Baseline and ledger*, § *When to run another round*), through
+ `architect/ledger.mjs`, the review's disk side, which imports these questions and hands them the ledger and the added lines it read from disk
+@@ -366,7 +368,7 @@ A subagent: `node <package root>/architect/pool.mjs <package root>` with `{"acti
+ Subagent writing the report. **Which file it lands on depends on whether phase 3 ran**, and that is the one thing you tell it and it cannot deduce: the fields it carries from the review — `gate`, `outcome`, `missing_disciplines` — exist only when phase 3 ran, and they are exactly the ones § *Early block* and § *2b. No-review stop* tell it not to expect when it did not.
+ 
+ - **Phase 3 ran** — the delivery reached the review, whatever its outcome: append **at the tail** of `<folder>/5. review-report.md` — the file phase 3 already wrote — never overwrite or reformat what is already there.
+-- **Phase 3 did not run** — the early block of Acquisition, Brief or Execute, or the voluntary stop of § *2b. No-review stop*: write `<folder>/5. delivery-report.md`, whole and from its first line. `5. review-report.md` is neither created nor touched: it is the artefact that proves phase 3, and a folder carrying it while `1. decision-doc.md` still stands is read by the evaluator as a work arrived after the delivery — `order` answers `stop` and the resumption § *The invocation* declares is lost. The early block and the no-review stop report on their own seat.
++- **Phase 3 did not run** — the early block of Acquisition, Brief or Execute, or the voluntary stop of § *2b. No-review stop*: write `<folder>/5. delivery-report.md`, whole and from its first line. `5. review-report.md` is neither created nor touched: it is the artefact that proves phase 3, and a folder carrying it while `1. decision-doc.md` still stands — with no ledger of a cycle of its own — is read by the evaluator as a work arrived after the delivery: `order` answers `stop` and the resumption § *The invocation* declares is lost. The early block and the no-review stop report on their own seat. **The pair is legitimate in the one case where the review it announces truly ran** — it stands over `4. review-notes.md` and a ledger of its own cycle, and then the verdict cuts the chain at `review`: `decision` and the phases after it remain, and the review is not re-run. The tail leaves no artefact, so a delivery already finished reads the same way as one stopped after `memory`; which of the two it is, is the owner's to know.
+ 
+ It is the only phase having to report fields produced by **seven others** — fewer on the early block, where some of them never ran — and a subagent in a fresh context derives none of them alone. In the prompt they therefore go **already resolved**, one by one (§4.1 of `contracts/orchestration.md`): rebuilding them from memory drops first precisely the lines saying what the delivery did **not** do — and a poor report is never reopened. In the prompt:
+ 
