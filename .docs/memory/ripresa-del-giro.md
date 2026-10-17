@@ -4,7 +4,8 @@ description: "new-feature accetta una cartella al posto della descrizione e ripr
 metadata:
   node_type: memory
   type: project
-  modified: 2026-10-16
+  modified: 2026-10-17T10:17:14.699Z
+  originSessionId: 9e80c5a9-21ea-4190-82d2-eea0e98e36c9
 ---
 
 **Dal 3 ottobre 2026 `new-feature` accetta due argomenti**: una descrizione in linguaggio naturale
@@ -18,7 +19,10 @@ rilanciare il nodo rifaceva la ricognizione del codice e riscriveva `0. problem.
 legge quattro cose, in quest'ordine:
 
 1. **il verdetto** — `architect/architect.mjs` con `question: "order"`, `entry: "new-feature"`,
-   `present` (i documenti presenti) e `ledger`: `stop` ferma il giro, `remaining` nomina le fasi che
+   `present` (i documenti presenti), `ledger` e `merged` — il merge che porta già la cartella sul
+   ramo d'integrazione, o `null`, misurato da `architect/delivered.mjs` e mai dedotto dagli
+   artefatti: `stop` ferma il giro, e uno `stop` che dice che la cartella è già atterrata lo ferma
+   prima di ogni fase; `remaining` nomina le fasi che
    restano, **il suo primo elemento è la fase da fare** e **quelle prima non si rifanno**;
 2. **la domanda per prima, qualunque fase il verdetto nomini** — `1. decision-doc.md` presente prova
    le decisioni *studiate*, non risposte: se una scheda di `0.5. strategic-study.md` o
