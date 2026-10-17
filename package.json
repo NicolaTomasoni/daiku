@@ -1,0 +1,6 @@
+{
+  "name": "daiku",
+  "exports": {
+    ".": "./plugin.mjs"
+  }
+}

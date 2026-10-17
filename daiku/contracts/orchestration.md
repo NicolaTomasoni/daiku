@@ -142,7 +142,7 @@ rebuilding the graph from the caller's prose.
 | `perf` | `review` § *Finder*, as the `perf` half of the `form` step | the round-1 scope | the block of `finder-prompt` § *The block you return*; its § *Finder mode* declares scope and permissions | no |
 | `test-coverage` | `review` § *Coverage* with `--auto` | macro-category **or** final cycle diff and relevant memories | § *Automatic mode* of its file | no |
 | `applier` | `review` § *Applier*, `code-review` § *The round* | the path of the round's numbered findings file, the ledger path, the round range, relevant memories, the resolved parameters | § *The block you return* of its file | no |
-| `commit` | owner, `review` § *Closing* (always, except `--no-commit`), `release` § *Flushing the working tree* | code-group perimeter; it partitions memory/docs and version/changelog itself (§ *Procedure* 3 of its file) | § *Procedure* 8 of its file, in chat | yes — `update-memory`, **always and without exceptions** |
+| `commit` | owner, `review` § *Closing* (always, except `--no-commit`), `release` § *Flushing the working tree* | code-group perimeter; it partitions memory/docs and version/changelog itself (§ *Procedure* 3 of its file) | § *Outcome* of its file, in chat | yes — `update-memory`, **always and without exceptions** |
 | `handoff` | owner | an optional short name of the job, or nothing and the slug comes from the problem; the conversation it runs in is its material, and it is read there | path of the file in `{paths.handoffs}/`, nothing else | yes — the harvesting workers (leaves) |
 | `release` | owner | the technical root, or nothing and the current directory applies | § *What you return* of its file: what was promoted — the version written, the development branch and where production now stands — or why nothing was | yes — `review` and `commit`, when the working tree is not empty |
 | `update-memory` | `ship-feature` phase 5b, `commit` § *Alignment* (**always**, on every `commit` invocation) | diff in index, feature folder where to deposit its own artefact (from `ship-feature`), **commit permission for its own group** | § *Procedure* 7 of its file | no |
@@ -194,7 +194,8 @@ How to launch:
   happening. So **repeat the read-only constraint in the prompt**.
 
 - **`opencode`** — the `subagent` tool, whose parameter `agent` carries the **name** of the agent to
-  run, the file name in `.opencode/agents/`: the step's role is chosen by that name and not by a
+  run, the role name the package's plugin registers from `agents/opencode/`: the step's role is
+  chosen by that name and not by a
   type list. `finder` for analysis-only steps that report findings, `explore` for search only,
   `general` for everything else. The model is not chosen per
   step: a subagent inherits the primary's model unless its own file declares one, so §2's resolution
@@ -317,8 +318,10 @@ subagent from launching another — so at the default **no chain that delegates 
 `review → finder`, `research → study`, `commit → update-memory` and `new-feature → decision-doc` all
 ask the project to raise the key to `2`, and the four-level path `new-feature → ship-feature →
 review → finder` asks for at least `3`; at `0` no launch happens at all. The key is **experimental**
-and lives under `experimental` in `opencode.json`, so a project that declares nothing keeps the
-default `1`. The graph above is unchanged by this: it says *who may re-delegate*, the host says *how
+and lives under `experimental` in `opencode.json`: a project opened by `init` carries it — `3`,
+added by *Step 4-bis* under `experimental`, never overwriting a value the project declares — while
+a project outside Daiku keeps the default `1`. The graph above is unchanged by this: it says *who
+may re-delegate*, the host says *how
 deep that may go*, and a longer chain on a project that has not raised the key is a step that does
 not compose there — its depth is a value in the parameters, not a rule rewritten here.
 
@@ -350,7 +353,10 @@ already first — and whoever asks reports it without reordering. How that form 
 to ask and stops there, as it declares a role without naming a model:
 
 - **`claude`** — `AskUserQuestion` tool, one question per decision, **at most four per
-  call**: if there are more decisions, make more calls in sequence, in order of severity.
+  call — and every call is filled to that ceiling**: as many decisions as remain go in, up to four,
+  a call stopping short only when the list ends with it, because the ceiling is a property of the
+  tool and not the rhythm of the ask (a list of six is two calls, never six). With more than four
+  decisions, make more calls in sequence, in order of severity.
   Option `A` goes first, **every label opens with its id** — `A — <text>` — and `(recommended)`
   closes the label of `A`; the description line carries what the option entails. The letter is
   what makes an option referable in the message above and in the discussion that may follow, and
@@ -369,12 +375,15 @@ to ask and stops there, as it declares a role without naming a model:
 question** — `k/N`, the question's own place and the length of the list the block returned — because
 four questions per call is the ceiling of `AskUserQuestion` and not of the list: the number says how
 long the list is, on every host. On `claude`, a list longer than four is asked in **consecutive
-calls, in the same turn**, from `1/N` to `N/N`, and the ask is closed only when the last card has
-been asked: the cards after the ceiling are not a second thought, they are the same act. The calls
-go out **one at a time** — the next only after the previous has come back, and never two in the same
+calls, in the same turn**, each call **full** — it carries every card still open, up to the four the
+tool takes — from `1/N` to `N/N`, and the ask is closed only when the last card has been asked: the
+cards after the ceiling are not a second thought, they are the same act, and one question per call
+is that same list cut into waits for the owner. The calls
+go out **one call at a time** — the next only after the previous has come back, and never two in the same
 tool-call block: a batch emitted over a question still waiting for the owner puts to them the cards
 after it, on a list they may never have seen from its first card. `hooks/lib/ask-guard.mjs` is the seat holding the run to it — it refuses a decision ask
-whose questions carry no place, refuses a batch that does not continue its list, and refuses the
+whose questions carry no place, refuses a batch that does not continue its list **or stops short of
+the ceiling while cards remain**, and refuses the
 **launch of a subagent** (§4) while the ask is open. And a message of the owner closes the ask as it closes everything: their
 free answer prevails over the options, and the run goes on with what they said.
 

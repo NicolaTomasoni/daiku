@@ -89,7 +89,7 @@
       "note": "The block of the bug-only cycle: the shape of § review-outcome minus the fields a bug-only cycle, stopping at the report, does not produce — `disciplines_round_1` and `independence` (one discipline, `bug`, always), `commit` and `commit_sha` (the cycle never commits), `blocking`, `coverage` and `report`. No `question` feeds it: the cycle stops at the report and hands the block to its caller, so this entry is the map of a shape the skill declares in prose, not a check any program runs — the prose of `skills/code-review/SKILL.md` stays the normative schema."
     },
     "commit": {
-      "producer": "skills/commit/SKILL.md § Procedure 8",
+      "producer": "skills/commit/SKILL.md § Outcome",
       "required": ["commits", "version_decision"],
       "optional": [],
       "enums": {

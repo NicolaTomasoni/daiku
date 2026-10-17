@@ -12,6 +12,13 @@
  * list had six. The loss is invisible from every angle — the form looked complete, the block came
  * back well formed, the document is written — which is exactly why it cannot be left to prose.
  *
+ * **And nothing said how many questions a call carries.** "At most four" states a ceiling, "the
+ * calls go out one at a time" governs *calls* — neither says *fill it*. Read the other way round,
+ * both say the same thing: one question per call, and a list of six becomes six waits on a list the
+ * owner reads whole anyway. The ceiling is the tool's and the batch is asked for nothing else: it
+ * carries every card still open, up to four, and a batch that stops short while cards remain goes
+ * out again full.
+ *
  * **The list is numbered, and the number is what makes the loop decidable.** Every question of a
  * decision ask opens with its place in the list — `k/N`, its own place and the length of the list —
  * and this hook is the seat that holds the run to it. Four rules, and they are all mechanical:
@@ -19,9 +26,11 @@
  *  - **A decision ask without a place is refused** (`PreToolUse`). The place is not a courtesy: it
  *    is the only thing that says how long the list is, and a list whose length nobody wrote down is
  *    a list nobody can check for completeness. A call that omits it goes out again with it.
- *  - **A batch continues the list it belongs to** — the same `N`, contiguous `k`, opening where the
- *    previous batch stopped. A first batch opens at `1/N`; a batch outside that shape is refused,
- *    and the refusal names the cards that remain.
+ *  - **A batch continues the list it belongs to — and fills the call** — the same `N`, contiguous
+ *    `k`, opening where the previous batch stopped, and carrying as many of the cards still open as
+ *    the tool takes (four): a short batch with cards remaining is a second round of waiting the
+ *    owner never asked for, and the refusal names the cards that fit. A first batch opens at `1/N`;
+ *    a batch outside that shape is refused, and the refusal names the cards that remain.
  *  - **A list a folder already began opens where it stopped — and the guard reads the document.**
  *    `new-feature` accepts a folder already opened, and there it resumes instead of starting again:
  *    it asks the cards the decision document left **without an answer**, and those cards keep the
@@ -79,9 +88,9 @@
  *    the mark.
  *
  * Contract: **fail-open** on everything but its own two verdicts. Malformed stdin, unreadable state,
- * unreachable filesystem, any exception → silence and exit 0. The two verdicts are the refusals of a
- * malformed ask and of a launch with the ask open, and they are refusals of a **gesture**: they
- * carry the reason, name the cards that remain, and close the moment the list does.
+ * unreachable filesystem, any exception → silence and exit 0. The two verdicts are the refusals of an
+ * ask that does not put the list whole and of a launch with the ask open, and they are refusals of a
+ * **gesture**: they carry the reason, name the cards that remain, and close the moment the list does.
  *
  * Test bench: `node ask-guard.mjs --self-check`, from the folder it lives in. It builds its events
  * and a simulated session filesystem in memory and touches nothing of the project's; the total is
@@ -112,6 +121,9 @@ const RECOMMENDED = /\((?:recommended|raccomandata|consigliata|raccomandato)\)\s
 
 /** The place of a question in its list: `k/N`, at the opening of the question. */
 const PLACE = /^\s*(?:\*\*)?\s*(\d{1,3})\s*\/\s*(\d{1,3})\b/;
+
+/** The ceiling of `AskUserQuestion`: the most questions one call carries — and the size of a full batch. */
+const CEILING = 4;
 
 /** The tools that launch a subagent — the delegation of §4 of `contracts/orchestration.md`. */
 const LAUNCHES = ['Agent', 'Task'];
@@ -434,11 +446,13 @@ export function askAfter(questions) {
 const where = (ask) => `cards ${ask.next}\u2013${ask.total} of ${ask.total}`;
 
 /**
- * The refusal of a decision ask that is not a window on its own list, or `null` to let it pass.
- * `resumed` carries the run opened on a folder already there: `true` when the document claimed no
- * place, `{total, first}` when it did — the length of the list it left open and the card it left it
- * at. With an anchor, the first batch is held to that card; without one, the older reading holds and
- * a resume may open above `1/N`.
+ * The refusal of a decision ask that is not a **full** window on its own list, or `null` to let it
+ * pass. `resumed` carries the run opened on a folder already there: `true` when the document
+ * claimed no place, `{total, first}` when it did — the length of the list it left open and the card
+ * it left it at. With an anchor, the first batch is held to that card; without one, the older
+ * reading holds and a resume may open above `1/N`. Full means: as many questions as the cards still
+ * open, up to the ceiling — a batch stopping short is refused wherever it stands, but only after it
+ * stands in the right place, so a misplaced batch is told about the place first.
  */
 export function judgeAsk(questions, open, resumed = false) {
   if (!Array.isArray(questions) || questions.length === 0) return null;
@@ -464,7 +478,7 @@ export function judgeAsk(questions, open, resumed = false) {
       'list: every question of a batch carries the same `N`.'
     );
   }
-  if (places.length > 4) {
+  if (places.length > CEILING) {
     return (
       `Daiku: the call carries ${places.length} questions and the tool carries at most four. Split the ` +
       'batch, in the order of the list.'
@@ -497,7 +511,7 @@ export function judgeAsk(questions, open, resumed = false) {
         `closes when \`${open.total}/${open.total}\` has been asked.`
       );
     }
-    return null;
+    return fullBatch(places, total);
   }
 
   // No ask is open: this call opens the list. Its place is `1/N` — or, on a resume whose document
@@ -518,7 +532,7 @@ export function judgeAsk(questions, open, resumed = false) {
         `put to the owner. Open the ask at \`${anchored.first}/${anchored.total}\`.`
       );
     }
-    return null;
+    return fullBatch(places, total);
   }
 
   if (places[0].k !== 1 && !resumed) {
@@ -528,7 +542,27 @@ export function judgeAsk(questions, open, resumed = false) {
       `\`1/${total}\`.`
     );
   }
-  return null;
+  return fullBatch(places, total);
+}
+
+/**
+ * The refusal of a batch standing in its right place but stopping short of the ceiling, or `null`
+ * when it is full: as many questions as the cards still open, up to four — the last batch carries
+ * what is left, and a list shorter than the ceiling is full in one call by definition. `places` are
+ * already read and validated where this is called: every question carries its place.
+ */
+function fullBatch(places, total) {
+  const remaining = total - places[0].k + 1;
+  const wanted = Math.min(CEILING, remaining);
+  if (places.length >= wanted) return null;
+  const last = places[0].k + wanted - 1;
+  return (
+    `Daiku: the batch carries ${places.length} of the ${remaining} cards still open — cards ` +
+    `${places[0].k}–${last} of ${total} fit in one call, and the tool carries four. A batch stops ` +
+    'short of the ceiling only when the list ends with it: ask every card that remains, in the ' +
+    'order of the list, up to four per call. The call goes out again with them, unchanged otherwise. ' +
+    'It is `contracts/orchestration.md` § *Ask the owner*.'
+  );
 }
 
 /** The refusal of the launch while the ask is open, or `null` to let it pass. */
@@ -689,6 +723,17 @@ function selfCheck() {
   check('a batch declaring another length is refused', !!judgeAsk([decision('5/7')], open));
   check('the refusal names the card the batch opens at', judgeAsk([decision('6/6')], open).includes('`5/6`'));
 
+  // --- and it fills the call to the ceiling ------------------------------------------------
+  check('a first batch that stops short while cards remain is refused', !!judgeAsk([decision('1/6')], null));
+  check('the refusal of a short batch names the cards that fit', judgeAsk([decision('1/6')], null).includes('cards 1–4 of 6'));
+  check('the refusal of a short batch names the contract', judgeAsk([decision('1/6')], null).includes('contracts/orchestration.md'));
+  check('a continuation that stops short is refused too', !!judgeAsk([decision('5/6')], { total: 6, next: 5 }));
+  check('the full continuation passes', judgeAsk([decision('5/6'), decision('6/6')], { total: 6, next: 5 }) === null);
+  check('a list shorter than the ceiling passes whole', judgeAsk([decision('1/3'), decision('2/3'), decision('3/3')], null) === null);
+  check('a single card left asks a single question', judgeAsk([decision('6/6')], { total: 6, next: 6 }) === null);
+  check('the first batch of a resumed list fills the call', judgeAsk([decision('5/6'), decision('6/6')], null, { total: 6, first: 5 }) === null);
+  check('and one stopping short of it is refused', !!judgeAsk([decision('5/6')], null, { total: 6, first: 5 }));
+
   // --- what an answered batch leaves open ---------------------------------------
   const left = askAfter([decision('1/6'), decision('2/6'), decision('3/6'), decision('4/6')]);
   check('a batch under the end leaves the ask open', !!left && left.total === 6 && left.next === 5);
@@ -811,7 +856,7 @@ function selfCheck() {
   check('a resumed list opening before its card is refused', !!judgeAsk([decision('1/5')], null, anchor5));
   check('the refusal says where the resumed list opens', judgeAsk([decision('1/5')], null, anchor5).includes('`5/5`'));
   check('a resumed list declaring another length is refused', !!judgeAsk([decision('5/6')], null, anchor5));
-  check('a resumed list mid-way opens at the card left open', judgeAsk([decision('3/5'), decision('4/5')], null, { total: 5, first: 3 }) === null);
+  check('a resumed list mid-way opens at the card left open', judgeAsk([decision('3/5'), decision('4/5'), decision('5/5')], null, { total: 5, first: 3 }) === null);
   check('and one card early is refused', !!judgeAsk([decision('2/5')], null, { total: 5, first: 3 }));
   check('a resume with no anchor keeps the older reading', judgeAsk([decision('5/6'), decision('6/6')], null, true) === null);
   check('an anchored resume still refuses a jump inside the call', !!judgeAsk([decision('5/5'), decision('7/5')], null, anchor5));
@@ -819,7 +864,7 @@ function selfCheck() {
 
   // --- what each event answers ----------------------------------------------------
   check('a marked session asking out of form is refused', !!askVerdict(ask([decision('nothing')]), true, null));
-  check('a marked session asking in form is left alone', askVerdict(ask([decision('1/2')]), true, null) === null);
+  check('a marked session asking in form is left alone', askVerdict(ask([decision('1/2'), decision('2/2')]), true, null) === null);
   check('an unmarked session is not spoken to', askVerdict(ask([decision('nothing')]), false, null) === null);
   check('an unmarked session\u2019s launch is left alone', askVerdict(launch(), false, open) === null);
   check('a marked launch with the ask open is refused', !!askVerdict(launch(), true, open));

@@ -245,6 +245,13 @@ function selfCheck() {
     'update script reads the channel from the marketplace registration',
     script.includes('function channelOf(') && script.includes("market.ref === 'edge'")
   );
+  // The host records a shorthand add (`owner/repo`) as `source: "github"` with a `repo` and no
+  // `url`/`ref`/`path` — the form `claude plugin marketplace add NicolaTomasoni/daiku` produces,
+  // measured on 2026-10-16. Unrecognised, the panel would say LOCAL on a machine sitting on main.
+  check(
+    'update script reads the github shorthand registration as its channel',
+    script.includes("market.source === 'github'") && script.includes('market.repo')
+  );
   check('update script says on edge that the copy is pre-release', script.includes('You are on edge'));
   check(
     'update script asks before leaving edge for main, and names the main ref',

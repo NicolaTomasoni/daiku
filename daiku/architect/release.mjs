@@ -243,6 +243,21 @@ function replicatedFile(text, oldVersion, version) {
 }
 
 /**
+ * A file of `{version.replicated_in}` production does not carry yet, seeded whole from the
+ * development tree. The choice is on the content: the list is not a list of JSON files — the
+ * ordinary entry is a README badge — so a file that parses gains the field the way the version
+ * file gets it, and any other text takes the number the way every other replica does.
+ */
+function seededFile(text, field, oldVersion, version) {
+  try {
+    JSON.parse(text);
+  } catch {
+    return replicatedFile(text, oldVersion, version);
+  }
+  return versionedFile(text, field, version);
+}
+
+/**
  * The changelog with the new section in it: inserted after the title line and its blank line, so
  * the newest release is the first thing below the heading. The section's own prose — its heading,
  * its date, its bullets, its rule — is the caller's, and this program only places it.
@@ -491,7 +506,18 @@ function actRelease(input, dry) {
         const path = prodPath(source, devFile);
         if (path === null) fail(`version_replicated_in names ${devFile}, outside the published subtree ${source}`);
         const before = fileAt(cwd, base, path);
-        if (before === null) fail(`production carries no ${path}, named by version_replicated_in`);
+        if (before === null) {
+          // A replica production does not carry yet arrives with this release: its content comes
+          // whole from the development tree, and only the number is written into it — the field by
+          // the writer the version file gets, any other text by the replacement every other
+          // replica takes. Named and absent from both sides it is still a failure, by the path.
+          const seeded = fileAt(cwd, devTree, devFile);
+          if (seeded === null) {
+            fail(`version_replicated_in names ${devFile}: neither production nor the development tree carries it`);
+          }
+          put(path, seededFile(seeded, field, old, version));
+          continue;
+        }
         put(path, replicatedFile(before, old, version));
       }
     }
@@ -764,6 +790,54 @@ function runBench(root) {
       check('release:sits-on-the-previous-release', sh(repo, ['log', '-1', '--format=%s', 'main^']).out.startsWith('release 1.1.2'), sh(repo, ['log', '-1', '--format=%s', 'main^']).out);
       check('release:the-anchor-is-recorded', anchorOf(repo, 'main') === sh(repo, ['rev-parse', 'develop']).out);
       check('release:a-new-release-does-not-amend', got.amended === false, JSON.stringify(got));
+    }
+
+    /* --- a replica the release seeds, and one it then replaces ---------------------- */
+    {
+      const repo = fixture('replica-seed');
+      // The descriptor arrived after production was last published: it stands on the development
+      // branch alone, without a version — the state plugins/package.json carries on develop.
+      write(join(repo, 'plugins/package.json'), '{\n  "name": "daiku"\n}\n');
+      sh(repo, ['add', '-A']);
+      sh(repo, ['commit', '-qm', 'feat: the opencode descriptor']);
+      const input = base(repo, { version_replicated_in: ['plugins/README.md', 'plugins/package.json'] });
+      const seeded = call(repo, Object.assign({}, input, {
+        action: 'release', version: '1.1.3',
+        section: '### 1.1.3 — 2026-10-16\n\n- The descriptor.\n\n---', message: 'release 1.1.3 — the descriptor',
+      }));
+      check('replica:production-without-the-file-releases-anyway', seeded.released === true, JSON.stringify(seeded));
+      const onProduction = fileAt(repo, 'main', 'package.json');
+      check('replica:the-seeded-file-carries-the-new-number', !!onProduction && onProduction.includes('"version": "1.1.3"'), onProduction);
+      check('replica:the-seeded-file-content-comes-from-the-branch', !!onProduction && onProduction.includes('"name": "daiku"') && !onProduction.includes('"version": "0.0.0"'), onProduction);
+      check('replica:the badge beside it is replaced as ever', fileAt(repo, 'main', 'README.md').includes('badge/version-1.1.3-'));
+
+      // The next release: production now carries the file with the old number, and only the
+      // number moves — the content stays what production published. The draft of the release
+      // above is marked pushed first, so this one is a new commit and its base is that release.
+      sh(repo, ['update-ref', 'refs/remotes/origin/main', sh(repo, ['rev-parse', 'main']).out]);
+      const replaced = call(repo, Object.assign({}, input, {
+        action: 'release', version: '1.1.4',
+        section: '### 1.1.4 — 2026-10-16\n\n- The number.\n\n---', message: 'release 1.1.4 — the number',
+      }));
+      check('replica:the-next-release-replaces-the-number-only', replaced.released === true, JSON.stringify(replaced));
+      const replacedFile = fileAt(repo, 'main', 'package.json');
+      check('replica:the-old-number-is-gone', !!replacedFile && !replacedFile.includes('"1.1.3"') && replacedFile.includes('"1.1.4"'), replacedFile);
+      check('replica:the-content-stands', !!replacedFile && replacedFile.includes('"name": "daiku"'), replacedFile);
+    }
+
+    /* --- a replica absent from both sides still fails, by the path ------------------- */
+    {
+      const repo = fixture('replica-absent');
+      const input = base(repo, { version_replicated_in: ['plugins/README.md', 'plugins/package.json'] });
+      const got = call(repo, Object.assign({}, input, {
+        action: 'release', version: '1.1.3',
+        section: '### 1.1.3 — 2026-10-16\n\n- Nothing.\n\n---', message: 'release 1.1.3 — nothing',
+      }));
+      check(
+        'replica:a-file-absent-from-both-sides-fails-and-names-the-path',
+        got.ok === false && /package\.json/.test(got.error || ''),
+        JSON.stringify(got)
+      );
     }
 
     /* --- the accumulation ---------------------------------------------- */

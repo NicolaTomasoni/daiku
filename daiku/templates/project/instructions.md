@@ -118,8 +118,7 @@ Declared exceptions:
   after memory and documentation have been aligned to the staged diff.
 - `commit`, invoked explicitly by the owner, authorises a commit of the working tree under its own
   convention, with no review: whoever invokes it has already read the diff. It leaves its mark in the
-  review seat, which the review guard reads as the owner's own commit, and removes it afterwards. It
-  does not align memory or documentation.
+  review seat, which the review guard reads as the owner's own commit, and removes it afterwards.
 - `review` always closes with the commit, delegating it, but only on a clean cycle. If a single
   condition is missing it stops at the report.
 

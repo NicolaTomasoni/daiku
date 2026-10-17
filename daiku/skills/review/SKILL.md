@@ -285,7 +285,7 @@ When it runs, delegate it to a **worker** subagent fully reading `skills/commit/
 
 **If its block does not come back**, relaunch it **only once**, with the identical prompt. If it does not come back even then, `commit` is `skipped` with the reason, `commit_sha` is `null`, and **you do not commit yourself** to close the hole: `git log` says what already entered, never what is missing.
 
-**The block comes back with it.** The subagent reports the block § *Procedure* 8 of `skills/commit/SKILL.md` declares: `commits[group=code].sha` ends up verbatim in `commit_sha`. Do not derive it from `git log -1` — after `/commit` the working tree carries two or three distinct commits and the last is not the code one. If the sequence stops between one group and the next, `commit` is `partial`, `commit_sha` carries what truly exists, and you say so in closing.
+**The block comes back with it.** The subagent reports the block § *Outcome* of `skills/commit/SKILL.md` declares: `commits[group=code].sha` ends up verbatim in `commit_sha`. Do not derive it from `git log -1` — after `/commit` the working tree carries two or three distinct commits and the last is not the code one. If the sequence stops between one group and the next, `commit` is `partial`, `commit_sha` carries what truly exists, and you say so in closing.
 
 ## Outcome
 

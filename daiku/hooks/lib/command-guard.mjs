@@ -740,7 +740,7 @@ function attributionGuard(line, cwd, env) {
       'the commit message credits the agent that wrote the work — a `Co-Authored-By` ' +
       'naming an agent, or a `Generated with` line: the history carries only ' +
       'whoever owns the work. Drop that line from the message and commit again. See ' +
-      '`skills/commit/SKILL.md`, last paragraph.',
+      '`skills/commit/SKILL.md`, § *Rules*.',
   };
 }
 
