@@ -948,9 +948,9 @@ function valuesAt(value, path) {
 /**
  * The `payload` field a block carries when its step handed a child — or returned — a **content**
  * and not a path: `{bytes, lines}`, both non-negative integers, **absent** where the step passed
- * only a path (`contracts/orchestration.md` §4, *Delegation*). It is the measure the reduced view
- * of `architect/view.mjs` stands beside, and the shape every block whose step delivers content
- * declares. A `payload` absent changes nothing — the field exists only for what crossed.
+ * only a path (`contracts/orchestration.md` §4, *Delegation*). It is the shape every block whose
+ * step delivers content declares. A `payload` absent changes nothing — the field exists only for
+ * what crossed.
  */
 function payloadFaults(value) {
   if (!('payload' in value) || value.payload === null) return [];

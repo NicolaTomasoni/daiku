@@ -244,16 +244,8 @@ Rules valid on every host:
    transcription: a copy drifts from its file at the first write, and it is paid twice, by whoever
    writes it into the prompt and by whoever reads it there.
 
-   **When a path is not enough, the content travels bounded.** A step that must hand a child a
-   **content** and not a path — a payload too large to inline, a set of notes, a diff — does it
-   within `{subagent.payload_cap}` bytes or lines: a **deterministic reduced view** of the
-   artefact, produced by a program and reproducible byte for byte, stood next to the **path of
-   the whole original**, which the child opens for whatever the view left out. The view is never
-   a summary written by a model, and the cap declares **how much** may cross, not that the content
-   may be rewritten: *the path, not the transcription* stands — the view is a second, smaller door
-   to the same room, never a different room. A step whose own return block carries content and not
-   a path says how much in its `payload` field (`{bytes, lines}`); a step that passed only a path
-   carries no such field.
+   A step whose own return block carries content and not a path says how much in its `payload`
+   field (`{bytes, lines}`); a step that passed only a path carries no such field.
 2. **Return by contract.** Every step that feeds a downstream decision returns a JSON block
    with the fields the skill declares: read that, not the prose. If the block is missing or
    incomplete, the step has failed — do not interpret it by feel.

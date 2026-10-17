@@ -149,7 +149,6 @@ Your caller opens the file you give: if it is still raw they see it by themselve
 - Respect the runtime constraints that `{hosts.<host>.instructions_file}` declares, and in any case: **no whole-filesystem searches**; every file access stays inside the project and the `{paths.studies}/` folder.
 - **Do not commit** and do not push: the command produces only the file (collected by you, reordered by `study`).
 - Work autonomously end to end without asking for confirmation, except when `$ARGUMENTS` is empty.
-- **When content must cross, it crosses bounded.** Where this step hands a child a content and not a path, it stays within `{subagent.payload_cap}` — a **deterministic reduced view** of the artefact beside the **path of the whole original**, never a summary written by a model (`contracts/orchestration.md` §4, *Delegation*).
 
 ## Final output
 

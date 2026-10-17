@@ -50,7 +50,6 @@ Goal: make the file clear, ordered, without duplicates — without losing a sing
 - Respect the runtime constraints that `{hosts.<host>.instructions_file}` declares, and in any case: **no whole-filesystem searches**; every file access stays inside the project and the `{paths.studies}/` folder.
 - **Do not commit** and do not push: the command produces only the received file, reordered.
 - Work autonomously end to end on the received file, without asking for confirmation.
-- **When content must cross, it crosses bounded.** Where this step hands a child a content and not a path, it stays within `{subagent.payload_cap}` — a **deterministic reduced view** of the artefact beside the **path of the whole original**, never a summary written by a model (`contracts/orchestration.md` §4, *Delegation*); where its own block carries content, its `payload` field (`{bytes, lines}`) says how much.
 
 ## The block you return
 
